@@ -1,0 +1,3 @@
+D:\dev\asp.net\Peeralize\Generation\UiHarvester\obj\Debug\UiHarvester.njsproj.CoreCompileInputs.cache
+D:\dev\asp.net\Peeralize\Generation\UiHarvester\bin\Microsoft.NodejsTools.WebRole.dll
+D:\dev\asp.net\Peeralize\Generation\UiHarvester\obj\Debug\UiHarvester.njsprojResolveAssemblyReference.cache
