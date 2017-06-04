@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
+    <ProjectReference Include="..\libnvoid\nvoid\nvoid.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Auth\" />
+    <Folder Include="Format\" />
+    <Folder Include="IntegrationSource\" />
+  </ItemGroup>
+
+</Project>
