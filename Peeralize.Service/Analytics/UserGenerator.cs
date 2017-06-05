@@ -68,14 +68,14 @@ namespace Peeralize.Service.Analytics
                 .RuleFor(u => u.FullAddress, f => f.Address.FullAddress())
                 .RuleFor(u => u.Email, (f, u ) => f.Internet.Email(u.FirstName, u.LastName))
                 .RuleFor(u => u.Occupation, f=> f.Occupation.Get())
-                .Rule((f, u) => u.SetProperty("CurrentCompany", f.Company.CompanyName()))
-                .Rule((f, u) => u.SetProperty("Posts", GeneratePosts()))
-                .Rule((f, u) => u.SetProperty("Likes", f.Company.CompanyNames()))
-                .Rule((f, u) => u.SetProperty("PastJobsCount", f.Random.Int(1, 100)))
-                .Rule((f, u) => u.SetProperty("Joined" , f.Date.Future(16, u.Birthday)))
-                .Rule((f,u) => u.LastOnline = f.Date.Future(3,u.GetProperty<DateTime>("Joined")))
-                .Rule((f, u) => u.SetProperty("PaymentCount", f.Random.Number(15)))
-                .Rule((f, u) => u.SetProperty("Subscribed", f.Date.Future(1, u.Properties["Joined"] as DateTime?)))
+                .Rules((f, u) => u.SetProperty("CurrentCompany", f.Company.CompanyName()))
+                .Rules((f, u) => u.SetProperty("Posts", GeneratePosts()))
+                .Rules((f, u) => u.SetProperty("Likes", f.Company.CompanyNames()))
+                .Rules((f, u) => u.SetProperty("PastJobsCount", f.Random.Int(1, 100)))
+                .Rules((f, u) => u.SetProperty("Joined" , f.Date.Future(16, u.Birthday)))
+                .Rules((f,u) => u.LastOnline = f.Date.Future(3,u.GetProperty<DateTime>("Joined")))
+                .Rules((f, u) => u.SetProperty("PaymentCount", f.Random.Number(15)))
+                .Rules((f, u) => u.SetProperty("Subscribed", f.Date.Future(1, u.Properties["Joined"] as DateTime?)))
                 .FinishWith((f, u) => 
                 {
                 });
