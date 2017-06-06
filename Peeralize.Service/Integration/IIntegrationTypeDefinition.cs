@@ -20,12 +20,8 @@ namespace Peeralize.Service.Integration
         Dictionary<string, FieldDefinition> Fields { get; }
 
         IntegrationTypeExtras Extras { get; }
-        
-    }
-
-    public class IntegrationTypeExtras
-    {
-        public Dictionary<string, string> Extra { get; set; }
-
+        bool Save();
+        string Id { get; set; }
+         
     }
 }

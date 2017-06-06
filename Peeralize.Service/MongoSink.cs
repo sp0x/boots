@@ -61,7 +61,10 @@ namespace Peeralize.Service
         {
             _buffer.Complete(); 
         }
-
+        /// <summary>
+        /// Adds the item to the sink
+        /// </summary>
+        /// <param name="item"></param>
         public void Post(IntegratedDocument item)
         {
             _buffer.Post(item);

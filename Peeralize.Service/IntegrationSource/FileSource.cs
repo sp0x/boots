@@ -32,9 +32,10 @@ namespace Peeralize.Service.IntegrationSource
             _lock = new object();
             Encoding = System.Text.Encoding.Default;
         }
-        public FileSource(string file) : this()
+        public FileSource(string file, IInputFormatter formatter) : this()
         {
             _filePath = file;
+            this.Formatter = formatter;
         }
         public FileSource(FileStream fileStream, JsonFormatter formatter) : this()
         {
@@ -97,10 +98,7 @@ namespace Peeralize.Service.IntegrationSource
         /// <returns></returns>
         public static FileSource Create(string fileName, IInputFormatter formatter = null)
         {
-            var src = new FileSource(fileName)
-            { 
-                Formatter = formatter
-            };
+            var src = new FileSource(fileName, formatter);
             return src;
         }
 

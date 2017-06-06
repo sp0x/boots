@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Bogus\Source\Bogus\Bogus.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid\nvoid.csproj" />
   </ItemGroup>
@@ -13,6 +14,10 @@
     <Folder Include="Auth\" />
     <Folder Include="Format\" />
     <Folder Include="IntegrationSource\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dynamitey" Version="1.0.2" />
   </ItemGroup>
 
 </Project>

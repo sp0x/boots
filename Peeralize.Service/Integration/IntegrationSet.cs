@@ -5,10 +5,10 @@ namespace Peeralize.Service.Integration
 {
     public class IntegrationSet 
     {
-        public IntegrationTypeDefinition Definition { get; set; }
+        public IIntegrationTypeDefinition Definition { get; set; }
         public IInputSource Source { get; set; }
 
-        public IntegrationSet(IntegrationTypeDefinition inputDef, IInputSource source)
+        public IntegrationSet(IIntegrationTypeDefinition inputDef, IInputSource source)
         {
             this.Definition = inputDef;
             this.Source = source;
