@@ -33,6 +33,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{6E763F49
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegrationDaemon.Tests", "IntegrationDaemon\IntegrationDaemon.Tests\IntegrationDaemon.Tests.csproj", "{38735859-0C42-4457-A0FA-1CCEEFF31648}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peeralize.ServiceTests", "Peeralize.ServiceTests\Peeralize.ServiceTests.csproj", "{DB403379-26CC-4B0D-8992-FC153B64C5A5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -91,6 +93,10 @@ Global
 		{38735859-0C42-4457-A0FA-1CCEEFF31648}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38735859-0C42-4457-A0FA-1CCEEFF31648}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{38735859-0C42-4457-A0FA-1CCEEFF31648}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB403379-26CC-4B0D-8992-FC153B64C5A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB403379-26CC-4B0D-8992-FC153B64C5A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB403379-26CC-4B0D-8992-FC153B64C5A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB403379-26CC-4B0D-8992-FC153B64C5A5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -104,5 +110,6 @@ Global
 		{0A84D064-C926-4169-8AAA-6B844C96EE60} = {0813BA05-4BDD-4FAA-9BB9-7A990779FA1D}
 		{36CED6E4-3DF9-44E9-9AC8-2F2C07A3A470} = {0813BA05-4BDD-4FAA-9BB9-7A990779FA1D}
 		{38735859-0C42-4457-A0FA-1CCEEFF31648} = {6E763F49-007D-45FB-962A-AF96BB6715D6}
+		{DB403379-26CC-4B0D-8992-FC153B64C5A5} = {6E763F49-007D-45FB-962A-AF96BB6715D6}
 	EndGlobalSection
 EndGlobal

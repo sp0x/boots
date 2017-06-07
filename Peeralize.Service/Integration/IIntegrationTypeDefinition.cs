@@ -13,6 +13,7 @@ namespace Peeralize.Service.Integration
     {
         string Name { get; } 
         int CodePage { get; }
+        string UserId { get; set; }
         /// <summary>
         /// The type of origin of this type
         /// </summary>

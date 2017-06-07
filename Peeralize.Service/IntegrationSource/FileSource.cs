@@ -54,7 +54,7 @@ namespace Peeralize.Service.IntegrationSource
             {
                 using (FileStream fs = Open())
                 { 
-                    dynamic firstInstance = _cachedInstance = Formatter.GetNext(fs, true);
+                    var firstInstance = _cachedInstance = Formatter.GetNext(fs, true);
                     IntegrationTypeDefinition typedef = null;
                     if (firstInstance != null)
                     {
@@ -101,6 +101,7 @@ namespace Peeralize.Service.IntegrationSource
             var src = new FileSource(fileName, formatter);
             return src;
         }
+
 
         public static FileSource Create(FileStream fs, JsonFormatter formatter = null)
         {

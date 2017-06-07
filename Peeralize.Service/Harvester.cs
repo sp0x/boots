@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using nvoid.db.DB;
 using Peeralize.Service.Integration;
@@ -29,6 +30,7 @@ namespace Peeralize.Service
         /// <param name="source">The source from which to pull the input</param>
         public Harvester AddType(IIntegrationTypeDefinition input, IInputSource source)
         {
+            if (input == null) throw new ArgumentException(nameof(input));
             var newSet = new IntegrationSet(input, source);
             Sets.Add(newSet);
             return this;
