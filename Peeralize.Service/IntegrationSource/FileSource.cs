@@ -12,7 +12,7 @@ namespace Peeralize.Service.IntegrationSource
     /// </summary>
     public class FileSource : IInputSource
     {
-        private FileStream _fileStream;
+        private Stream _fileStream;
         private string _filePath;
         /// <summary>
         /// Not supported
@@ -20,7 +20,7 @@ namespace Peeralize.Service.IntegrationSource
         public int Size => 0;
 
         public IInputFormatter Formatter { get; private set; }
-        public Encoding Encoding { get; set; }
+        public Encoding Encoding { get; set; } = Encoding.UTF8;
         public bool IsOpen => _fileStream != null && (_fileStream.CanRead || _fileStream.CanWrite);
         private object _lock;
         public string FileName => System.IO.Path.GetFileNameWithoutExtension(_filePath);
@@ -37,12 +37,19 @@ namespace Peeralize.Service.IntegrationSource
             _filePath = file;
             this.Formatter = formatter;
         }
-        public FileSource(FileStream fileStream, JsonFormatter formatter) : this()
+        public FileSource(Stream fileStream, IInputFormatter formatter) : this()
+        {
+            this._fileStream = fileStream;
+            Formatter = formatter;
+        }
+        public FileSource(FileStream fileStream, IInputFormatter formatter) : this((Stream)fileStream, formatter)
         {
             _filePath = fileStream.Name;
             this._fileStream = fileStream;
             Formatter = formatter;
         }
+
+
 
         /// <summary>
         /// Gets the type definition of this source.
@@ -52,9 +59,9 @@ namespace Peeralize.Service.IntegrationSource
         {
             try
             {
-                using (FileStream fs = Open())
+                using (Stream fStream = Open())
                 { 
-                    var firstInstance = _cachedInstance = Formatter.GetNext(fs, true);
+                    var firstInstance = _cachedInstance = Formatter.GetNext(fStream, true);
                     IntegrationTypeDefinition typedef = null;
                     if (firstInstance != null)
                     {
@@ -80,7 +87,7 @@ namespace Peeralize.Service.IntegrationSource
         /// </summary>
         /// <param name="mode"></param>
         /// <returns></returns>
-        public FileStream Open(FileMode mode = FileMode.Open)
+        public Stream Open(FileMode mode = FileMode.Open)
         {
             lock (_lock)
             {
@@ -96,15 +103,33 @@ namespace Peeralize.Service.IntegrationSource
         /// <param name="fileName"></param>
         /// <param name="formatter"></param>
         /// <returns></returns>
-        public static FileSource Create(string fileName, IInputFormatter formatter = null)
+        public static FileSource CreateFromFile(string fileName, IInputFormatter formatter = null)
         {
             var src = new FileSource(fileName, formatter);
             return src;
         }
 
+        /// <summary>
+        /// Creates a new filesource
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="formatter"></param>
+        /// <returns></returns>
+        public static FileSource Create(Stream stream, IInputFormatter formatter = null)
+        {
+            var src = new FileSource(stream, formatter);
+            return src;
+        }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fs"></param>
+        /// <param name="formatter"></param>
+        /// <returns></returns>
         public static FileSource Create(FileStream fs, JsonFormatter formatter = null)
         {
+            if (fs == null) throw new ArgumentNullException(nameof(fs));
             var src = new FileSource(fs, formatter);
             return src;
         }

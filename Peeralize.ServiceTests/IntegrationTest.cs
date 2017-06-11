@@ -1,8 +1,10 @@
 ﻿using System;
+using System.IO;
 using Peeralize.Service;
 using Peeralize.Service.Integration;
 using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Source;
+using Peeralize.ServiceTests.IntegrationSource;
 using Peeralize.ServiceTests.Properties;
 using Xunit;
 
@@ -17,19 +19,27 @@ namespace Peeralize.ServiceTests
 //        }
 //    }
 
+    [Collection("Data Sources")]
     public class IntegrationTest
     {
+        
+        private ConfigurationFixture _config;
+
+        public IntegrationTest(ConfigurationFixture fixture)
+        {
+            _config = fixture;
+        }
+
         [Theory]
-        [InlineData("testFileInputData.json")]
+        [InlineData("testHarvesterInput")]
         public void TestFileInput(String file)
         {
-            var resContent = Resources.ResourceManager.GetString(file);
-            var fs = FileSource.Create(file, new JsonFormatter());
+            var resBytes = Resources.ResourceManager.GetObject(file);
+            var resStream = new MemoryStream(resBytes as byte[]);
+            var fs = FileSource.Create(resStream, new JsonFormatter()); 
             var type = fs.GetTypeDefinition();
-            var harvester = new Harvester();
-            harvester.SetDestination(new MongoSink(Guid.NewGuid().ToString()));
-            harvester.AddType(type, fs);
-            harvester.Synchronize();
+            Assert.NotNull(type);
+            Assert.True(type.Fields.Count == 2); 
         }
     }
 }

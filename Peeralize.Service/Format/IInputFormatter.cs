@@ -3,6 +3,9 @@ using System.IO;
 
 namespace Peeralize.Service.Source
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public interface IInputFormatter
     {
         string Name { get; }
