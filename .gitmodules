@@ -1,4 +1,4 @@
 [submodule "Bogus"]
 	path = Bogus
-	url = "D:/dev/c#/Bogus"
+	url = git@bitbucket.org:peeralytics/bogus.git
 	branch = master
