@@ -48,10 +48,10 @@ namespace Peeralize.Service
             {
                 IntegratedDocument newDocument = _buffer.Receive();
                 newDocument.UserId = UserId;
-                if (newDocument.Document==null | newDocument.Document.ElementCount <= 1)
-                {
-                    newDocument = newDocument;
-                }
+//                if (newDocument.Document==null | newDocument.Document.ElementCount <= 1)
+//                {
+//                    newDocument = newDocument;
+//                }
                 _source.Save(newDocument);
                 Console.WriteLine($@"{DateTime.Now}: Current load: {_buffer.Count} items");
             }

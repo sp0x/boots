@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Logging;
 using Peeralize.Models;
 using Peeralize.Models.AccountViewModels;
-using Peeralize.Service;
+using Peeralize.Services;
 
 namespace Peeralize.Controllers
 {

@@ -2,9 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8+wp8+wpa81;</PackageTargetFallback>
-    <UserSecretsId>aspnet-Peeralize-3DF8B139-CF28-45BA-8AFE-8B387A4151D0</UserSecretsId>
-    <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
+    <UserSecretsId>aspnet-Peeralize-98dc9ad7-0e02-4a59-8cb9-dbe0063b996f</UserSecretsId> 
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,19 +18,19 @@
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="1.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="1.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="1.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="1.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="1.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0-preview1-final" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="1.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="1.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="1.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="1.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.0.0-preview1-final" />
     <PackageReference Include="Microsoft.VisualStudio.Web.BrowserLink" Version="1.0.1" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="1.0.0">
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.Identity.MongoDB" Version="1.0.0-beta1" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.MongoDB" Version="1.0.2" />
   </ItemGroup>
 
   <Target Name="PrepublishScript" BeforeTargets="PrepareForPublish">
@@ -47,9 +45,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
-    <ProjectReference Include="..\libnvoid\nvoid\nvoid.csproj" />
-    <ProjectReference Include="..\Peeralize.Service\Peeralize.Service.csproj" />
   </ItemGroup>
 
 </Project>

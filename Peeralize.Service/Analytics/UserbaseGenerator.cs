@@ -95,7 +95,7 @@ namespace Peeralize.Service.Analytics
             {
                 Directory.CreateDirectory(destinationDir);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             } 

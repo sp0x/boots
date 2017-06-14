@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Peeralize.Models;
 using Peeralize.Models.ManageViewModels;
-using Peeralize.Service;
+using Peeralize.Services;
 
 namespace Peeralize.Controllers
 {

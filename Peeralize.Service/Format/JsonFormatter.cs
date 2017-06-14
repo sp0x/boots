@@ -60,19 +60,18 @@ namespace Peeralize.Service.Source
 
                     string nextLine = _reader.ReadLine();
                     T json = JsonConvert.DeserializeObject<T>(nextLine);
-                    return json;
-                    break;
+                    return json; 
                 case LineMode.None:
-                    var startedObject = false;
+                    //var startedObject = false;
                     JObject obj = null;
                     int startedDepth = 0;
 
                     while (_jsReader.Read())
                     {
-                        if (!startedObject && _jsReader.TokenType == JsonToken.StartObject)
+                        if (_jsReader.TokenType == JsonToken.StartObject)
                         {
                             startedDepth = _jsReader.Depth;
-                            startedObject = true;
+                            //startedObject = true;
                             // Load each object from the stream and do something with it 
                             obj = JObject.Load(_jsReader);
                             if (fs.CanSeek)
@@ -87,11 +86,9 @@ namespace Peeralize.Service.Source
 //                            return obj==null ? default(T) : obj.ToObject<T>(); 
 //                        }
                     }
-                    return default(T);
-                    break;
+                    return default(T); 
                 default:
-                    throw new NotImplementedException("Not yet supported!");
-                    break;
+                    throw new NotImplementedException("Not yet supported!"); 
             } 
         }
 

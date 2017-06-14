@@ -8,7 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Peeralize.Models;
-using Peeralize.Service;
+using Peeralize.Services;
 
 namespace Peeralize
 {
@@ -56,7 +56,7 @@ namespace Peeralize
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseBrowserLink();
+                //app.UseBrowserLink();
             }
             else
             {
