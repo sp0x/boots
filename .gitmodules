@@ -1,0 +1,4 @@
+[submodule "Bogus"]
+	path = Bogus
+	url = "D:/dev/c#/Bogus"
+	branch = master
