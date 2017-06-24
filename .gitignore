@@ -5,3 +5,5 @@ BehaviorAnalysis/.idea
 .vs/
 *.txt
 */obj/*
+Backup/
+obj/

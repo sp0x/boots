@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bogus\Source\Bogus\Bogus.csproj" />
+    <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
+    <ProjectReference Include="..\libnvoid\nvoid\nvoid.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Auth\" />
+    <Folder Include="Format\" />
+    <Folder Include="protos\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dynamitey" Version="1.0.2" />
+    <PackageReference Include="Grpc" Version="1.3.6" />
+    <PackageReference Include="NetMQ" Version="4.0.0.1" />
+  </ItemGroup>
+
+</Project>

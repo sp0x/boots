@@ -1,0 +1,16 @@
+[submodule "Bogus"]
+	path = Bogus
+	url = git@bitbucket.org:peeralytics/bogus.git
+	branch = master
+[submodule "webrec"]
+	path = Generation/UiHarvester/lib/webrec
+	url = git@bitbucket.org:peeralytics/webrec.git
+	branch = master
+[submodule "IntegrationDaemon"]
+	path = IntegrationDaemon
+	url = git@bitbucket.org:peeralytics/integrationdaemon.git
+	branch = master
+[submodule "libnvoid"]
+	path = libnvoid
+	url = git@bitbucket.org:peeralytics/nvoid_libs.git
+	branch = master
