@@ -7,13 +7,20 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using nvoid.db.DB.Configuration;
 using Peeralize.Models;
-using Peeralize.Services;
+using Peeralize.Service;
+using AuthMessageSender = Peeralize.Services.AuthMessageSender;
+using IEmailSender = Peeralize.Services.IEmailSender;
+using ISmsSender = Peeralize.Services.ISmsSender;
 
 namespace Peeralize
 {
     public class Startup
     {
+        public IConfigurationRoot Configuration { get; }
+        private BehaviourContext BehaviourContext { get; }
+
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -29,9 +36,13 @@ namespace Peeralize
 
             builder.AddEnvironmentVariables();
             Configuration = builder.Build();
+
+            DBConfig.Initialize(Configuration);
+            BehaviourContext = new BehaviourContext();
+            BehaviourContext.Configure(Configuration.GetSection("behaviour"));
+            BehaviourContext.Run();
         }
 
-        public IConfigurationRoot Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
