@@ -24,6 +24,8 @@ class Server(threading.Thread):
             data = msg['data']
             op = msg['op']
             company = msg['company']
+            seq = msg.get('seq')
+            resp = {}
             if op == DATA_AVAILABLE:
                 if company in self.experimental_data:
                     ed = self.experimental_data[company]
@@ -36,7 +38,9 @@ class Server(threading.Thread):
                     self.experimental_data[company] = dict(data=[data],targets=[msg['result']],created=time.time())
             elif op == MAKE_PREDICTION:
                 models = Experiment.load_models(company)
-                self.out_stream.send_json({'results':[{'value':m['model'].predict(data),'model':m['type']} for m in models]})
+                resp = {'results':[{'value':m['model'].predict(data),'model':m['type']} for m in models]}
+            resp.update({'seq':seq})
+            self.out_stream.send_json(resp)
 
 
 class ClientHandler(threading.Thread):

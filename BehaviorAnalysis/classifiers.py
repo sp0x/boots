@@ -1,6 +1,8 @@
+import logging
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.utils.class_weight import compute_class_weight
+from sklearn.metrics import classification_report
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.models import save_model, load_model, Model
 from keras.layers import *
@@ -9,8 +11,9 @@ from Queue import Queue
 from constants import RANDOM_SEED,MONITOR_RESPONSE_TIME
 from utils import abs_path
 import numpy as np
-import time,os
+import time,os,datetime
 import pickle
+import pandas as pd
 
 
 np.random.seed(RANDOM_SEED)
@@ -57,7 +60,7 @@ class RNNBuilder:
     def build_rnn(self,a=2):
         hidden = get_hidden_neurons_count(self.meta_size, self.num_samples,a=a)
         cw = compute_class_weight('balanced',np.unique(self.targets),self.targets)
-        inp = Input(shape=(self.time_size,))
+        inp = Input(shape=(self.meta_size,))
         #inp2 = Input(shape=(self.meta_size,))  # for metadata aka age,wage,blah blah
         #mem = LSTM(hidden)(inp)  # keep mem of past behavior
         #x = concatenate(mem, inp2)
@@ -85,9 +88,21 @@ class Experiment:
         #self.meta_size = len(data['meta'][0])
         #self.realtime_size = len(data['time'][0])
         self.best_models = []
+        sub_dir = "experiments/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        self.log = abs_path(os.path.join(self._for,sub_dir))
 
     def _log_data_(self,data):
-        pass
+        with open(self.log,'w') as f:
+            report = str(data['model']) + '\n'
+            report += "=========Best configuration==============\n"
+            report += str(data['best']) + '\n'
+            report += "\n==========Best model performance on test cases===========\n"
+            report += data['best_performance']
+            report += "\n==========Other configurations============\n"
+            report += pd.DataFrame(data['results']).to_string()
+            report += '\n\n\n'
+            f.write(report)
+
 
     def store_models(self):
         with open(abs_path(os.path.join(self._for,"models.pickle")),'wb') as f:
@@ -114,10 +129,16 @@ class Experiment:
         #clf2 = GridSearchCV(rnn, rnn_params, cv=10, scoring="roc_auc")
         #clf2.fit(X_train, y_train)
         best_models = []
+
         for m in self.models:
             gs = GridSearchCV(m['model'],m['params'],cv=10,scoring=m['scoring'])
             gs.fit(X_train,y_train)
+            log_data = dict(results=gs.cv_results_,best=gs.best_params_)
+            log_data['model'] = m['type']
             best_models.append(dict(type=m['type'],model=gs.best_estimator_))
+            y_true, y_pred = y_test, gs.predict(X_test)
+            log_data['best_performance'] = classification_report(y_true,y_pred)
+            self._log_data_(log_data)
         self.best_models = best_models
 
 
@@ -133,7 +154,11 @@ def conduct_experiment(data,targets,client='cashlend'):
     rnn_params = {
         "a": range(2, 10),
     }
+    fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
+    logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()),client))
     e = Experiment(data,targets,[dict(model=rnn,params=rnn_params,scoring='roc_auc',type='rnn'),
                                  dict(model=rf,params=rf_params,scoring='roc_auc',type='rf')], client)
+    logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
     e.create_and_train()
 
