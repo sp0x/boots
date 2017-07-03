@@ -5,6 +5,7 @@ from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import classification_report
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.models import save_model, load_model, Model
+from sklearn import preprocessing
 from keras.layers import *
 from threading import Thread,Condition
 from Queue import Queue
@@ -60,15 +61,16 @@ class RNNBuilder:
     def build_rnn(self,a=2):
         hidden = get_hidden_neurons_count(self.meta_size, self.num_samples,a=a)
         cw = compute_class_weight('balanced',np.unique(self.targets),self.targets)
-        inp = Input(shape=(self.meta_size,))
-        #inp2 = Input(shape=(self.meta_size,))  # for metadata aka age,wage,blah blah
+        #inp = Input(shape=(self.time_size,))
+        inp2 = Input(shape=(self.meta_size,))  # for metadata aka age,wage,blah blah
         #mem = LSTM(hidden)(inp)  # keep mem of past behavior
         #x = concatenate(mem, inp2)
-        x = Dense(hidden, activation='relu')(inp)
+        x = inp2
+        x = Dense(hidden, activation=advanced_activations.LeakyReLU())(x)
         x = Dense(hidden, activation='sigmoid')(x)
         x = Dense(hidden, activation='sigmoid')(x)
         out = Dense(1, activation='sigmoid')(x)
-        model = Model(inputs=[inp], outputs=out)
+        model = Model(inputs=[inp2], outputs=out)
         model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics='accuracy',loss_weights=cw)
 
 class Experiment:
@@ -103,7 +105,6 @@ class Experiment:
             report += '\n\n\n'
             f.write(report)
 
-
     def store_models(self):
         with open(abs_path(os.path.join(self._for,"models.pickle")),'wb') as f:
             pickle.dump(self.best_models,f)
@@ -132,6 +133,8 @@ class Experiment:
 
         for m in self.models:
             gs = GridSearchCV(m['model'],m['params'],cv=10,scoring=m['scoring'])
+            if 'nn' in m['type']:
+                X_train = preprocessing.normalize(X_train)
             gs.fit(X_train,y_train)
             log_data = dict(results=gs.cv_results_,best=gs.best_params_)
             log_data['model'] = m['type']
