@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.MongoDB;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using nvoid.db.DB.Configuration;
-using Peeralize.Models;
 using Peeralize.Service;
+using Peeralize.Service.Auth;
 using AuthMessageSender = Peeralize.Services.AuthMessageSender;
 using IEmailSender = Peeralize.Services.IEmailSender;
 using ISmsSender = Peeralize.Services.ISmsSender;
@@ -48,12 +46,15 @@ namespace Peeralize
         public void ConfigureServices(IServiceCollection services)
         {
 	        // Register identity framework services and also Mongo storage. 
-	        services.AddIdentityWithMongoStores(Configuration.GetConnectionString("DefaultConnection"))
-		        .AddDefaultTokenProviders();
+            var mongoConnectionString = DBConfig.GetGeneralDatabase().Value;
+            services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
+                .AddDefaultTokenProviders(); 
 
             services.AddMvc();
-
+            
             // Add application services.
+            services.AddTransient<UserManager<ApplicationUser>>();
+            services.AddTransient<SignInManager<ApplicationUser>>();
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
         }
@@ -75,7 +76,6 @@ namespace Peeralize
             }
 
             app.UseStaticFiles();
-
             app.UseIdentity();
 
             // Add external authentication middleware below. To configure them please see http://go.microsoft.com/fwlink/?LinkID=532715

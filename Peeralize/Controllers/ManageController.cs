@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Peeralize.Models;
 using Peeralize.Models.ManageViewModels;
+using Peeralize.Service.Auth;
 using Peeralize.Services;
 
 namespace Peeralize.Controllers
@@ -17,15 +18,15 @@ namespace Peeralize.Controllers
 	[Authorize]
     public class ManageController : Controller
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IEmailSender _emailSender;
         private readonly ISmsSender _smsSender;
         private readonly ILogger _logger;
 
         public ManageController(
-        UserManager<IdentityUser> userManager,
-        SignInManager<IdentityUser> signInManager,
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
         IEmailSender emailSender,
         ISmsSender smsSender,
         ILoggerFactory loggerFactory)
@@ -352,7 +353,7 @@ namespace Peeralize.Controllers
             Error
         }
 
-        private Task<IdentityUser> GetCurrentUserAsync()
+        private Task<ApplicationUser> GetCurrentUserAsync()
         {
             return _userManager.GetUserAsync(HttpContext.User);
         }

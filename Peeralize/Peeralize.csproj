@@ -30,7 +30,6 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="1.0.0">
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.Identity.MongoDB" Version="1.0.2" />
   </ItemGroup>
 
   <Target Name="PrepublishScript" BeforeTargets="PrepareForPublish">
@@ -45,6 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\libnvoid\aspnet.identity.mongo\src\Microsoft.AspNetCore.Identity.MongoDB\Microsoft.AspNetCore.Identity.MongoDB.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid\nvoid.csproj" />
     <ProjectReference Include="..\Peeralize.Service\Peeralize.Service.csproj" />

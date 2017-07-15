@@ -1,8 +1,9 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using Peeralize.Models
+@using Peeralize.Service.Auth
 
-@inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 
 @if (SignInManager.IsSignedIn(User))
 {
