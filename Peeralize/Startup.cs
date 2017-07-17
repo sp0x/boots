@@ -1,11 +1,21 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System;
+using System.IO;
+using System.Reflection;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.MongoDB;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using nvoid.db.DB.Configuration;
+using nvoid.db.Extensions;
+using nvoid.Integration;
+using Peeralize.Controllers;
+using Peeralize.Middleware.Hmac;
+using Peeralize.Middleware;
 using Peeralize.Service;
 using Peeralize.Service.Auth;
 using AuthMessageSender = Peeralize.Services.AuthMessageSender;
@@ -33,7 +43,7 @@ namespace Peeralize
             }
 
             builder.AddEnvironmentVariables();
-            Configuration = builder.Build();
+            Configuration = builder.Build(); 
 
             DBConfig.Initialize(Configuration);
             BehaviourContext = new BehaviourContext();
@@ -48,7 +58,9 @@ namespace Peeralize
 	        // Register identity framework services and also Mongo storage. 
             var mongoConnectionString = DBConfig.GetGeneralDatabase().Value;
             services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
-                .AddDefaultTokenProviders(); 
+                .AddDefaultTokenProviders();
+            services.AddAuthentication();
+            services.AddMemoryCache();
 
             services.AddMvc();
             
@@ -77,11 +89,43 @@ namespace Peeralize
 
             app.UseStaticFiles();
             app.UseIdentity();
-
             // Add external authentication middleware below. To configure them please see http://go.microsoft.com/fwlink/?LinkID=532715
-
-            app.UseMvc(routes =>
+            app.Map("/api", builder =>
             {
+                app.UseEnableRequestRewind();
+                builder.UseHmacAuthentication(new HmacOptions()
+                {
+                    MaxRequestAgeInSeconds = 300,
+                    AutomaticAuthenticate = true
+                });
+                builder.UseMvc(routes =>
+                {
+                    routes.MapRoute(
+                        name: "default",
+                        template: "{controller=Home}/{action=Index}/{id?}");
+                });
+                builder.Run(async (context) =>
+                {
+                    if (!context.User.Identity.IsAuthenticated)
+                    {
+                        await context.Response.WriteAsync(context.User.Identity.IsAuthenticated.ToString());
+                    }
+                    else
+                    {
+                    }
+                    //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
+                    //it should be True
+                }); 
+
+//                builder.Run(async (context) =>
+//                {
+//                    //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
+//                    //it should be True
+//                    await context.Response.WriteAsync(context.User.Identity.IsAuthenticated.ToString());
+//                });
+            });
+            app.UseMvc(routes =>
+            { 
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");

@@ -1,0 +1,17 @@
+{
+    "name": "peeralytics/client",
+    "type": "library",
+    "authors": [
+        {
+            "name": "vasko",
+            "email": "vasil.vasilev94@yahoo.com"
+        }
+    ],
+    "autoload" : {
+            "psr-4" : {
+                "Peeralytics\\" : "."
+            }
+    },
+    "require": {}
+
+}
