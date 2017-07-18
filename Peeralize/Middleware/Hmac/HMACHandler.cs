@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -11,12 +12,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Authentication;
 using Microsoft.AspNetCore.Http.Features.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
 using nvoid.Integration;
 using Peeralize.Controllers;
+using Peeralize.Service.Auth;
 
 namespace Peeralize.Middleware.Hmac
 {
@@ -29,6 +32,7 @@ namespace Peeralize.Middleware.Hmac
         {
             _memoryCache = memoryCache;
             _authSource = typeof(ApiAuth).GetDataSource<ApiAuth>();
+             
         }
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
@@ -37,11 +41,24 @@ namespace Peeralize.Middleware.Hmac
             {
                 return AuthenticateResult.Skip();
             }
-            var valid = Validate(Request);
+            ApiAuth apiAuth;
+            var valid = Validate(Request, out apiAuth);
 
             if (valid)
             {
-                var principal = new ClaimsPrincipal(new ClaimsIdentity("HMAC"));
+                var claimsIdentity = new ClaimsIdentity("HMAC");
+                var principal = new ClaimsPrincipal(claimsIdentity);
+                var user = Context.User;
+                var appApiId = Context.Session.GetString("APP_API_ID");
+                if (appApiId == null)
+                {
+                    Context.Session.SetString("APP_API_ID", apiAuth.Id);
+                    appApiId = apiAuth.Id;
+                    user.AddIdentity(claimsIdentity);
+                    var firstIdentity = user.Identities.FirstOrDefault();
+                    firstIdentity = firstIdentity;
+                }
+                Response.Headers.Add("APP_API_ID", apiAuth.Id);
                 var ticket = new AuthenticationTicket(principal, new AuthenticationProperties(), Options.AuthenticationScheme);
                 return AuthenticateResult.Success(ticket);
             }
@@ -55,7 +72,7 @@ namespace Peeralize.Middleware.Hmac
             return base.HandleUnauthorizedAsync(context);
         }
 
-        private bool Validate(HttpRequest request)
+        private bool Validate(HttpRequest request, out ApiAuth apiAuth)
         {
             var header = request.Headers["Authorization"];
             var authenticationHeader = AuthenticationHeaderValue.Parse(header);
@@ -70,15 +87,36 @@ namespace Peeralize.Middleware.Hmac
                     var requestTimeStamp = authenticationHeaderArray[1];
                     var nonce = authenticationHeaderArray[2];
                     var incomingBase64Signature = authenticationHeaderArray[3];
-
-                    return IsValidRequest(request, appId, incomingBase64Signature, nonce, requestTimeStamp);
+                    var body = "";
+                    var isValidRequest = IsValidRequest(request, appId, incomingBase64Signature, nonce, requestTimeStamp,
+                        out apiAuth, out body);
+                    //If the request is valid, xor the body and write it
+                    if (isValidRequest)
+                    {
+                        if (!string.IsNullOrEmpty(body))
+                        {
+                            body = this.XorString(body, apiAuth.AppSecret);
+                            byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
+                            Request.Body = new MemoryStream(bodyBytes); 
+                        }
+                    }
+                    return isValidRequest;
                 }
+                else
+                {
+                    apiAuth = null;
+                }
+            }
+            else
+            {
+                apiAuth = null;
             }
 
             return false;
         }
 
-        private bool IsValidRequest(HttpRequest req, string appId, string incomingBase64Signature, string nonce, string requestTimeStamp)
+        private bool IsValidRequest(HttpRequest req, string appId, string incomingBase64Signature, string nonce, string requestTimeStamp,
+            out ApiAuth matchingApiAuth, out string body)
         {
             string requestContentBase64String = "";
             var absoluteUri = string.Concat(
@@ -90,9 +128,10 @@ namespace Peeralize.Middleware.Hmac
                 req.QueryString.ToUriComponent());
             string requestUri = WebUtility.UrlEncode(absoluteUri);
             string requestHttpMethod = req.Method;
+            body = null;
 
             //App filter
-            var matchingApiAuth = _authSource.FindFirst(x=> x.AppId == appId);
+            matchingApiAuth = _authSource.FindFirst(x=> x.AppId == appId);
             if (matchingApiAuth==null)//Options.AppId != AppId)
             {
                 return false;
@@ -102,7 +141,7 @@ namespace Peeralize.Middleware.Hmac
                 return false;
             }
 
-            byte[] hash = ComputeRequestBodyHash(req.Body);
+            byte[] hash = ComputeRequestBodyHash(req.Body, out body);
 
             if (hash != null)
             {
@@ -120,9 +159,19 @@ namespace Peeralize.Middleware.Hmac
                 byte[] validHmacSigniture = hmac.ComputeHash(validSigniture);
                 var validHmacSignitureString = Convert.ToBase64String(validHmacSigniture);
                 //Check if the signiture that we received was the same as the one we generated
-                return (incomingBase64Signature.Equals(validHmacSignitureString, StringComparison.Ordinal));
+                var isValidRequest = (incomingBase64Signature.Equals(validHmacSignitureString, StringComparison.Ordinal));
+                
+                return isValidRequest;
             }
 
+        }
+        private string XorString(string text, string key)
+        {
+            var result = new StringBuilder();
+            for (int c = 0; c < text.Length; c++)
+                result.Append((char)((uint)text[c] ^ (uint)key[c % key.Length]));
+
+            return result.ToString();
         }
 
         private string[] GetAuthenticationValues(string rawAuthenticationHeader)
@@ -163,13 +212,13 @@ namespace Peeralize.Middleware.Hmac
             return false;
         }
 
-        private byte[] ComputeRequestBodyHash(Stream body)
+        private byte[] ComputeRequestBodyHash(Stream body, out string contentString)
         {
             using (MD5 md5 = MD5.Create())
             {
                 byte[] hash = null;
                 var content = ReadFully(body);
-                var contentString = System.Text.Encoding.UTF8.GetString(content);
+                contentString = System.Text.Encoding.UTF8.GetString(content);
                 //Debug.WriteLine(contentString);
                 if (content.Length != 0)
                 {
@@ -200,11 +249,6 @@ namespace Peeralize.Middleware.Hmac
                 input.Position = 0;
             }
         }
-
-
-
-
-
 
         //        public Task AuthenticateAsync(HttpAuthenticationContext context, CancellationToken cancellationToken)
         //        {

@@ -13,6 +13,7 @@ namespace Peeralize
                 .UseSetting("detailedErrors", "true")
                 .UseIISIntegration()
                 .UseStartup<Startup>()
+                .UseUrls("http://10.10.1.7:5000/")
                 .CaptureStartupErrors(true)
                 .Build();
 

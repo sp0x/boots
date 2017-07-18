@@ -10,3 +10,6 @@ obj/
 storage.ide
 /env
 /Peeralize/Third party clients/php/vendor/
+**/workspace.xml
+**/.idea/*
+**/vendor

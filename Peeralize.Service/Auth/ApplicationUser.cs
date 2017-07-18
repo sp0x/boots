@@ -7,14 +7,17 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Identity.MongoDB;
+using MongoDB.Bson.Serialization.Attributes;
 
 //using AspNet.Identity.MongoDB;
 //using Microsoft.AspNet.Identity;
 
 namespace Peeralize.Service.Auth
-{
+{ 
     public class ApplicationUser : IdentityUser
     {
+        [BsonIgnoreIfNull]
+        public virtual List<string> ApiKeys { get; set; }
     }
 
 //    // You can add profile data for the user by adding more properties to your ApplicationUser class, please visit https://go.microsoft.com/fwlink/?LinkID=317594 to learn more.

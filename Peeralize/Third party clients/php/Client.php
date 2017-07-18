@@ -20,9 +20,12 @@ class Client
 	private $_useragent = "Peeralytics PHP";
 	private $_secret;
 	private $_prefix;
-	const DEFAULT_ROUTE = "http://localhost:5000/api";
+	private $_initialized;
+	private $_cookieFile;
 
-	public function __construct($appId , $secret, $destination = Client::DEFAULT_ROUTE){ 
+	const DEFAULT_ROUTE = "http://api.vaskovasilev.eu:5000";
+
+	public function __construct($appId , $secret, $destination = Client::DEFAULT_ROUTE, $keepCookies = true){
 		if(strlen($destination)==null || $destination===null){
 			$destination = Client::DEFAULT_ROUTE;
 		}
@@ -30,6 +33,20 @@ class Client
 		$this->_endpoint = $destination;
 		$this->_appId = $appId;
 		$this->_secret = $secret;
+		$this->_initialized = false;
+		$this->curl = curl_init();
+		$this->_cookieFile = "./cookie.tmp";
+		if($keepCookies){
+			if(file_exists($this->_cookieFile)){
+				try{
+					unlink($this->_cookieFile);
+				}catch(\Exception $e){
+
+				}
+			}
+			curl_setopt( $this->curl, CURLOPT_COOKIEJAR, $this->_cookieFile);
+			curl_setopt( $this->curl, CURLOPT_COOKIEFILE, $this->_cookieFile);
+		}
 	}
 
 	/**
@@ -59,7 +76,6 @@ class Client
 
 	public function execute($method, $route, $data){
 		$method = strtoupper($method);
-		$curl = curl_init();
 		$url = $this->getUrl($route);		
 		if(!isset($data)) $data = "";
 		if($method === "POST" && ($data==null) ){
@@ -71,11 +87,14 @@ class Client
 		//Data parsing
 		if($data!==null){
 			if(is_string($data)){
-				$requestBodyHash = $data;
 			}else{
-				$data = http_build_query($data);			
+				$data = json_encode($data);
+			}
+			if(mb_strlen($data)>0){
+				$data = $this->xorString($data);
 			}
 		}
+
 		$requestBodyHash = $data;
 		if($requestBodyHash!=null && strlen($requestBodyHash)>0){
 			$requestBodyHash = md5($requestBodyHash, true);
@@ -102,32 +121,31 @@ class Client
 				$headers[] = 'Content-Length: ' . mb_strlen($data);
 			}
 		}
-		curl_setopt_array($curl, [
+		curl_setopt_array($this->curl, [
 			CURLOPT_RETURNTRANSFER => 1,
 			CURLOPT_URL => $url,
 			CURLOPT_USERAGENT => $this->_useragent,
 			CURLOPT_HTTPHEADER => $headers
 		]);
 		if($isPost){                                                                 
-			curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST"); 
-			curl_setopt($curl, CURLOPT_POST, 1);
-			curl_setopt($curl, CURLOPT_POSTFIELDS, $data);                                                                
-			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true); 
+			curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, "POST"); 
+			curl_setopt($this->curl, CURLOPT_POST, 1);
+			curl_setopt($this->curl, CURLOPT_POSTFIELDS, $data);                                                                
+			curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, true); 
 		}else{
-			curl_setopt($curl, CURLOPT_POST, 0);
+			curl_setopt($this->curl, CURLOPT_POST, 0);
 		}
-		$response = curl_exec($curl);
+		$response = curl_exec($this->curl);
 		if(!$response){
-			$statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-			throw new \Exception("Error[$statusCode]: \"" . curl_error($curl) . '" - Err#: ' . curl_errno($curl));
+			$statusCode = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
+			throw new \Exception("Error[$statusCode]: \"" . curl_error($this->curl) . '" - Err#: ' . curl_errno($this->curl));
 		}
-		curl_close($curl);
 		return $response;
 	}
 
 	/**
 	 * @param $route
-	 * @param $dataArray
+	 * @param $data
 	 * @return mixed
 	 * @throws \Exception
 	 */
@@ -147,5 +165,39 @@ class Client
 			return trim(com_create_guid(), '{}');
 		}
 		return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
+	}
+	
+	private function close(){
+		curl_close($this->curl);
+	}
+
+	function __destruct()
+	{
+		if(file_exists($this->_cookieFile)){
+			try{
+				unlink($this->_cookieFile);
+			}catch(\Exception $e){
+
+			}
+		}
+	}
+
+	/**
+	 * @param $data
+	 * @return string
+	 */
+	private function xorString($data){
+		// Our output text
+		$outText = '';
+		// Iterate through each character
+		for($i=0; $i<strlen($data); )
+		{
+			for($j=0; ($j<strlen($this->_secret) && $i<strlen($data)); $j++,$i++)
+			{
+				$outText .= $data{$i} ^ $this->_secret{$j};
+				//echo 'i=' . $i . ', ' . 'j=' . $j . ', ' . $outText{$i} . '<br />'; // For debugging
+			}
+		}
+		return $outText;
 	}
 }

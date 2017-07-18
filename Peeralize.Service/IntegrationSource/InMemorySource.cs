@@ -10,15 +10,21 @@ namespace Peeralize.Service.IntegrationSource
     {
         public int Size { get; }
         public IInputFormatter Formatter { get; }
-        public MemoryStream Content { get; private set; }
+        public Stream Content { get; private set; }
         public Encoding Encoding { get; set; } = Encoding.UTF8;
-        private object _lock;
+        private object _lock = new object();
         private dynamic _cachedInstance;
 
         public InMemorySource(string content, IInputFormatter formatter = null)
         {
             this.Content = new MemoryStream(Encoding.GetBytes(content));
             this.Formatter = formatter;
+        }
+
+        public InMemorySource(Stream stream, IInputFormatter formatter = null)
+        {
+            this.Formatter = formatter;
+            this.Content = stream;
         }
 
         /// <summary>
@@ -28,6 +34,18 @@ namespace Peeralize.Service.IntegrationSource
         /// <param name="formatter"></param>
         /// <returns></returns>
         public static InMemorySource Create(string payload, IInputFormatter formatter = null)
+        {
+            var src = new InMemorySource(payload, formatter);
+            return src;
+        }
+
+        /// <summary>
+        /// Creates a new filesource
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="formatter"></param>
+        /// <returns></returns>
+        public static InMemorySource Create(Stream payload, IInputFormatter formatter = null)
         {
             var src = new InMemorySource(payload, formatter);
             return src;

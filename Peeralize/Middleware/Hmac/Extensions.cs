@@ -3,12 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
 namespace Peeralize.Middleware.Hmac
 {
     public static class Extensions
     {
+        public static string GetApiUserId(this ISession session)
+        {
+            var apiId = session.GetString("APP_API_ID");
+            return apiId;
+        }
+
         public static IApplicationBuilder UseHmacAuthentication(this IApplicationBuilder app)
         {
             if (app == null)

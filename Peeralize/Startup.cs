@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity.MongoDB;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using nvoid.db.DB.Configuration;
 using nvoid.db.Extensions;
 using nvoid.Integration;
@@ -61,9 +62,10 @@ namespace Peeralize
                 .AddDefaultTokenProviders();
             services.AddAuthentication();
             services.AddMemoryCache();
-
+            services.AddSession();
             services.AddMvc();
-            
+            services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
+
             // Add application services.
             services.AddTransient<UserManager<ApplicationUser>>();
             services.AddTransient<SignInManager<ApplicationUser>>();
@@ -86,11 +88,16 @@ namespace Peeralize
             {
                 app.UseExceptionHandler("/Home/Error");
             }
-
+            app.UseSession();
             app.UseStaticFiles();
             app.UseIdentity();
             // Add external authentication middleware below. To configure them please see http://go.microsoft.com/fwlink/?LinkID=532715
-            app.Map("/api", builder =>
+            //Map api.domain.... to api
+            app.MapWhen(ctx =>
+            {
+                StringValues hostname;
+                return ctx.Request.Headers.TryGetValue("Host", out hostname) && hostname.ToString().StartsWith("api.");
+            }, builder =>
             {
                 app.UseEnableRequestRewind();
                 builder.UseHmacAuthentication(new HmacOptions()
