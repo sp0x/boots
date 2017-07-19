@@ -13,3 +13,5 @@ storage.ide
 **/workspace.xml
 **/.idea/*
 **/vendor
+**.suo
+**cookie.tmp

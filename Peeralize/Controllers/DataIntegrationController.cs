@@ -7,11 +7,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.MongoDB;
 using Microsoft.AspNetCore.Mvc;
+using nvoid.db.DB.RDS;
+using nvoid.db.Extensions;
 using nvoid.Integration;
 using Newtonsoft.Json;
 using Peeralize.Middleware.Hmac;
 using Peeralize.Service;
 using Peeralize.Service.Auth;
+using Peeralize.Service.Integration;
 using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Source;
 
@@ -24,11 +27,14 @@ namespace Peeralize.Controllers
     {
         private UserManager<ApplicationUser>  _userManager;
         private IUserStore<ApplicationUser> _userStore;
+        private RemoteDataSource<IntegrationTypeDefinition> _typeStore;
+
         public DataIntegrationController(UserManager<ApplicationUser> userManager,
             IUserStore<ApplicationUser> userStore)
         {
             _userManager = userManager;
             _userStore = userStore;
+            _typeStore = typeof(IntegrationTypeDefinition).GetDataSource<IntegrationTypeDefinition>();
         }
 
 
@@ -47,14 +53,23 @@ namespace Peeralize.Controllers
         public ActionResult Entity()
         {
             //Dont close the body! 
-            var reader = new StreamReader(Request.Body); 
             var userApiId = HttpContext.Session.GetApiUserId();
-            var fs = InMemorySource.Create(Request.Body, new JsonFormatter());
-            var type = fs.GetTypeDefinition();
+            var memSource = InMemorySource.Create(Request.Body, new JsonFormatter());
+            var type = (IntegrationTypeDefinition)memSource.GetTypeDefinition();
+            IntegrationTypeDefinition oldTypeDef;
             type.UserId = userApiId;
+            if (!TypeExists(type, userApiId, out oldTypeDef))
+            {
+                type.Save();
+            }
+            else
+            {
+                type.Id = oldTypeDef.Id;
+            }
+            //Check if the entity type exists
             var harvester = new Harvester();
             harvester.SetDestination(new MongoSink(userApiId));
-            harvester.AddType(type, fs);
+            harvester.AddType(type, memSource);
             harvester.Synchronize();
             
             return Json(new
@@ -77,5 +92,11 @@ namespace Peeralize.Controllers
             });
         }
 
+
+        private bool TypeExists(IntegrationTypeDefinition type, string apiId, out IntegrationTypeDefinition existingDefinition)
+        {
+            existingDefinition = _typeStore.Where(x => x.UserId == apiId && x.Fields == type.Fields).First();
+            return existingDefinition != null;
+        }
     }
 }

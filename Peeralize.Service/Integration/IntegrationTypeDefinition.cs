@@ -18,6 +18,9 @@ namespace Peeralize.Service.Integration
         public int CodePage { get; set; }
         public string OriginType { get; set; } 
         public string UserId { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public Dictionary<string, FieldDefinition> Fields { get; set; }
         public IntegrationTypeExtras Extras { get; set; }
 

@@ -12,7 +12,7 @@ namespace Peeralize.Service.Integration
         {
             this.Definition = inputDef;
             this.Source = source;
-            Definition.Save();
+            //Definition.Save();
         }
 
         public override bool Equals(object obj)

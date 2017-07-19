@@ -16,6 +16,9 @@ $newUser = [
 
 $dataClient = $client->getDataClient();
 $status = $dataClient->createEntity($newUser);
+$newUser["Name"] = "Divan";
+$newUser["Id"] = 3;
+$status = $dataClient->createEntity($newUser);
 var_dump($status);
 
 $status = $dataClient->addEntityData([ "Id" => $newUser['Id']], [
