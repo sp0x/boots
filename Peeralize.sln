@@ -5,8 +5,8 @@ VisualStudioVersion = 15.0.26608.5
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peeralize", "Peeralize\Peeralize.csproj", "{D25315C7-40FD-4C80-A4CC-F9E149040D83}"
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{8B5925E2-561C-4A0A-B23A-A05107A8971C}"
-EndProject
+#Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{8B5925E2-561C-4A0A-B23A-A05107A8971C}"
+#EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libnvoid", "libnvoid", "{0813BA05-4BDD-4FAA-9BB9-7A990779FA1D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Abot", "libnvoid\abot-dotnet-core\Abot\src\Abot\Abot.csproj", "{43A2E13E-B181-4A32-AB94-F619643F9BFD}"

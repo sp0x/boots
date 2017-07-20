@@ -1,7 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
+using nvoid.db.DB.Configuration;
 using Newtonsoft.Json.Linq;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Network;
@@ -25,20 +28,34 @@ namespace Peeralize.Service
             });
         }
 
+        
         /// <summary>
         /// Configure the context
         /// </summary>
         /// <param name="configSection"></param>
         public void Configure(IConfigurationSection configSection)
         { 
-            var mqConfiguration = configSection.GetSection("mq");
-            if (mqConfiguration==null)
+            var mqSection = configSection.GetSection("mq");
+            if (mqSection==null)
             {
                 throw new System.Exception("Invalid or no MQ configuration supplied!");
             }
-            _inputPort = int.Parse(mqConfiguration["InputPort"]);
-            _outputPort = int.Parse(mqConfiguration["OutputPort"]);
-            _destinationIp = (mqConfiguration["Destination"]);
+
+            MqConfiguration mqConfig = new MqConfiguration();
+            mqSection.Bind(mqConfig);
+            if (mqConfig == null)
+            {
+                throw new System.Exception("Invalid or no MQ configuration supplied!");
+            }
+            Debug.WriteLine($"Mq input: {mqConfig.InputPort}");
+            Console.WriteLine($"Mq input: {mqConfig.InputPort}");
+
+            Debug.WriteLine($"Mq output: {mqConfig.OutputPort}");
+            Console.WriteLine($"Mq output: {mqConfig.OutputPort}");
+
+            _inputPort = mqConfig.InputPort; 
+            _outputPort = mqConfig.OutputPort;
+            _destinationIp = mqConfig.Destination;
         }
 
         public void Run()

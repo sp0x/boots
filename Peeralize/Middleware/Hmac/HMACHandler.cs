@@ -52,11 +52,8 @@ namespace Peeralize.Middleware.Hmac
                 var appApiId = Context.Session.GetString("APP_API_ID");
                 if (appApiId == null)
                 {
-                    Context.Session.SetString("APP_API_ID", apiAuth.Id);
-                    appApiId = apiAuth.Id;
-                    user.AddIdentity(claimsIdentity);
-                    var firstIdentity = user.Identities.FirstOrDefault();
-                    firstIdentity = firstIdentity;
+                    Context.Session.SetString("APP_API_ID", apiAuth.Id); 
+                    user.AddIdentity(claimsIdentity); 
                 }
                 Response.Headers.Add("APP_API_ID", apiAuth.Id);
                 var ticket = new AuthenticationTicket(principal, new AuthenticationProperties(), Options.AuthenticationScheme);
