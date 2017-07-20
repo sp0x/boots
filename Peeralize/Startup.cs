@@ -67,6 +67,7 @@ namespace Peeralize
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
 
             // Add application services.
+            services.AddSingleton<BehaviourContext>(this.BehaviourContext);
             services.AddTransient<UserManager<ApplicationUser>>();
             services.AddTransient<SignInManager<ApplicationUser>>();
             services.AddTransient<IEmailSender, AuthMessageSender>();

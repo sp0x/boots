@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -28,13 +29,16 @@ namespace Peeralize.Controllers
         private UserManager<ApplicationUser>  _userManager;
         private IUserStore<ApplicationUser> _userStore;
         private RemoteDataSource<IntegrationTypeDefinition> _typeStore;
+        private BehaviourContext _behaviourContext;
 
         public DataIntegrationController(UserManager<ApplicationUser> userManager,
-            IUserStore<ApplicationUser> userStore)
+            IUserStore<ApplicationUser> userStore,
+            BehaviourContext behaviourCtx)
         {
             _userManager = userManager;
             _userStore = userStore;
             _typeStore = typeof(IntegrationTypeDefinition).GetDataSource<IntegrationTypeDefinition>();
+            _behaviourContext = behaviourCtx;
         }
 
 
@@ -50,7 +54,7 @@ namespace Peeralize.Controllers
 
         [Route("[action]")]
         [HttpPost]
-        public ActionResult Entity()
+        public async Task<ActionResult> Entity()
         {
             //Dont close the body! 
             var userApiId = HttpContext.Session.GetApiUserId();
@@ -68,7 +72,8 @@ namespace Peeralize.Controllers
             }
             //Check if the entity type exists
             var harvester = new Harvester();
-            harvester.SetDestination(new MongoSink(userApiId));
+            var destination = (new MongoSink(userApiId)).LinkTo(_behaviourContext.GetActionBlock());
+            harvester.SetDestination(destination);
             harvester.AddType(type, memSource);
             harvester.Synchronize();
             
@@ -81,7 +86,7 @@ namespace Peeralize.Controllers
 
         [Route("[action]")]
         [HttpPost]
-        public ActionResult EntityData()
+        public async Task<ActionResult> EntityData()
         {
 
             var requestBody = (new StreamReader(Request.Body)).ReadToEnd();

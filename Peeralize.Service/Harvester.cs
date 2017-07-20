@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using nvoid.db.DB;
 using Peeralize.Service.Integration;
@@ -15,6 +16,8 @@ namespace Peeralize.Service
     {
         public HashSet<IntegrationSet> Sets { get; private set; } 
         public IIntegrationDestination Destination { get; private set; }
+
+
         public int ThreadCount { get; private set; }
 
         public Harvester(int threadCount = 4) : base()
@@ -45,12 +48,13 @@ namespace Peeralize.Service
             Destination = dest;
             return this;
         }
+
         /// <summary>
         /// Performs the synchronization
         /// </summary>
         public void Synchronize()
         { 
-            Destination.Consume();
+            Destination.ConsumeAsync(CancellationToken.None);
             int typeCount = Sets.Count;
             var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = ThreadCount };
             Parallel.ForEach(Sets, parallelOptions,
@@ -62,7 +66,7 @@ namespace Peeralize.Service
                         Destination.Post(item);
                     }
                     
-                });
+            });
             Destination.Close();
         }
          

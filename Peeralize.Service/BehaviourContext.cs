@@ -1,6 +1,9 @@
 ﻿using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Microsoft.Extensions.Configuration;
+using MongoDB.Bson;
 using Newtonsoft.Json.Linq;
+using Peeralize.Service.Integration;
 using Peeralize.Service.Network;
 
 namespace Peeralize.Service
@@ -11,10 +14,15 @@ namespace Peeralize.Service
         private string _destinationIp;
         private int _inputPort;
         private int _outputPort;
+        private ITargetBlock<IntegratedDocument> _actionBlock;
 
         public BehaviourContext()
         {
             _client = new BehaviourClient();
+            _actionBlock = new ActionBlock<IntegratedDocument>((doc) =>
+            {
+                _client.SendMessage(doc.ToJson());
+            });
         }
 
         /// <summary>
@@ -46,6 +54,14 @@ namespace Peeralize.Service
         public async Task<JToken> Query(JToken query)
         {
             return await _client.Query(query);
+        }
+        /// <summary>
+        /// Gets the behaviour submission block
+        /// </summary>
+        /// <returns></returns>
+        public ITargetBlock<IntegratedDocument> GetActionBlock()
+        {
+            return _actionBlock;
         }
     }
 }

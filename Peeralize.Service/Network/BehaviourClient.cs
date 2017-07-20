@@ -7,7 +7,7 @@ using Newtonsoft.Json.Linq;
 namespace Peeralize.Service.Network
 {
     /// <summary>
-    /// 
+    /// A client for user behaviour analytics
     /// </summary>
     public class BehaviourClient
     {
