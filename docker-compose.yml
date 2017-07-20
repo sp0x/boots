@@ -10,18 +10,19 @@ services:
       context: ./Peeralize
       dockerfile: Dockerfile
     depends_on:
-      - mongo
+      - mongo.peeralize.com 
     ports:
       - "5000:5000"
       - "80:80"
   
-  mongo:
+  mongo.peeralize.com :
     image: library/mongo:3.4
     hostname: mongo.peeralize.com 
+    container_name: mongo.peeralize.com 
     volumes:
       - mongodb:/data/db
     ports:
-      - "27019:27018"
+      - "27019:27017"
     #So that we actually have auth enabled..
     #to setup a user, follow this https://stackoverflow.com/questions/22638258/create-superuser-in-mongo
     command: mongod --auth
