@@ -1,11 +1,27 @@
 version: '3'
 
+volumes:
+  mongodb:
+
 services:
   peeralize:
     image: peeralize
     build:
       context: ./Peeralize
       dockerfile: Dockerfile
+    depends_on:
+      - mongo
     ports:
       - "5000:5000"
       - "80:80"
+  
+  mongo:
+    image: library/mongo:3.4
+    hostname: mongo.peeralize.com 
+    volumes:
+      - mongodb:/data/db
+    ports:
+      - "27019:27018"
+    #So that we actually have auth enabled..
+    #to setup a user, follow this https://stackoverflow.com/questions/22638258/create-superuser-in-mongo
+    command: mongod --auth
