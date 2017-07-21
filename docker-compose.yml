@@ -26,3 +26,13 @@ services:
     #So that we actually have auth enabled..
     #to setup a user, follow this https://stackoverflow.com/questions/22638258/create-superuser-in-mongo
     command: mongod --auth
+
+  behaviour:
+    container_name: behaviour.peeralize.com
+    hostname: behaviour.peeralize.com
+    build:
+      context: ./BehaviorAnalysis
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:5556:5556"
+      - "127.0.0.1:5557:5557"

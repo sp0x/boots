@@ -1,12 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26608.5
+VisualStudioVersion = 15.0.26711.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peeralize", "Peeralize\Peeralize.csproj", "{D25315C7-40FD-4C80-A4CC-F9E149040D83}"
 EndProject
-#Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{8B5925E2-561C-4A0A-B23A-A05107A8971C}"
-#EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libnvoid", "libnvoid", "{0813BA05-4BDD-4FAA-9BB9-7A990779FA1D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Abot", "libnvoid\abot-dotnet-core\Abot\src\Abot\Abot.csproj", "{43A2E13E-B181-4A32-AB94-F619643F9BFD}"
@@ -37,6 +35,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peeralize.ServiceTests", "P
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peeralize.Data", "Peeralize.Data\Peeralize.Data.csproj", "{BE1E64AD-2255-458F-ADBA-79C24727426F}"
 EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "BehaviorAnalysis", "BehaviorAnalysis\BehaviorAnalysis.pyproj", "{3C370C84-E790-4658-8D5D-8AE6E13D76A9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,10 +47,6 @@ Global
 		{D25315C7-40FD-4C80-A4CC-F9E149040D83}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D25315C7-40FD-4C80-A4CC-F9E149040D83}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D25315C7-40FD-4C80-A4CC-F9E149040D83}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8B5925E2-561C-4A0A-B23A-A05107A8971C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8B5925E2-561C-4A0A-B23A-A05107A8971C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8B5925E2-561C-4A0A-B23A-A05107A8971C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8B5925E2-561C-4A0A-B23A-A05107A8971C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{43A2E13E-B181-4A32-AB94-F619643F9BFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{43A2E13E-B181-4A32-AB94-F619643F9BFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{43A2E13E-B181-4A32-AB94-F619643F9BFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -103,6 +99,8 @@ Global
 		{BE1E64AD-2255-458F-ADBA-79C24727426F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE1E64AD-2255-458F-ADBA-79C24727426F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE1E64AD-2255-458F-ADBA-79C24727426F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C370C84-E790-4658-8D5D-8AE6E13D76A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C370C84-E790-4658-8D5D-8AE6E13D76A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,5 +115,8 @@ Global
 		{36CED6E4-3DF9-44E9-9AC8-2F2C07A3A470} = {0813BA05-4BDD-4FAA-9BB9-7A990779FA1D}
 		{38735859-0C42-4457-A0FA-1CCEEFF31648} = {6E763F49-007D-45FB-962A-AF96BB6715D6}
 		{DB403379-26CC-4B0D-8992-FC153B64C5A5} = {6E763F49-007D-45FB-962A-AF96BB6715D6}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {24AF7987-62A9-402B-AFDA-5FAC6B7D2162}
 	EndGlobalSection
 EndGlobal

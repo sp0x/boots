@@ -20,3 +20,4 @@ storage.ide
 /Peeralize/Third party clients/php-full
 **/composer.lock
 **/published.tar.gz
+**/.idea/workspace.xml
