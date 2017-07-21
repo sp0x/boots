@@ -17,3 +17,6 @@ storage.ide
 **cookie.tmp
 */out/*
 /Peeralize/published/
+/Peeralize/Third party clients/php-full
+**/composer.lock
+**/published.tar.gz

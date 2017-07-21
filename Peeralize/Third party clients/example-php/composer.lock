@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sp0x/PeeralyticsPhp.git",
-                "reference": "324472e193f2b5886257c811f8163843d2a2fa2b"
+                "reference": "7ed63e7187c30f614cd117b258dfffb1cf47e5f7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sp0x/PeeralyticsPhp/zipball/324472e193f2b5886257c811f8163843d2a2fa2b",
-                "reference": "324472e193f2b5886257c811f8163843d2a2fa2b",
+                "url": "https://api.github.com/repos/sp0x/PeeralyticsPhp/zipball/7ed63e7187c30f614cd117b258dfffb1cf47e5f7",
+                "reference": "7ed63e7187c30f614cd117b258dfffb1cf47e5f7",
                 "shasum": ""
             },
             "require": {
@@ -39,7 +39,7 @@
                     "email": "vasil.vasilev94@yahoo.com"
                 }
             ],
-            "time": "2017-07-18 12:17:11"
+            "time": "2017-07-21 08:53:53"
         }
     ],
     "packages-dev": [],

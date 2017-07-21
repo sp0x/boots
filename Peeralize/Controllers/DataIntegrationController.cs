@@ -100,7 +100,13 @@ namespace Peeralize.Controllers
 
         private bool TypeExists(IntegrationTypeDefinition type, string apiId, out IntegrationTypeDefinition existingDefinition)
         {
-            existingDefinition = _typeStore.Where(x => x.UserId == apiId && x.Fields == type.Fields).First();
+            var integrationTypeDefinitions = _typeStore.Where(x => x.UserId == apiId && x.Fields == type.Fields);
+            if (integrationTypeDefinitions == null || integrationTypeDefinitions.Count() == 0)
+            {
+                existingDefinition = null;
+                return false;
+            }
+            existingDefinition = integrationTypeDefinitions.First();
             return existingDefinition != null;
         }
     }

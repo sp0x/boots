@@ -97,7 +97,16 @@ namespace Peeralize
             app.MapWhen(ctx =>
             {
                 StringValues hostname;
-                return ctx.Request.Headers.TryGetValue("Host", out hostname) && hostname.ToString().StartsWith("api.");
+                if (ctx.Request.Headers.TryGetValue("Host", out hostname))
+                {
+                    Console.WriteLine("App->Map check: " + hostname.ToString());
+                    return hostname.ToString().StartsWith("api.");
+                }
+                else
+                {
+                    return false;
+                }
+                
             }, builder =>
             {
                 app.UseEnableRequestRewind();
