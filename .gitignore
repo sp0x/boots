@@ -4,6 +4,7 @@ packages
 BehaviorAnalysis/.idea
 .vs/
 *.txt
+*.pyc
 */obj/*
 Backup/
 obj/
