@@ -11,8 +11,8 @@ class Server(threading.Thread):
         self.context = zmq.Context()
         self.in_stream = self.context.socket(zmq.PULL)
         self.out_stream = self.context.socket(zmq.PUSH)
-        self.in_stream.bind("tcp://127.0.0.1:%d" % PORT)
-        self.out_stream.bind("tcp://127.0.0.1:%d" % OUT_PORT)
+        self.in_stream.bind("tcp://%s:%d" % (LISTEN_ADDR, PORT))
+        self.out_stream.bind("tcp://%s:%d" % (LISTEN_ADDR, OUT_PORT))
         self.is_running = True
         self.experimental_data = dict()
         self.cond = threading.Lock()
