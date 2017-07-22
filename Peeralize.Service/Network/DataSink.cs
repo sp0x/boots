@@ -43,9 +43,13 @@ namespace Peeralize.Service.Network
         {
             Send(token.ToString());
         }
+        /// <summary>
+        /// Sends a frame sting
+        /// </summary>
+        /// <param name="data"></param>
         public void Send(string data)
         {
-            Socket.SendFrame(data);
+            Socket.SendFrame(data); 
         }
     }
 }

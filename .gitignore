@@ -21,3 +21,5 @@ storage.ide
 **/composer.lock
 **/published.tar.gz
 **/.idea/workspace.xml
+**storage.ide
+**.pyc

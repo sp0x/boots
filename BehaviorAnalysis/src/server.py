@@ -20,12 +20,15 @@ class Server(threading.Thread):
 
     def run(self):
         while self.is_running:
+            print "Listening for input json"
             msg = self.in_stream.recv_json()
             data = msg['data']
             op = msg['op']
             company = msg['company']
             seq = msg.get('seq')
             resp = {}
+            print "received data"
+            print msg
             if op == DATA_AVAILABLE:
                 if company in self.experimental_data:
                     ed = self.experimental_data[company]

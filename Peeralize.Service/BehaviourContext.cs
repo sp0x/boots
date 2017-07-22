@@ -24,10 +24,10 @@ namespace Peeralize.Service
             _client = new BehaviourClient();
             _actionBlock = new ActionBlock<IntegratedDocument>((doc) =>
             {
-                _client.SendMessage(doc.ToJson());
+                _client.SendDocument(doc);
             });
         }
-
+         
         
         /// <summary>
         /// Configure the context

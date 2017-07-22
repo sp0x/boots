@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using Peeralize.Service.Integration;
 
 namespace Peeralize.Service.Network
 {
@@ -59,6 +60,13 @@ namespace Peeralize.Service.Network
         public void SendMessage(string message)
         {
             _writer.Send(message);
+        }
+
+        public void SendDocument(IntegratedDocument doc)
+        {
+            //Normalize the data, then send it
+            var data = "";
+            SendMessage(data);
         }
 
         public void SendMessage(JToken message)
