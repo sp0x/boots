@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 using Newtonsoft.Json.Linq;
 using Peeralize.Service.Integration;
 
@@ -65,7 +66,8 @@ namespace Peeralize.Service.Network
         public void SendDocument(IntegratedDocument doc)
         {
             //Normalize the data, then send it
-            var data = "";
+            var data = doc.Document.ToJson().ToString();
+            data =  data.Replace("NumberLong(1)", "1");
             SendMessage(data);
         }
 

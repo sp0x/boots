@@ -17,6 +17,7 @@ namespace Peeralize.Service.Network
         public DataSink()
         {
             Socket = new PushSocket();
+            
         }
 
         public void Connect(string destination)

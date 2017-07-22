@@ -35,7 +35,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peeralize.ServiceTests", "P
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peeralize.Data", "Peeralize.Data\Peeralize.Data.csproj", "{BE1E64AD-2255-458F-ADBA-79C24727426F}"
 EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "BehaviorAnalysis", "BehaviorAnalysis\BehaviorAnalysis.pyproj", "{3C370C84-E790-4658-8D5D-8AE6E13D76A9}"
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "BehaviorAnalysis", "BehaviorAnalysis\src\BehaviorAnalysis.pyproj", "{3C370C84-E790-4658-8D5D-8AE6E13D76A9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
