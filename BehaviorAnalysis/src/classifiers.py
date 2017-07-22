@@ -145,7 +145,7 @@ class Experiment:
         self.best_models = best_models
 
 
-def conduct_experiment(data,targets,client='cashlend'):
+def conduct_experiment(data, targets, client='cashlend'):
     rf = RandomForestClassifier(n_jobs=-1, oob_score=True)
     rnn = KerasClassifier(RNNBuilder(data,targets).build_rnn)
     rf_params = {

@@ -3,7 +3,6 @@ import threading
 import time
 from constants import *
 from classifiers import conduct_experiment,Experiment
-from utils import proportion
 
 
 class Server(threading.Thread):
@@ -17,8 +16,18 @@ class Server(threading.Thread):
         self.is_running = True
         self.experimental_data = dict()
         self.cond = threading.Lock()
+        self.experiments = []
+
+    def shutdown(self):
+        with self.cond:
+            self.is_running = False
+            if any(map(lambda x: x.is_alive,self.experiments)):
+                print "Waiting for all running experiments to finish executing"
+                for e in self.experiments:
+                    e.join()
 
     def run(self):
+        print ("Server running and listening at tcp://127.0.0.1%d" % PORT)
         while self.is_running:
             print "Listening for input json"
             msg = self.in_stream.recv_json()
@@ -33,10 +42,17 @@ class Server(threading.Thread):
                 if company in self.experimental_data:
                     ed = self.experimental_data[company]
                     ed['data'].append(data)
-                    ed['targets'].append(msg['result'])
-                    if ed['created'] + EXPERIMENTAL_FREQUENCY <= time.time():
-                        conduct_experiment(ed['data'], ed['targets'], company)
-                        del self.experimental_data[company]
+                    if 'result' not in msg:
+                        resp['status'] = 'Missing results'
+                    else:
+                        ed['targets'].append(msg['result'])
+                        resp['status'] = 'OK'
+                        if ed['created'] + EXPERIMENTAL_FREQUENCY <= time.time():
+                            t = threading.Thread(target=conduct_experiment,args=(ed['data'], ed['targets'], company))
+                            self.experiments.append(t)
+                            t.start()
+                            #conduct_experiment(ed['data'], ed['targets'], company)
+                            del self.experimental_data[company]
                 else:
                     self.experimental_data[company] = dict(data=[data],targets=[msg['result']],created=time.time())
             elif op == MAKE_PREDICTION:
