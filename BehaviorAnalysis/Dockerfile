@@ -9,7 +9,7 @@ RUN conda install keras pyzmq -y --quiet
 
 EXPOSE 5556 5557
 
-ENTRYPOINT ["python", "__init__.py"] 
+ENTRYPOINT ["python", "-u", "__init__.py"] 
 
 
 
