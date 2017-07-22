@@ -24,3 +24,4 @@ storage.ide
 **/.idea/workspace.xml
 **storage.ide
 **.pyc
+/.vs/Peeralize/v15/sqlite3/storage.ide

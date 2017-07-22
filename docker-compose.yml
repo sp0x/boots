@@ -36,5 +36,5 @@ services:
     volumes:
       - ./BehaviorAnalysis/src:/app
     ports:
-      - "127.0.0.1:5556:5556"
-      - "127.0.0.1:5557:5557"
+      - "5556:5556"
+      - "5557:5557"

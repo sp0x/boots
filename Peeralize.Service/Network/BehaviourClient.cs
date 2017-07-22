@@ -67,7 +67,6 @@ namespace Peeralize.Service.Network
         {
             //Normalize the data, then send it
             var data = doc.Document.ToJson().ToString();
-            data =  data.Replace("NumberLong(1)", "1");
             SendMessage(data);
         }
 
