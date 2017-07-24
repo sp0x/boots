@@ -38,6 +38,16 @@ namespace Peeralize.Service.Network
             OnMessage?.Invoke(this, frame); 
         }
 
+        /// <summary>
+        /// Blocks for a frame
+        /// </summary>
+        /// <returns></returns>
+        public string Receive()
+        {
+            var frame = Socket.ReceiveFrameString();
+            return frame;
+        }
+
         public void Connect(string destination)
         {
             Socket.Connect(destination); 

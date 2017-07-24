@@ -14,6 +14,10 @@ $newUser = [
 	"Id" => 1
 ];
 
+$permissionsArray = ["email"];
+$client->requirePermissions("Facebook", $permissionsArray);
+var_dump($permissionsArray);
+
 $dataClient = $client->getDataClient();
 $status = $dataClient->createEntity($newUser);
 $newUser["Name"] = "Divan";

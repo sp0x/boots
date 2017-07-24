@@ -31,6 +31,7 @@ namespace Peeralize.Service.Network
             _writer = new DataSink();
             _reader = new DataProducer();
             _reader.OnMessage += ReaderOnMessage;
+            
         }
         /// <summary>
         /// 
@@ -67,7 +68,7 @@ namespace Peeralize.Service.Network
         {
             //Normalize the data, then send it
             var data = doc.Document.ToJson().ToString();
-            SendMessage(data);
+            SendMessage(data); 
         }
 
         public void SendMessage(JToken message)

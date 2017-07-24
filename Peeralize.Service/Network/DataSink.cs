@@ -42,7 +42,7 @@ namespace Peeralize.Service.Network
 
         public void Send(JToken token)
         {
-            Send(token.ToString());
+            Send(token.ToString()); 
         }
         /// <summary>
         /// Sends a frame sting

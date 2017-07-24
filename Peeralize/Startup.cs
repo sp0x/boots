@@ -11,6 +11,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Bson.Serialization.Options;
 using nvoid.db.DB.Configuration;
 using nvoid.db.Extensions;
 using nvoid.Integration;
@@ -19,6 +21,7 @@ using Peeralize.Middleware.Hmac;
 using Peeralize.Middleware;
 using Peeralize.Service;
 using Peeralize.Service.Auth;
+using Peeralize.Services;
 using AuthMessageSender = Peeralize.Services.AuthMessageSender;
 using IEmailSender = Peeralize.Services.IEmailSender;
 using ISmsSender = Peeralize.Services.ISmsSender;
@@ -49,7 +52,7 @@ namespace Peeralize
             DBConfig.Initialize(Configuration);
             BehaviourContext = new BehaviourContext();
             BehaviourContext.Configure(Configuration.GetSection("behaviour"));
-            BehaviourContext.Run();
+            BehaviourContext.Run(); 
         }
 
 
@@ -62,12 +65,18 @@ namespace Peeralize
                 .AddDefaultTokenProviders();
             services.AddAuthentication();
             services.AddMemoryCache();
-            services.AddSession();
+            services.AddSession(options =>
+            {
+                // Set a short timeout for easy testing.
+                options.IdleTimeout = TimeSpan.FromDays(7);
+                options.CookieHttpOnly = true;
+            });
             services.AddMvc();
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
 
             // Add application services.
             services.AddSingleton<BehaviourContext>(this.BehaviourContext);
+            services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<ApplicationUser>>();
             services.AddTransient<SignInManager<ApplicationUser>>();
             services.AddTransient<IEmailSender, AuthMessageSender>();

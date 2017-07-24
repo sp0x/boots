@@ -10,7 +10,7 @@ namespace Peeralize.Middleware.Hmac
 {
     public static class Extensions
     {
-        public static string GetApiUserId(this ISession session)
+        public static string GetUserApiId(this ISession session)
         {
             var apiId = session.GetString("APP_API_ID");
             return apiId;
