@@ -38,10 +38,11 @@ namespace Peeralize.Service
             Sets.Add(newSet);
             return this;
         }
+
         /// <summary>
-        /// Set the destination to which 
+        /// Set the destination to which to push all data.
         /// </summary>
-        /// <param name="dest"></param>
+        /// <param name="dest">A destination/block in your integration flow</param>
         /// <returns></returns>
         public Harvester SetDestination(IIntegrationDestination dest)
         {
@@ -55,17 +56,16 @@ namespace Peeralize.Service
         public void Synchronize()
         { 
             Destination.ConsumeAsync(CancellationToken.None);
-            int typeCount = Sets.Count;
             var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = ThreadCount };
             Parallel.ForEach(Sets, parallelOptions,
                 (IntegrationSet itemSet, ParallelLoopState state) =>
                 {  
                     IntegratedDocument item;
+
                     while(null != (item = itemSet.Read()))
                     {
                         Destination.Post(item);
                     }
-                    
             });
             Destination.Close();
         }

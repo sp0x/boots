@@ -22,7 +22,9 @@ using Peeralize.Middleware;
 using Peeralize.Middleware.Hmac;
 using Peeralize.Service;
 using Peeralize.Service.Auth;
+using Peeralize.Service.Format;
 using Peeralize.Service.Integration;
+using Peeralize.Service.Integration.Blocks;
 using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Source;
 using Peeralize.Services;
@@ -36,10 +38,7 @@ namespace Peeralize.Controllers
     [Authorize(ActiveAuthenticationSchemes = "Hmac")]
     [Route("data")]
     public class DataIntegrationController : Controller
-    {
-        private UserManager<ApplicationUser>  _userManager;
-        private IUserStore<ApplicationUser> _userStore;
-        private RemoteDataSource<IntegrationTypeDefinition> _typeStore;
+    { 
         private BehaviourContext _behaviourContext;
         private RemoteDataSource<IntegratedDocument> _documentStore;
         private SocialNetworkApiManager _socNetManager;
@@ -48,12 +47,9 @@ namespace Peeralize.Controllers
             IUserStore<ApplicationUser> userStore,
             BehaviourContext behaviourCtx,
             SocialNetworkApiManager socNetManager)
-        {
-            _userManager = userManager;
-            _userStore = userStore;
+        { 
             _behaviourContext = behaviourCtx;
-            //Move both of these
-            _typeStore = typeof(IntegrationTypeDefinition).GetDataSource<IntegrationTypeDefinition>();
+            //Move both of these 
             _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
             _socNetManager = socNetManager;
 
@@ -80,14 +76,7 @@ namespace Peeralize.Controllers
             var type = (IntegrationTypeDefinition)memSource.GetTypeDefinition();
             IntegrationTypeDefinition oldTypeDef;
             type.UserId = userApiId;
-            if (!TypeExists(type, userApiId, out oldTypeDef))
-            {
-                type.Save();
-            }
-            else
-            {
-                type.Id = oldTypeDef.Id;
-            }
+            type.SaveType(userApiId);
             //Check if the entity type exists
             var harvester = new Harvester();
             var destination = (new MongoSink(userApiId)).LinkTo(_behaviourContext.GetActionBlock());
@@ -157,17 +146,7 @@ namespace Peeralize.Controllers
             });
         } 
 
-        private bool TypeExists(IntegrationTypeDefinition type, string apiId, out IntegrationTypeDefinition existingDefinition)
-        {
-            var integrationTypeDefinitions = _typeStore.Where(x => x.UserId == apiId && x.Fields == type.Fields);
-            if (integrationTypeDefinitions == null || integrationTypeDefinitions.Count() == 0)
-            {
-                existingDefinition = null;
-                return false;
-            }
-            existingDefinition = integrationTypeDefinitions.First();
-            return existingDefinition != null;
-        }
+     
 
     }
 }

@@ -85,5 +85,26 @@ namespace Peeralize.Service.IntegrationSource
                 return lastInstance;
             }
         }
+
+        private bool _disposed;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                Content?.Dispose();
+                _disposed = true;
+            }    
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~InMemorySource()
+        {
+            Dispose(false);
+        }
     }
 }

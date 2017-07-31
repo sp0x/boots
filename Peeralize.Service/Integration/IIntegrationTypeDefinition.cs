@@ -22,6 +22,7 @@ namespace Peeralize.Service.Integration
 
         IntegrationTypeExtras Extras { get; }
         bool Save();
+        IIntegrationTypeDefinition SaveType(string userApiId);
         string Id { get; set; }
          
     }

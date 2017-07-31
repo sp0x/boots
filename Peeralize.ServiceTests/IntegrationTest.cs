@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using Peeralize.Service;
+using Peeralize.Service.Format;
 using Peeralize.Service.Integration;
 using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Source;

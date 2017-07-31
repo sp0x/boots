@@ -28,3 +28,4 @@ storage.ide
 /.vs/Peeralize/v15/sqlite3/storage.ide
 /Peeralize/Third party clients/php/.idea/php.xml
 /Peeralize/Third party clients/php/.idea/php.xml
+**.csv

@@ -19,6 +19,45 @@ namespace Peeralize.Service.Integration
         {
             Document = ((object)doc).ToBsonDocument(); 
         }
+
+        public IntegratedDocument AddDocumentArrayItem(string key, object itemToAdd)
+        {
+            var bval = itemToAdd.ToBsonDocument();
+            if (!Document.Contains(key))
+            {
+                Document[key] = new BsonArray();
+            }
+            ((BsonArray) Document[key]).Add(bval);
+            return this;
+        }
+
+        public string GetString(string key)
+        {
+            return Document[key]?.ToString();
+        }
+        public long GetInt64(string key)
+        {
+            return Document[key].ToInt64();
+        }
+        public int GetInt(string key)
+        {
+            return Document[key].ToInt32();
+        }
+
+        public BsonDocument CloneDocument()
+        {
+            return Document.Clone().ToBsonDocument();
+        }
+
+        public IntegratedDocument Clone()
+        {
+            var newDocument = new IntegratedDocument();
+            newDocument.Document = CloneDocument();
+            newDocument.Reserved = Reserved.Clone().ToBsonDocument();
+            newDocument.UserId = this.UserId;
+            newDocument.TypeId = this.TypeId;
+            return newDocument;
+        }
     }
      
 }

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
 using Dynamitey;
 using nvoid.db.DB;
+using nvoid.db.Extensions;
 using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Source;
 
@@ -97,6 +99,25 @@ namespace Peeralize.Service.Integration
             }
             return this;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="apiId"></param>
+        /// <param name="existingDefinition"></param>
+        /// <returns></returns>
+        public static bool TypeExists(IntegrationTypeDefinition type, string apiId, out IntegrationTypeDefinition existingDefinition)
+        {
+            var _typeStore = typeof(IntegrationTypeDefinition).GetDataSource<IntegrationTypeDefinition>();
+            var integrationTypeDefinitions = _typeStore.Where(x => x.UserId == apiId && x.Fields == type.Fields);
+            if (integrationTypeDefinitions == null || integrationTypeDefinitions.Count() == 0)
+            {
+                existingDefinition = null;
+                return false;
+            }
+            existingDefinition = integrationTypeDefinitions.First();
+            return existingDefinition != null;
+        }
 
         public override void PrepareForSaving()
         {
@@ -104,6 +125,25 @@ namespace Peeralize.Service.Integration
             if (string.IsNullOrEmpty(UserId))
                 throw new InvalidOperationException("Only user owned type definitions can be saved!");
         }
-         
+
+        /// <summary>
+        /// Checks if this type already exists, and updates it's id if it does.
+        /// If not, the type is saved.
+        /// </summary>
+        /// <param name="userApiId">The user's API id, to which to subscribe the type</param>
+        /// <returns></returns>
+        public IIntegrationTypeDefinition SaveType(string userApiId)
+        {
+            IntegrationTypeDefinition oldTypeDef = null;
+            if (!IntegrationTypeDefinition.TypeExists(this, userApiId, out oldTypeDef))
+            {
+                this.Save();
+            }
+            else
+            {
+                this.Id = oldTypeDef.Id;
+            }
+            return this;
+        }
     }
 }

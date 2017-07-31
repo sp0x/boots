@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using Peeralize.Service.Format;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Source;
 
@@ -24,8 +25,22 @@ namespace Peeralize.Service.IntegrationSource
         public bool IsOpen => _fileStream != null && (_fileStream.CanRead || _fileStream.CanWrite);
         private object _lock;
         public string FileName => System.IO.Path.GetFileNameWithoutExtension(_filePath);
+        /// <summary>
+        /// The initial path that was used for this source.
+        /// </summary>
         public string Path => _filePath;
+        public string CurrentPath { get; private set; }
+
+        public FileSourceMode Mode { get; set; }
+        //reserved for directory mode
+        private int _fileIndex = 0;
+
+        private string[] _filesCache;
+
+
         private dynamic _cachedInstance = null;
+        private bool _disposed;
+
 
         public FileSource()
         {
@@ -91,9 +106,39 @@ namespace Peeralize.Service.IntegrationSource
         {
             lock (_lock)
             {
-                if (IsOpen) return _fileStream;
-                _cachedInstance = null;
-                return _fileStream = System.IO.File.Open(_filePath, mode);
+                if (Mode == FileSourceMode.File)
+                {
+                    if (IsOpen) return _fileStream;
+                    _cachedInstance = null;
+                    return _fileStream = System.IO.File.Open(_filePath, mode);
+                }
+                else if (Mode == FileSourceMode.Directory)
+                {
+                    if (IsOpen) return _fileStream;
+                    //Don`t refresh the directory
+                    if (_filesCache == null || _filesCache.Length == 0)
+                    {
+                        FileAttributes flAttributes = File.GetAttributes(Path);
+                        //TODO: Optimize this, for large directories
+                        if (flAttributes == FileAttributes.Directory)
+                        {
+                            _filesCache = Directory.GetFiles(Path, "*", SearchOption.TopDirectoryOnly);
+                        }
+                        else
+                        {
+                            _filesCache = Directory.GetFiles(System.IO.Path.GetDirectoryName(Path), FileName,
+                                SearchOption.TopDirectoryOnly);
+                        }
+                    }
+                    if (_fileIndex >= _filesCache.Length) return null;
+                    CurrentPath = _filesCache[_fileIndex];
+                    _cachedInstance = null;
+                    return _fileStream = System.IO.File.Open(CurrentPath, mode);
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
 
@@ -106,6 +151,19 @@ namespace Peeralize.Service.IntegrationSource
         public static FileSource CreateFromFile(string fileName, IInputFormatter formatter = null)
         {
             var src = new FileSource(fileName, formatter);
+            return src;
+        }
+
+        /// <summary>
+        /// Creates a new filesource
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="formatter"></param>
+        /// <returns></returns>
+        public static FileSource CreateFromDirectory(string fileName, IInputFormatter formatter = null)
+        {
+            var src = new FileSource(fileName, formatter);
+            src.Mode = FileSourceMode.Directory;
             return src;
         }
 
@@ -150,9 +208,42 @@ namespace Peeralize.Service.IntegrationSource
                     _cachedInstance = null;
                 }
                 //The stream position is increased, so there's no need for anything else.
-                lastInstance = Formatter.GetNext(_fileStream, resetNeeded); 
+                lastInstance = Formatter.GetNext(_fileStream, resetNeeded);
+                //If there are no more records in the current file source, and we're using a whole directory as a source
+                //and we have any remaining files to check
+                if (lastInstance == null && Mode == FileSourceMode.Directory && _fileIndex < (_filesCache.Length-1))
+                {
+                    _fileIndex++;
+                    _fileStream.Close();
+                    //We reset, because the stream changed
+                    lastInstance = Formatter.GetNext(Open(), true);
+                }
                 return lastInstance;
             }
         }
+
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                _fileStream?.Dispose();
+                _disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~FileSource()
+        {
+            Dispose(false);
+        }
     }
+
+
+
 }

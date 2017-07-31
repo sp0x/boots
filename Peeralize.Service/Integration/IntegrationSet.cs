@@ -3,6 +3,9 @@ using Peeralize.Service.Source;
 
 namespace Peeralize.Service.Integration
 {
+    /// <summary>
+    /// A integration set with definition and data source
+    /// </summary>
     public class IntegrationSet 
     {
         public IIntegrationTypeDefinition Definition { get; set; }

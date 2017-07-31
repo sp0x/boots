@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text;
+using Peeralize.Service.Format;
 using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Source;
 using Xunit;

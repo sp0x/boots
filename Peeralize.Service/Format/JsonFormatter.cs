@@ -1,14 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Peeralize.Service.Source;
 
-namespace Peeralize.Service.Source
+namespace Peeralize.Service.Format
 {
     public class JsonFormatter : IInputFormatter
     {
@@ -47,6 +44,7 @@ namespace Peeralize.Service.Source
         /// <param name="fs"></param>
         /// <returns></returns>
         public T GetNext<T>(Stream fs, bool resetRead = false)
+            where T : class
         {
             if (!fs.CanRead)
             {

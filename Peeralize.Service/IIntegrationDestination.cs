@@ -1,6 +1,9 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Peeralize.Service.Integration;
+using Peeralize.Service.Integration.Blocks;
 
 namespace Peeralize.Service
 {
@@ -16,7 +19,12 @@ namespace Peeralize.Service
         void ConsumeAsync(CancellationToken token);
         void Close();
         void Post(IntegratedDocument item);
-        IIntegrationDestination LinkTo(ITargetBlock<IntegratedDocument> behaviourContext, DataflowLinkOptions linkOptions = null);
+        IIntegrationDestination LinkTo(ITargetBlock<IntegratedDocument> targetBlock, DataflowLinkOptions linkOptions = null);
+        IIntegrationDestination LinkTo(IntegrationBlock targetDestination, DataflowLinkOptions linkOptions = null);
+        ITargetBlock<IntegratedDocument> GetActionBlock();
+        IIntegrationDestination ContinueWith(Action<Task> action);
+
         string UserId { get; }
+
     }
 }

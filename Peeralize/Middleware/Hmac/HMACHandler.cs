@@ -27,12 +27,12 @@ namespace Peeralize.Middleware.Hmac
     {
         private readonly IMemoryCache _memoryCache;
         private readonly RemoteDataSource<ApiAuth> _authSource;
-
+        private string _iv;
         public HmacHandler(IMemoryCache memoryCache)
         {
             _memoryCache = memoryCache;
             _authSource = typeof(ApiAuth).GetDataSource<ApiAuth>();
-             
+            _iv = "452871829734829374289375892375892";
         }
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
@@ -92,7 +92,7 @@ namespace Peeralize.Middleware.Hmac
                     {
                         if (!string.IsNullOrEmpty(body))
                         {
-                            body = this.XorString(body, apiAuth.AppSecret);
+                            body = DecryptRJ256(Convert.FromBase64String(body), apiAuth.AppSecret, this._iv);
                             byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
                             Request.Body = new MemoryStream(bodyBytes); 
                         }
@@ -162,13 +162,61 @@ namespace Peeralize.Middleware.Hmac
             }
 
         }
-        private string XorString(string text, string key)
-        {
-            var result = new StringBuilder();
-            for (int c = 0; c < text.Length; c++)
-                result.Append((char)((uint)text[c] ^ (uint)key[c % key.Length]));
+        //private string XorString(string text, string key) { 
+        //    var result = new StringBuilder();
+        //    for (int c = 0; c < text.Length; c++)
+        //        result.Append((char)((uint)text[c] ^ (uint)key[c % key.Length]));
 
-            return result.ToString();
+        //    return result.ToString();
+        //}
+
+        private string DecodeMessage(string text, string key)
+        {
+            var bytes = Convert.FromBase64String(text);
+            return DecryptRJ256(bytes, key, this._iv);
+        }
+
+        public byte[] Decode(string str)
+        {
+            var decbuff = Convert.FromBase64String(str);
+            return decbuff;
+        }
+
+        static public String DecryptRJ256(byte[] cypher, string KeyString, string IVString)
+        {
+            var sRet = "";
+
+            var encoding = new UTF8Encoding();
+            var Key = encoding.GetBytes(KeyString);
+            var IV = encoding.GetBytes(IVString);
+
+            using (var rj = new RijndaelManaged())
+            {
+                try
+                {
+                    rj.Padding = PaddingMode.PKCS7;
+                    rj.Mode = CipherMode.CBC;
+                    rj.KeySize = 256;
+                    rj.BlockSize = 256;
+                    rj.Key = Key;
+                    rj.IV = IV;
+                    var ms = new MemoryStream(cypher);
+
+                    using (var cs = new CryptoStream(ms, rj.CreateDecryptor(Key, IV), CryptoStreamMode.Read))
+                    {
+                        using (var sr = new StreamReader(cs))
+                        {
+                            sRet = sr.ReadLine();
+                        }
+                    }
+                }
+                finally
+                {
+                    rj.Clear();
+                }
+            }
+
+            return sRet;
         }
 
         private string[] GetAuthenticationValues(string rawAuthenticationHeader)
