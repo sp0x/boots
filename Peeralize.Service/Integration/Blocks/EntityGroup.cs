@@ -38,12 +38,12 @@ namespace Peeralize.Service.Integration.Blocks
             PageStats = new CrossPageStats();
         }
 
-        public IIntegrationDestination ContinueWith(Action<Dictionary<object, IntegratedDocument>.ValueCollection> action)
+        public IIntegrationDestination ContinueWith(Action<EntityGroup> action)
         {
             var completion = GetActionBlock().Completion;
             completion.ContinueWith(xTask =>
             {
-                action(EntityDictionary.Values);
+                action(this);
             });
             return this;
         }

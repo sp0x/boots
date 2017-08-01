@@ -51,6 +51,7 @@ namespace Peeralize.Service.Integration.Blocks
             DateTime lastMEbagVisit = DateTime.MinValue;
             var hasVisitedMobileBeforeTarget = false;
             var hasVisitedMobile = false;
+            var hasVisitedPromotion = false;
 
             BsonArray boughtLastWeek = new BsonArray(),
                 boughtLastMonth = new BsonArray(),
@@ -79,8 +80,10 @@ namespace Peeralize.Service.Integration.Blocks
                         hasVisitedMobileBeforeTarget = true;
                     }
                 }
-
-
+                if (!hasVisitedPromotion && visitUrl.Contains("/promo-products"))
+                {
+                    hasVisitedPromotion = true;
+                }
                 if (visitUrl.Contains("payments/finish"))
                 {
                     var dateTimeNextDay = dateTime.AddDays(1);
@@ -114,6 +117,9 @@ namespace Peeralize.Service.Integration.Blocks
                 mx1(purchases.Count);
             intDoc.Document["prop_buy_is_weekend_user"] = purchasesInWeekends.Count() /
                 mx1(purchases.Count);
+
+            intDoc.Document["is_from_mobile"] = hasVisitedMobile ? 1 : 0;
+            intDoc.Document["is_on_promotions_page"] = hasVisitedPromotion ? 1 : 0;
             intDoc.Document["before_visit_from_mobile"] = hasVisitedMobileBeforeTarget ? 1 : 0;
             intDoc.Document["time_before_leaving"] = browsingStats != null
                 ? browsingStats.TargetSiteVisitAverageDuration
