@@ -27,6 +27,7 @@ namespace Peeralize.ServiceTests
         private BsonArray _purchasesOnHolidays;
         private BsonArray _purchasesBeforeHolidays;
         private BsonArray _purchasesInWeekends;
+        private BsonArray _purchasesBeforeWeekends;
         private DateHelper _dateHelper;
 
         public EntityExtractor(ConfigurationFixture fixture)
@@ -35,6 +36,8 @@ namespace Peeralize.ServiceTests
             _purchases = new BsonArray();
             _purchasesOnHolidays = new BsonArray();
             _purchasesInWeekends = new BsonArray();
+            _purchasesBeforeHolidays = new BsonArray();
+            _purchasesBeforeWeekends = new BsonArray();
             _dateHelper = new DateHelper();
         }
 
@@ -85,33 +88,65 @@ namespace Peeralize.ServiceTests
             var grouper = new EntityGroup(userId, (x) => x.Document["uuid"], FilterUserData, AccumulateUserEvent);
             var saver = new MongoSink(userId);
             grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
-            var modifier = new EntityFeatureGenerator(userId);
-            modifier.Helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
-            modifier.LinkTo(saver);
-            grouper.ContinueWith(modifier.PostAll);
+            var featureGen = new EntityFeatureGenerator(userId);
+            featureGen.Helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
+            featureGen.LinkTo(saver);
+            saver.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+
+            grouper.ContinueWith((userdata) =>
+            {
+                OnUsersGrouped(featureGen, userdata);
+            }); //modifier.PostAll);
             
             harvester.SetDestination(grouper);
             harvester.AddType(type, fileSource);
             harvester.Synchronize();
+            
+            //Task.WaitAll(grouper.Completion, featureGen.Completion, );
+            await saver.Completion;
+        }
+
+        /// <summary>
+        /// Invoked after users are finished being grouped
+        /// </summary>
+        /// <param name="featureGen"></param>
+        /// <param name="usersData"></param>
+        private void OnUsersGrouped(EntityFeatureGenerator featureGen, Dictionary<object, IntegratedDocument>.ValueCollection usersData)
+        {
 
             var today = DateTime.Today;
             var dateHelper = new DateHelper();
-            long max_time_spent_by_any_paying_user_ebag =
-                modifier.Helper.GetLongestVisitPurchaseDuration("ebag.bg", "payments/finish");
+            double max_time_spent_by_any_paying_user_ebag =
+                featureGen.Helper.GetLongestVisitPurchaseDuration("ebag.bg", "payments/finish");
+            var day = (double)((int)today.DayOfWeek / (double)7);
+            var date = (double)(today.Day / (new DateTime(today.Year, 12, 31).Subtract(new DateTime(today.Year - 1, 12, 31)).Days));
+            var dayTimeSpan = DateTime.Now - today;
+            var time_of_day = (double)dayTimeSpan.TotalSeconds / (double)86400;
 
-            var day = (int)today.DayOfWeek / 7;
-            var date = (int) today.Day / (new DateTime(today.Year, 12, 31).Subtract(new DateTime(today.Year -1, 12, 31)).Days);
-            var time_of_day = (DateTime.Now-today).Seconds / 86400;
             var is_holiday = dateHelper.IsHoliday(today);
             var is_weekend = (int)today.DayOfWeek >= 6;
             var is_before_weekend = today.DayOfWeek == DayOfWeek.Friday;
             var is_before_holiday = dateHelper.IsHoliday(today.AddDays(1));
-            var prob_buy_is_holiday = _purchasesOnHolidays.Count / _purchases.Count;
-            var prob_buy_is_before_holiday = _purchasesBeforeHolidays.Count / _purchases.Count;
-            var prop_buy_is_weekend = _purchasesInWeekends.Count / _purchases.Count;
-
-
-            await grouper.Completion;
+            var purchasesCount = (double)_purchases.Count;
+            if (purchasesCount == 0) purchasesCount = 1;
+            var prob_buy_is_holiday = (double)_purchasesOnHolidays.Count / purchasesCount;
+            var prob_buy_is_before_holiday = (double)_purchasesBeforeHolidays.Count / purchasesCount;
+            var prop_buy_is_weekend = (double)_purchasesInWeekends.Count / purchasesCount;
+            foreach (var user in usersData)
+            {
+                user.Document["day"] = day;
+                user.Document["date"] = date;
+                user.Document["max_time_spent_by_any_paying_user_ebag"] = max_time_spent_by_any_paying_user_ebag;
+                user.Document["time_of_day"] = time_of_day;
+                user.Document["is_holiday"] = is_holiday ? 1 : 0;
+                user.Document["is_weekend"] = is_weekend ? 1 : 0;
+                user.Document["is_before_weekend"] = is_before_weekend ? 1 : 0;
+                user.Document["is_before_holiday"] = is_before_holiday ? 1 : 0;
+                user.Document["prob_buy_is_holiday"] = prob_buy_is_holiday;
+                user.Document["prob_buy_is_before_holiday"] = prob_buy_is_before_holiday;
+                user.Document["prop_buy_is_weekend"] = prop_buy_is_weekend;
+            }
+            featureGen.PostAll(usersData);
         }
 
         /// <summary>
@@ -153,6 +188,10 @@ namespace Peeralize.ServiceTests
                 else if (_dateHelper.IsHoliday(dateTime.AddDays(1)))
                 {
                     _purchasesBeforeHolidays.Add(newElement);
+                }
+                else if (dateTime.DayOfWeek == DayOfWeek.Friday)
+                {
+                    _purchasesBeforeWeekends.Add(newElement);
                 }
                 else if (dateTime.DayOfWeek > DayOfWeek.Friday)
                 {

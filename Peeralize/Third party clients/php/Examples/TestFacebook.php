@@ -2,8 +2,8 @@
 require __DIR__ . '/../vendor/autoload.php';
 use \Peeralytics\Client;
 
-$appId = "5f05sdfhsdfgh";
-$secret = "BvIsdfhgA=";
+$appId = "5f059dbe7c3b48d6b3aed518b54f1dc5";
+$secret = "BvIn6qz2sOKrgjPBP3PCfSVXESb0Hhn7IhZBKqhObVA=";
 
 
 $client = new Peeralytics\Client($appId, $secret);
@@ -26,18 +26,19 @@ $user = [
  * facebook login permissions management example
  */
 
-$fb = new Facebook\Facebook([
-	'app_id' => $fbAppId, //
-	'app_secret' => $fbAppSecret,
-	'default_graph_version' => 'v2.2',
-]);
+// $fb = new Facebook\Facebook([
+// 	'app_id' => $fbAppId, //
+// 	'app_secret' => $fbAppSecret,
+// 	'default_graph_version' => 'v2.2',
+// ]);
+
 $permissionsArray = ["email"];
 $client->requirePermissions("Facebook", $permissionsArray);
-$helper = $fb->getRedirectLoginHelper("urlToRedirectToAfterLogin-Optional!");
-$url = $helper->getLoginUrl($permissionsArray);
+//$helper = $fb->getRedirectLoginHelper("urlToRedirectToAfterLogin-Optional!");
+//$url = $helper->getLoginUrl($permissionsArray);
 echo "Permissions: \n";
 var_dump($permissionsArray);
-echo "\n\nUrl: " . $url;
+//echo "\n\nUrl: " . $url;
 
 
 
@@ -46,13 +47,13 @@ echo "\n\nUrl: " . $url;
  * facebook login callback example
  */
 
-$fb = new Facebook\Facebook([
-	'app_id' => $fbAppId, //
-	'app_secret' => $fbAppSecret,
-	'default_graph_version' => 'v2.2',
-]);
+// $fb = new Facebook\Facebook([
+// 	'app_id' => $fbAppId, //
+// 	'app_secret' => $fbAppSecret,
+// 	'default_graph_version' => 'v2.2',
+// ]);
 
-$helper = $fb->getRedirectLoginHelper();
+//$helper = $fb->getRedirectLoginHelper();
 try {
 
 	$accessToken = "usertoken"; //$helper->getAccessToken();

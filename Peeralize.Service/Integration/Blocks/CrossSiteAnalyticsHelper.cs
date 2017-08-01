@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using MongoDB.Bson;
 using nvoid.extensions;
@@ -10,6 +11,7 @@ namespace Peeralize.Service.Integration.Blocks
     {
         public Dictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
         public CrossPageStats PaginationStatus { get; private set; }
+
 
         public CrossSiteAnalyticsHelper(Dictionary<object, IntegratedDocument> sessions,
             CrossPageStats paginationStatus)
@@ -27,29 +29,29 @@ namespace Peeralize.Service.Integration.Blocks
         /// </summary>
         /// <param name="targetDomain"></param>
         /// <returns></returns>
-        public long GetLongestVisitPurchaseDuration(string targetDomain, string specialUrl)
+        public double GetLongestVisitPurchaseDuration(string targetDomain, string specialUrl)
         {
-            var spentTimes = new List<long>();
+            var spentTimes = new List<double>();
             
             foreach (var userPair in this.EntityDictionary)
             {
                 var userId = userPair.Key;
-                var visits = (BsonArray)userPair.Value.Document["events"];
+                var visits = (BsonArray)userPair.Value.Document["events"]; 
                 var userIsPaying = false;
-                //var addedPayingReference = false;
-                var userInternetBrowsingTime = TimeSpan.Zero;
+                //var userInternetBrowsingTime = TimeSpan.Zero;
 
-                var lastDomain = visits[0]["value"].ToString().ToHostname().ToLower();
+                var firstVisit = visits[0];
+                var lastDomain = firstVisit["value"].ToString().ToHostname().ToLower();
                 var userTargetleadingHosts = new HashSet<string>();
                 
-                var lastDomainSessionStart = DateTime.Parse(visits[0]["ondate"].ToString());
+                var lastDomainSessionStart = DateTime.Parse(firstVisit["ondate"].ToString());
                 var lastDomainVisitDuration = TimeSpan.Zero;
                 var completeBrowsingDuration = TimeSpan.Zero;
                 var timeSpentOnTargetDomain = TimeSpan.Zero;
+                var targetDomainVisits = 0;
                 var targetDomainTransitionDuration = lastDomainVisitDuration;
-                var targetDomainTransitionCount = 0;
+                var targetDomainTransitionCount = 0; 
 
-                //var enteredTargetDomain = false;
                 for (int i = 1; i < visits.Count; i++)
                 {
                     var visit = visits[i];
@@ -69,14 +71,21 @@ namespace Peeralize.Service.Integration.Blocks
                     {
                         //Domain has changed, add the time from the last domain
                         var visitDuration = visited - lastDomainSessionStart;
+                        //Add at least 2 seconds if duration is 0
+                        if (visitDuration.TotalSeconds == 0) visitDuration = visitDuration.Add(TimeSpan.FromSeconds(1));
+
                         completeBrowsingDuration += visitDuration;
+                        
+
+
                         //If we were on our target domain, and the current one is not any more
                         if (lastDomain == targetDomain)
                         {
                             timeSpentOnTargetDomain += visitDuration;
+                            targetDomainVisits++;
                             if (lastDomainVisitDuration > TimeSpan.Zero)
                             {
-                                targetDomainTransitionCount++;
+                                //targetDomainTransitionCount++;
                             }
                         }
                         else
@@ -85,6 +94,7 @@ namespace Peeralize.Service.Integration.Blocks
                             if (crDomain == targetDomain)
                             {
                                 targetDomainTransitionDuration += lastDomainVisitDuration;
+                                targetDomainTransitionCount++;
 
                                 PaginationStatus.PageStats[lastDomain].AddFollowingSite(targetDomain);
                                 var followingReference = PaginationStatus.PageStats[lastDomain].FollowingReferences[crDomain];
@@ -112,31 +122,26 @@ namespace Peeralize.Service.Integration.Blocks
                     lastDomain = crDomain;
                 }
 
-
-
-
-                var visitingTimeFrac = timeSpentOnTargetDomain.Seconds / userInternetBrowsingTime.Seconds;
                 if (userIsPaying)
                 {
+                    var visitingTimeFrac = (double)(completeBrowsingDuration.TotalSeconds == 0 ?
+                        0 : (timeSpentOnTargetDomain.TotalSeconds / completeBrowsingDuration.TotalSeconds));
                     spentTimes.Add(visitingTimeFrac);
                     PaginationStatus.PageStats[targetDomain].PurchasedUsers++;
                 }
 
 
-                if (this.EntityDictionary[userId].Document["browsing_statistics"] == null)
-                {
-                    this.EntityDictionary[userId].Document["browsing_statistics"] = new BsonDocument();
-                    this.EntityDictionary[userId].Document["browsing_statistics"]["browsingTime"] =
-                        userInternetBrowsingTime.Seconds;
-                    this.EntityDictionary[userId].Document["browsing_statistics"]["targetSiteTime"] =
-                        timeSpentOnTargetDomain.Seconds;
-                    double transitionAverage = targetDomainTransitionCount== 0 ? 0 : 
-                        (double)targetDomainTransitionDuration.Seconds / (double)targetDomainTransitionCount;
-                    this.EntityDictionary[userId].Document["browsing_statistics"]["targetSiteTransitionAverage"] =
-                        transitionAverage;
-                    this.EntityDictionary[userId].Document["is_paying"] = userIsPaying;
-                }
-
+                //if (this.EntityDictionary[userId].Document["browsing_statistics"] == null)
+                //{
+                var browsingStats = new UserBrowsingStats();
+                browsingStats.BrowsingTime = (int)completeBrowsingDuration.TotalSeconds;
+                browsingStats.TargetSiteTime = (int)timeSpentOnTargetDomain.TotalSeconds;
+                browsingStats.TargetSiteVisits = targetDomainVisits;
+                browsingStats.TargetSiteDomainTransitionDuration = (int)targetDomainTransitionDuration.TotalSeconds;
+                browsingStats.TargetSiteDomainTransitions = targetDomainTransitionCount;
+                this.EntityDictionary[userId].Document["browsing_statistics"] = browsingStats.ToBsonDocument(); 
+                this.EntityDictionary[userId].Document["is_paying"] = userIsPaying ? 1 : 0;
+                //} 
             }
             return spentTimes.Max();
         }
@@ -197,7 +202,8 @@ namespace Peeralize.Service.Integration.Blocks
         public static TimeSpan GetVisitsTimeSpan(BsonArray visits, TimeSpan realisticTimeSpan)
         {
             var dailyPeriodSum = GetDailyPeriodSum(visits);
-            return TimeSpan.FromSeconds(dailyPeriodSum.Seconds / realisticTimeSpan.Seconds);
+            double mxSeconds = Math.Max(1, realisticTimeSpan.TotalSeconds);
+            return TimeSpan.FromSeconds(dailyPeriodSum.TotalSeconds / mxSeconds);
         }
 
         /// <summary>
@@ -208,27 +214,69 @@ namespace Peeralize.Service.Integration.Blocks
         public static TimeSpan GetDailyPeriodSum(BsonArray events)
         {
             var span = new TimeSpan();
+            if (events.Count == 0)
+            {
+                return TimeSpan.Zero;
+            }
             DateTime lastDayDateTime = DateTime.Parse(events[0]["ondate"].ToString());
-            DateTime lastProcessedDate = lastDayDateTime;
+            DateTime lastDomainVisitStart = lastDayDateTime;
+            DateTime? previousVisitDate = null;
+            string lastDomain = events[0]["value"].ToString().ToHostname(true).ToLower();
+            
+            var periodAccounted = TimeSpan.Zero;
             for (var i = 1; i < events.Count; i++)
             {
                 var ev = events[i];
                 var currentEventDate = DateTime.Parse(ev["ondate"].ToString());
-                if (lastDayDateTime.Day == currentEventDate.Day)
+                var crDomain = ev["value"].ToString().ToHostname(true).ToLower();
+                //Wait for the domain to change
+                if (crDomain == lastDomain)
                 {
-                    var diff = currentEventDate - lastProcessedDate;
-                    span = span.Add(diff);
+
                 }
                 else
                 {
-                    lastDayDateTime = currentEventDate;
+                    //If the last domain visit was on a different day
+                    if (lastDayDateTime.Day == currentEventDate.Day)
+                    { 
+                        var periodDiff = (previousVisitDate == null)
+                            ? TimeSpan.FromSeconds(1) 
+                            : previousVisitDate - lastDomainVisitStart;
+                        if (periodDiff.Value.TotalSeconds == 0) periodDiff = TimeSpan.FromSeconds(1);
+                        periodAccounted += periodDiff.Value;
+                    }
+                    else
+                    {
+                        //Domain changed, but on the next day
+                        var periodDiff = (previousVisitDate == null)
+                            ? TimeSpan.FromSeconds(1)
+                            : previousVisitDate - lastDomainVisitStart;
+                        if (periodDiff.Value.TotalSeconds == 0) periodDiff = TimeSpan.FromSeconds(1);
+                        periodAccounted += periodDiff.Value;
+                    }
+
+                    lastDomainVisitStart = currentEventDate;
                 }
+                previousVisitDate = currentEventDate;
+                lastDomain = crDomain;
             }
+            if (events.Count == 1)
+            {
+                span += TimeSpan.FromSeconds(1);
+            }
+            else
+            {
+                var periodDiff = previousVisitDate - lastDomainVisitStart;
+                if (periodDiff.Value.TotalSeconds == 0) periodDiff = TimeSpan.FromSeconds(1);
+                periodAccounted += periodDiff.Value;
+            }
+            span += periodAccounted;
             return span;
         }
 
         public static TimeSpan GetPeriod(BsonArray array)
         {
+            if (array.Count == 0) return TimeSpan.Zero;
             var start = array[0];
             var end = array[array.Count - 1];
             return DateTime.Parse(end["ondate"].ToString()) - DateTime.Parse(start["ondate"].ToString());
@@ -293,7 +341,7 @@ namespace Peeralize.Service.Integration.Blocks
         /// <param name="siteVisits"></param>
         /// <param name="targetSite"></param>
         /// <returns></returns>
-        public object GetAveragePageRating(IEnumerable<IGrouping<string, BsonValue>> siteVisits, string targetSite)
+        public double GetAveragePageRating(IEnumerable<IGrouping<string, BsonValue>> siteVisits, string targetSite)
         {
             var ratings = new List<double>();
             foreach (var visitSet in siteVisits)

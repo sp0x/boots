@@ -78,7 +78,7 @@ namespace Peeralize.Service.Integration.Blocks
             }
         }
 
-        public void Close()
+        public virtual void Close()
         {
             _buffer.Complete();
             _transformer.Complete();
@@ -104,11 +104,15 @@ namespace Peeralize.Service.Integration.Blocks
         }
 
 
-        public void PostAll(Dictionary<object, IntegratedDocument>.ValueCollection valueCollection)
+        public void PostAll(Dictionary<object, IntegratedDocument>.ValueCollection valueCollection, bool completeOnDone = true)
         {
             foreach (var elem in valueCollection)
             {
                 Post(elem);
+            }
+            if (completeOnDone)
+            {
+                _buffer.Complete();
             }
         }
 
@@ -121,7 +125,8 @@ namespace Peeralize.Service.Integration.Blocks
             }
             else
             {
-                DataflowBlock.LinkTo(_transformer, targetBlock);
+                linkOptions = new DataflowLinkOptions() { PropagateCompletion = true };
+                _transformer.LinkTo(targetBlock, linkOptions);
             }
             return this;
         }
@@ -135,7 +140,8 @@ namespace Peeralize.Service.Integration.Blocks
             }
             else
             {
-                DataflowBlock.LinkTo(_transformer, actionBlock);
+                linkOptions = new DataflowLinkOptions() {PropagateCompletion = true};
+                _transformer.LinkTo(actionBlock, linkOptions);
             }
             return this;
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using nvoid.extensions;
+using System.Linq;
 
 namespace Peeralize.Service.Integration.Blocks
 {
@@ -34,6 +35,7 @@ namespace Peeralize.Service.Integration.Blocks
             OnUserCreatedFilter = filterUserCreation;
             base.Completed += OnReadingCompleted;
             EntityDictionary = new Dictionary<object, IntegratedDocument>();
+            PageStats = new CrossPageStats();
         }
 
         public IIntegrationDestination ContinueWith(Action<Dictionary<object, IntegratedDocument>.ValueCollection> action)
@@ -52,20 +54,33 @@ namespace Peeralize.Service.Integration.Blocks
             GroupingComplete?.Invoke(this, EventArgs.Empty);
         }
 
+
+        public override void Close()
+        {
+            foreach (var group in EntityDictionary)
+            {
+                BsonArray bsonValue = (BsonArray)EntityDictionary[@group.Key].Document["events"];
+                EntityDictionary[group.Key].Document["events"] = new BsonArray(
+                    bsonValue.OrderBy(x=>DateTime.Parse(x["ondate"].ToString())));
+            }
+            base.Close();
+        }
+
+
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
         {
             var key = GroupBySelector(intDoc);
             var page = intDoc.Document["value"];
+            if (page.ToString().IsNumeric())
+            {
+                return intDoc;
+            }
+
             var isNewUser = false;
             if (!EntityDictionary.ContainsKey(key))
             {
                 var docClone = intDoc;
                 //Ignore non valid values
-                if (page.ToString().IsNumeric())
-                {
-                    return intDoc;
-                }
-
                 if (OnUserCreatedFilter != null)
                 {
                     docClone = intDoc.Clone();

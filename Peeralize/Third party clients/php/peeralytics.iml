@@ -15,16 +15,5 @@
         </SOURCES>
       </library>
     </orderEntry>
-    <orderEntry type="module-library">
-      <library name="PHP" type="php">
-        <CLASSES>
-          <root url="file://G:/servers/xampp/php/pear" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="file://G:/servers/xampp/php/pear" />
-        </SOURCES>
-      </library>
-    </orderEntry>
   </component>
 </module>
