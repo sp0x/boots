@@ -158,7 +158,22 @@ namespace Peeralize.Service.Integration.Blocks
         {
             fromHost = fromHost.ToHostname(true);
             toHost = toHost.ToHostname(true);
-            return PaginationStatus[fromHost].FollowingReferences[toHost].TransitionDurationAverage;
+            if (PaginationStatus[fromHost] == null)
+            {
+                return TimeSpan.Zero;
+            }
+            else
+            {
+                var fref = PaginationStatus[fromHost].GetFollowingReference(toHost);
+                if (fref != null)
+                {
+                    return fref.TransitionDurationAverage;
+                }
+                else
+                {
+                    return TimeSpan.Zero;
+                }
+            } 
 //            string lastHostname = null;
 //            BsonValue lastPage = null;
 //            var totalPageTransitionTime = TimeSpan.Zero;
@@ -317,20 +332,30 @@ namespace Peeralize.Service.Integration.Blocks
             var targetPageHost = targetPage.ToHostname(true);
             var p = pageLeadingToTarget.ToHostname(true);
             var q = targetPageHost;
+            Func<double, double> mx1 = (x) => Math.Max(1, x);
+            double decay = 0;
+            double weight = 0;
+            double traffic = 0; 
 
-            var decay = 0;
-            var weight = 0;
-            long traffic = 0; 
+            double usersSentToQ = PaginationStatus.GetVisitorsCount(q);
+            double usersSentToP = PaginationStatus.GetVisitorsCount(p);
+            double usersBoughtStuffInQ = PaginationStatus[q]!=null ? 
+                PaginationStatus[q].PurchasedUsers : 0;
+            double payingUsersSentFromPToQ = 0;
+            if (PaginationStatus[p] != null)
+            {
+                var fref = PaginationStatus[p].GetFollowingReference(q);
+                if (fref != null)
+                {
+                    payingUsersSentFromPToQ = fref.PurchasedUsers;
+                }
+            }
 
-            var usersSentToQ = PaginationStatus.GetVisitorsCount(q);
-            var usersSentToP = PaginationStatus.GetVisitorsCount(p);
-            var usersBoughtStuffInQ = PaginationStatus[q].PurchasedUsers;
-            var payingUsersSentFromPToQ = PaginationStatus[p].FollowingReferences[p].PurchasedUsers;
-            var avgTransition = GetAveragePageTransitionTime(pageLeadingToTarget, targetPage);
+            double avgTransition = GetAveragePageTransitionTime(pageLeadingToTarget, targetPage).Seconds;
 
-            traffic = usersSentToQ / usersSentToP;
-            weight = usersBoughtStuffInQ / payingUsersSentFromPToQ;
-            decay = 1 / avgTransition.Milliseconds; //transition in ms
+            traffic = usersSentToQ / mx1(usersSentToP);
+            weight = usersBoughtStuffInQ / mx1(payingUsersSentFromPToQ);
+            decay = 1.0d / mx1(avgTransition); //transition in ms
 
             return traffic * weight * decay;
         }
@@ -346,12 +371,12 @@ namespace Peeralize.Service.Integration.Blocks
             var ratings = new List<double>();
             foreach (var visitSet in siteVisits)
             {
-                var page = visitSet.Key;
-                if (page.Contains(targetSite.ToHostname())) continue;
-                var rating = GetPageRating(page, targetSite);
+                var domain = visitSet.Key;
+                if (domain.Contains(targetSite.ToHostname())) continue;
+                var rating = GetPageRating(domain, targetSite);
                 ratings.Add(rating);
             }
-            return ratings.Average();
+            return ratings.Count == 0 ? 0 : ratings.Average();
         }
     }
 }

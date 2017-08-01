@@ -72,6 +72,17 @@ namespace Peeralize.Service
         public TimeSpan TransitionDuration { get; set; }
         public int TransitionsCount { get; set; }
 
+        public PageStats GetFollowingReference(string domain)
+        {
+            if (FollowingReferences.ContainsKey(domain))
+            {
+                return FollowingReferences[domain];
+            }
+            else
+            {
+                return null;
+            }
+        }
         /// <summary>
         /// The average time it takes to get to this page, from another one
         /// </summary>

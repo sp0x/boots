@@ -124,6 +124,9 @@ namespace Peeralize.Service.Integration.Blocks
             intDoc.Document["time_before_leaving"] = browsingStats != null
                 ? browsingStats.TargetSiteVisitAverageDuration
                 : 0;
+            var avgPageRating = Helper.GetAveragePageRating(domainVisits, "ebag.bg");
+            intDoc.Document["page_rank"] = avgPageRating;
+
             //Cleanup events
             intDoc.Document.Remove("events");
             intDoc.Document.Remove("browsing_statistics");
