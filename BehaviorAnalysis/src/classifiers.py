@@ -60,7 +60,11 @@ class RNNBuilder:
 
     def build_rnn(self,a=2):
         hidden = get_hidden_neurons_count(self.meta_size, self.num_samples,a=a)
-        cw = compute_class_weight('balanced',np.unique(self.targets),self.targets)
+        tmp = np.unique(self.targets)
+        C = dict()
+        for i in len(tmp):
+            C[tmp[i]] = cw[i]
+        cw = compute_class_weight('balanced', tmp ,self.targets)
         #inp = Input(shape=(self.time_size,))
         inp2 = Input(shape=(self.meta_size,))  # for metadata aka age,wage,blah blah
         #mem = LSTM(hidden)(inp)  # keep mem of past behavior
@@ -71,7 +75,7 @@ class RNNBuilder:
         x = Dense(hidden, activation='sigmoid')(x)
         out = Dense(1, activation='sigmoid')(x)
         model = Model(inputs=[inp2], outputs=out)
-        model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics='accuracy',loss_weights=cw)
+        model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics='accuracy',loss_weights=[C])
 
 class Experiment:
     def __init__(self,data,targets,models,client):
