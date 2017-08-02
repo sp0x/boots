@@ -42,11 +42,14 @@ allData = userDaysCollection.find({
      "Document.time_before_leaving" : 1,
      "Document.page_rank" : 1,
      "Document.is_paying" : 1
-} ).limit(1000 * 100)
+} ).limit(1000 * 10)
 targets = []
 data = []
 p=0
+
 for doc in allData: 
+    if(p>10000):
+        break
     targets.append(1 if doc['Document']['is_paying']==1 else 0)
     tmpDoc = doc['Document']
     data.append([tmpDoc["day"],
