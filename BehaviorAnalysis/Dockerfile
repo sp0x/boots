@@ -5,7 +5,7 @@ WORKDIR /app
 
 #COPY ./src/ .
 
-RUN conda install keras pyzmq -y --quiet
+RUN conda install keras pyzmq pymongo -y --quiet
 
 EXPOSE 5556 5557
 

@@ -30,3 +30,5 @@ storage.ide
 /Peeralize/Third party clients/php/.idea/php.xml
 **.csv
 /BehaviorAnalysis/src/system/*
+/BehaviorAnalysis/src/Netinfo
+**.7z

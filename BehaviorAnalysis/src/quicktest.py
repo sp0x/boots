@@ -11,7 +11,7 @@ host = "10.10.1.5"
 client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
 db = client.netvoid;
 userDaysCollection = db.IntegratedDocument;
- 
+
 allData = userDaysCollection.find({
     "UserId" : "123123123"
 }, {
@@ -42,14 +42,12 @@ allData = userDaysCollection.find({
      "Document.time_before_leaving" : 1,
      "Document.page_rank" : 1,
      "Document.is_paying" : 1
-} ).limit(1000 * 10)
+} )
 targets = []
 data = []
 p=0
 
-for doc in allData: 
-    if(p>10000):
-        break
+for doc in allData:  
     targets.append(1 if doc['Document']['is_paying']==1 else 0)
     tmpDoc = doc['Document']
     data.append([tmpDoc["day"],

@@ -15,6 +15,7 @@ import numpy as np
 import time,os,datetime
 import pickle
 import pandas as pd
+import os
 
 
 np.random.seed(RANDOM_SEED)
@@ -94,8 +95,12 @@ class Experiment:
         #self.meta_size = len(data['meta'][0])
         #self.realtime_size = len(data['time'][0])
         self.best_models = []
-        sub_dir = "experiments/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        sub_dir = "experiments/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
+        if not os.path.exists(self._for):
+            os.makedirs(self._for)
         self.log = abs_path(os.path.join(self._for,sub_dir))
+        if not os.path.exists(self._for):
+            os.makedirs(self._for + "/experiments")
 
     def _log_data_(self,data):
         with open(self.log,'w') as f:
@@ -153,20 +158,18 @@ def conduct_experiment(data, targets, client='cashlend'):
     builder = RNNBuilder(data,targets)
     tmp = builder.build_rnn
     rnn = KerasClassifier(tmp)
-    rf_params = {
-        "n_estimators": [5, 10, 20, 30, 35],
-        "max_depth": [None, 10, 20, 40, 80],
-        "min_samples_split": [2, 8, 16, 32, 64, 128],
-        "max_features": ["auto", "sqrt", 10, 20, 30, 40, 50]
+    rf_params = {        
+        "n_estimators": [30, 35],
+        "max_features": ["auto", "sqrt"]
     }
-    rnn_params = {
-        "a": range(2, 10),
+    rnn_params = { 
+        "a": [2,4,10],
     }
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
     logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()),client))
-    e = Experiment(data,targets,[dict(model=rnn,params=rnn_params,scoring='roc_auc',type='rnn'),
-                                 dict(model=rf,params=rf_params,scoring='roc_auc',type='rf')], client)
-    logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
+    e = Experiment(data,targets,[dict(model=rf,params=rf_params,scoring='roc_auc',type='rf')], client)    
     e.create_and_train()
+    logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
+    e.store_models();
 
