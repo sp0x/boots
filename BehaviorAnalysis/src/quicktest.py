@@ -1,20 +1,20 @@
- import time
- from constants import *
- from classifiers import conduct_experiment,Experiment
- from pymongo import MongoClient
- import urllib
+import time
+from constants import *
+from classifiers import conduct_experiment,Experiment
+from pymongo import MongoClient
+import urllib
  
- ##host is local
- password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
+##host is local
+password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
 host = "10.10.1.5"
 
 client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
- db = client.netvoid;
- userDaysCollection = db.IntegratedDocument;
+db = client.netvoid;
+userDaysCollection = db.IntegratedDocument;
  
- allData = userDaysCollection.find({
-     "UserId" : "123123123"
- }, {
+allData = userDaysCollection.find({
+    "UserId" : "123123123"
+}, {
      "Document.day" : 1,
      "Document.date" : 1,
      "Document.max_time_spent_by_any_paying_user_ebag" : 1,
@@ -42,14 +42,42 @@ client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoi
      "Document.time_before_leaving" : 1,
      "Document.page_rank" : 1,
      "Document.is_paying" : 1
- } ).limit(1000 * 100)
- targets = dict()
- data = dict()
- p=0
- for doc in allData: 
-     targets[p] = 1 if doc['Document']['is_paying']==1 else 0
-     data[p] = doc['Document']
-     p += 1
+} ).limit(1000 * 100)
+targets = []
+data = []
+p=0
+for doc in allData: 
+    targets.append(1 if doc['Document']['is_paying']==1 else 0)
+    tmpDoc = doc['Document']
+    data.append([tmpDoc["day"],
+    tmpDoc["date"],
+    tmpDoc["max_time_spent_by_any_paying_user_ebag"],
+    tmpDoc["time_of_day"],
+    tmpDoc["is_holiday"],
+    tmpDoc["is_weekend"],
+    tmpDoc["is_before_weekend"],
+    tmpDoc["is_before_holiday"],
+    tmpDoc["prob_buy_is_holiday"],
+    tmpDoc["prob_buy_is_before_holiday"],
+    tmpDoc["prop_buy_is_weekend"],
+    tmpDoc["visits_per_time"],
+    tmpDoc["bought_last_week"],
+    tmpDoc["bought_last_month"],
+    tmpDoc["bought_last_year"],
+    tmpDoc["time_spent"],
+    tmpDoc["time_spent_max"],
+    tmpDoc["month"],
+    tmpDoc["prob_buy_is_holiday_user"],
+    tmpDoc["prob_buy_is_before_holiday_user"],
+    tmpDoc["prop_buy_is_weekend_user"],
+    tmpDoc["is_from_mobile"],
+    tmpDoc["is_on_promotions_page"],
+    tmpDoc["before_visit_from_mobile"],
+    tmpDoc["time_before_leaving"],
+    tmpDoc["page_rank"],
+    tmpDoc["is_paying"]])
+    p += 1
+
 print "Prepared " + str(allData.count()) + " items"
- 
- conduct_experiment(data, targets, 'Netinfo'); 
+
+conduct_experiment(data, targets, 'Netinfo'); 

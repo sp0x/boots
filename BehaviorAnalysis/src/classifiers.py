@@ -52,7 +52,7 @@ def get_hidden_neurons_count(Ni, Ns, No=1, a=2):
     return Ns / (a * (Ni + No))
 
 class RNNBuilder:
-    def __init(self,data,targets):
+    def __init__(self,data,targets):
         self.num_samples = len(data)
         self.meta_size = len(data[0])#[0])
         #self.time_size = len(data[0][1])
@@ -129,8 +129,7 @@ class Experiment:
         #clf.fit(X_train, y_train)
         #clf2 = GridSearchCV(rnn, rnn_params, cv=10, scoring="roc_auc")
         #clf2.fit(X_train, y_train)
-        best_models = []
-
+        best_models = [] 
         for m in self.models:
             gs = GridSearchCV(m['model'],m['params'],cv=10,scoring=m['scoring'])
             if 'nn' in m['type']:
@@ -147,7 +146,9 @@ class Experiment:
 
 def conduct_experiment(data, targets, client='cashlend'):
     rf = RandomForestClassifier(n_jobs=-1, oob_score=True)
-    rnn = KerasClassifier(RNNBuilder(data,targets).build_rnn)
+    builder = RNNBuilder(data,targets)
+    tmp = builder.build_rnn
+    rnn = KerasClassifier(tmp)
     rf_params = {
         "n_estimators": [5, 10, 20, 30, 35],
         "max_depth": [None, 10, 20, 40, 80],
