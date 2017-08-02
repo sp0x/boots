@@ -2,7 +2,7 @@ import logging
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.utils.class_weight import compute_class_weight
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.models import save_model, load_model, Model
 from sklearn import preprocessing
@@ -109,6 +109,7 @@ class Experiment:
             report += str(data['best']) + '\n'
             report += "\n==========Best model performance on test cases===========\n"
             report += data['best_performance']
+            report += "\n"+ str(data['accuracy']) + "\n"
             report += "\n==========Other configurations============\n"
             report += pd.DataFrame(data['results']).to_string()
             report += '\n\n\n'
@@ -140,7 +141,7 @@ class Experiment:
         #clf2.fit(X_train, y_train)
         best_models = [] 
         for m in self.models:
-            gs = GridSearchCV(m['model'],m['params'],cv=10,scoring=m['scoring'])
+            gs = GridSearchCV(estimator=m['model'],param_grid=m['params'],cv=10,scoring=m['scoring'])
             if 'nn' in m['type']:
                 X_train = preprocessing.normalize(X_train)
             gs.fit(X_train,y_train)
@@ -149,18 +150,20 @@ class Experiment:
             best_models.append(dict(type=m['type'],model=gs.best_estimator_))
             y_true, y_pred = y_test, gs.predict(X_test)
             log_data['best_performance'] = classification_report(y_true,y_pred)
+            log_data['accuracy'] = accuracy_score(y_true, y_pred)
             self._log_data_(log_data)
         self.best_models = best_models
 
 
 def conduct_experiment(data, targets, client='cashlend'):
-    rf = RandomForestClassifier(n_jobs=-1, oob_score=True)
+    rf = RandomForestClassifier(n_jobs=-1)
+    scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data,targets)
     tmp = builder.build_rnn
     rnn = KerasClassifier(tmp)
     rf_params = {        
-        "n_estimators": [30, 35],
-        "max_features": ["auto", "sqrt"]
+        "n_estimators": [10, 30, 35],
+        "max_features": [None, "auto", "sqrt"]
     }
     rnn_params = { 
         "a": [2,4,10],
@@ -168,7 +171,7 @@ def conduct_experiment(data, targets, client='cashlend'):
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
     logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()),client))
-    e = Experiment(data,targets,[dict(model=rf,params=rf_params,scoring='roc_auc',type='rf')], client)    
+    e = Experiment(data,targets,[dict(model=rf,params=rf_params,scoring=scoring,type='rf')], client)    
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
     e.store_models();

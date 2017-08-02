@@ -75,8 +75,7 @@ for doc in allData:
     tmpDoc["is_on_promotions_page"],
     tmpDoc["before_visit_from_mobile"],
     tmpDoc["time_before_leaving"],
-    tmpDoc["page_rank"],
-    tmpDoc["is_paying"]])
+    tmpDoc["page_rank"]])
     p += 1
 
 print "Prepared " + str(len(data)) + " items"
