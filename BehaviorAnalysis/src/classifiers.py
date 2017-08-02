@@ -62,9 +62,9 @@ class RNNBuilder:
         hidden = get_hidden_neurons_count(self.meta_size, self.num_samples,a=a)
         tmp = np.unique(self.targets)
         C = dict()
-        for i in len(tmp):
-            C[tmp[i]] = cw[i]
         cw = compute_class_weight('balanced', tmp ,self.targets)
+        for i in xrange (len(tmp)):
+            C[tmp[i]] = cw[i]
         #inp = Input(shape=(self.time_size,))
         inp2 = Input(shape=(self.meta_size,))  # for metadata aka age,wage,blah blah
         #mem = LSTM(hidden)(inp)  # keep mem of past behavior

@@ -81,6 +81,5 @@ for doc in allData:
     tmpDoc["is_paying"]])
     p += 1
 
-print "Prepared " + str(allData.count()) + " items"
-
+print "Prepared " + str(len(data)) + " items"
 conduct_experiment(data, targets, 'Netinfo'); 
