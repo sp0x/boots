@@ -156,13 +156,18 @@ class Experiment:
 
 
 def conduct_experiment(data, targets, client='cashlend'):
-    rf = RandomForestClassifier(n_jobs=-1)
+    tmp = np.unique(targets)
+    c = dict()
+    cw = compute_class_weight('balanced', tmp ,targets)
+    for i in xrange (len(tmp)):
+        c[tmp[i]] = cw[i] 
+    rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = [c])
     scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data,targets)
     tmp = builder.build_rnn
     rnn = KerasClassifier(tmp)
     rf_params = {        
-        "n_estimators": [10, 30, 35],
+        "n_estimators": [100,200,500,1000],
         "max_features": [None, "auto", "sqrt"]
     }
     rnn_params = { 
