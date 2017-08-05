@@ -3,7 +3,8 @@ from constants import *
 from classifiers import conduct_experiment,Experiment
 from pymongo import MongoClient
 import urllib
- 
+import csv
+
 ##host is local
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
 host = "10.10.1.5"
@@ -12,9 +13,15 @@ client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoi
 db = client.netvoid;
 userDaysCollection = db.IntegratedDocument;
 
-allData = userDaysCollection.find({
+
+company = "Netinfo"
+offset = 1000 * 100
+models = Experiment.load_models(company)
+print "Loaded prediction models"
+users = userDaysCollection.find({
     "UserId" : "123123123"
 }, {
+     "Document.uuid" : 1,
      "Document.day" : 1,
      "Document.date" : 1,
      "Document.max_time_spent_by_any_paying_user_ebag" : 1,
@@ -42,15 +49,14 @@ allData = userDaysCollection.find({
      "Document.time_before_leaving" : 1,
      "Document.page_rank" : 1,
      "Document.is_paying" : 1
-} ).limit(1000 * 200)
-targets = []
-data = []
+}).skip(offset).limit(100000)
+userFeatures = []
+userData = []
 p=0
-
-for doc in allData:  
-    targets.append(1 if doc['Document']['is_paying']==1 else 0)
+for doc in users:
     tmpDoc = doc['Document']
-    data.append([tmpDoc["day"],
+    userData.append({ 'uuid' : tmpDoc['uuid'], 'is_paying' : tmpDoc['is_paying'] })
+    userFeatures.append([tmpDoc["day"],
     tmpDoc["date"],
     tmpDoc["max_time_spent_by_any_paying_user_ebag"],
     tmpDoc["time_of_day"],
@@ -77,7 +83,16 @@ for doc in allData:
     tmpDoc["time_before_leaving"],
     tmpDoc["page_rank"]])
     p += 1
-allData = None
-
-print "Prepared " + str(len(data)) + " items"
-conduct_experiment(data, targets, 'Netinfo'); 
+#print "Loaded " + str(len(userFeatures)) + " test user data"
+for m in models:
+    predictions = m['model'].predict(userFeatures)
+    fileName = company + '_prediction_' + m['type'] + ".csv";
+    print "Writing predictions in: " + fileName
+    with open(fileName, 'wb') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        for p in xrange(len(predictions)): 
+            prediction = predictions[p]
+            #print prediction
+            uuid = userData[p]['uuid']            
+            actual = userData[p]['is_paying']
+            writer.writerow([ uuid, prediction, actual ])

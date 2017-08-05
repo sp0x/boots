@@ -161,7 +161,7 @@ def conduct_experiment(data, targets, client='cashlend'):
     cw = compute_class_weight('balanced', tmp ,targets)
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
-    rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = [c])
+    rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = 'balanced')
     scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data,targets)
     tmp = builder.build_rnn
