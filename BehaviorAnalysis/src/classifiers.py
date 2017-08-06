@@ -123,12 +123,19 @@ class Experiment:
             out = pickle.load(f)
         return out
 
+    @staticmethod
+    def predict_explain(self, tree, data, labels, print_proba=False):
+        report = ""
+        from treeinterpreter import treeinterpreter as ti
+        prediction, bias, contributions = ti.predict(tree, data) if not print_proba else ti.predict_proba(tree,data)
+        report += "Prediction(s): {0}\n".format(prediction)
+        report += "Bias(es): {0}\n".format(bias)
+        report += "Feature contributions:\n"
+        for c, feature in zip(contributions[0],labels):
+            report += feature + str(c) + '\n'
+        return report
+
     def create_and_train(self):
-        """
-        :param data: vector of features (1 list of vals per user)
-        :param target: vector of result ( 1 val per user)
-        :return: 
-        """
         #rnn = KerasClassifier(self.build_rnn)
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
         #cross_val_score(rf, data, target)
@@ -155,14 +162,13 @@ class Experiment:
 def conduct_experiment(data, targets, client='cashlend'):
     tmp = np.unique(targets)
     c = dict()
-    cw = compute_class_weight('balanced', tmp ,targets)
+    cw = compute_class_weight('balanced', tmp, targets)
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
     rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = c, random_state=RANDOM_SEED)
     scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data,targets, c)
-    tmp = builder.build_rnn
-    rnn = KerasClassifier(tmp)
+    rnn = KerasClassifier(builder.build_rnn)
     rf_params = {        
         "n_estimators": [100,200,500,1000],
         "max_features": [None, "auto", "sqrt"]
