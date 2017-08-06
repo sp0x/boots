@@ -53,19 +53,16 @@ def get_hidden_neurons_count(Ni, Ns, No=1, a=2):
     return Ns / (a * (Ni + No))
 
 class RNNBuilder:
-    def __init__(self,data,targets):
+    def __init__(self, data, targets, class_weights):
         self.num_samples = len(data)
         self.meta_size = len(data[0])#[0])
         #self.time_size = len(data[0][1])
         self.targets = targets
+        self.class_weights = class_weights
 
     def build_rnn(self,a=2):
         hidden = get_hidden_neurons_count(self.meta_size, self.num_samples,a=a)
         tmp = np.unique(self.targets)
-        C = dict()
-        cw = compute_class_weight('balanced', tmp ,self.targets)
-        for i in xrange (len(tmp)):
-            C[tmp[i]] = cw[i]
         #inp = Input(shape=(self.time_size,))
         inp2 = Input(shape=(self.meta_size,))  # for metadata aka age,wage,blah blah
         #mem = LSTM(hidden)(inp)  # keep mem of past behavior
@@ -76,7 +73,7 @@ class RNNBuilder:
         x = Dense(hidden, activation='sigmoid')(x)
         out = Dense(1, activation='sigmoid')(x)
         model = Model(inputs=[inp2], outputs=out)
-        model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics='accuracy',loss_weights=[C])
+        model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics='accuracy',loss_weights=self.class_weights)
 
 class Experiment:
     def __init__(self,data,targets,models,client):
@@ -161,9 +158,9 @@ def conduct_experiment(data, targets, client='cashlend'):
     cw = compute_class_weight('balanced', tmp ,targets)
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
-    rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = [c])
+    rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = c, random_state=RANDOM_SEED)
     scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
-    builder = RNNBuilder(data,targets)
+    builder = RNNBuilder(data,targets, c)
     tmp = builder.build_rnn
     rnn = KerasClassifier(tmp)
     rf_params = {        
@@ -171,7 +168,7 @@ def conduct_experiment(data, targets, client='cashlend'):
         "max_features": [None, "auto", "sqrt"]
     }
     rnn_params = { 
-        "a": [2,4,10],
+        "a": [2, 4, 10],
     }
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
@@ -179,5 +176,5 @@ def conduct_experiment(data, targets, client='cashlend'):
     e = Experiment(data,targets,[dict(model=rf,params=rf_params,scoring=scoring,type='rf')], client)    
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
-    e.store_models();
+    e.store_models()
 
