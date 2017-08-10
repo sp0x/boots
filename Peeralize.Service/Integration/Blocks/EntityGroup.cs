@@ -55,12 +55,12 @@ namespace Peeralize.Service.Integration.Blocks
 
         public override void Close()
         {
-            foreach (var group in EntityDictionary)
-            {
-                BsonArray bsonValue = (BsonArray)EntityDictionary[@group.Key].Document["events"];
-                EntityDictionary[group.Key].Document["events"] = new BsonArray(
-                    bsonValue.OrderBy(x=>DateTime.Parse(x["ondate"].ToString())));
-            }
+//            foreach (var group in EntityDictionary)
+//            {
+//                BsonArray bsonValue = (BsonArray)EntityDictionary[@group.Key].Document["events"];
+//                EntityDictionary[group.Key].Document["events"] = new BsonArray(
+//                    bsonValue.OrderBy(x=>DateTime.Parse(x["ondate"].ToString())));
+//            }
             base.Close();
         }
 

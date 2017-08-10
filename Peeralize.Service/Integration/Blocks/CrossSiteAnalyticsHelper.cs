@@ -20,6 +20,8 @@ namespace Peeralize.Service.Integration.Blocks
         {
             EntityDictionary = sessions;
             this.DomainVisitStats = domainVisitStats;
+            HighrankPageCache = new Dictionary<string, IEnumerable<PageStats>>();
+
             //DomainVisits = new Dictionary<string, int>();
         }
 
@@ -53,7 +55,7 @@ namespace Peeralize.Service.Integration.Blocks
             //DomainVisitsTotal = 0;
             foreach (var userPair in this.EntityDictionary)
             {
-                string userId = userPair.Key.ToString();
+                string userId = userPair.Value.Document["uuid"].ToString();//Key.ToString();
                 var visits = (BsonArray) userPair.Value.Document["events"];
                 var userIsPaying = false;
                 //var userInternetBrowsingTime = TimeSpan.Zero;
@@ -181,8 +183,9 @@ namespace Peeralize.Service.Integration.Blocks
                 browsingStats.TimeOnMobileSites = timeSpentOnMobileSites.TotalSeconds;
                 browsingStats.WeekendVisits = weekendDomainVisits;
 
-                this.EntityDictionary[userId].Document["browsing_statistics"] = browsingStats.ToBsonDocument();
-                this.EntityDictionary[userId].Document["is_paying"] = userIsPaying ? 1 : 0;
+                var dictKey = userPair.Key.ToString();
+                this.EntityDictionary[dictKey].Document["browsing_statistics"] = browsingStats.ToBsonDocument();
+                this.EntityDictionary[dictKey].Document["is_paying"] = userIsPaying ? 1 : 0;
                 //} 
                 //aDomainVisitsTotal += domainChanges;
             }
@@ -438,7 +441,13 @@ namespace Peeralize.Service.Integration.Blocks
             foreach (var user in EntityDictionary.Values)
             {
                 int tAge = 0;
-                if (int.TryParse(user.Document["age"].AsString, out tAge) && user.Document["gender"]==gender)
+                if (!user.Document.Contains("age") || !user.Document.Contains("gender"))
+                {
+                    continue;
+                }
+                var tmpAge = user.Document["age"].ToString();
+                var tmpgender = user.Document["gender"].ToString();
+                if (int.TryParse(tmpAge, out tAge) && tmpgender == gender)
                 {
                     if (tAge == age)
                     {
@@ -458,7 +467,9 @@ namespace Peeralize.Service.Integration.Blocks
             foreach (var user in EntityDictionary.Values)
             {
                 int tAge = 0;
-                if (int.TryParse(user.Document["age"].ToString(), out tAge))
+                if (!user.Document.Contains("age")) continue;
+                var tmpAge = user.Document["age"].ToString();
+                if (int.TryParse(tmpAge, out tAge))
                 {
                     if (tAge == age)  yield return user;
                 }
@@ -475,7 +486,9 @@ namespace Peeralize.Service.Integration.Blocks
             {
                 if (user.Document["is_paying"].AsInt32 == 0) continue;
                 int tAge = 0;
-                if (int.TryParse(user.Document["age"].ToString(), out tAge))
+                if (!user.Document.Contains("age")) continue;
+                string tmpAge = user.Document["age"].ToString();
+                if (int.TryParse(tmpAge, out tAge))
                 {
                     yield return user;
                 }
@@ -486,8 +499,10 @@ namespace Peeralize.Service.Integration.Blocks
         { 
             foreach (var user in EntityDictionary.Values)
             {
-                if (user.Document["is_paying"].AsInt32 == 0) continue; 
-                if (user.Document["gender"].AsString == gender)
+                if (user.Document["is_paying"].AsInt32 == 0) continue;
+                if (!user.Document.Contains("gender")) continue;
+                var tmpGender = user.Document["gender"].ToString();
+                if (tmpGender == gender)
                 {
                     yield return user;
                 }
@@ -498,8 +513,10 @@ namespace Peeralize.Service.Integration.Blocks
         {
             var matches = 0;
             foreach (var user in EntityDictionary.Values)
-            { 
-                if (user.Document["gender"]==gender)
+            {
+                if (!user.Document.Contains("gender")) continue;
+                var tmpGender = user.Document["gender"].ToString();
+                if (tmpGender==gender)
                 {
                     yield return user;
                 }
@@ -516,7 +533,12 @@ namespace Peeralize.Service.Integration.Blocks
         {
             foreach (var doc in records)
             {
-                var browsingStats = UserBrowsingStats.FromBson(doc.Document["browsing_statistics"]);
+                if (!doc.Document.Contains("browsing_statistics"))
+                {
+                    continue;
+                }
+                var bsonValue = doc.Document["browsing_statistics"];
+                var browsingStats = UserBrowsingStats.FromBson(bsonValue);
                 if (browsingStats.TargetSiteVisits > 0)
                 {
                     yield return doc;
@@ -554,14 +576,22 @@ namespace Peeralize.Service.Integration.Blocks
         {
             BuyVisitValues += probBuyVidit;
         }
-
+        public Dictionary<string, IEnumerable<PageStats>> HighrankPageCache { get; set; }
         public IEnumerable<PageStats> GetHighrankingPages(string targetDomain, int atMost)
         {
-            var values = DomainVisitStats.PageStats
-                .Select(x => x.Value)
-                .OrderByDescending(x => x.GetTargetRating(targetDomain).Value)
-                .Take(atMost);
-            return values;
+            if (HighrankPageCache.ContainsKey(targetDomain))
+            {
+                return HighrankPageCache[targetDomain];
+            }
+            else
+            {
+                var values = DomainVisitStats.PageStats
+                    .Select(x => x.Value)
+                    .OrderByDescending(x => x.GetTargetRating(targetDomain).Value)
+                    .Take(atMost).ToList();
+                HighrankPageCache[targetDomain] = values;
+                return values;
+            }
         }
     }
 }

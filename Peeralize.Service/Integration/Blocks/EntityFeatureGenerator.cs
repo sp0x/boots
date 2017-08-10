@@ -70,12 +70,13 @@ namespace Peeralize.Service.Integration.Blocks
             var hasVisitedPromotion = false;
             int daysVisitedEbag = 0;
             DateTime? lastEbagVisit = null;
-            int userAge = doc["age"].AsInt32;
+            int userAge = doc.Contains("age") ? doc["age"].AsInt32 : 0;
+            string userGender = doc.Contains("gender") ? doc["gender"].ToString() : "0";
             var usersWithSameAge = Helper.GetUsersWithSameAge(userAge);
             var buyersWithSameAge = Helper.GetBuyersWithSameAge(userAge);
-            var usersWithSameAgeAndGender = Helper.GetUsersWithSameAgeAndGender(userAge, doc["gender"].AsString);
-            var buyersWithSameGender = Helper.GetBuyersWithSameGender(doc["gender"].AsString);
-            var usersWithSameGender = Helper.GetusersWithSameGender(doc["gender"].AsString);
+            var usersWithSameAgeAndGender = Helper.GetUsersWithSameAgeAndGender(userAge, userGender);
+            var buyersWithSameGender = Helper.GetBuyersWithSameGender(userGender);
+            var usersWithSameGender = Helper.GetusersWithSameGender(userGender);
 
             BsonArray boughtLastWeek = new BsonArray(),
                 boughtLastMonth = new BsonArray(),
@@ -213,12 +214,13 @@ namespace Peeralize.Service.Integration.Blocks
                 highPagerankSites.Sum(x=> x.GetUserVisitDuration(userId)) / mx1(realisticUserWebTime.TotalSeconds);
             for (int iHighPage = 0; iHighPage < 5; iHighPage++)
             {
+                if (iHighPage >= highPagerankSites.Length) continue;
                 var name = $"highranking_page_{iHighPage}";
                 intDoc.Document[name] = 0;
-                if (highPagerankSites.Length < iHighPage)
-                {
-                    intDoc.Document[name] = highPagerankSites[iHighPage].GetTargetRating(userId).Value;
-                }
+                var highPagerankSite = highPagerankSites[iHighPage];
+                var targetRating = highPagerankSite.GetTargetRating(userId);
+                intDoc.Document[name] = targetRating.Value;
+               
             }
 
             //Cleanup events
