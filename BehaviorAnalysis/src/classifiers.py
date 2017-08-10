@@ -53,19 +53,16 @@ def get_hidden_neurons_count(Ni, Ns, No=1, a=2):
     return Ns / (a * (Ni + No))
 
 class RNNBuilder:
-    def __init__(self,data,targets):
+    def __init__(self, data, targets, class_weights):
         self.num_samples = len(data)
         self.meta_size = len(data[0])#[0])
         #self.time_size = len(data[0][1])
         self.targets = targets
+        self.class_weights = class_weights
 
     def build_rnn(self,a=2):
         hidden = get_hidden_neurons_count(self.meta_size, self.num_samples,a=a)
         tmp = np.unique(self.targets)
-        C = dict()
-        cw = compute_class_weight('balanced', tmp ,self.targets)
-        for i in xrange (len(tmp)):
-            C[tmp[i]] = cw[i]
         #inp = Input(shape=(self.time_size,))
         inp2 = Input(shape=(self.meta_size,))  # for metadata aka age,wage,blah blah
         #mem = LSTM(hidden)(inp)  # keep mem of past behavior
@@ -76,7 +73,7 @@ class RNNBuilder:
         x = Dense(hidden, activation='sigmoid')(x)
         out = Dense(1, activation='sigmoid')(x)
         model = Model(inputs=[inp2], outputs=out)
-        model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics='accuracy',loss_weights=[C])
+        model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics='accuracy',loss_weights=self.class_weights)
 
 class Experiment:
     def __init__(self,data,targets,models,client):
@@ -126,12 +123,19 @@ class Experiment:
             out = pickle.load(f)
         return out
 
+    @staticmethod
+    def predict_explain(self, tree, data, labels, print_proba=False):
+        report = ""
+        from treeinterpreter import treeinterpreter as ti
+        prediction, bias, contributions = ti.predict(tree, data) if not print_proba else ti.predict_proba(tree,data)
+        report += "Prediction(s): {0}\n".format(prediction)
+        report += "Bias(es): {0}\n".format(bias)
+        report += "Feature contributions:\n"
+        for c, feature in zip(contributions[0],labels):
+            report += feature + str(c) + '\n'
+        return report
+
     def create_and_train(self):
-        """
-        :param data: vector of features (1 list of vals per user)
-        :param target: vector of result ( 1 val per user)
-        :return: 
-        """
         #rnn = KerasClassifier(self.build_rnn)
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
         #cross_val_score(rf, data, target)
@@ -158,20 +162,19 @@ class Experiment:
 def conduct_experiment(data, targets, client='cashlend'):
     tmp = np.unique(targets)
     c = dict()
-    cw = compute_class_weight('balanced', tmp ,targets)
+    cw = compute_class_weight('balanced', tmp, targets)
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
-    rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = 'balanced')
+    rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = c, random_state=RANDOM_SEED)
     scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
-    builder = RNNBuilder(data,targets)
-    tmp = builder.build_rnn
-    rnn = KerasClassifier(tmp)
+    builder = RNNBuilder(data,targets, c)
+    rnn = KerasClassifier(builder.build_rnn)
     rf_params = {        
         "n_estimators": [100,200,500,1000],
         "max_features": [None, "auto", "sqrt"]
     }
     rnn_params = { 
-        "a": [2,4,10],
+        "a": [2, 4, 10],
     }
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
@@ -179,5 +182,5 @@ def conduct_experiment(data, targets, client='cashlend'):
     e = Experiment(data,targets,[dict(model=rf,params=rf_params,scoring=scoring,type='rf')], client)    
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
-    e.store_models();
+    e.store_models()
 

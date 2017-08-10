@@ -9,8 +9,8 @@ password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVN
 host = "10.10.1.5"
 
 client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-db = client.netvoid;
-userDaysCollection = db.IntegratedDocument;
+db = client.netvoid
+userDaysCollection = db.IntegratedDocument
 
 allData = userDaysCollection.find({
     "UserId" : "123123123"
@@ -85,4 +85,4 @@ for doc in allData:
 allData = None
 
 print "Prepared " + str(len(data)) + " items"
-conduct_experiment(data, targets, 'Netinfo'); 
+conduct_experiment(data, targets, 'Netinfo')

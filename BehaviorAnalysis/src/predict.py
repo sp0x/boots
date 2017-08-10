@@ -10,8 +10,8 @@ password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVN
 host = "10.10.1.5"
 
 client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-db = client.netvoid;
-userDaysCollection = db.IntegratedDocument;
+db = client.netvoid
+userDaysCollection = db.IntegratedDocument
 
 
 company = "Netinfo"
@@ -97,7 +97,7 @@ with open(filterFile, 'rb') as filterCsv:
 filtered = 0
 for m in models:
     predictions = m['model'].predict(userFeatures)
-    fileName = company + '_prediction_' + m['type'] + ".csv";
+    fileName = company + '_prediction_' + m['type'] + ".csv"
     print "Writing predictions in: " + fileName
     with open(fileName, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
