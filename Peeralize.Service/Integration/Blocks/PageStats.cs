@@ -34,7 +34,7 @@ namespace Peeralize.Service.Integration.Blocks
 //        public int TransitionsCount { get; set; }
         public Dictionary<string, PageVisit> UserVisits { get; set; }
 
-        public int GetUsersCount()
+        public int GetUsersVisitedCount()
         {
             return UserVisits.Count;
         }
@@ -189,7 +189,7 @@ namespace Peeralize.Service.Integration.Blocks
         public void AddVisit(string userKey, TimeSpan visitDuration)
         {
             if (visitDuration.TotalSeconds < 0) visitDuration += TimeSpan.FromSeconds(1);
-            if (UserVisits.ContainsKey(userKey))
+            if (!UserVisits.ContainsKey(userKey))
             {
                 UserVisits[userKey] = new PageVisit(visitDuration);
             }

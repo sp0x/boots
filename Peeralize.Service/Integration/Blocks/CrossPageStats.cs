@@ -108,7 +108,7 @@ namespace Peeralize.Service
             long count = 0;
             foreach (var page in matchingHosts)
             {
-                count += page.UsersVisitedTotal;
+                count += page.GetUsersVisitedCount();
             }
             return count;
         }

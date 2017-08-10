@@ -75,7 +75,7 @@ namespace Peeralize.Service.Integration.Blocks
             stats.TargetSiteVisits = bs["targetSiteVisits"].AsInt64;
             stats.TargetSiteDomainTransitions = bs["targetSiteDomainTransitions"].AsInt64;
             stats.TargetSiteDomainTransitionDuration = bs["targetSiteDomainTransitionDuration"].AsInt64;
-            stats.TimeOnMobileSites = bs["timeOnMobileSites"].AsInt64;
+            stats.TimeOnMobileSites = bs["timeOnMobileSites"].AsDouble;
             stats.WeekendVisits = bs["weekendVisits"].AsInt64;
             stats.DomainChanges = bs["domainChanges"].AsInt64;
             stats.GenderVisits = BsonSerializer.Deserialize<Dictionary<string, int>>(bs["genderVisits"].ToBsonDocument());
