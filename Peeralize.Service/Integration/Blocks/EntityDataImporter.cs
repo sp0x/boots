@@ -13,6 +13,8 @@ namespace Peeralize.Service.Integration.Blocks
         public char Delimiter { get; set; }
         public CrossSiteAnalyticsHelper Helper { get; set; }
         private Action<string[], IntegratedDocument> _joiner;
+        private FileStream _fs;
+        public List<string[]> Items { get; private set; }
 
         public EntityDataImporter(string inputFile, bool relative = false) : base()
         {
@@ -22,7 +24,15 @@ namespace Peeralize.Service.Integration.Blocks
                 inputFile = Path.Combine(Environment.CurrentDirectory, inputFile);
             }
             _inputFileName = inputFile;
-
+            _fs = File.Open(_inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            Items = new List<string[]>();
+            var _reader = new StreamReader(_fs);
+            var _csvReader = new CsvReader(_reader, true, Delimiter);
+            foreach (var row in _csvReader)
+            {
+                Items.Add(row);
+            }
+            _fs.Close();
         }
 
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
@@ -35,25 +45,31 @@ namespace Peeralize.Service.Integration.Blocks
             return intDoc;
         }
 
+        public IIntegrationDestination ContinueWith(Action<EntityDataImporter> action)
+        {
+            var completion = GetActionBlock().Completion;
+            completion.ContinueWith(xTask =>
+            {
+                action(this);
+            });
+            return this;
+        }
+
         private string[] FindMatchingEntry(IntegratedDocument doc)
         {
             if (_joiner == null)
             {
                 throw new Exception("Data joiner is not set!");
-            }
-            using (var fs = File.Open(_inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-            {
-                var _reader = new StreamReader(fs);
-                var _csvReader = new CsvReader(_reader, true, Delimiter);
-                foreach (var row in _csvReader)
+            } 
+            foreach (var row in Items)
+            { 
+                var isMatch = _matcher(row, doc);
+                if (isMatch)
                 {
-                    var isMatch = _matcher(row, doc);
-                    if (isMatch)
-                    {
-                        return row;
-                    }
+                    return row;
                 }
             }
+
             return null;     
         }
 

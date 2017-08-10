@@ -91,13 +91,15 @@ namespace Peeralize.ServiceTests
             var demographyImporter = new EntityDataImporter(demographySheet, true);
             demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
             demographyImporter.JoinOn(JoinDemography);
+            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats); 
 
-            demographyImporter.Helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
+            demographyImporter.Helper = helper;
 
             grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            demographyImporter.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
             var featureGen = new EntityFeatureGenerator(userId);
-            featureGen.Helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
-            demographyImporter.LinkTo(featureGen); 
+            featureGen.Helper = helper;
+            //demographyImporter.LinkTo(featureGen); 
             featureGen.LinkTo(saver);
 
             saver.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
@@ -106,6 +108,10 @@ namespace Peeralize.ServiceTests
             {
                 OnUsersGrouped(demographyImporter, grpr);
             }); //modifier.PostAll);
+            demographyImporter.ContinueWith(imp =>
+            {
+                OnUserDemographyImported(featureGen, grouper);
+            });
             
             harvester.SetDestination(grouper);
             harvester.AddType(type, fileSource);
@@ -114,6 +120,8 @@ namespace Peeralize.ServiceTests
             //Task.WaitAll(grouper.Completion, featureGen.Completion, );
             await saver.Completion;
         }
+
+
 
         private void JoinDemography(string[] demographyFields, IntegratedDocument userDocument)
         { 
@@ -192,7 +200,15 @@ namespace Peeralize.ServiceTests
                 user.Document["prob_buy_is_before_holiday"] = prob_buy_is_before_holiday;
                 user.Document["prop_buy_is_weekend"] = prop_buy_is_weekend;
             }
+            
             dataImporter.PostAll(userValues);
+        }
+
+        private void OnUserDemographyImported(EntityFeatureGenerator gen, EntityGroup usersData)
+        { 
+            var userValues = usersData.EntityDictionary.Values;
+            gen.Helper.GroupDemographics();
+            gen.PostAll(userValues);
         }
 
         /// <summary>

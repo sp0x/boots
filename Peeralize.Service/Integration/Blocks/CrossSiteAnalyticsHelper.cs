@@ -15,6 +15,10 @@ namespace Peeralize.Service.Integration.Blocks
         //public Dictionary<string, int> DomainVisits { get; private set; }
         public double BuyVisitValues { get; private set; }
 
+        public Dictionary<string, List<KeyValuePair<object, IntegratedDocument>>> AgeGroups { get; set; }
+
+        public Dictionary<string, List<KeyValuePair<object, IntegratedDocument>>> GenderGroups { get; set; }
+
         public CrossSiteAnalyticsHelper(Dictionary<object, IntegratedDocument> sessions,
             CrossPageStats domainVisitStats)
         {
@@ -463,17 +467,14 @@ namespace Peeralize.Service.Integration.Blocks
         /// <param name="age"></param>
         /// <returns></returns>
         public IEnumerable<IntegratedDocument> GetUsersWithSameAge(int age)
-        { 
-            foreach (var user in EntityDictionary.Values)
+        {
+            string sage = age.ToString();
+            if (AgeGroups.ContainsKey(sage))
             {
-                int tAge = 0;
-                if (!user.Document.Contains("age")) continue;
-                var tmpAge = user.Document["age"].ToString();
-                if (int.TryParse(tmpAge, out tAge))
-                {
-                    if (tAge == age)  yield return user;
-                }
-            } 
+                return AgeGroups[sage]
+                    .Select(x => x.Value);
+            }
+            return (new List<IntegratedDocument>());
         }
         /// <summary>
         /// Todo: maybe cache?
@@ -481,46 +482,37 @@ namespace Peeralize.Service.Integration.Blocks
         /// <param name="age"></param>
         /// <returns></returns>
         public IEnumerable<IntegratedDocument> GetBuyersWithSameAge(int age)
-        { 
-            foreach (var user in EntityDictionary.Values)
+        {
+            string sage = age.ToString();
+            if (AgeGroups.ContainsKey(sage))
             {
-                if (user.Document["is_paying"].AsInt32 == 0) continue;
-                int tAge = 0;
-                if (!user.Document.Contains("age")) continue;
-                string tmpAge = user.Document["age"].ToString();
-                if (int.TryParse(tmpAge, out tAge))
-                {
-                    yield return user;
-                }
-            } 
+                return AgeGroups[sage]
+                    .Select(x => x.Value)
+                    .Where(x => x.Document["is_paying"].AsInt32 != 0);
+            }
+            return (new List<IntegratedDocument>());
         }
 
         public IEnumerable<IntegratedDocument> GetBuyersWithSameGender(string gender)
-        { 
-            foreach (var user in EntityDictionary.Values)
+        {
+             
+            if (GenderGroups.ContainsKey(gender))
             {
-                if (user.Document["is_paying"].AsInt32 == 0) continue;
-                if (!user.Document.Contains("gender")) continue;
-                var tmpGender = user.Document["gender"].ToString();
-                if (tmpGender == gender)
-                {
-                    yield return user;
-                }
-            } 
+                return GenderGroups[gender]
+                    .Select(x => x.Value)
+                    .Where(x=> x.Document["is_paying"].AsInt32 != 0);
+            }
+            return (new List<IntegratedDocument>());
         }
 
         public IEnumerable<IntegratedDocument> GetusersWithSameGender(string gender)
         {
-            var matches = 0;
-            foreach (var user in EntityDictionary.Values)
+            if (GenderGroups.ContainsKey(gender))
             {
-                if (!user.Document.Contains("gender")) continue;
-                var tmpGender = user.Document["gender"].ToString();
-                if (tmpGender==gender)
-                {
-                    yield return user;
-                }
-            } 
+                return GenderGroups[gender]
+                    .Select(x => x.Value);
+            }
+            return (new List<IntegratedDocument>());
         }
         #endregion
 
@@ -531,19 +523,19 @@ namespace Peeralize.Service.Integration.Blocks
 
         public IEnumerable<IntegratedDocument> TargetDomainVisitors(IEnumerable<IntegratedDocument> records)
         {
-            foreach (var doc in records)
-            {
-                if (!doc.Document.Contains("browsing_statistics"))
-                {
-                    continue;
-                }
-                var bsonValue = doc.Document["browsing_statistics"];
-                var browsingStats = UserBrowsingStats.FromBson(bsonValue);
-                if (browsingStats.TargetSiteVisits > 0)
-                {
-                    yield return doc;
-                }
-            }
+            return records;
+//            foreach (var doc in records)
+//            {
+//                if (!doc.Document.Contains("browsing_statistics"))
+//                {
+//                    continue;
+//                }
+//                var bsonValue = doc.Document["browsing_statistics"] as BsonDocument;
+//                if (bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0)
+//                {
+//                    yield return doc;
+//                } 
+//            }
         }
         /// <summary>
         /// Gets the average of domain sessions / user count
@@ -593,5 +585,37 @@ namespace Peeralize.Service.Integration.Blocks
                 return values;
             }
         }
+
+        public string GetBsonString(BsonDocument val, string k, string defaultVal = "0")
+        {
+            if (!val.Contains(k)) return defaultVal;
+            var kv = val[k].ToString();
+            if (kv.Length == 0) return defaultVal;
+            return kv;
+        }
+        public void GroupDemographics()
+        {
+            
+            this.GenderGroups = EntityDictionary
+                .GroupBy(x => GetBsonString(x.Value.Document, "gender"))
+                .ToDictionary(x=> x.Key, x=>x
+                    .Where(y =>
+                        {
+                            var bsonValue = y.Value.Document["browsing_statistics"] as BsonDocument;
+                            return bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0;
+                        })
+                    .ToList());
+            this.AgeGroups = EntityDictionary
+                .GroupBy(x => GetBsonString(x.Value.Document, "age"))
+                .ToDictionary(x => x.Key, x => x
+                    .Where(y =>
+                    {
+                        var bsonValue = y.Value.Document["browsing_statistics"] as BsonDocument;
+                        return bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0;
+                    })
+                .ToList());
+
+        }
+
     }
 }

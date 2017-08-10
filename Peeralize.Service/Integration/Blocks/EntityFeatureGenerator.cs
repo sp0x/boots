@@ -214,7 +214,7 @@ namespace Peeralize.Service.Integration.Blocks
                 highPagerankSites.Sum(x=> x.GetUserVisitDuration(userId)) / mx1(realisticUserWebTime.TotalSeconds);
             for (int iHighPage = 0; iHighPage < 5; iHighPage++)
             {
-                if (iHighPage >= highPagerankSites.Length) continue;
+                if (iHighPage >= highPagerankSites.Length)  continue;
                 var name = $"highranking_page_{iHighPage}";
                 intDoc.Document[name] = 0;
                 var highPagerankSite = highPagerankSites[iHighPage];
