@@ -10,26 +10,32 @@ namespace Peeralize.Service.Integration.Blocks
     public class CrossSiteAnalyticsHelper
     {
         public Dictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
-        public CrossPageStats PaginationStatus { get; private set; }
+        public CrossPageStats DomainVisitStats { get; private set; }
         //public int DomainVisitsTotal { get; private set; }
         //public Dictionary<string, int> DomainVisits { get; private set; }
         public double BuyVisitValues { get; private set; }
 
         public CrossSiteAnalyticsHelper(Dictionary<object, IntegratedDocument> sessions,
-            CrossPageStats paginationStatus)
+            CrossPageStats domainVisitStats)
         {
             EntityDictionary = sessions;
-            this.PaginationStatus = paginationStatus;
-            DomainVisits = new Dictionary<string, int>();
+            this.DomainVisitStats = domainVisitStats;
+            //DomainVisits = new Dictionary<string, int>();
         }
 
-        private void AddDomainVisit(string domain)
+        /// <summary>
+        /// Add a record that the domain vasvisited
+        /// </summary>
+        /// <param name="domain"></param>
+        /// <param name="visitDuration"></param>
+        private void AddDomainVisit(string userKey, string domain, TimeSpan visitDuration)
         {
-            if (!DomainVisits.ContainsKey(domain))
-            {
-                DomainVisits[domain] = 1;
-            }
-            else DomainVisits[domain]++;
+            DomainVisitStats.AddDomainVisit(userKey, domain, visitDuration); 
+//            if (!DomainVisits.ContainsKey(domain))
+//            {
+//                DomainVisits[domain] = 1;
+//            }
+//            else DomainVisits[domain]++;
         }
 
         /// <summary>
@@ -44,12 +50,11 @@ namespace Peeralize.Service.Integration.Blocks
         public double GetLongestVisitPurchaseDuration(string targetDomain, string specialUrl)
         {
             var spentTimes = new List<double>();
-            DomainVisitsTotal = 0;
-
+            //DomainVisitsTotal = 0;
             foreach (var userPair in this.EntityDictionary)
             {
-                var userId = userPair.Key;
-                var visits = (BsonArray)userPair.Value.Document["events"]; 
+                string userId = userPair.Key.ToString();
+                var visits = (BsonArray) userPair.Value.Document["events"];
                 var userIsPaying = false;
                 //var userInternetBrowsingTime = TimeSpan.Zero;
 
@@ -57,7 +62,7 @@ namespace Peeralize.Service.Integration.Blocks
                 var lastDomain = firstVisit["value"].ToString().ToHostname().ToLower();
                 var firstDomain = new string(lastDomain.ToCharArray());
                 var userTargetleadingHosts = new HashSet<string>();
-                
+
                 var lastDomainSessionStart = DateTime.Parse(firstVisit["ondate"].ToString());
                 var lastDomainVisitDuration = TimeSpan.Zero;
                 var completeBrowsingDuration = TimeSpan.Zero;
@@ -68,8 +73,7 @@ namespace Peeralize.Service.Integration.Blocks
                 var targetDomainTransitionCount = 0;
 
                 int weekendDomainVisits = 0;
-                int domainChanges = 0;
-
+                int domainChanges = 0; 
                 for (int i = 1; i < visits.Count; i++)
                 {
                     var visit = visits[i];
@@ -87,22 +91,17 @@ namespace Peeralize.Service.Integration.Blocks
                     }
                     else
                     {
-                        if (lastDomain != null)
-                        {
-                            AddDomainVisit(lastDomain);
-                        }
-                        else
-                        {
-                            AddDomainVisit(crDomain);
-                        }
                         //Domain has changed, add the time from the last domain
                         var visitDuration = visited - lastDomainSessionStart;
                         //Add at least 2 seconds if duration is 0
                         if (visitDuration.TotalSeconds == 0) visitDuration = visitDuration.Add(TimeSpan.FromSeconds(1));
+                        AddDomainVisit(userId, lastDomain, visitDuration);
+
                         if (visited.DayOfWeek > DayOfWeek.Friday)
                         {
                             weekendDomainVisits++;
                         }
+                        
                         domainChanges++;
 
                         completeBrowsingDuration += visitDuration;
@@ -130,13 +129,13 @@ namespace Peeralize.Service.Integration.Blocks
                                 targetDomainTransitionDuration += lastDomainVisitDuration;
                                 targetDomainTransitionCount++;
 
-                                PaginationStatus.PageStats[lastDomain].AddFollowingSite(targetDomain);
-                                var followingReference = PaginationStatus.PageStats[lastDomain]
+                                DomainVisitStats.PageStats[lastDomain].AddFollowingSite(targetDomain);
+                                var followingReference = DomainVisitStats.PageStats[lastDomain]
                                     .FollowingReferences[crDomain];
                                 //If the current user has not marked that he has visited the site, leading to the targetDomain
                                 if (!userTargetleadingHosts.Contains(lastDomain))
                                 {
-                                    followingReference.UsersVisitedTotal++;
+                                    //followingReference.UsersVisitedTotal++;
                                     //Increase the paying members, which were led
                                     if (userIsPaying)
                                     {
@@ -144,8 +143,8 @@ namespace Peeralize.Service.Integration.Blocks
                                     }
                                     userTargetleadingHosts.Add(lastDomain);
                                 }
-                                followingReference.TransitionDuration += lastDomainVisitDuration;
-                                followingReference.TransitionsCount++;
+                                followingReference.TotalTransitionDuration += lastDomainVisitDuration;
+                                followingReference.AddVisit(userId, lastDomainVisitDuration);//TransitionCount++;
                                 //Add the tranition domain
                             }
                         }
@@ -158,33 +157,34 @@ namespace Peeralize.Service.Integration.Blocks
                 }
                 if (visits.Count == 1)
                 {
-                    AddDomainVisit(lastDomain);
+                    AddDomainVisit(userId, lastDomain, lastDomainVisitDuration);
                 }
 
                 if (userIsPaying)
                 {
-                    var visitingTimeFrac = (double)(completeBrowsingDuration.TotalSeconds == 0 ?
-                        0 : (timeSpentOnTargetDomain.TotalSeconds / completeBrowsingDuration.TotalSeconds));
+                    var visitingTimeFrac = (double) (completeBrowsingDuration.TotalSeconds == 0
+                        ? 0
+                        : (timeSpentOnTargetDomain.TotalSeconds / completeBrowsingDuration.TotalSeconds));
                     spentTimes.Add(visitingTimeFrac);
-                    PaginationStatus.PageStats[targetDomain].PurchasedUsers++;
+                    DomainVisitStats.PageStats[targetDomain].PurchasedUsers++;
                 }
 
                 //if (this.EntityDictionary[userId].Document["browsing_statistics"] == null)
                 //{
                 var browsingStats = new UserBrowsingStats();
-                browsingStats.BrowsingTime = (int)completeBrowsingDuration.TotalSeconds;
-                browsingStats.DomainChanges = (int)domainChanges;
-                browsingStats.TargetSiteTime = (int)timeSpentOnTargetDomain.TotalSeconds;
+                browsingStats.BrowsingTime = (int) completeBrowsingDuration.TotalSeconds;
+                browsingStats.DomainChanges = (int) domainChanges;
+                browsingStats.TargetSiteTime = (int) timeSpentOnTargetDomain.TotalSeconds;
                 browsingStats.TargetSiteVisits = targetDomainVisits;
-                browsingStats.TargetSiteDomainTransitionDuration = (int)targetDomainTransitionDuration.TotalSeconds;
+                browsingStats.TargetSiteDomainTransitionDuration = (int) targetDomainTransitionDuration.TotalSeconds;
                 browsingStats.TargetSiteDomainTransitions = targetDomainTransitionCount;
-                browsingStats.TimeOnMobileSites = timeSpentOnMobileSites.Seconds;
+                browsingStats.TimeOnMobileSites = timeSpentOnMobileSites.TotalSeconds;
                 browsingStats.WeekendVisits = weekendDomainVisits;
 
-                this.EntityDictionary[userId].Document["browsing_statistics"] = browsingStats.ToBsonDocument(); 
+                this.EntityDictionary[userId].Document["browsing_statistics"] = browsingStats.ToBsonDocument();
                 this.EntityDictionary[userId].Document["is_paying"] = userIsPaying ? 1 : 0;
                 //} 
-                DomainVisitsTotal += domainChanges;
+                //aDomainVisitsTotal += domainChanges;
             }
             return spentTimes.Max();
         }
@@ -201,13 +201,13 @@ namespace Peeralize.Service.Integration.Blocks
         {
             fromHost = fromHost.ToHostname(true);
             toHost = toHost.ToHostname(true);
-            if (PaginationStatus[fromHost] == null)
+            if (DomainVisitStats[fromHost] == null)
             {
                 return TimeSpan.Zero;
             }
             else
             {
-                var fref = PaginationStatus[fromHost].GetFollowingReference(toHost);
+                var fref = DomainVisitStats[fromHost].GetFollowingReference(toHost);
                 if (fref != null)
                 {
                     return fref.TransitionDurationAverage;
@@ -368,7 +368,7 @@ namespace Peeralize.Service.Integration.Blocks
         /// </summary>
         /// <param name="userId"></param>
         /// <param name="pageLeadingToTarget"></param>
-        /// <param name="targetPage"></param>
+        /// <param name="targetPage">The page to compare with (q)</param>
         /// <returns></returns>
         public double GetPageRating(string pageLeadingToTarget, string targetPage)
         {
@@ -380,27 +380,28 @@ namespace Peeralize.Service.Integration.Blocks
             double weight = 0;
             double traffic = 0; 
 
-            double usersSentToQ = PaginationStatus.GetVisitorsCount(q);
-            double usersSentToP = PaginationStatus.GetVisitorsCount(p);
-            double usersBoughtStuffInQ = PaginationStatus[q]!=null ? 
-                PaginationStatus[q].PurchasedUsers : 0;
+            double usersSentToQ = DomainVisitStats.GetHostVisitorsCount(q);
+            double usersSentToP = DomainVisitStats.GetHostVisitorsCount(p);
+
+            double usersBoughtStuffInQ = DomainVisitStats.Get(q, x => x.PurchasedUsers);
             double payingUsersSentFromPToQ = 0;
-            if (PaginationStatus[p] != null)
+            if (DomainVisitStats[p] != null)
             {
-                var fref = PaginationStatus[p].GetFollowingReference(q);
+                var fref = DomainVisitStats[p].GetFollowingReference(q);
                 if (fref != null)
                 {
                     payingUsersSentFromPToQ = fref.PurchasedUsers;
                 }
             }
 
-            double avgTransition = GetAveragePageTransitionTime(pageLeadingToTarget, targetPage).Seconds;
+            double avgTransition = GetAveragePageTransitionTime(pageLeadingToTarget, targetPage).TotalSeconds;
 
             traffic = usersSentToQ / mx1(usersSentToP);
             weight = usersBoughtStuffInQ / mx1(payingUsersSentFromPToQ);
             decay = 1.0d / mx1(avgTransition); //transition in ms
-
-            return traffic * weight * decay;
+            double rating = traffic * weight * decay; 
+            DomainVisitStats.AddRating(pageLeadingToTarget, targetPage, rating);
+            return rating;
         }
 
         /// <summary>
@@ -409,8 +410,10 @@ namespace Peeralize.Service.Integration.Blocks
         /// <param name="siteVisits"></param>
         /// <param name="targetSite"></param>
         /// <returns></returns>
-        public double GetAveragePageRating(IEnumerable<IGrouping<string, BsonValue>> siteVisits, string targetSite)
+        public double GetAveragePageRating(IEnumerable<IGrouping<string, BsonValue>> siteVisits, string targetSite, bool reset = true)
         {
+            if(reset) DomainVisitStats.ResetRating();
+
             var ratings = new List<double>();
             foreach (var visitSet in siteVisits)
             {
@@ -422,6 +425,8 @@ namespace Peeralize.Service.Integration.Blocks
             return ratings.Count == 0 ? 0 : ratings.Average();
         }
 
+
+        #region "Demographics"
         /// <summary>
         /// Gets the users which are with the same age and gender
         /// </summary>
@@ -500,6 +505,7 @@ namespace Peeralize.Service.Integration.Blocks
                 }
             } 
         }
+        #endregion
 
         public int GetEntityCount()
         {
@@ -517,23 +523,45 @@ namespace Peeralize.Service.Integration.Blocks
                 }
             }
         }
-
+        /// <summary>
+        /// Gets the average of domain sessions / user count
+        /// </summary>
+        /// <returns></returns>
         public double GetAverageDomainVisits()
         {
-            
+            // 8 - 12h
+            var transitions = (double)this.DomainVisitStats.DomainTransitionsTotal();
+            return transitions / Math.Max(1, GetEntityCount());
             //return (double)DomainVisitsTotal / Math.Max(1, GetEntityCount());
         }
 
         public int GetDomainVisits(string target)
         {
             target = target.ToHostname();
-            if (DomainVisits.ContainsKey(target)) return DomainVisits[target];
-            else return 0;
+            var targetStats = DomainVisitStats[target];
+            int visits = targetStats==null ? 0 : targetStats.GetTotalTransitionCount();
+            return visits;
+        }
+        public int GetDomainVisits(string userId, string target)
+        {
+            target = target.ToHostname();
+            var targetStats = DomainVisitStats[target];
+            int visits = targetStats == null ? 0 : targetStats.GetTotalTransitionCount();
+            return visits;
         }
 
         public void AddBuyVisitValue(double probBuyVidit)
         {
             BuyVisitValues += probBuyVidit;
+        }
+
+        public IEnumerable<PageStats> GetHighrankingPages(string targetDomain, int atMost)
+        {
+            var values = DomainVisitStats.PageStats
+                .Select(x => x.Value)
+                .OrderByDescending(x => x.GetTargetRating(targetDomain).Value)
+                .Take(atMost);
+            return values;
         }
     }
 }

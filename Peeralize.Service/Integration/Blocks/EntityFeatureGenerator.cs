@@ -27,6 +27,8 @@ namespace Peeralize.Service.Integration.Blocks
         {
             //TODO: Clean this up..
             var doc = intDoc.Document;
+            var targetDomain = "ebag.bg";
+            var userId = intDoc.Document["uuid"].AsString;
             var browsingStats = UserBrowsingStats.FromBson(doc["browsing_statistics"]);
 
             doc["events"] = ((BsonArray) doc["events"]);
@@ -40,7 +42,7 @@ namespace Peeralize.Service.Integration.Blocks
 
 
             var ebagVisits = domainVisits?
-                .Where(x => x.Key.ToString().Contains("ebag.bg"))
+                .Where(x => x.Key.ToString().Contains(targetDomain))
                 .SelectMany(x => x.ToList()).ToBsonArray();
 
             var mobileEbagVisits = domainVisits?
@@ -102,7 +104,7 @@ namespace Peeralize.Service.Integration.Blocks
                     hasVisitedMobile = true;
                     lastMEbagVisit = dateTime;
                 }
-                if (hostname == "ebag.bg")
+                if (hostname == targetDomain)
                 {
                     if (hasVisitedMobile && dateTime.Day == lastMEbagVisit.Day)
                     {
@@ -145,8 +147,9 @@ namespace Peeralize.Service.Integration.Blocks
             }
             var buysVisitsQ = purchases.Count / mx1(browsingStats.TargetSiteVisits);
             var probVisitAgeAndGender = usersWithSameAgeAndGender.Count() / Helper.GetDomainVisits("ebag.bg");
-            var probBuyVidit = buysVisitsQ * probVisitAgeAndGender;
-            Helper.AddBuyVisitValue(probBuyVidit);
+            var probBuyVisit = buysVisitsQ * probVisitAgeAndGender;
+
+            Helper.AddBuyVisitValue(probBuyVisit);
 
 
             intDoc.Document["visits_per_time"] = visitsPerTime;
@@ -177,7 +180,7 @@ namespace Peeralize.Service.Integration.Blocks
             intDoc.Document["time_before_leaving"] = browsingStats != null
                 ? browsingStats.TargetSiteVisitAverageDuration
                 : 0;
-            var avgPageRating = Helper.GetAveragePageRating(domainVisits, "ebag.bg");
+            var avgPageRating = Helper.GetAveragePageRating(domainVisits, targetDomain);
             intDoc.Document["page_rank"] = avgPageRating; 
 
             intDoc.Document["prop_buy_is_before_weekend_user"] = purchasesBeforeWeekends.Count() /
@@ -189,10 +192,12 @@ namespace Peeralize.Service.Integration.Blocks
             intDoc.Document["mobile_visits"] = mobileEbagVisits.Count() / mx1(ebagVisits.Count());
             intDoc.Document["mobile_purchases"] = mobilePurchases.Count() / mx1(purchases.Count());
 
+
+            //new features
             intDoc.Document["visited_ebag"] = (ebagVisits.Count > 0) ? 1 : 0;
-            intDoc.Document["time_spent_online"] = realisticUserWebTime.Seconds / 86400 * 7;
-            intDoc.Document["time_spent_on_mobile_sites"] = browsingStats?.TimeOnMobileSites / mx1(realisticUserWebTime.Seconds) ;
-            intDoc.Document["time_spent_ebag"] = browsingStats?.TargetSiteTime / mx1(realisticUserWebTime.Seconds);
+            intDoc.Document["time_spent_online"] = realisticUserWebTime.TotalSeconds / 86400 * 7;
+            intDoc.Document["time_spent_on_mobile_sites"] = browsingStats?.TimeOnMobileSites / mx1(realisticUserWebTime.TotalSeconds) ;
+            intDoc.Document["time_spent_ebag"] = browsingStats?.TargetSiteTime / mx1(realisticUserWebTime.TotalSeconds);
             intDoc.Document["visits_on_holidays"] = visitsOnHolidays.Count / mx1(completeTimeSpan.Days);
             intDoc.Document["visits_on_weekends"] = visitsOnWeekends.Count / mx1(completeTimeSpan.Days);
             intDoc.Document["p_online_weekend"] = browsingStats.WeekendVisits / mx1(browsingStats.DomainChanges);
@@ -203,6 +208,18 @@ namespace Peeralize.Service.Integration.Blocks
             //p(visit_ebag|age)=visitors_same_age/visitors_total
             intDoc.Document["p_visit_ebag_gender"] = Helper.TargetDomainVisitors(usersWithSameGender).Count() / Helper.GetEntityCount();
             intDoc.Document["p_to_go_online"] = browsingStats.TargetSiteVisits / mx1(Helper.GetAverageDomainVisits());
+            var highPagerankSites = Helper.GetHighrankingPages(targetDomain, 5).ToArray();
+            intDoc.Document["avg_time_spent_on_high_pageranksites"] =
+                highPagerankSites.Sum(x=> x.GetUserVisitDuration(userId)) / mx1(realisticUserWebTime.TotalSeconds);
+            for (int iHighPage = 0; iHighPage < 5; iHighPage++)
+            {
+                var name = $"highranking_page_{iHighPage}";
+                intDoc.Document[name] = 0;
+                if (highPagerankSites.Length < iHighPage)
+                {
+                    intDoc.Document[name] = highPagerankSites[iHighPage].GetTargetRating(userId).Value;
+                }
+            }
 
             //Cleanup events
             intDoc.Document.Remove("events");

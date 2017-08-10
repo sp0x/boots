@@ -88,12 +88,12 @@ namespace Peeralize.Service.Integration.Blocks
                 isNewUser = true;
             }
             RecordPageStats(key.ToString(), intDoc.Document, isNewUser);
-            dynamic newElement = ModifierAction(EntityDictionary[key], intDoc);
+            var newElement = ModifierAction(EntityDictionary[key], intDoc);
             return EntityDictionary[key];
         }
 
         /// <summary>
-        /// Updates page statistics
+        /// Updates page stats on every visit event
         /// </summary>
         /// <param name="userId"></param>
         /// <param name="eventData"></param>
@@ -114,21 +114,15 @@ namespace Peeralize.Service.Integration.Blocks
             }
             if (isNewUser)
             {
-                this.PageStats[pageSelector].UsersVisitedTotal++;
+                //this.PageStats[pageSelector].UsersVisitedTotal++;
             }
             if (!isNewPage)
             {
                 //var duration = this.PageStats[pageSelector].VisitStarted;
             }
-            this.PageStats[pageSelector].VisitsTotal++;
+            this.PageStats[pageSelector].PageVisitsTotal++;
         }
-
-
-
-
-
-
-
+        
 
 //        public static TimeSpan GetPageChangeTimespan(DateTime startingTime, BsonArray events, Func<string, bool> toPageFilter, int offset = 0)
 //        {

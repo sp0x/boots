@@ -6,13 +6,19 @@ namespace Peeralize.Service.Integration.Blocks
 {
     public class UserBrowsingStats
     {
+        /// <summary>
+        /// The seconds that were spent browsing
+        /// </summary>
         public long BrowsingTime { get; set; }
         public long TargetSiteTime { get; set; }
         public long TargetSiteVisits { get; set; }
         /// <summary>
         /// The time the user spends on mobile websites
         /// </summary>
-        public long TimeOnMobileSites { get; set; }
+        public double TimeOnMobileSites { get; set; }
+        /// <summary>
+        /// The number of times that domains have transitioned.
+        /// </summary>
         public long DomainChanges { get; set; }
         /// <summary>
         /// The times the user went to different domains on weekends
