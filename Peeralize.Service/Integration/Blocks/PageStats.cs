@@ -1,66 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using nvoid.extensions;
 
-namespace Peeralize.Service
+namespace Peeralize.Service.Integration.Blocks
 {
-    public class CrossPageStats
-    {
-        public Dictionary<string, PageStats> PageStats { get; set; }
-
-        public CrossPageStats()
-        {
-            PageStats = new Dictionary<string, Service.PageStats>();
-        }
-
-        public bool ContainsPage(string page)
-        {
-            return PageStats.ContainsKey(page);
-        }
-
-        public void AddPage(string page, PageStats pageStats)
-        {
-            PageStats.Add(page, pageStats);
-        }
-
-        public PageStats this[string key] 
-        {
-            get { return PageStats.ContainsKey(key) ? PageStats[key] : null; }
-            set { PageStats[key] = value; }
-        }
-
-        public long GetVisitorsCount(string targetPage)
-        {
-            var pagestat = this[targetPage];
-            if (pagestat != null)
-            {
-                return pagestat.UsersVisitedTotal;
-            }
-            else
-            {
-                return 0;
-            }
-        }
-        public long GetHostVisitorsCount(string targetPage)
-        {
-            var hostname = targetPage.ToHostname(true);
-            var matchingHosts = PageStats.Where(x => x.Key.ToHostname(true).ToLower().Equals(hostname))
-                .Select(x => x.Value);
-            long count = 0;
-            foreach (var page in matchingHosts)
-            {
-                count += page.UsersVisitedTotal;
-            }
-            return count;
-        }
-    }
-
-
     public class PageStats
     {
         public string PageHost => Strings.ToHostname(Page);
         public long UsersVisitedTotal { get; set; }
+
+        /// <summary>
+        /// The number of times this hostname was visited
+        /// </summary>
         public long VisitsTotal { get; set; }
         public string Page { get; set; }
         public int PurchasedUsers { get; set; }

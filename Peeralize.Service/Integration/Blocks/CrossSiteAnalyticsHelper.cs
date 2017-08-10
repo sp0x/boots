@@ -11,13 +11,25 @@ namespace Peeralize.Service.Integration.Blocks
     {
         public Dictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
         public CrossPageStats PaginationStatus { get; private set; }
-
+        //public int DomainVisitsTotal { get; private set; }
+        //public Dictionary<string, int> DomainVisits { get; private set; }
+        public double BuyVisitValues { get; private set; }
 
         public CrossSiteAnalyticsHelper(Dictionary<object, IntegratedDocument> sessions,
             CrossPageStats paginationStatus)
         {
             EntityDictionary = sessions;
             this.PaginationStatus = paginationStatus;
+            DomainVisits = new Dictionary<string, int>();
+        }
+
+        private void AddDomainVisit(string domain)
+        {
+            if (!DomainVisits.ContainsKey(domain))
+            {
+                DomainVisits[domain] = 1;
+            }
+            else DomainVisits[domain]++;
         }
 
         /// <summary>
@@ -32,7 +44,8 @@ namespace Peeralize.Service.Integration.Blocks
         public double GetLongestVisitPurchaseDuration(string targetDomain, string specialUrl)
         {
             var spentTimes = new List<double>();
-            
+            DomainVisitsTotal = 0;
+
             foreach (var userPair in this.EntityDictionary)
             {
                 var userId = userPair.Key;
@@ -42,15 +55,20 @@ namespace Peeralize.Service.Integration.Blocks
 
                 var firstVisit = visits[0];
                 var lastDomain = firstVisit["value"].ToString().ToHostname().ToLower();
+                var firstDomain = new string(lastDomain.ToCharArray());
                 var userTargetleadingHosts = new HashSet<string>();
                 
                 var lastDomainSessionStart = DateTime.Parse(firstVisit["ondate"].ToString());
                 var lastDomainVisitDuration = TimeSpan.Zero;
                 var completeBrowsingDuration = TimeSpan.Zero;
                 var timeSpentOnTargetDomain = TimeSpan.Zero;
+                var timeSpentOnMobileSites = TimeSpan.Zero;
                 var targetDomainVisits = 0;
                 var targetDomainTransitionDuration = lastDomainVisitDuration;
-                var targetDomainTransitionCount = 0; 
+                var targetDomainTransitionCount = 0;
+
+                int weekendDomainVisits = 0;
+                int domainChanges = 0;
 
                 for (int i = 1; i < visits.Count; i++)
                 {
@@ -59,23 +77,39 @@ namespace Peeralize.Service.Integration.Blocks
                     var crDomain = currentUrl.ToHostname().ToLower();
                     var visited = DateTime.Parse(visit["ondate"].ToString());
 
-                    if (currentUrl.Contains(specialUrl))
+                    if (crDomain.Contains(targetDomain) && currentUrl.Contains(specialUrl))
                     {
                         userIsPaying = true;
                     }
-                    
-                    if (crDomain == lastDomain){ 
+                    if (crDomain == lastDomain)
+                    {
                         //We're still in the same domain, nothing has changed
                     }
                     else
                     {
+                        if (lastDomain != null)
+                        {
+                            AddDomainVisit(lastDomain);
+                        }
+                        else
+                        {
+                            AddDomainVisit(crDomain);
+                        }
                         //Domain has changed, add the time from the last domain
                         var visitDuration = visited - lastDomainSessionStart;
                         //Add at least 2 seconds if duration is 0
                         if (visitDuration.TotalSeconds == 0) visitDuration = visitDuration.Add(TimeSpan.FromSeconds(1));
+                        if (visited.DayOfWeek > DayOfWeek.Friday)
+                        {
+                            weekendDomainVisits++;
+                        }
+                        domainChanges++;
 
                         completeBrowsingDuration += visitDuration;
-                        
+                        if (crDomain.IsMobileDomain())
+                        {
+                            timeSpentOnMobileSites += visitDuration;
+                        }
 
 
                         //If we were on our target domain, and the current one is not any more
@@ -97,7 +131,8 @@ namespace Peeralize.Service.Integration.Blocks
                                 targetDomainTransitionCount++;
 
                                 PaginationStatus.PageStats[lastDomain].AddFollowingSite(targetDomain);
-                                var followingReference = PaginationStatus.PageStats[lastDomain].FollowingReferences[crDomain];
+                                var followingReference = PaginationStatus.PageStats[lastDomain]
+                                    .FollowingReferences[crDomain];
                                 //If the current user has not marked that he has visited the site, leading to the targetDomain
                                 if (!userTargetleadingHosts.Contains(lastDomain))
                                 {
@@ -114,12 +149,16 @@ namespace Peeralize.Service.Integration.Blocks
                                 //Add the tranition domain
                             }
                         }
-                        
+
                         //Set our last domain visit to this current visit
                         lastDomainSessionStart = visited;
                         lastDomainVisitDuration = visitDuration;
                     }
                     lastDomain = crDomain;
+                }
+                if (visits.Count == 1)
+                {
+                    AddDomainVisit(lastDomain);
                 }
 
                 if (userIsPaying)
@@ -130,18 +169,22 @@ namespace Peeralize.Service.Integration.Blocks
                     PaginationStatus.PageStats[targetDomain].PurchasedUsers++;
                 }
 
-
                 //if (this.EntityDictionary[userId].Document["browsing_statistics"] == null)
                 //{
                 var browsingStats = new UserBrowsingStats();
                 browsingStats.BrowsingTime = (int)completeBrowsingDuration.TotalSeconds;
+                browsingStats.DomainChanges = (int)domainChanges;
                 browsingStats.TargetSiteTime = (int)timeSpentOnTargetDomain.TotalSeconds;
                 browsingStats.TargetSiteVisits = targetDomainVisits;
                 browsingStats.TargetSiteDomainTransitionDuration = (int)targetDomainTransitionDuration.TotalSeconds;
                 browsingStats.TargetSiteDomainTransitions = targetDomainTransitionCount;
+                browsingStats.TimeOnMobileSites = timeSpentOnMobileSites.Seconds;
+                browsingStats.WeekendVisits = weekendDomainVisits;
+
                 this.EntityDictionary[userId].Document["browsing_statistics"] = browsingStats.ToBsonDocument(); 
                 this.EntityDictionary[userId].Document["is_paying"] = userIsPaying ? 1 : 0;
                 //} 
+                DomainVisitsTotal += domainChanges;
             }
             return spentTimes.Max();
         }
@@ -377,6 +420,120 @@ namespace Peeralize.Service.Integration.Blocks
                 ratings.Add(rating);
             }
             return ratings.Count == 0 ? 0 : ratings.Average();
+        }
+
+        /// <summary>
+        /// Gets the users which are with the same age and gender
+        /// </summary>
+        /// <param name="age"></param>
+        /// <param name="gender"></param>
+        /// <returns></returns>
+        public IEnumerable<IntegratedDocument> GetUsersWithSameAgeAndGender(int age, string gender)
+        {
+            foreach (var user in EntityDictionary.Values)
+            {
+                int tAge = 0;
+                if (int.TryParse(user.Document["age"].AsString, out tAge) && user.Document["gender"]==gender)
+                {
+                    if (tAge == age)
+                    {
+                        yield return user;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Todo: maybe cache?
+        /// </summary>
+        /// <param name="age"></param>
+        /// <returns></returns>
+        public IEnumerable<IntegratedDocument> GetUsersWithSameAge(int age)
+        { 
+            foreach (var user in EntityDictionary.Values)
+            {
+                int tAge = 0;
+                if (int.TryParse(user.Document["age"].ToString(), out tAge))
+                {
+                    if (tAge == age)  yield return user;
+                }
+            } 
+        }
+        /// <summary>
+        /// Todo: maybe cache?
+        /// </summary>
+        /// <param name="age"></param>
+        /// <returns></returns>
+        public IEnumerable<IntegratedDocument> GetBuyersWithSameAge(int age)
+        { 
+            foreach (var user in EntityDictionary.Values)
+            {
+                if (user.Document["is_paying"].AsInt32 == 0) continue;
+                int tAge = 0;
+                if (int.TryParse(user.Document["age"].ToString(), out tAge))
+                {
+                    yield return user;
+                }
+            } 
+        }
+
+        public IEnumerable<IntegratedDocument> GetBuyersWithSameGender(string gender)
+        { 
+            foreach (var user in EntityDictionary.Values)
+            {
+                if (user.Document["is_paying"].AsInt32 == 0) continue; 
+                if (user.Document["gender"].AsString == gender)
+                {
+                    yield return user;
+                }
+            } 
+        }
+
+        public IEnumerable<IntegratedDocument> GetusersWithSameGender(string gender)
+        {
+            var matches = 0;
+            foreach (var user in EntityDictionary.Values)
+            { 
+                if (user.Document["gender"]==gender)
+                {
+                    yield return user;
+                }
+            } 
+        }
+
+        public int GetEntityCount()
+        {
+            return EntityDictionary.Keys.Count;
+        }
+
+        public IEnumerable<IntegratedDocument> TargetDomainVisitors(IEnumerable<IntegratedDocument> records)
+        {
+            foreach (var doc in records)
+            {
+                var browsingStats = UserBrowsingStats.FromBson(doc.Document["browsing_statistics"]);
+                if (browsingStats.TargetSiteVisits > 0)
+                {
+                    yield return doc;
+                }
+            }
+        }
+
+        public double GetAverageDomainVisits()
+        {
+            
+            //return (double)DomainVisitsTotal / Math.Max(1, GetEntityCount());
+        }
+
+        public int GetDomainVisits(string target)
+        {
+            target = target.ToHostname();
+            if (DomainVisits.ContainsKey(target)) return DomainVisits[target];
+            else return 0;
+        }
+
+        public void AddBuyVisitValue(double probBuyVidit)
+        {
+            BuyVisitValues += probBuyVidit;
         }
     }
 }

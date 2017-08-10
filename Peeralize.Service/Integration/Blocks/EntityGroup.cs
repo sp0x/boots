@@ -14,10 +14,8 @@ namespace Peeralize.Service.Integration.Blocks
     {
         private Func<IntegratedDocument, object> GroupBySelector;
         private Func<IntegratedDocument, IntegratedDocument, object> ModifierAction;
-        private Action<IntegratedDocument> OnUserCreatedFilter;
-
+        private Action<IntegratedDocument> OnUserCreatedFilter; 
         public event EventHandler<EventArgs> GroupingComplete;
-
 
         public Dictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
         public CrossPageStats PageStats { get; set; }
@@ -132,21 +130,21 @@ namespace Peeralize.Service.Integration.Blocks
 
 
 
-        public static TimeSpan GetPageChangeTimespan(DateTime startingTime, BsonArray events, Func<string, bool> toPageFilter, int offset = 0)
-        {
-            for (var i = offset; i < events.Count; i++)
-            {
-                var eventData = events[i];
-                var eventPage = eventData["value"].ToString();
-
-                if (toPageFilter(eventPage))
-                {
-                    var pageVisitTime = DateTime.Parse(eventData["ondate"].ToString());
-                    return pageVisitTime - startingTime;
-                }
-            }
-            return TimeSpan.Zero;
-        }
+//        public static TimeSpan GetPageChangeTimespan(DateTime startingTime, BsonArray events, Func<string, bool> toPageFilter, int offset = 0)
+//        {
+//            for (var i = offset; i < events.Count; i++)
+//            {
+//                var eventData = events[i];
+//                var eventPage = eventData["value"].ToString();
+//
+//                if (toPageFilter(eventPage))
+//                {
+//                    var pageVisitTime = DateTime.Parse(eventData["ondate"].ToString());
+//                    return pageVisitTime - startingTime;
+//                }
+//            }
+//            return TimeSpan.Zero;
+//        }
          
     }
 }
