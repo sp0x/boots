@@ -19,6 +19,8 @@ namespace Peeralize.Service.Integration.Blocks
 
         public Dictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
         public CrossPageStats PageStats { get; set; }
+
+        public CrossSiteAnalyticsHelper Helper { get; set; }
         //public BsonArray Purchases { get; set; }
 
 

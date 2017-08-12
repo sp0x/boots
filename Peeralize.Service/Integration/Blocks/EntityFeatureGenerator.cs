@@ -147,7 +147,9 @@ namespace Peeralize.Service.Integration.Blocks
                 lastEbagVisit = dateTime;
             }
             var buysVisitsQ = purchases.Count / mx1(browsingStats.TargetSiteVisits);
-            var probVisitAgeAndGender = usersWithSameAgeAndGender.Count() / Helper.GetDomainVisits("ebag.bg");
+            var sameAgeAndGenderUsers = usersWithSameAgeAndGender.Count();
+            var targetVisits = Helper.GetDomainVisitors("ebag.bg");
+            var probVisitAgeAndGender = sameAgeAndGenderUsers / targetVisits;
             var probBuyVisit = buysVisitsQ * probVisitAgeAndGender;
 
             Helper.AddBuyVisitValue(probBuyVisit);
@@ -181,7 +183,7 @@ namespace Peeralize.Service.Integration.Blocks
             intDoc.Document["time_before_leaving"] = browsingStats != null
                 ? browsingStats.TargetSiteVisitAverageDuration
                 : 0;
-            var avgPageRating = Helper.GetAveragePageRating(domainVisits, targetDomain);
+            var avgPageRating = Helper.GetAveragePageRating(domainVisits, targetDomain, false);
             intDoc.Document["page_rank"] = avgPageRating; 
 
             intDoc.Document["prop_buy_is_before_weekend_user"] = purchasesBeforeWeekends.Count() /
@@ -209,6 +211,7 @@ namespace Peeralize.Service.Integration.Blocks
             //p(visit_ebag|age)=visitors_same_age/visitors_total
             intDoc.Document["p_visit_ebag_gender"] = Helper.TargetDomainVisitors(usersWithSameGender).Count() / Helper.GetEntityCount();
             intDoc.Document["p_to_go_online"] = browsingStats.TargetSiteVisits / mx1(Helper.GetAverageDomainVisits());
+            intDoc.Document["p_buy_visit"] = Helper.BuyVisitValues;
             var highPagerankSites = Helper.GetHighrankingPages(targetDomain, 5).ToArray();
             intDoc.Document["avg_time_spent_on_high_pageranksites"] =
                 highPagerankSites.Sum(x=> x.GetUserVisitDuration(userId)) / mx1(realisticUserWebTime.TotalSeconds);
@@ -218,9 +221,8 @@ namespace Peeralize.Service.Integration.Blocks
                 var name = $"highranking_page_{iHighPage}";
                 intDoc.Document[name] = 0;
                 var highPagerankSite = highPagerankSites[iHighPage];
-                var targetRating = highPagerankSite.GetTargetRating(userId);
-                intDoc.Document[name] = targetRating.Value;
-               
+                var targetRating = highPagerankSite.GetTargetRating(targetDomain); //userId
+                intDoc.Document[name] = targetRating!=null ? targetRating.Value : 0; 
             }
 
             //Cleanup events

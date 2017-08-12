@@ -11,6 +11,9 @@ namespace Peeralize.Service
     /// </summary>
     public class CrossPageStats
     {
+        /// <summary>
+        /// 
+        /// </summary>
         public Dictionary<string, PageStats> PageStats { get; set; }
         
         public CrossPageStats()
@@ -27,7 +30,7 @@ namespace Peeralize.Service
             }
             return outx;
         }
-
+        private long? transitionsTotalCache = null;
         /// <summary>
         /// The total number of times that domains have been changed.
         /// (Users passing from one domain to another)
@@ -35,11 +38,13 @@ namespace Peeralize.Service
         /// <returns></returns>
         public long DomainTransitionsTotal()
         {
+            if (transitionsTotalCache != null) return transitionsTotalCache.Value;
             int transitionsTotal = 0;
             foreach (var dom in PageStats)
             {
                 transitionsTotal += dom.Value.GetTotalTransitionCount();
             }
+            transitionsTotalCache = transitionsTotal;
             return transitionsTotal;
         }
         /// <summary>
@@ -135,6 +140,17 @@ namespace Peeralize.Service
             this.PageStats[pageLeadingToTarget].SetRating(targetPage, rating);
         }
 
+        public Score GetRating(string pageLeadingToTarget, string targetPage)
+        {
+            if (!PageStats.ContainsKey(pageLeadingToTarget))
+            {
+                return null;
+            }
+            else
+            {
+                return this.PageStats[pageLeadingToTarget].GetTargetRating(targetPage);
+            }
+        }
         public void ResetRating()
         {
             foreach (var pagest in PageStats)

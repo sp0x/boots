@@ -15,9 +15,10 @@ namespace Peeralize.Service.Integration.Blocks
         //public Dictionary<string, int> DomainVisits { get; private set; }
         public double BuyVisitValues { get; private set; }
 
-        public Dictionary<string, List<KeyValuePair<object, IntegratedDocument>>> AgeGroups { get; set; }
+        public Dictionary<string, List<IntegratedDocument>> AgeGroups { get; set; }
 
-        public Dictionary<string, List<KeyValuePair<object, IntegratedDocument>>> GenderGroups { get; set; }
+        public Dictionary<string, List<IntegratedDocument>> GenderGroups { get; set; }
+        public Dictionary<string, List<IntegratedDocument>> DistinctUsers { get; set; }
 
         public CrossSiteAnalyticsHelper(Dictionary<object, IntegratedDocument> sessions,
             CrossPageStats domainVisitStats)
@@ -36,12 +37,82 @@ namespace Peeralize.Service.Integration.Blocks
         /// <param name="visitDuration"></param>
         private void AddDomainVisit(string userKey, string domain, TimeSpan visitDuration)
         {
-            DomainVisitStats.AddDomainVisit(userKey, domain, visitDuration); 
-//            if (!DomainVisits.ContainsKey(domain))
-//            {
-//                DomainVisits[domain] = 1;
-//            }
-//            else DomainVisits[domain]++;
+            DomainVisitStats.AddDomainVisit(userKey, domain, visitDuration);
+            //            if (!DomainVisits.ContainsKey(domain))
+            //            {
+            //                DomainVisits[domain] = 1;
+            //            }
+            //            else DomainVisits[domain]++;
+        }
+
+        /// <summary>
+        /// Gets the web browsing sessions that the user made
+        /// </summary>
+        /// <param name="userDoc"></param>
+        /// <returns></returns>
+        public IEnumerable<DomainUserSession> GetWebSessions(IntegratedDocument userDoc)
+        {
+            var visits = (BsonArray)userDoc.Document["events"];
+            var uuid = userDoc.Document["uuid"].ToString();
+            var firstVisit = (BsonDocument)visits[0];
+            var lastDomain = firstVisit["value"].ToString().ToHostname().ToLower();
+
+            var lastDomainSessionStart = DateTime.Parse(firstVisit["ondate"].ToString());
+            var lastDomainVisitDuration = TimeSpan.Zero;
+
+
+            for (int i = 1; i < visits.Count; i++)
+            {
+                var visit = visits[i];
+                var currentUrl = visit["value"].ToString();
+                var crDomain = currentUrl.ToHostname().ToLower();
+                var visited = DateTime.Parse(visit["ondate"].ToString());
+                if (crDomain == lastDomain)
+                {
+                    //We're still in the same domain, nothing has changed
+                }
+                else
+                {
+                    //Domain has changed, add the time from the last domain
+                    var visitDuration = visited - lastDomainSessionStart;
+                    //Add at least 2 seconds if duration is 0
+                    if (visitDuration.TotalSeconds == 0) visitDuration = visitDuration.Add(TimeSpan.FromSeconds(1));
+
+                    lastDomainSessionStart = visited;
+                    lastDomainVisitDuration = visitDuration;
+
+                    //A session has ended, yield it
+                    var session = new DomainUserSession(lastDomain, visited, visitDuration);
+                    
+                    yield return session;
+                }
+                lastDomain = crDomain;
+                
+            }
+            if (visits.Count > 1)
+            {
+                var visit = visits[visits.Count - 1];
+                var currentUrl = visit["value"].ToString();
+                var crDomain = currentUrl.ToHostname().ToLower();
+                var visited = lastDomainSessionStart;
+                var visitEnd = DateTime.Parse(visit["ondate"].ToString());
+                var duration = visitEnd - visited;
+                if (duration.TotalSeconds <= 0) duration = TimeSpan.FromSeconds(1);
+
+                var session = new DomainUserSession(crDomain, visited, duration);
+                yield return session;
+            }
+            else
+            {
+                //Yield the last domain
+                var currentUrl = firstVisit["value"].ToString();
+                var crDomain = currentUrl.ToHostname().ToLower();
+                var visited = DateTime.Parse(firstVisit["ondate"].ToString());
+                var session = new DomainUserSession(crDomain, visited, TimeSpan.FromSeconds(1));
+                yield return session;
+            }
+
+
         }
 
         /// <summary>
@@ -60,7 +131,7 @@ namespace Peeralize.Service.Integration.Blocks
             foreach (var userPair in this.EntityDictionary)
             {
                 string userId = userPair.Value.Document["uuid"].ToString();//Key.ToString();
-                var visits = (BsonArray) userPair.Value.Document["events"];
+                var visits = (BsonArray)userPair.Value.Document["events"];
                 var userIsPaying = false;
                 //var userInternetBrowsingTime = TimeSpan.Zero;
 
@@ -79,7 +150,7 @@ namespace Peeralize.Service.Integration.Blocks
                 var targetDomainTransitionCount = 0;
 
                 int weekendDomainVisits = 0;
-                int domainChanges = 0; 
+                int domainChanges = 0;
                 for (int i = 1; i < visits.Count; i++)
                 {
                     var visit = visits[i];
@@ -107,7 +178,7 @@ namespace Peeralize.Service.Integration.Blocks
                         {
                             weekendDomainVisits++;
                         }
-                        
+
                         domainChanges++;
 
                         completeBrowsingDuration += visitDuration;
@@ -168,7 +239,7 @@ namespace Peeralize.Service.Integration.Blocks
 
                 if (userIsPaying)
                 {
-                    var visitingTimeFrac = (double) (completeBrowsingDuration.TotalSeconds == 0
+                    var visitingTimeFrac = (double)(completeBrowsingDuration.TotalSeconds == 0
                         ? 0
                         : (timeSpentOnTargetDomain.TotalSeconds / completeBrowsingDuration.TotalSeconds));
                     spentTimes.Add(visitingTimeFrac);
@@ -178,11 +249,11 @@ namespace Peeralize.Service.Integration.Blocks
                 //if (this.EntityDictionary[userId].Document["browsing_statistics"] == null)
                 //{
                 var browsingStats = new UserBrowsingStats();
-                browsingStats.BrowsingTime = (int) completeBrowsingDuration.TotalSeconds;
-                browsingStats.DomainChanges = (int) domainChanges;
-                browsingStats.TargetSiteTime = (int) timeSpentOnTargetDomain.TotalSeconds;
+                browsingStats.BrowsingTime = (int)completeBrowsingDuration.TotalSeconds;
+                browsingStats.DomainChanges = (int)domainChanges;
+                browsingStats.TargetSiteTime = (int)timeSpentOnTargetDomain.TotalSeconds;
                 browsingStats.TargetSiteVisits = targetDomainVisits;
-                browsingStats.TargetSiteDomainTransitionDuration = (int) targetDomainTransitionDuration.TotalSeconds;
+                browsingStats.TargetSiteDomainTransitionDuration = (int)targetDomainTransitionDuration.TotalSeconds;
                 browsingStats.TargetSiteDomainTransitions = targetDomainTransitionCount;
                 browsingStats.TimeOnMobileSites = timeSpentOnMobileSites.TotalSeconds;
                 browsingStats.WeekendVisits = weekendDomainVisits;
@@ -195,7 +266,7 @@ namespace Peeralize.Service.Integration.Blocks
             }
             return spentTimes.Max();
         }
-        
+
 
 
         /// <summary>
@@ -223,31 +294,31 @@ namespace Peeralize.Service.Integration.Blocks
                 {
                     return TimeSpan.Zero;
                 }
-            } 
-//            string lastHostname = null;
-//            BsonValue lastPage = null;
-//            var totalPageTransitionTime = TimeSpan.Zero;
-//            var transitionsMade = 1;
-//            for (var i = 0; i < events.Count; i++)
-//            {
-//                var crEvent = events[i];
-//                var crHost = crEvent["value"].ToString().ToHostname(true);
-//
-//                //If we came from another page, onto ebag
-//                if (lastHostname != null && !lastHostname.Contains(targetHostname) && crHost.Contains(targetHostname))
-//                {
-//                    //The time it took to get to ebag
-//                    var pageTransitionTime = GetPeriod(lastPage["ondate"], crEvent);
-//                    totalPageTransitionTime = totalPageTransitionTime.Add(pageTransitionTime);
-//                }
-//                else
-//                {
-//                    lastPage = crEvent;
-//                }
-//                lastHostname = crHost;
-//            }
-//            double avgMs = totalPageTransitionTime.Milliseconds / (double)transitionsMade;
-//            return TimeSpan.FromMilliseconds(avgMs);
+            }
+            //            string lastHostname = null;
+            //            BsonValue lastPage = null;
+            //            var totalPageTransitionTime = TimeSpan.Zero;
+            //            var transitionsMade = 1;
+            //            for (var i = 0; i < events.Count; i++)
+            //            {
+            //                var crEvent = events[i];
+            //                var crHost = crEvent["value"].ToString().ToHostname(true);
+            //
+            //                //If we came from another page, onto ebag
+            //                if (lastHostname != null && !lastHostname.Contains(targetHostname) && crHost.Contains(targetHostname))
+            //                {
+            //                    //The time it took to get to ebag
+            //                    var pageTransitionTime = GetPeriod(lastPage["ondate"], crEvent);
+            //                    totalPageTransitionTime = totalPageTransitionTime.Add(pageTransitionTime);
+            //                }
+            //                else
+            //                {
+            //                    lastPage = crEvent;
+            //                }
+            //                lastHostname = crHost;
+            //            }
+            //            double avgMs = totalPageTransitionTime.Milliseconds / (double)transitionsMade;
+            //            return TimeSpan.FromMilliseconds(avgMs);
         }
 
 
@@ -287,7 +358,7 @@ namespace Peeralize.Service.Integration.Blocks
             DateTime lastDomainVisitStart = lastDayDateTime;
             DateTime? previousVisitDate = null;
             string lastDomain = events[0]["value"].ToString().ToHostname(true).ToLower();
-            
+
             var periodAccounted = TimeSpan.Zero;
             for (var i = 1; i < events.Count; i++)
             {
@@ -303,9 +374,9 @@ namespace Peeralize.Service.Integration.Blocks
                 {
                     //If the last domain visit was on a different day
                     if (lastDayDateTime.Day == currentEventDate.Day)
-                    { 
+                    {
                         var periodDiff = (previousVisitDate == null)
-                            ? TimeSpan.FromSeconds(1) 
+                            ? TimeSpan.FromSeconds(1)
                             : previousVisitDate - lastDomainVisitStart;
                         if (periodDiff.Value.TotalSeconds == 0) periodDiff = TimeSpan.FromSeconds(1);
                         periodAccounted += periodDiff.Value;
@@ -362,16 +433,16 @@ namespace Peeralize.Service.Integration.Blocks
                 var elem = elements[i];
                 var host = elem["value"].ToString().ToHostname();
                 //If host is diff
-                if (crPageHost!=host)
+                if (crPageHost != host)
                 {
                     return elem;
                 }
             }
             return null;
         }
-        
+
         /// <summary>
-        /// 
+        /// AgeGroups
         /// </summary>
         /// <param name="userId"></param>
         /// <param name="pageLeadingToTarget"></param>
@@ -379,13 +450,19 @@ namespace Peeralize.Service.Integration.Blocks
         /// <returns></returns>
         public double GetPageRating(string pageLeadingToTarget, string targetPage)
         {
+            var crRating = DomainVisitStats.GetRating(pageLeadingToTarget, targetPage);
+            if (crRating != null)
+            {
+                return crRating.Value;
+            }
+
             var targetPageHost = targetPage.ToHostname(true);
             var p = pageLeadingToTarget.ToHostname(true);
             var q = targetPageHost;
             Func<double, double> mx1 = (x) => Math.Max(1, x);
             double decay = 0;
             double weight = 0;
-            double traffic = 0; 
+            double traffic = 0;
 
             double usersSentToQ = DomainVisitStats.GetHostVisitorsCount(q);
             double usersSentToP = DomainVisitStats.GetHostVisitorsCount(p);
@@ -406,7 +483,7 @@ namespace Peeralize.Service.Integration.Blocks
             traffic = usersSentToQ / mx1(usersSentToP);
             weight = usersBoughtStuffInQ / mx1(payingUsersSentFromPToQ);
             decay = 1.0d / mx1(avgTransition); //transition in ms
-            double rating = traffic * weight * decay; 
+            double rating = traffic * weight * decay;
             DomainVisitStats.AddRating(pageLeadingToTarget, targetPage, rating);
             return rating;
         }
@@ -419,7 +496,10 @@ namespace Peeralize.Service.Integration.Blocks
         /// <returns></returns>
         public double GetAveragePageRating(IEnumerable<IGrouping<string, BsonValue>> siteVisits, string targetSite, bool reset = true)
         {
-            if(reset) DomainVisitStats.ResetRating();
+            if (reset)
+            {
+                DomainVisitStats.ResetRating();
+            }
 
             var ratings = new List<double>();
             foreach (var visitSet in siteVisits)
@@ -442,23 +522,22 @@ namespace Peeralize.Service.Integration.Blocks
         /// <returns></returns>
         public IEnumerable<IntegratedDocument> GetUsersWithSameAgeAndGender(int age, string gender)
         {
-            foreach (var user in EntityDictionary.Values)
+            var sage = age.ToString();
+            if (AgeGroups.ContainsKey(sage))
             {
-                int tAge = 0;
-                if (!user.Document.Contains("age") || !user.Document.Contains("gender"))
+                var agedUsers = AgeGroups[sage];
+                foreach (var pair in agedUsers)
                 {
-                    continue;
-                }
-                var tmpAge = user.Document["age"].ToString();
-                var tmpgender = user.Document["gender"].ToString();
-                if (int.TryParse(tmpAge, out tAge) && tmpgender == gender)
-                {
-                    if (tAge == age)
+                    var user = pair;
+                    if (!user.Document.Contains("gender")) continue;
+                    var tmpgender = user.Document["gender"].ToString();
+                    if (tmpgender == gender)
                     {
                         yield return user;
                     }
                 }
             }
+
         }
 
         /// <summary>
@@ -471,8 +550,7 @@ namespace Peeralize.Service.Integration.Blocks
             string sage = age.ToString();
             if (AgeGroups.ContainsKey(sage))
             {
-                return AgeGroups[sage]
-                    .Select(x => x.Value);
+                return AgeGroups[sage];
             }
             return (new List<IntegratedDocument>());
         }
@@ -487,7 +565,6 @@ namespace Peeralize.Service.Integration.Blocks
             if (AgeGroups.ContainsKey(sage))
             {
                 return AgeGroups[sage]
-                    .Select(x => x.Value)
                     .Where(x => x.Document["is_paying"].AsInt32 != 0);
             }
             return (new List<IntegratedDocument>());
@@ -495,12 +572,11 @@ namespace Peeralize.Service.Integration.Blocks
 
         public IEnumerable<IntegratedDocument> GetBuyersWithSameGender(string gender)
         {
-             
+
             if (GenderGroups.ContainsKey(gender))
             {
                 return GenderGroups[gender]
-                    .Select(x => x.Value)
-                    .Where(x=> x.Document["is_paying"].AsInt32 != 0);
+                    .Where(x => x.Document["is_paying"].AsInt32 != 0);
             }
             return (new List<IntegratedDocument>());
         }
@@ -509,8 +585,7 @@ namespace Peeralize.Service.Integration.Blocks
         {
             if (GenderGroups.ContainsKey(gender))
             {
-                return GenderGroups[gender]
-                    .Select(x => x.Value);
+                return GenderGroups[gender];
             }
             return (new List<IntegratedDocument>());
         }
@@ -524,18 +599,18 @@ namespace Peeralize.Service.Integration.Blocks
         public IEnumerable<IntegratedDocument> TargetDomainVisitors(IEnumerable<IntegratedDocument> records)
         {
             return records;
-//            foreach (var doc in records)
-//            {
-//                if (!doc.Document.Contains("browsing_statistics"))
-//                {
-//                    continue;
-//                }
-//                var bsonValue = doc.Document["browsing_statistics"] as BsonDocument;
-//                if (bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0)
-//                {
-//                    yield return doc;
-//                } 
-//            }
+            //            foreach (var doc in records)
+            //            {
+            //                if (!doc.Document.Contains("browsing_statistics"))
+            //                {
+            //                    continue;
+            //                }
+            //                var bsonValue = doc.Document["browsing_statistics"] as BsonDocument;
+            //                if (bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0)
+            //                {
+            //                    yield return doc;
+            //                } 
+            //            }
         }
         /// <summary>
         /// Gets the average of domain sessions / user count
@@ -553,9 +628,17 @@ namespace Peeralize.Service.Integration.Blocks
         {
             target = target.ToHostname();
             var targetStats = DomainVisitStats[target];
-            int visits = targetStats==null ? 0 : targetStats.GetTotalTransitionCount();
+            int visits = targetStats == null ? 0 : targetStats.GetTotalTransitionCount();
             return visits;
         }
+        public int GetDomainVisitors(string target)
+        {
+            target = target.ToHostname();
+            var targetStats = DomainVisitStats[target];
+            int visits = targetStats == null ? 0 : targetStats.GetUsersVisitedCount();
+            return visits;
+        }
+
         public int GetDomainVisits(string userId, string target)
         {
             target = target.ToHostname();
@@ -579,7 +662,11 @@ namespace Peeralize.Service.Integration.Blocks
             {
                 var values = DomainVisitStats.PageStats
                     .Select(x => x.Value)
-                    .OrderByDescending(x => x.GetTargetRating(targetDomain).Value)
+                    .OrderByDescending(x =>
+                    {
+                        var score = x.GetTargetRating(targetDomain);
+                        return score?.Value ?? 0;
+                    })
                     .Take(atMost).ToList();
                 HighrankPageCache[targetDomain] = values;
                 return values;
@@ -595,27 +682,47 @@ namespace Peeralize.Service.Integration.Blocks
         }
         public void GroupDemographics()
         {
-            
-            this.GenderGroups = EntityDictionary
-                .GroupBy(x => GetBsonString(x.Value.Document, "gender"))
-                .ToDictionary(x=> x.Key, x=>x
-                    .Where(y =>
-                        {
-                            var bsonValue = y.Value.Document["browsing_statistics"] as BsonDocument;
-                            return bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0;
-                        })
-                    .ToList());
-            this.AgeGroups = EntityDictionary
-                .GroupBy(x => GetBsonString(x.Value.Document, "age"))
+            this.DistinctUsers = EntityDictionary
+                .GroupBy(x => x.Value.Document["uuid"])
+                .ToDictionary(x => x.Key.ToString(), y => y.Select(x => x.Value).ToList());
+
+            this.GenderGroups = DistinctUsers
+                .SelectMany(x => x.Value)
+                .GroupBy(x => GetBsonString(x.Document, "gender"))
+                .ToDictionary(x => x.Key, x => x
+                     .Where(y =>
+                         {
+                             var bsonValue = y.Document["browsing_statistics"] as BsonDocument;
+                             return bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0;
+                         })
+                     .ToList());
+            this.AgeGroups = DistinctUsers
+                .SelectMany(x => x.Value)
+                .GroupBy(x => GetBsonString(x.Document, "age"))
                 .ToDictionary(x => x.Key, x => x
                     .Where(y =>
                     {
-                        var bsonValue = y.Value.Document["browsing_statistics"] as BsonDocument;
+                        var bsonValue = y.Document["browsing_statistics"] as BsonDocument;
                         return bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0;
                     })
                 .ToList());
 
         }
 
+    }
+
+    public class DomainUserSession
+    {
+        public DomainUserSession(string lastDomain, DateTime visited, TimeSpan visitDuration)
+        {
+            this.Domain = lastDomain;
+            this.Visited = visited;
+            this.Duration = visitDuration;
+        }
+
+        public TimeSpan Duration { get; private set; }
+
+        public string Domain { get; private set; }
+        public DateTime Visited { get; private set; }
     }
 }

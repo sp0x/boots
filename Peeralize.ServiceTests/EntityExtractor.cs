@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -7,6 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
+using MongoDB.Driver;
+using MongoDB.Driver.Builders;
+using nvoid.db.Extensions;
 using nvoid.extensions;
 using Peeralize.Service;
 using Peeralize.Service.Format;
@@ -68,6 +72,47 @@ namespace Peeralize.ServiceTests
             harvester.Synchronize();
         }
 
+        [Theory]
+        [InlineData(new object[] {"TestData\\Ebag\\1156"})]
+        public async void ParseEntityDump(string inputDirectory)
+        {
+            inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
+
+            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
+            Assert.NotNull(type);
+
+            var userId = "123123123";
+            var userApiId = Guid.NewGuid().ToString();
+            var harvester = new Harvester();
+            type.UserId = userId;
+            type.SaveType(userApiId);
+
+            var grouper = new EntityGroup(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
+            //var saver = new MongoSink(userId); 
+
+            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
+             
+
+            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>()); 
+            var featureGen = new EntityFeatureGenerator(userId);
+            featureGen.Helper = grouper.Helper = helper;
+            //demographyImporter.LinkTo(featureGen); 
+            //featureGen.LinkTo(saver);
+            
+            //Group the users
+            grouper.ContinueWith((grpr) =>
+            {
+                DumpUsergroupSessions(grpr);
+            }); 
+
+            harvester.SetDestination(grouper);
+            harvester.AddType(type, fileSource);
+            harvester.Synchronize();
+
+            //Task.WaitAll(grouper.Completion, featureGen.Completion, );
+            await grouper.Completion; 
+        }
 
 
         [Theory]
@@ -89,12 +134,17 @@ namespace Peeralize.ServiceTests
             var grouper = new EntityGroup(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
             var saver = new MongoSink(userId);
             var demographyImporter = new EntityDataImporter(demographySheet, true);
-            demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
+            //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
+            demographyImporter.SetDataKey((input) => input[0] );
+            demographyImporter.SetEntityKey((IntegratedDocument input) => input.Document["uuid"].ToString());
             demographyImporter.JoinOn(JoinDemography);
+            demographyImporter.Map();
+
             var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats); 
 
             demographyImporter.Helper = helper;
-
+            grouper.Helper = helper;
+            
             grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
             demographyImporter.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
             var featureGen = new EntityFeatureGenerator(userId);
@@ -146,11 +196,58 @@ namespace Peeralize.ServiceTests
         private object GroupDocuments(IntegratedDocument arg)
         {
             var uuid = arg.Document["uuid"].ToString();
-            DateTimeFormatInfo dfi = DateTimeFormatInfo.CurrentInfo;
-            Calendar cal = dfi.Calendar;
+            //DateTimeFormatInfo dfi = DateTimeFormatInfo.CurrentInfo;
+            //Calendar cal = dfi.Calendar;
             var date = DateTime.Parse(arg.Document["ondate"].ToString());
-            var week = cal.GetWeekOfYear(date, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
-            return $"{uuid}_{week}"; //_{date.Day}";
+            //var week = cal.GetWeekOfYear(date, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+            return $"{uuid}_{date.Day}"; //_{date.Day}";
+        }
+
+        private void DumpUsergroupSessions(EntityGroup usersData)
+        {
+            var userValues = usersData.EntityDictionary.Values;
+            var outputFile = Path.Combine(Environment.CurrentDirectory, "payingBrowsingSessions.csv");
+            if (File.Exists(outputFile))
+            {
+                File.Delete(outputFile);
+            }
+            var outputFs = File.OpenWrite(outputFile);
+            var csvWr = new StreamWriter(outputFs);
+            csvWr.WriteLine("uuid,domain,duration,ondate");
+            try
+            {
+                foreach (var userDayInfoPairs in usersData.EntityDictionary)
+                {
+                    try
+                    {
+                        var user = usersData.EntityDictionary[userDayInfoPairs.Key];
+                        var userIsPaying = user.Document.Contains("is_paying") &&
+                                           user.Document["is_paying"].AsInt32 == 1;
+                        //We're only interested in paying users
+                        if (!userIsPaying) continue;
+                        var uuid = user.Document["uuid"].ToString();
+                        user.Document["events"] =
+                            ((BsonArray) user.Document["events"])
+                            .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
+                            .ToBsonArray(); 
+                        foreach (DomainUserSession visitSession in usersData.Helper.GetWebSessions(user))
+                        {
+                            var newLine = string.Format("{0},{1},{2},{3}", uuid, visitSession.Domain,
+                                visitSession.Duration.TotalSeconds, visitSession.Visited);
+                            csvWr.WriteLine(newLine);
+                        }
+                    }
+                    catch (Exception ex2)
+                    {
+                        ex2 = ex2;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ex = ex;   
+            }
+            outputFs.Close();
         }
 
         /// <summary>
@@ -160,45 +257,45 @@ namespace Peeralize.ServiceTests
         /// <param name="usersData"></param>
         private void OnUsersGrouped(EntityDataImporter dataImporter, EntityGroup usersData)
         {
-            var userValues = usersData.EntityDictionary.Values;
-            
+            var userValues = usersData.EntityDictionary.Values; 
             //var today = DateTime.Today;
             var dateHelper = new DateHelper();
             double max_time_spent_by_any_paying_user_ebag =
                 dataImporter.Helper.GetLongestVisitPurchaseDuration("ebag.bg", "payments/finish");
-            
+            DateTimeFormatInfo dfi = DateTimeFormatInfo.CurrentInfo;
+            Calendar cal = dfi.Calendar;
+
             var purchasesCount = (double)_purchases.Count;
             if (purchasesCount == 0) purchasesCount = 1;
             var prob_buy_is_holiday = (double)_purchasesOnHolidays.Count / purchasesCount;
             var prob_buy_is_before_holiday = (double)_purchasesBeforeHolidays.Count / purchasesCount;
             var prop_buy_is_weekend = (double)_purchasesInWeekends.Count / purchasesCount;
-
+            var mongoClient = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().MongoDb();
+            int cnt = 0;
+            int total = usersData.EntityDictionary.Count;
             foreach (var userDayInfoPairs in usersData.EntityDictionary)
             {
                 var user = usersData.EntityDictionary[userDayInfoPairs.Key];
-                //var noticedOn = user.Document["noticed_date"].AsDateTime;
-                //var day = (double)((int)noticedOn.DayOfWeek / (double)7);
-                //var date = (double)(noticedOn.Day / (new DateTime(noticedOn.Year, 12, 31).Subtract(new DateTime(noticedOn.Year - 1, 12, 31)).Days));
-                //var dayTimeSpan = DateTime.Now - noticedOn;
-                //var time_of_day = (double)dayTimeSpan.TotalSeconds / (double)86400;
+                var uuid = user.Document["uuid"]; 
+                var noticed = user.Document["noticed_date"].ToUniversalTime().ToString();
+                var g_timestamp = user.Document["noticed_date"].ToUniversalTime();
+                var weekstart = g_timestamp.StartOfWeek(DayOfWeek.Monday);
+                g_timestamp = weekstart;
+                var g_timestr = g_timestamp.ToString();
+                user.Document["g_timestamp"] = g_timestamp;
 
-//                var is_holiday = dateHelper.IsHoliday(noticedOn);
-//                var is_weekend = (int)noticedOn.DayOfWeek >= 6;
-//                var is_before_weekend = noticedOn.DayOfWeek == DayOfWeek.Friday;
-//                var is_before_holiday = dateHelper.IsHoliday(noticedOn.AddDays(1));
+                //var args = new FindAndModifyArgs();
+                //args.Query = Query.EQ("Document.uuid", uuid);
+                //args.Update = Update.Set("Document.g_timestamp", g_timestamp);
+                //mongoClient.FindAndModify(args);
 
-//                user.Document["day"] = day;
-//                user.Document["date"] = date;
-                user.Document["max_time_spent_by_any_paying_user_ebag"] = max_time_spent_by_any_paying_user_ebag;
-//                user.Document["time_of_day"] = time_of_day;
-//                user.Document["is_holiday"] = is_holiday ? 1 : 0;
-//                user.Document["is_weekend"] = is_weekend ? 1 : 0;
-//                user.Document["is_before_weekend"] = is_before_weekend ? 1 : 0;
-//                user.Document["is_before_holiday"] = is_before_holiday ? 1 : 0;
+
+                user.Document["max_time_spent_by_any_paying_user_ebag"] = max_time_spent_by_any_paying_user_ebag; 
 
                 user.Document["prob_buy_is_holiday"] = prob_buy_is_holiday;
                 user.Document["prob_buy_is_before_holiday"] = prob_buy_is_before_holiday;
                 user.Document["prop_buy_is_weekend"] = prop_buy_is_weekend;
+                cnt++;
             }
             
             dataImporter.PostAll(userValues);
@@ -264,6 +361,8 @@ namespace Peeralize.ServiceTests
                     _purchasesInWeekends.Add(newElement);
                 }
                 _purchases.Add(newElement);
+                accumulator.Document["is_paying"] = 1;
+                
             }
             return newElement;
         }

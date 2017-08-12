@@ -176,7 +176,8 @@ namespace Peeralize.Service.Integration.Blocks
         {
             if (!TargetRatings.ContainsKey(targetPage))
             {
-                TargetRatings[targetPage] = new Score();
+                //TargetRatings[targetPage] = new Score();
+                return null;
             }
             return TargetRatings[targetPage];
         }
