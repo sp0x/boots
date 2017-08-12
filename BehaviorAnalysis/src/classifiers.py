@@ -158,6 +158,34 @@ class Experiment:
             self._log_data_(log_data)
         self.best_models = best_models
 
+        def create_and_train_from_stream(self,stream_reader):
+            """
+            Train using a stream reader rather than loading everything into memory
+            :param self: 
+            :param stream_reader: MongoDataStreamReader
+            """
+            data, targets = stream_reader.get_training_set()
+            X_train, X_test, y_train, y_test = train_test_split(data, targets, test_size=0.25,
+                                                                random_state=RANDOM_SEED)
+            stream_reader.set_order(X_train.extends(X_test))
+            best_models = []
+            for m in self.models:
+                gs = GridSearchCV(estimator=m['model'], param_grid=m['params'], cv=10, scoring=m['scoring'])
+                stream_reader.reset_cursor()
+                if 'nn' in m['type']:
+                    stream_reader.set_normalize(True)
+                else:
+                    stream_reader.set_normalize(False)
+                gs.fit(stream_reader.read(), y_train)
+                log_data = dict(results=gs.cv_results_, best=gs.best_params_)
+                log_data['model'] = m['type']
+                best_models.append(dict(type=m['type'], model=gs.best_estimator_))
+                y_true, y_pred = y_test, gs.predict(stream_reader.read())
+                log_data['best_performance'] = classification_report(y_true, y_pred)
+                log_data['accuracy'] = accuracy_score(y_true, y_pred)
+                self._log_data_(log_data)
+            self.best_models = best_models
+
 
 def conduct_experiment(data, targets, client='cashlend'):
     tmp = np.unique(targets)
