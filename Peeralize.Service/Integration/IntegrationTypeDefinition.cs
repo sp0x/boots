@@ -29,7 +29,9 @@ namespace Peeralize.Service.Integration
         public IntegrationTypeDefinition() { }
         public IntegrationTypeDefinition(string name) : this()
         {
-            this.Name = name; 
+            this.Name = name;
+            Fields = new Dictionary<string, FieldDefinition>();
+            Extras = new IntegrationTypeExtras();
         }
 
         /// <summary>
@@ -59,7 +61,8 @@ namespace Peeralize.Service.Integration
             //var fields = type.GetFields(); 
             foreach (var member in properties)
             {  
-                Type memberType = member.GetType();
+                Type memberType = member.ReflectedType;
+                var tpn = memberType.Name.ToString();
                 var fieldDefinition = new FieldDefinition(member.Name, memberType);
                 typedef.Fields.Add(member.Name, fieldDefinition);
             }
@@ -134,7 +137,7 @@ namespace Peeralize.Service.Integration
             var integrationTypeDefinitions = _typeStore.Where(x => x.UserId == apiId && x.Fields == type.Fields);
             if (integrationTypeDefinitions == null || integrationTypeDefinitions.Count() == 0)
             {
-                existingDefinition = null;
+                existingDefinition = null; 
                 return false;
             }
             existingDefinition = integrationTypeDefinitions.First();

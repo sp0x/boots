@@ -711,6 +711,23 @@ namespace Peeralize.Service.Integration.Blocks
 
     }
 
+    public class DomainUserSessionCollection
+    {
+        public IList<DomainUserSession> Sessions { get; set; }
+        public string UserId { get; set; }
+        public DateTime Created { get; set; }
+
+        public DomainUserSessionCollection()
+        {
+            Sessions = new List<DomainUserSession>();
+        }
+        public DomainUserSessionCollection(IList<DomainUserSession> sessions) : this()
+        {
+            this.Sessions = sessions;
+        }
+
+    }
+
     public class DomainUserSession
     {
         public DomainUserSession(string lastDomain, DateTime visited, TimeSpan visitDuration)

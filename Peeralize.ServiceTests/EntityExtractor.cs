@@ -204,13 +204,15 @@ namespace Peeralize.ServiceTests
         {
             var userValues = usersData.EntityDictionary.Values;
             var targetDb = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().MongoDb();
-            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSession>(userAppId);
-            typeDef.AddField("uuid", typeof(string));
+            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>(userAppId);  
 
-            if (!IntegrationTypeDefinition.TypeExists(typeDef, userAppId, out typeDef))
+            IntegrationTypeDefinition existingTypeDef;
+            if (!IntegrationTypeDefinition.TypeExists(typeDef, userAppId, out existingTypeDef))
             {
                 typeDef.Save();
             }
+            else typeDef = existingTypeDef;
+
             try
             {
                 foreach (var userDayInfoPairs in usersData.EntityDictionary)
@@ -221,20 +223,21 @@ namespace Peeralize.ServiceTests
                         var userIsPaying = user.Document.Contains("is_paying") &&
                                            user.Document["is_paying"].AsInt32 == 1;
                         //We're only interested in paying users
-                        if (!userIsPaying) continue;
-                        var uuid = user.Document["uuid"].ToString();
+                        if (userIsPaying) continue;
+                        var uuid = user.Document["uuid"].ToString(); 
+                        var dateNoticed = DateTime.Parse(user.Document["noticed_date"].ToString());
                         user.Document["events"] =
                             ((BsonArray)user.Document["events"])
                             .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
                             .ToBsonArray();
                         var sessions = usersData.Helper.GetWebSessions(user).ToList();
-                        foreach (DomainUserSession visitSession in sessions)
-                        { 
-                            var document = IntegratedDocument.FromType(visitSession, typeDef, userAppId);
-                            document.Document["uuid"] = uuid;
-                            document.TypeId = typeDef.Id;
-                            document.Save();
-                        }
+                        var sessionWrapper = new DomainUserSessionCollection(sessions);
+                        sessionWrapper.UserId = uuid;
+                        sessionWrapper.Created = dateNoticed;
+
+                        var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAppId); 
+                        document.TypeId = typeDef.Id;
+                        document.Save();
                     }
                     catch (Exception ex2)
                     {
@@ -320,6 +323,10 @@ namespace Peeralize.ServiceTests
             foreach (var userDayInfoPairs in usersData.EntityDictionary)
             {
                 var user = usersData.EntityDictionary[userDayInfoPairs.Key];
+                user.Document["events"] =
+                    ((BsonArray)user.Document["events"])
+                    .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
+                    .ToBsonArray();
                 var uuid = user.Document["uuid"]; 
                 var noticed = user.Document["noticed_date"].ToUniversalTime().ToString();
                 var g_timestamp = user.Document["noticed_date"].ToUniversalTime();
