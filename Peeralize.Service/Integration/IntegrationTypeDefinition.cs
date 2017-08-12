@@ -61,8 +61,7 @@ namespace Peeralize.Service.Integration
             //var fields = type.GetFields(); 
             foreach (var member in properties)
             {  
-                Type memberType = member.ReflectedType;
-                var tpn = memberType.Name.ToString();
+                Type memberType = member.PropertyType;
                 var fieldDefinition = new FieldDefinition(member.Name, memberType);
                 typedef.Fields.Add(member.Name, fieldDefinition);
             }

@@ -6,7 +6,7 @@ WORKDIR /app
 #COPY ./src/ .
 
 RUN conda install keras pyzmq pymongo -y --quiet
-
+RUN conda install -c brown-data-science treeinterpreter  -y --quiet
 EXPOSE 5556 5557
 
 ENTRYPOINT ["python", "-u", "__init__.py"] 

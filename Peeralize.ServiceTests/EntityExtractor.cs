@@ -86,7 +86,12 @@ namespace Peeralize.ServiceTests
             var userApiId = Guid.NewGuid().ToString();
             var harvester = new Harvester();
             type.UserId = userId;
-            type.SaveType(userApiId);
+            IntegrationTypeDefinition existingDataType;
+            if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
+            {
+                type.SaveType(userApiId);
+            }
+            else type = existingDataType;
 
             var grouper = new EntityGroup(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
             //var saver = new MongoSink(userId); 
@@ -108,7 +113,8 @@ namespace Peeralize.ServiceTests
             harvester.Synchronize();
 
             //Task.WaitAll(grouper.Completion, featureGen.Completion, );
-            await grouper.Completion; 
+            await grouper.Completion;
+            Console.ReadLine(); // TODO: Fix dataflow action after grouping of all users
         }
 
 
@@ -126,9 +132,14 @@ namespace Peeralize.ServiceTests
             var userApiId = Guid.NewGuid().ToString();
             var harvester = new Harvester();
             type.UserId = userId;
-            type.SaveType(userApiId);
+            IntegrationTypeDefinition existingDataType;
+            if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
+            {
+                type.SaveType(userApiId);
+            }
+            else type = existingDataType;
 
-            var grouper = new EntityGroup(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
+          var grouper = new EntityGroup(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
             var saver = new MongoSink(userId);
             var demographyImporter = new EntityDataImporter(demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
@@ -201,10 +212,9 @@ namespace Peeralize.ServiceTests
         }
 
         private void DumpUsergroupSessionsToMongo(string userAppId, EntityGroup usersData)
-        {
-            var userValues = usersData.EntityDictionary.Values;
-            var targetDb = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().MongoDb();
-            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>(userAppId);  
+        { 
+            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>(userAppId);
+            typeDef.AddField("is_paying", typeof(int));
 
             IntegrationTypeDefinition existingTypeDef;
             if (!IntegrationTypeDefinition.TypeExists(typeDef, userAppId, out existingTypeDef))
@@ -223,7 +233,8 @@ namespace Peeralize.ServiceTests
                         var userIsPaying = user.Document.Contains("is_paying") &&
                                            user.Document["is_paying"].AsInt32 == 1;
                         //We're only interested in paying users
-                        if (userIsPaying) continue;
+                        //if (userIsPaying) continue;
+
                         var uuid = user.Document["uuid"].ToString(); 
                         var dateNoticed = DateTime.Parse(user.Document["noticed_date"].ToString());
                         user.Document["events"] =
@@ -235,7 +246,8 @@ namespace Peeralize.ServiceTests
                         sessionWrapper.UserId = uuid;
                         sessionWrapper.Created = dateNoticed;
 
-                        var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAppId); 
+                        var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAppId);
+                        document.Document["is_paying"] = userIsPaying ? 1 : 0;
                         document.TypeId = typeDef.Id;
                         document.Save();
                     }
@@ -249,6 +261,8 @@ namespace Peeralize.ServiceTests
             {
                 ex = ex;
             }
+            typeDef = typeDef;
+
         }
         private void DumpUsergroupSessionsToCsv(EntityGroup usersData)
         {
