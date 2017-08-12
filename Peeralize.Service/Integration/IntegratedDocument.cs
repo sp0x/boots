@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using nvoid.db.DB;
+using Peeralize.Service.Integration.Blocks;
 
 namespace Peeralize.Service.Integration
 {
@@ -57,6 +58,15 @@ namespace Peeralize.Service.Integration
             newDocument.UserId = this.UserId;
             newDocument.TypeId = this.TypeId;
             return newDocument;
+        }
+
+        public static IntegratedDocument FromType<T>(T visitSession, IntegrationTypeDefinition typedef, string appId)
+        { 
+            var document = new IntegratedDocument();
+            document.Document = visitSession.ToBsonDocument();
+            document.TypeId = typedef.Id;
+            document.UserId = appId;
+            return document;
         }
     }
      

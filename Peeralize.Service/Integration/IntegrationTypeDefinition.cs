@@ -44,6 +44,28 @@ namespace Peeralize.Service.Integration
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static IntegrationTypeDefinition CreateFromType<T>(string appId)
+        {
+            var type = typeof(T);
+            var typedef = new IntegrationTypeDefinition(type.Name);
+            typedef.UserId = appId;
+            typedef.OriginType = "dynamic";
+            typedef.CodePage = System.Text.Encoding.Default.CodePage;
+            var properties = type.GetProperties();
+            //var fields = type.GetFields(); 
+            foreach (var member in properties)
+            {  
+                Type memberType = member.GetType();
+                var fieldDefinition = new FieldDefinition(member.Name, memberType);
+                typedef.Fields.Add(member.Name, fieldDefinition);
+            }
+            return typedef;
+        }
+        /// <summary>
         /// Resolves the fields from a given instance object, using it's type.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -144,6 +166,12 @@ namespace Peeralize.Service.Integration
                 this.Id = oldTypeDef.Id;
             }
             return this;
+        }
+
+        public void AddField(string fieldName, Type type)
+        {
+            var fdef = new FieldDefinition(fieldName, type); 
+            Fields.Add(fieldName, fdef);
         }
     }
 }

@@ -90,20 +90,17 @@ namespace Peeralize.ServiceTests
 
             var grouper = new EntityGroup(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
             //var saver = new MongoSink(userId); 
-
-            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
-             
-
-            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>()); 
-            var featureGen = new EntityFeatureGenerator(userId);
-            featureGen.Helper = grouper.Helper = helper;
+            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats); 
+            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            grouper.Helper = helper;
             //demographyImporter.LinkTo(featureGen); 
             //featureGen.LinkTo(saver);
             
             //Group the users
             grouper.ContinueWith((grpr) =>
             {
-                DumpUsergroupSessions(grpr);
+                //DumpUsergroupSessionsToCsv(grpr);
+                DumpUsergroupSessionsToMongo(userId, grpr);
             }); 
 
             harvester.SetDestination(grouper);
@@ -203,7 +200,54 @@ namespace Peeralize.ServiceTests
             return $"{uuid}_{date.Day}"; //_{date.Day}";
         }
 
-        private void DumpUsergroupSessions(EntityGroup usersData)
+        private void DumpUsergroupSessionsToMongo(string userAppId, EntityGroup usersData)
+        {
+            var userValues = usersData.EntityDictionary.Values;
+            var targetDb = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().MongoDb();
+            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSession>(userAppId);
+            typeDef.AddField("uuid", typeof(string));
+
+            if (!IntegrationTypeDefinition.TypeExists(typeDef, userAppId, out typeDef))
+            {
+                typeDef.Save();
+            }
+            try
+            {
+                foreach (var userDayInfoPairs in usersData.EntityDictionary)
+                {
+                    try
+                    {
+                        var user = usersData.EntityDictionary[userDayInfoPairs.Key];
+                        var userIsPaying = user.Document.Contains("is_paying") &&
+                                           user.Document["is_paying"].AsInt32 == 1;
+                        //We're only interested in paying users
+                        if (!userIsPaying) continue;
+                        var uuid = user.Document["uuid"].ToString();
+                        user.Document["events"] =
+                            ((BsonArray)user.Document["events"])
+                            .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
+                            .ToBsonArray();
+                        var sessions = usersData.Helper.GetWebSessions(user).ToList();
+                        foreach (DomainUserSession visitSession in sessions)
+                        { 
+                            var document = IntegratedDocument.FromType(visitSession, typeDef, userAppId);
+                            document.Document["uuid"] = uuid;
+                            document.TypeId = typeDef.Id;
+                            document.Save();
+                        }
+                    }
+                    catch (Exception ex2)
+                    {
+                        ex2 = ex2;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ex = ex;
+            }
+        }
+        private void DumpUsergroupSessionsToCsv(EntityGroup usersData)
         {
             var userValues = usersData.EntityDictionary.Values;
             var outputFile = Path.Combine(Environment.CurrentDirectory, "payingBrowsingSessions.csv");

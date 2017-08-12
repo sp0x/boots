@@ -13,6 +13,7 @@ import pandas as pd
 
 ##host is local
 csvPath = "testData/Netinfo/visits"
+userSessionTypeId = ""
 sessionsPath = "testData/Netinfo/payingBrowsingSessionsDaySorted.csv"
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
 host = "10.10.1.5"
@@ -35,11 +36,13 @@ with open(sessionsPath, 'rb') as csvfile:
             payingSessionsTree.build(items)
             items = []
         items.append({ 'time' : float(row[2]), 'label' : row[1]})
+        lastDay = day
     if len(items) == 1:
         payingSessionsTree.build(items)
     else:
         payingSessionsTree.build(items)
-    print payingSessionsTree
+    
+
 
 
 # allData = userDaysCollection.find({
