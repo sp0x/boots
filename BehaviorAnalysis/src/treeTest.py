@@ -13,36 +13,38 @@ import pandas as pd
 
 ##host is local
 csvPath = "testData/Netinfo/visits"
-userSessionTypeId = ""
-sessionsPath = "testData/Netinfo/payingBrowsingSessionsDaySorted.csv"
+#type used for web sessions
+userSessionTypeId = "598f20d002d2516dd0dbcee2"
+#sessionsPath = "testData/Netinfo/payingBrowsingSessionsDaySorted.csv"
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
 host = "10.10.1.5"
 
 client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
 db = client.netvoid
-userDaysCollection = db.IntegratedDocument
+documents_col = db.IntegratedDocument
 
 #go through the sessions
 payingSessionsTree = BTree() 
-with open(sessionsPath, 'rb') as csvfile:
-    dataReader = csv.reader(csvfile, delimiter=',', quotechar='|')
-    items = []
-    #group sessions by days, and build each day
-    lastDay = None
-    for row in dataReader: 
-        day = row[3]
-        #day changed
-        if(lastDay != None and lastDay != day):
-            payingSessionsTree.build(items)
-            items = []
-        items.append({ 'time' : float(row[2]), 'label' : row[1]})
-        lastDay = day
-    if len(items) == 1:
-        payingSessionsTree.build(items)
-    else:
-        payingSessionsTree.build(items)
-    
+paying_users = documents_col.find({
+    "TypeId" : userSessionTypeId,
+    "Document.is_paying" : 1
+})
 
+items = []
+lastDay = None
+for paying_user in paying_users:
+    day = row[3]
+    #day changed
+    if(lastDay != None and lastDay != day):
+        payingSessionsTree.build(items)
+        items = []
+    items.append({ 'time' : float(row[2]), 'label' : row[1]})
+    lastDay = day
+if len(items) == 1:
+    payingSessionsTree.build(items)
+else:
+    payingSessionsTree.build(items)
+ 
 
 
 # allData = userDaysCollection.find({
