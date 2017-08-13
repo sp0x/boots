@@ -56,7 +56,7 @@ class BuildWorker(Thread):
             day_index = 0
             for day in days:
                 day_index += 1
-                print "adding sessions for {0} for day {1}/{2}".format(uuid, day_index, day_count)
+                #print "adding sessions for {0} for day {1}/{2}".format(uuid, day_index, day_count)
                 sessions = day
                 day_items = []
                 for session in sessions:
@@ -65,7 +65,7 @@ class BuildWorker(Thread):
                     day_items.append({'time': duration, 'label': host})
 
                 userTree.build(day_items)
-            print "added sessions for {0}".format(uuid)
+            print "added daily sessions for {0}".format(uuid)
             self.par.push_result(userTree,uuid)
         print "Worker stopping because no work is available"
         self.is_working = False
@@ -107,15 +107,10 @@ class MassTreeBuilder:
             {"$group": {"_id": "$Document.UserId", "day_count": {"$sum": 1}, "daily_sessions" : { "$push" : "$Document.Sessions"}}}
         ]
         user_groups = documents_col.aggregate(pipeline)
-        # sessions = documents_col.find({
-        #     "TypeId": self.userSessionTypeId,
-        #     "Document.is_paying": 0,
-        #     "Document.UserId": {"$in": ids},
-        # }).batch_size(self.batch_size)
-        for d in user_groups:
-            #d["uuid"] = d["_id"]
-            self.work_queue.put(d)
-        self.collecting_data = False
+        with self.lock:
+            for d in user_groups:
+                self.work_queue.put_nowait(d)
+            self.collecting_data = False
 
     def interrupt(self):
         for w in self.workers:
@@ -140,7 +135,7 @@ class MassTreeBuilder:
         with self.lock:
             rem = len(self.remaining)
             queue_rem = len(self.work_queue.queue)
-        return rem != 0 and queue_rem != 0
+        return rem != 0 or queue_rem != 0
 
     def push_result(self, res, id=None):
         if self.store:
@@ -184,7 +179,7 @@ for paying_user_day in paying_users:
     payingSessionsTree.build(cr_items)
 
 user_features = dict()
-builder = MassTreeBuilder(100, False)
+builder = MassTreeBuilder(200, False)
 builder.build()
 try:
     while builder.work_available() and builder.is_working():
@@ -192,6 +187,7 @@ try:
 except KeyboardInterrupt:
     builder.interrupt()
 builder.get_result()
+print "Finished!"
 
 # non_paying_user_ids = documents_col.find({
 #     "TypeId" : userSessionTypeId,
