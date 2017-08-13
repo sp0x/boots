@@ -15,6 +15,7 @@ from utils import parse_timespan
 from Queue import Queue
 from threading import Thread, Lock, Condition
 from time import sleep
+import sys
 
  
 #type used for web sessions
@@ -45,24 +46,25 @@ class BuildWorker(Thread):
     def run(self):
         while self.par.work_available() and self.keep_working:
             job = self.par.__get_work__()
+            
             userTree = BTree()
             itemCount = 0
-            uuid = -1
-            #job_size = len(job)
-            #print job
-            #print "Worker got job with size: " + str(job_size)
-            day_items = []
-            sessionDay = job
+            uuid = job["_id"]
+            day_count = job["day_count"]
+            days = job["daily_sessions"]
             
-            sessions = sessionDay["Document"]["Sessions"]
-            uuid = sessionDay['Document']['UserId']
-            print "adding sessions for {0}".format(uuid)
-            for session in sessions:
-                host = session["Domain"]
-                duration = parse_timespan(session["Duration"]).total_seconds()
-                day_items.append({'time': duration, 'label': host})
-                itemCount += 1
-            userTree.build(day_items)
+            day_index = 0
+            for day in days:
+                day_index += 1
+                print "adding sessions for {0} for day {1}/{2}".format(uuid, day_index, day_count)
+                sessions = day
+                day_items = []
+                for session in sessions:
+                    host = session["Domain"]
+                    duration = parse_timespan(session["Duration"]).total_seconds()
+                    day_items.append({'time': duration, 'label': host})
+
+                userTree.build(day_items)
             print "added sessions for {0}".format(uuid)
             self.par.push_result(userTree,uuid)
         print "Worker stopping because no work is available"
@@ -99,12 +101,19 @@ class MassTreeBuilder:
         with self.lock:
             ids = self.remaining[:self.batch_size]
             del self.remaining[:self.batch_size]
-        sessions = documents_col.find({
-            "TypeId": self.userSessionTypeId,
-            "Document.is_paying": 0,
-            "Document.UserId": {"$in": ids},
-        }).batch_size(self.batch_size)
-        for d in sessions:
+        #job items are users, and all their daily sessions
+        pipeline = [
+            {"$match" : { "TypeId" : self.userSessionTypeId, "Document.is_paying" : 0, "Document.UserId" : { "$in" : ids }  } },
+            {"$group": {"_id": "$Document.UserId", "day_count": {"$sum": 1}, "daily_sessions" : { "$push" : "$Document.Sessions"}}}
+        ]
+        user_groups = documents_col.aggregate(pipeline)
+        # sessions = documents_col.find({
+        #     "TypeId": self.userSessionTypeId,
+        #     "Document.is_paying": 0,
+        #     "Document.UserId": {"$in": ids},
+        # }).batch_size(self.batch_size)
+        for d in user_groups:
+            #d["uuid"] = d["_id"]
             self.work_queue.put(d)
         self.collecting_data = False
 
@@ -175,7 +184,7 @@ for paying_user_day in paying_users:
     payingSessionsTree.build(cr_items)
 
 user_features = dict()
-builder = MassTreeBuilder(10000, False)
+builder = MassTreeBuilder(100, False)
 builder.build()
 try:
     while builder.work_available() and builder.is_working():
