@@ -36,13 +36,14 @@ class BuildWorker(Thread):
         super(BuildWorker,self).__init__()
         self.daemon = True        
         self.par = par
+        self.keep_working = True
         self.is_working = True
 
     def interrupt(self):
-        self.is_working = False
+        self.keep_working = False
 
     def run(self):
-        while self.par.work_available() and self.is_working:
+        while self.par.work_available() and self.keep_working:
             job = self.par.__get_work__()
             userTree = BTree()
             itemCount = 0
@@ -65,6 +66,7 @@ class BuildWorker(Thread):
             print "added sessions for {0}".format(uuid)
             self.par.push_result(userTree,uuid)
         print "Worker stopping because no work is available"
+        self.is_working = False
 
 
 class MassTreeBuilder:
@@ -113,7 +115,7 @@ class MassTreeBuilder:
     def __get_work__(self):
         with self.lock:
             rem = len(self.remaining)
-        if self.work_queue.qsize() <= self.batch_size and rem>0:
+        if self.work_queue.qsize() <= self.batch_size and rem > 0:
             if not self.collecting_data:
                 t = Thread(target=self.__fetch__)
                 t.daemon = True
@@ -121,6 +123,9 @@ class MassTreeBuilder:
         job = self.work_queue.get()
         self.work_queue.task_done()
         return job
+
+    def is_working(self):
+        return any(w.is_working for w in self.workers)
 
     def work_available(self):
         with self.lock:
@@ -173,7 +178,7 @@ user_features = dict()
 builder = MassTreeBuilder(10000, False)
 builder.build()
 try:
-    while builder.work_available():
+    while builder.work_available() and builder.is_working():
         sleep(1)
 except KeyboardInterrupt:
     builder.interrupt()
