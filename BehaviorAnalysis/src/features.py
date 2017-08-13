@@ -1,6 +1,7 @@
 import math
 from scipy.stats import entropy
 
+
 class BNode:
     def __init__(self, label, time, parent, depth):
         self.label = label
@@ -55,8 +56,8 @@ class BNode:
     def update_self(self, chain):
         """chain=list(dict(label,time))"""
         data = chain.pop(0)
-        self.update_time(data['time'])
         self.visits += 1
+        self.update_time(data['time'])
         if not chain:
             return
         n = chain[0]['label']
@@ -122,12 +123,9 @@ def ic(path, weight):
 def lin(a, b, w):
     p1 = a.longest_path()
     p2 = b.longest_path()
-    if p1 == None or p2 == None:
-        return -1
+    if p1 is None or p2 is None:
+        return 0
     lcp = a.lcp(b)
-    il = ic(lcp,w)
-    i1 = ic(p1,w)
-    i2 = ic(p2,w)
     return 2 * ic(lcp, w) / (ic(p1, w) + ic(p2, w))
 
 

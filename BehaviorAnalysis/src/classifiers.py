@@ -10,7 +10,7 @@ from keras.layers import *
 from threading import Thread,Condition
 from Queue import Queue
 from constants import RANDOM_SEED,MONITOR_RESPONSE_TIME
-from utils import abs_path
+from utils import save,load,abs_path
 import numpy as np
 import time,os,datetime
 import pickle
@@ -113,15 +113,13 @@ class Experiment:
             f.write(report)
 
     def store_models(self):
-        with open(abs_path(os.path.join(self._for,"models.pickle")),'wb') as f:
-            pickle.dump(self.best_models,f)
+        path = abs_path(os.path.join(self._for,"models.pickle"))
+        save(self.best_models, path)
 
     @staticmethod
     def load_models(company):
-        out = None
-        with open(abs_path(os.path.join(company,"models.pickle")),'rb') as f:
-            out = pickle.load(f)
-        return out
+        path = abs_path(os.path.join(company,"models.pickle"))
+        return load(path)
 
     @staticmethod
     def predict_explain(self, tree, data, labels, print_proba=False):

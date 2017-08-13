@@ -1,5 +1,7 @@
 import os
 from datetime import datetime, timedelta
+import pickle
+
 
 def abs_path(fl):
     curr_dir = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -18,3 +20,15 @@ def parse_timespan(span):
     seconds = float(duration[2])        
     duration = timedelta(hours= hours, minutes= mins, seconds=seconds)
     return duration
+
+
+def save(obj, path):
+    with open(path, 'wb') as f:
+        pickle.dump(obj, f)
+
+
+def load(path):
+    out = None
+    with open(path, 'rb') as f:
+        out = pickle.load(f)
+    return out
