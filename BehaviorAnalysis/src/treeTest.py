@@ -11,11 +11,13 @@ import cPickle as pickle
 import pandas as pd
 from datetime import datetime, timedelta
 import re
-from utils import parse_timespan
+from utils import parse_timespan, chunks
 from Queue import Queue
 from threading import Thread, Lock, Condition
 from time import sleep
 import sys
+from multiprocessing import Pool
+from pymongo import UpdateMany
 
  
 #type used for web sessions
@@ -145,7 +147,7 @@ class MassTreeBuilder:
             with self.io_lock:
                 save(res, path)
         else:
-            self.res_queue.put(res)
+            self.res_queue.put({ 'uuid' :id,  'result': res})
 
     def build(self, max_threads=8):
         for i in xrange(max_threads):
@@ -186,8 +188,30 @@ try:
         sleep(1)
 except KeyboardInterrupt:
     builder.interrupt()
-builder.get_result()
+results = builder.get_result()
 print "Finished!"
+for chnk in chunks(results, 1000):
+    items =[]
+    for item in chnk:
+        uuid = item['uuid']
+        tree = item['result']
+        simtime = lin(payingSessionsTree, tree, "time")
+        simscore = lin(payingSessionsTree, tree, "frequency")
+        up = UpdateMany({
+            "UserId" : appId,
+            "Document.uuid" : uuid
+        },  {'$set': {
+            "path_similarity_score" : simscore,
+            "path_similarity_score_time_spent" : simtime
+        }})
+        items.append(up)
+    documents_col.bulk_write(items)
+
+
+# p = Pool(8)
+# p.map(gen_features, results)
+
+
 
 # non_paying_user_ids = documents_col.find({
 #     "TypeId" : userSessionTypeId,
@@ -230,13 +254,7 @@ print "Finished!"
 # for user_id, user_f in user_features.iteritems():
 #     score = user_f['path_similarity_score']
 #     timescore = user_f['path_similarity_score_time_spent']
-#     documents_col.update({
-#         "UserId" : appId,
-#         "Document.uuid" : user_id
-#     },  {'$set': {
-#         "path_similarity_score" : score,
-#         "path_similarity_score_time_spent" : timescore
-#     }}, multi=True)
+
 
 
 

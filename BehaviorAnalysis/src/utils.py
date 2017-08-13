@@ -12,6 +12,10 @@ def abs_path(fl):
 def proportion(data, item):
     return list(data).count(item) / float(len(data))
 
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in xrange(0, len(l), n):
+        yield l[i:i + n]
 
 def parse_timespan(span):
     duration = span.split(":")
