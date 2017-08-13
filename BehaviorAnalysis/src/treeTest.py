@@ -31,7 +31,7 @@ payingSessionsTree = BTree()
 paying_users = documents_col.find({
     "TypeId" : userSessionTypeId,
     "Document.is_paying" : 1, #todo: add week limit?
-    "Document.Created" : { "$lt" : week4Start } 
+    #"Document.Created" : { "$lt" : week4Start } 
 })
 items = []
 lastDay = None
@@ -45,17 +45,21 @@ for paying_user_day in paying_users:
     payingSessionsTree.build(cr_items)
 
 user_features = dict()
-for non_paying_user_id in documents_col.find({
+non_paying_user_ids = documents_col.find({
     "TypeId" : userSessionTypeId,
     "Document.is_paying" : 0,  
-    "Document.Created" : { "$lt" : week4Start } 
-}).distinct("Document.UserId"): 
+    #"Document.Created" : { "$lt" : week4Start } 
+}).distinct("Document.UserId")
+npu_count = len(non_paying_user_ids)
+cr_user_ix = 0
+print "Building user features: " + str(npu_count)
+for non_paying_user_id in non_paying_user_ids: 
     userId = non_paying_user_id
     userSessionDays = documents_col.find({
         "TypeId" : userSessionTypeId,
         "Document.is_paying" : 0,
         "Document.UserId" : userId,
-        "Document.Created" : { "$lt" : week4Start } 
+        #"Document.Created" : { "$lt" : week4Start } 
     })
     userTree = BTree() 
     itemCount = 0
@@ -70,20 +74,28 @@ for non_paying_user_id in documents_col.find({
     #lin 
     f1 = lin(payingSessionsTree, userTree, "time")
     f2 = lin(payingSessionsTree, userTree, "frequency")
-    print "[" + str(itemCount) + "] Built trees for: " + userId + " " + str(f1) + " - " + str(f2)
+    if f1 == -1:
+        f1 = 0
+    if f2 == -1:
+        f1 = 0
+    perc = "%.3f" % ((cr_user_ix / float(npu_count)) * 100)
+    print "[" + str(itemCount) + "] " + perc + "% Built trees for: " + userId + " " + str(f1) + " - " + str(f2)
     user_features[userId] = { 
-        'path_similaryty_score' : f2,
-        'path_similaryty_score_time_spent' :f1
+        'path_similarity_score' : f2,
+        'path_similarity_score_time_spent' :f1
     }
+    cr_user_ix += 1
     #update user features
-
+print "Updating user features"
 for user_id, user_f in user_features.iteritems():
+    score = user_f['path_similarity_score']
+    timescore = user_f['path_similarity_score_time_spent']
     documents_col.update({
         "UserId" : appId,
         "Document.uuid" : user_id
     },  {'$set': {
-        "path_similaryty_score" : user_f['path_similaryty_score'],
-        "path_similaryty_score_time_spent" : user_f['path_similaryty_score_time_spent']
+        "path_similarity_score" : score,
+        "path_similarity_score_time_spent" : timescore
     }}, multi=True)
 
 # allData = userDaysCollection.find({
