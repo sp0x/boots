@@ -91,6 +91,8 @@ class BTree:
                 d = self.paths[p].depth
                 cur = self.paths[p]
         path = []
+        if cur == None:
+            return None
         path.append(dict(time=cur.time, frequency=cur.frequency()))
         while cur is not None:
             old_cur = cur
@@ -120,6 +122,8 @@ def ic(path, weight):
 def lin(a, b, w):
     p1 = a.longest_path()
     p2 = b.longest_path()
+    if p1 == None or p2 == None:
+        return -1
     lcp = a.lcp(b)
     il = ic(lcp,w)
     i1 = ic(p1,w)
