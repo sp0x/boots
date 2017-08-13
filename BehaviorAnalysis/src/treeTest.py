@@ -52,6 +52,7 @@ class BuildWorker(Thread):
                     day_items.append({'time': duration, 'label': host})
                     itemCount += 1
                 userTree.build(day_items)
+            print "added sessions for {0}".format(uuid)
             self.par.push_result(userTree,uuid)
 
 
