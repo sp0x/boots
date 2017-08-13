@@ -32,8 +32,8 @@ documents_col = db.IntegratedDocument
 class BuildWorker(Thread):
 
     def __init__(self,par):
-        self.daemon = True
         super(BuildWorker,self).__init__()
+        self.daemon = True        
         self.par = par
 
     def run(self):
@@ -42,19 +42,24 @@ class BuildWorker(Thread):
             userTree = BTree()
             itemCount = 0
             uuid = -1
-            for sessionDay in job:
-                day_items = []
-                sessions = sessionDay["Document"]["Sessions"]
-                uuid = sessionDay['Document']['UserId']
-                for session in sessions:
-                    host = session["Domain"]
-                    duration = parse_timespan(session["Duration"]).total_seconds()
-                    day_items.append({'time': duration, 'label': host})
-                    itemCount += 1
-                userTree.build(day_items)
+            #job_size = len(job)
+            #print job
+            #print "Worker got job with size: " + str(job_size)
+            day_items = []
+            sessionDay = job
+            
+            sessions = sessionDay["Document"]["Sessions"]
+            uuid = sessionDay['Document']['UserId']
+            print "adding sessions for {0}".format(uuid)
+            for session in sessions:
+                host = session["Domain"]
+                duration = parse_timespan(session["Duration"]).total_seconds()
+                day_items.append({'time': duration, 'label': host})
+                itemCount += 1
+            userTree.build(day_items)
             print "added sessions for {0}".format(uuid)
             self.par.push_result(userTree,uuid)
-
+        print "Worker stopping because no work is available"
 
 
 class MassTreeBuilder:
@@ -91,7 +96,7 @@ class MassTreeBuilder:
             "TypeId": self.userSessionTypeId,
             "Document.is_paying": 0,
             "Document.UserId": {"$in": ids},
-        })
+        }).batch_size(self.batch_size)
         for d in sessions:
             self.work_queue.put(d)
         self.collecting_data = False
@@ -111,7 +116,7 @@ class MassTreeBuilder:
     def work_available(self):
         with self.lock:
             rem = len(self.remaining)
-        return rem == 0
+        return rem != 0
 
     def push_result(self, res, id=None):
         if self.store:
@@ -155,54 +160,60 @@ for paying_user_day in paying_users:
     payingSessionsTree.build(cr_items)
 
 user_features = dict()
-non_paying_user_ids = documents_col.find({
-    "TypeId" : userSessionTypeId,
-    "Document.is_paying" : 0,  
-    #"Document.Created" : { "$lt" : week4Start } 
-}).distinct("Document.UserId")
-npu_count = len(non_paying_user_ids)
-cr_user_ix = 0
-print "Building user features: " + str(npu_count)
-for non_paying_user_id in non_paying_user_ids: 
-    userId = non_paying_user_id
-    userSessionDays = documents_col.find({
-        "TypeId" : userSessionTypeId,
-        "Document.is_paying" : 0,
-        "Document.UserId" : userId,
-        #"Document.Created" : { "$lt" : week4Start } 
-    })
-    userTree = BTree() 
-    itemCount = 0
-    for sessionDay in userSessionDays: 
-        day_items = [] 
-        for session in sessionDay["Document"]["Sessions"]: 
-            host = session["Domain"]
-            duration = parse_timespan(session["Duration"]).total_seconds()
-            day_items.append({ 'time' : duration , 'label' : host})
-            itemCount += 1
-        userTree.build(day_items)
-    #lin 
-    f1 = lin(payingSessionsTree, userTree, "time")
-    f2 = lin(payingSessionsTree, userTree, "frequency")
-    perc = "%.3f" % ((cr_user_ix / float(npu_count)) * 100)
-    print "[" + str(itemCount) + "] " + perc + "% Built trees for: " + userId + " " + str(f1) + " - " + str(f2)
-    user_features[userId] = { 
-        'path_similarity_score' : f2,
-        'path_similarity_score_time_spent' :f1
-    }
-    cr_user_ix += 1
-    #update user features
-print "Updating user features"
-for user_id, user_f in user_features.iteritems():
-    score = user_f['path_similarity_score']
-    timescore = user_f['path_similarity_score_time_spent']
-    documents_col.update({
-        "UserId" : appId,
-        "Document.uuid" : user_id
-    },  {'$set': {
-        "path_similarity_score" : score,
-        "path_similarity_score_time_spent" : timescore
-    }}, multi=True)
+builder = MassTreeBuilder(10000, False)
+builder.build()
+builder.get_result()
+
+# non_paying_user_ids = documents_col.find({
+#     "TypeId" : userSessionTypeId,
+#     "Document.is_paying" : 0,  
+#     #"Document.Created" : { "$lt" : week4Start } 
+# }).distinct("Document.UserId")
+# npu_count = len(non_paying_user_ids)
+# cr_user_ix = 0
+# print "Building user features: " + str(npu_count)
+# for non_paying_user_id in non_paying_user_ids: 
+#     userId = non_paying_user_id
+#     userSessionDays = documents_col.find({
+#         "TypeId" : userSessionTypeId,
+#         "Document.is_paying" : 0,
+#         "Document.UserId" : userId,
+#         #"Document.Created" : { "$lt" : week4Start } 
+#     })
+#     userTree = BTree() 
+#     itemCount = 0
+#     for sessionDay in userSessionDays: 
+#         day_items = [] 
+#         for session in sessionDay["Document"]["Sessions"]: 
+#             host = session["Domain"]
+#             duration = parse_timespan(session["Duration"]).total_seconds()
+#             day_items.append({ 'time' : duration , 'label' : host})
+#             itemCount += 1
+#         userTree.build(day_items)
+#     #lin 
+#     f1 = lin(payingSessionsTree, userTree, "time")
+#     f2 = lin(payingSessionsTree, userTree, "frequency")
+#     perc = "%.3f" % ((cr_user_ix / float(npu_count)) * 100)
+#     print "[" + str(itemCount) + "] " + perc + "% Built trees for: " + userId + " " + str(f1) + " - " + str(f2)
+#     user_features[userId] = { 
+#         'path_similarity_score' : f2,
+#         'path_similarity_score_time_spent' :f1
+#     }
+#     cr_user_ix += 1
+#     #update user features
+# print "Updating user features"
+# for user_id, user_f in user_features.iteritems():
+#     score = user_f['path_similarity_score']
+#     timescore = user_f['path_similarity_score_time_spent']
+#     documents_col.update({
+#         "UserId" : appId,
+#         "Document.uuid" : user_id
+#     },  {'$set': {
+#         "path_similarity_score" : score,
+#         "path_similarity_score_time_spent" : timescore
+#     }}, multi=True)
+
+
 
 # allData = userDaysCollection.find({
 #     "UserId" : "123123123"
