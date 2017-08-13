@@ -14,6 +14,7 @@ import re
 from utils import parse_timespan
 from Queue import Queue
 from threading import Thread, Lock, Condition
+from time import sleep
 
  
 #type used for web sessions
@@ -35,9 +36,13 @@ class BuildWorker(Thread):
         super(BuildWorker,self).__init__()
         self.daemon = True        
         self.par = par
+        self.is_working = True
+
+    def interrupt(self):
+        self.is_working = False
 
     def run(self):
-        while self.par.work_available():
+        while self.par.work_available() and self.is_working:
             job = self.par.__get_work__()
             userTree = BTree()
             itemCount = 0
@@ -101,6 +106,10 @@ class MassTreeBuilder:
             self.work_queue.put(d)
         self.collecting_data = False
 
+    def interrupt(self):
+        for w in self.workers:
+            w.interrupt()
+
     def __get_work__(self):
         with self.lock:
             rem = len(self.remaining)
@@ -116,7 +125,8 @@ class MassTreeBuilder:
     def work_available(self):
         with self.lock:
             rem = len(self.remaining)
-        return rem != 0
+            queue_rem = len(self.work_queue.queue)
+        return rem != 0 and queue_rem != 0
 
     def push_result(self, res, id=None):
         if self.store:
@@ -162,6 +172,11 @@ for paying_user_day in paying_users:
 user_features = dict()
 builder = MassTreeBuilder(10000, False)
 builder.build()
+try:
+    while builder.work_available():
+        sleep(1)
+except KeyboardInterrupt:
+    builder.interrupt()
 builder.get_result()
 
 # non_paying_user_ids = documents_col.find({
