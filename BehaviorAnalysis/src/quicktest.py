@@ -3,19 +3,42 @@ from constants import *
 from classifiers import conduct_experiment,Experiment
 from pymongo import MongoClient
 import urllib
- 
+import sys
+import pymongo
+
+from datetime import datetime, timedelta
+
 ##host is local
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
 host = "10.10.1.5"
 
 client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
 db = client.netvoid
-userDaysCollection = db.IntegratedDocument
+collection = db.IntegratedDocument
+userTypeId = "598da0a2bff3d758b4025d21" 
+appId = "123123123"
 
-allData = userDaysCollection.find({
-    "UserId" : "123123123"
-}, {
-     "Document.uuid" : 1,
+weeksAvailable = collection.find({    
+    "UserId" : appId,
+    "TypeId" : userTypeId
+}).distinct("Document.g_timestamp")
+weeksAvailable.sort()
+
+#our test week
+lastWeek = weeksAvailable.pop()
+targetData = []
+inputData = []
+for index, week in enumerate(weeksAvailable):
+    if index== (len(weeksAvailable) -1 ):
+        next_week = lastWeek
+    else:
+        next_week = weeksAvailable[index+1]
+    weekData = collection.find({
+        "UserId" : appId,
+        "TypeId" : userTypeId,
+        "Document.g_timestamp" : {'$gte': week, '$lt': next_week}
+    }, { 
+    "Document.uuid" : 1,
     "Document.noticed_date" : 1,
     "Document.is_paying" : 1,
     "Document.visits_on_weekends" : 1,
@@ -36,45 +59,49 @@ allData = userDaysCollection.find({
     "Document.highranking_page_2" : 1,
     "Document.highranking_page_3" : 1,
     "Document.highranking_page_4" : 1,
-    "Document.time_spent_online" : 1
-} ).limit(1000 * 200)
-targets = []
-data = []
-p=0
-
-for doc in allData:  
-    targets.append(1 if doc['Document']['is_paying']==1 else 0)
-    tmpDoc = doc['Document']
-    data.append([
-        tmpDoc['max_time_spent_by_any_paying_user_ebag'],
-        tmpDoc['prob_buy_is_holiday'],
-        tmpDoc['prob_buy_is_before_holiday'],
-        tmpDoc['prop_buy_is_weekend'],
-        tmpDoc['visits_per_time'],
-        tmpDoc['bought_last_week'],
-        tmpDoc['bought_last_month'],
-        tmpDoc['bought_last_year'],
-        tmpDoc['time_spent'],
-        tmpDoc['time_spent_max'],
-        tmpDoc['month'],
-        tmpDoc['prob_buy_is_holiday_user'],
-        tmpDoc['prob_buy_is_before_holiday_user'],
-        tmpDoc['prop_buy_is_weekend_user'],
-        tmpDoc['is_from_mobile'],
-        tmpDoc['is_on_promotions_page'],
-        tmpDoc['before_visit_from_mobile'],
-        tmpDoc['time_before_leaving'],
-        tmpDoc['page_rank'],
-        tmpDoc['prop_buy_is_before_weekend_user'],
-        tmpDoc['visits_before_weekend'],
-        tmpDoc['visits_before_holidays'],
-        tmpDoc['visits_on_holidays'],
-        tmpDoc['visits_on_weekends'],
-        tmpDoc['days_visited_ebag'],
-        tmpDoc['mobile_visits'],
-        tmpDoc['mobile_purchases']])
-    p += 1
-allData = None
+    "Document.time_spent_online" : 1,
+    "path_similarity_score" : 1,
+    "path_similarity_score_time_spent" : 1
+    }).batch_size(10000)
+    next_week_end = next_week + timedelta(days=7)
+    for week_session in weekData:
+        tmpDoc = week_session["Document"]
+        uuid = tmpDoc["uuid"]
+        inputData.append([
+            tmpDoc["visits_on_weekends"],
+            tmpDoc["p_online_weekend"],
+            tmpDoc["days_visited_ebag"],
+            tmpDoc["time_spent_ebag"],
+            tmpDoc["time_spent_on_mobile_sites"],
+            tmpDoc["mobile_visits"],
+            tmpDoc["visited_ebag"],
+            tmpDoc["p_buy_age_group"],
+            tmpDoc["p_buy_gender_group"],
+            tmpDoc["p_visit_ebag_age"],
+            tmpDoc["p_visit_ebag_gender"],
+            tmpDoc["p_to_go_online"],
+            tmpDoc["avg_time_spent_on_high_pageranksites"],
+            tmpDoc["highranking_page_0"],
+            tmpDoc["highranking_page_1"],
+            tmpDoc["highranking_page_2"],
+            tmpDoc["highranking_page_3"],
+            tmpDoc["highranking_page_4"],
+            tmpDoc["time_spent_online"],
+            week_session["path_similarity_score"],
+            week_session["path_similarity_score_time_spent"]
+        ])
+        #next week user purchases
+        purchasesCount = collection.find({
+            "TypeId" :  userTypeId,
+            "UserId" : appId,
+            "Document.noticed_date" : { "$gte" : next_week, "$lt" : next_week_end  },
+            "Document.uuid" : uuid
+        }).count()
+        if purchasesCount > 0:
+            targetData.append(1)
+        else:
+            targetData.append(0)
 
 print "Prepared " + str(len(data)) + " items"
-conduct_experiment(data, targets, 'Netinfo')
+conduct_experiment(inputData, targetData, 'Netinfo')
+

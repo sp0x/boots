@@ -22,6 +22,8 @@ from pymongo import UpdateMany
  
 #type used for web sessions
 userSessionTypeId = "598f20d002d2516dd0dbcee2"
+userTypeId = "598da0a2bff3d758b4025d21"
+
 week4Start = datetime(2017, 7, 17, 0, 0, 0)
 appId = "123123123"
 #sessionsPath = "testData/Netinfo/payingBrowsingSessionsDaySorted.csv"
@@ -190,7 +192,7 @@ except KeyboardInterrupt:
     builder.interrupt()
 results = builder.get_result()
 print "Finished!"
-for chnk in chunks(results, 1000):
+for chnk in chunks(results, 10000):
     items =[]
     for item in chnk:
         uuid = item['uuid']
@@ -201,8 +203,8 @@ for chnk in chunks(results, 1000):
             "UserId" : appId,
             "Document.uuid" : uuid
         },  {'$set': {
-            "path_similarity_score" : simscore,
-            "path_similarity_score_time_spent" : simtime
+            "Document.path_similarity_score" : simscore,
+            "Document.path_similarity_score_time_spent" : simtime
         }})
         items.append(up)
     documents_col.bulk_write(items)
