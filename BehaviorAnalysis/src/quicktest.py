@@ -25,7 +25,7 @@ weeksAvailable = collection.find({
 weeksAvailable.sort()
 
 #our test week
-weekLimit = 0 #4
+weekLimit = 4
 weeksAvailable = weeksAvailable[ (-1) * weekLimit:] if weekLimit > 0 else weeksAvailable #last n weeks
 lastWeek = weeksAvailable.pop()
 targetData = []

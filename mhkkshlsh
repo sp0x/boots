@@ -1,0 +1,344 @@
+[33mcommit 6d281f56fe67028032797837a15512fa08cc5e63[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Mon Aug 14 12:57:49 2017 +0300
+
+    Weekly training
+
+[33mcommit ac3b1fd176387b314222814d3ded6f144c3d4955[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Mon Aug 14 12:54:06 2017 +0300
+
+    Aggregated user features
+
+[33mcommit e9818c08dba61f3d732a1dfc4388ca531dde4712[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Mon Aug 14 10:27:22 2017 +0300
+
+    Purchase optimization
+
+[33mcommit c13d76a99ca076aab9b955ae1bcb83dfc2b00ee2[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Mon Aug 14 10:00:00 2017 +0300
+
+    Weekly training
+
+[33mcommit 2c6725c3b1cfec790e00e9b7f82b995a1ec62e00[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Mon Aug 14 09:58:58 2017 +0300
+
+    bulk save
+
+[33mcommit 3004b547a0f39e80bbb56febf210b9c496f33587[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Mon Aug 14 09:55:58 2017 +0300
+
+    Weekly training
+
+[33mcommit 12501e78481915824bf11d73d30704df3b30b357[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sun Aug 13 19:31:51 2017 +0300
+
+    bulk save
+
+[33mcommit b87ac8af36e2a196e73bf562c36c52c6f7a66fb8[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sun Aug 13 17:40:09 2017 +0300
+
+    mltithreaded fixu
+
+[33mcommit b8d202f132d2836b30718e77d7fc1df810ee2cd9[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sun Aug 13 17:15:09 2017 +0300
+
+    Added user sessions aggregate
+
+[33mcommit 3532543bc9e3306e2ce49efc9c4204a332ec383b[m
+Author: tony <tonyf71055@gmail.com>
+Date:   Sun Aug 13 13:57:11 2017 +0100
+
+    adding checks for worker working
+
+[33mcommit 033111c629f8cc23cca5c172a77cb4f7622e5c6a[m
+Author: tony <tonyf71055@gmail.com>
+Date:   Sun Aug 13 13:49:44 2017 +0100
+
+    keeping main thread busy
+
+[33mcommit c0f38a738179b89f2a92387cb7ae0e6e3ed01611[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sun Aug 13 15:41:53 2017 +0300
+
+    Treetest fix
+
+[33mcommit cb308d927cfbc74979962b2afde99c2095125e28[m
+Author: tony <tonyf71055@gmail.com>
+Date:   Sun Aug 13 12:40:52 2017 +0100
+
+    adding print
+
+[33mcommit e3a08dc3f2fde889e078c1f9f38cd422335a4496[m
+Author: tony <tonyf71055@gmail.com>
+Date:   Sun Aug 13 12:38:11 2017 +0100
+
+    adding batch tree builder
+
+[33mcommit edeca3760d4949a40c33be43c8f4bbc5b6b7e686[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sun Aug 13 10:17:32 2017 +0300
+
+    Typo fix
+
+[33mcommit 69b29af6b96bd6cec35b26d99a662ef705fab82c[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sun Aug 13 08:40:12 2017 +0300
+
+    Added week filter and feature update.
+
+[33mcommit 636bd0ac090098c0476c1ffaf7dc3c4a6607828a[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Aug 12 23:00:59 2017 +0300
+
+    Updated user tree building.
+
+[33mcommit 2cd4ace7e98b01bce22fda86c3b0bd3b757beabd[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Aug 12 18:59:49 2017 +0300
+
+    Tree loading with mongo.
+
+[33mcommit 8537e95422f07e88bc259b59c796fa0bd7d6dfb7[m
+Merge: fd2cd7e 466fdbf
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Aug 12 18:50:09 2017 +0300
+
+    Merge branch 'master' of bitbucket.org:peeralytics/peeralytics
+
+[33mcommit fd2cd7eb400413a2df283d3d6d91b60a36000863[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Aug 12 18:35:06 2017 +0300
+
+    Integration tests no longer create duplicate data types, also web sessions are now saved having the is_paying parameter for easier tree building.
+
+[33mcommit 466fdbfe5129e202c9c5009a2e277f6a0f3099b1[m
+Author: tony <tonyf71055@gmail.com>
+Date:   Sat Aug 12 16:11:23 2017 +0100
+
+    adding training from stream support
+
+[33mcommit 0973a32b03548f73e4880c322a10da46b9f9c573[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Aug 12 16:57:49 2017 +0300
+
+    Moved domain sessions to a collection, fixed type definition resolver's wrong property types.
+
+[33mcommit bfc536d9a37adebce52bc396ede1d0636751f8d8[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Aug 12 15:45:01 2017 +0300
+
+    Added session type dump and user sessions.
+
+[33mcommit c922bce7c3c52a1f0ba03a85718a78f789ecb8da[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Aug 12 13:43:10 2017 +0300
+
+    Added tree example from sessions.
+
+[33mcommit a7e9d4a38713da3b44ed4f065dc133e3f355c30f[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Thu Aug 10 23:29:43 2017 +0300
+
+    Must go faster.
+
+[33mcommit f5aba96b020b76ec21462ac022951f511cd7683d[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Thu Aug 10 21:20:16 2017 +0300
+
+    Bugfix.
+
+[33mcommit d2cc09071b8e4563a63b530cd18497684e9f89a6[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Thu Aug 10 18:52:57 2017 +0300
+
+    Debugging fixes.
+
+[33mcommit 80ec8ecf588f8739db788af6cd3f7ce086d27aa4[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Thu Aug 10 18:35:20 2017 +0300
+
+    Completed new features.
+
+[33mcommit 17e66fbb08ef20a0af9100545fe756ca1259b437[m
+Merge: 167c6cf 9f3900b
+Author: vasko <sp0x@xakep.ru>
+Date:   Thu Aug 10 08:36:51 2017 +0300
+
+    Merge branch 'master' of bitbucket.org:peeralytics/peeralytics
+
+[33mcommit 167c6cfb7a798bb0345aa6c98d1a54bd210f5c45[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Thu Aug 10 08:35:58 2017 +0300
+
+    Update before pagerank changes.
+
+[33mcommit 9f3900b33f311da7da9848a3ece0da61977d6552[m
+Author: tony <tonyf71055@gmail.com>
+Date:   Tue Aug 8 21:38:28 2017 +0100
+
+    adding the behavior comparison tree/thing
+
+[33mcommit 32362aded90e6205a74977cdcccca2f67f0e0252[m
+Author: tony <tonyf71055@gmail.com>
+Date:   Sun Aug 6 18:07:53 2017 +0100
+
+    allows tree to 'explain' itself and adds large data training support mechanisms
+
+[33mcommit c439d59681da7d2cb8a096a2b8c4ca0c02080d1c[m
+Merge: 06eff59 2896212
+Author: tony <tonyf71055@gmail.com>
+Date:   Sun Aug 6 12:10:42 2017 +0100
+
+    merging
+
+[33mcommit 06eff59fb3f08b0463879864103cce56c6988551[m
+Author: tony <tonyf71055@gmail.com>
+Date:   Sun Aug 6 12:07:28 2017 +0100
+
+    adding fix for neural network
+
+[33mcommit 2896212dc33f6fd541ef587e2d74794b6996b970[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Aug 5 12:39:56 2017 +0300
+
+    Added predict helper.
+
+[33mcommit ca5503fa2e083988346d99927ec275bb2ef13f6b[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Thu Aug 3 11:24:27 2017 +0300
+
+    Updated classifiers.
+
+[33mcommit ac6dcc45f375e5803bbc1748745d1cf636db533e[m
+Author: tony <tonyf71055@gmail.com>
+Date:   Wed Aug 2 22:08:28 2017 +0100
+
+    applying fix for overly accurate predictions
+
+[33mcommit 3eb686d59f17c739a4674e708dcbede8c002212b[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Wed Aug 2 12:38:23 2017 +0300
+
+    Updated classifiers, to create dirs if they don`t exist.
+
+[33mcommit 270e9a8df7b5f6ab33cd87d28ed635fd13313bca[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Wed Aug 2 11:21:45 2017 +0300
+
+    Classifiers change.
+
+[33mcommit f6f8a67b0c4541295e3bfd1508683c337ad942e4[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Wed Aug 2 10:56:27 2017 +0300
+
+    Limit to 10k elements for quicktest.
+
+[33mcommit 7337885293212d27fb81cd476451c3b229a6ce34[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Wed Aug 2 10:52:34 2017 +0300
+
+    Updated classifiers.
+
+[33mcommit da689534bcc009f0f5d8336911c6f81f45069ae6[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Wed Aug 2 08:54:39 2017 +0300
+
+    Small fixes.
+
+[33mcommit 303572fd4a48aff4642e12be10fd6f852c34e685[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Wed Aug 2 00:28:56 2017 +0300
+
+    Updated quicktest.
+
+[33mcommit 857f676f4f32d42070c42e4a8ccfa8ad9ddd2165[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Tue Aug 1 22:58:06 2017 +0300
+
+    Added helper py script.
+
+[33mcommit 7bd9ceddf8a5194b637ea149bb1d9f0254c70114[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Tue Aug 1 21:44:28 2017 +0300
+
+    Updated for user + day grouping.
+
+[33mcommit ef56f312a4f1547b20b8244f1e8cb1444bc0a1a6[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Tue Aug 1 17:23:56 2017 +0300
+
+    Updated feature generation block completion, using PostAll, which completes after all items are posted.
+    
+    Updated some values which were cast wrong.
+
+[33mcommit cac9ca9bfc533d63c9be2a428b690583fb6ff2be[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Tue Aug 1 01:20:40 2017 +0300
+
+    Migrated to AES encryption for coms of data integration.
+    
+    Added entity extraction base.
+    Updated structure of integration blocks to be cleaner.
+    Added base for cross site map reduce and feature gen.
+
+[33mcommit fb6bfd0d976277c56904bd34fc1604e8f616ebe8[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Mon Jul 24 19:24:54 2017 +0300
+
+    Updates to integrated documents, to support reserved entity flags and properties.
+    
+    Also updated third party php client.
+    Added social network support for api and data api.
+
+[33mcommit 4330e2afe2de361c3dafbab7265622c1409dfc08[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Jul 22 17:40:01 2017 +0300
+
+    Minor python script arguments update
+
+[33mcommit bdf8de95737e468eeff8bec532d21b1516474406[m
+Merge: 99943da 37e5263
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Jul 22 17:19:59 2017 +0300
+
+    Merge branch 'behavior' of bitbucket.org:peeralytics/peeralytics
+    
+    # Conflicts:
+    #       BehaviorAnalysis/src/constants.py
+    #       BehaviorAnalysis/src/server.py
+
+[33mcommit 99943daedcde4eca59607efe87e60480fe9b19c8[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Jul 22 16:34:32 2017 +0300
+
+    Updated run script, added constant for LISTEN_ADDR
+
+[33mcommit 37e5263b0c03b3514638f37888e4d34a5ed188b3[m
+Author: tony <tonyf71055@gmail.com>
+Date:   Sat Jul 22 14:05:39 2017 +0100
+
+    adding zmq fix
+
+[33mcommit 5a1c956daed12df274eeab09f39fd72e41b40616[m
+Merge: 7341eda ae98c8b
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Jul 22 15:56:44 2017 +0300
+
+    Merge remote-tracking branch 'origin/behavior'
+    
+    # Conflicts:
+    #       BehaviorAnalysis/src/__init__.py
+
+[33mcommit 7341eda1eddf1c9a7b85cc5d8feec23f6c1a4ce1[m
+Author: vasko <sp0x@xakep.ru>
+Date:   Sat Jul 22 15:55:36 2017 +0300
+
+    Minor changes to container.

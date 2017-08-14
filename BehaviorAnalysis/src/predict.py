@@ -4,6 +4,7 @@ from classifiers import conduct_experiment,Experiment
 from pymongo import MongoClient
 import urllib
 import csv
+from datetime import datetime, timedelta
 
 ##host is local
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
@@ -11,105 +12,121 @@ host = "10.10.1.5"
 
 client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
 db = client.netvoid
-userDaysCollection = db.IntegratedDocument
+collection = db.IntegratedDocument
 
+userTypeId = "598da0a2bff3d758b4025d21" 
+appId = "123123123"
+
+weeksAvailable = collection.find({    
+    "UserId" : appId,
+    "TypeId" : userTypeId
+}).distinct("Document.g_timestamp")
+weeksAvailable.sort()
+target_week = weeksAvailable[len(weeksAvailable) - 2]
+target_week_end = target_week + timedelta(days=7)
+print "Target week " + str(target_week)
+pipeline = [
+        {"$match" : { 
+            "TypeId" : userTypeId, 
+            "UserId" : appId,
+            "Document.g_timestamp" : {'$gte': target_week, '$lt': target_week_end},
+            "Document.is_paying" : 1
+         }
+        },
+        {"$group": {
+            "_id": {
+                "uuid" : "$Document.uuid",
+                "week_start" : "$Document.g_timestamp"
+            }, 
+            "visits_count": {"$sum": 1}, 
+                "visits_on_weekends" : { "$avg" : "$Document.visits_on_weekends"},
+                "p_online_weekend" : { "$avg" : "$Document.p_online_weekend"},
+                "days_visited_ebag" : { "$avg" : "$Document.days_visited_ebag"},
+                "time_spent_ebag" : { "$avg" : "$Document.time_spent_ebag"},
+                "time_spent_on_mobile_sites" : { "$avg" : "$Document.time_spent_on_mobile_sites"},
+                "mobile_visits" : { "$avg" : "$Document.mobile_visits"},
+                "visited_ebag" : { "$avg" : "$Document.visited_ebag"},
+                "p_buy_age_group" : { "$avg" : "$Document.p_buy_age_group"},
+                "p_buy_gender_group" : { "$avg" : "$Document.p_buy_gender_group"},
+                "p_visit_ebag_age" : { "$avg" : "$Document.p_visit_ebag_age"},
+                "p_visit_ebag_gender" : { "$avg" : "$Document.p_visit_ebag_gender"},
+                "p_to_go_online" : { "$avg" : "$Document.p_to_go_online"},
+                "avg_time_spent_on_high_pageranksites" : { "$avg" : "$Document.avg_time_spent_on_high_pageranksites"},
+                "highranking_page_0" : { "$avg" : "$Document.highranking_page_0"},
+                "highranking_page_1" : { "$avg" : "$Document.highranking_page_1"},
+                "highranking_page_2" : { "$avg" : "$Document.highranking_page_2"},
+                "highranking_page_3" : { "$avg" : "$Document.highranking_page_3"},
+                "highranking_page_4" : { "$avg" : "$Document.highranking_page_4"},
+                "time_spent_online" : { "$avg" : "$Document.time_spent_online"},
+                "path_similarity_score" : { "$avg" : "$path_similarity_score"},
+                "path_similarity_score_time_spent" : { "$avg" : "$path_similarity_score_time_spent"} 
+        }}]
+weekData = collection.aggregate(pipeline)
+weekData = list(weekData) 
 
 company = "Netinfo"
 offset = 1000 * 200
 models = Experiment.load_models(company)
 print "Loaded prediction models"
-users = userDaysCollection.find({
-    "UserId" : "123123123"
-}, {
-     'Document.uuid' : 1,
-    'Document.noticed_date' : 1,
-    'Document.is_paying' : 1,
-    'Document.max_time_spent_by_any_paying_user_ebag' : 1,
-    'Document.prob_buy_is_holiday' : 1,
-    'Document.prob_buy_is_before_holiday' : 1,
-    'Document.prop_buy_is_weekend' : 1,
-    'Document.visits_per_time' : 1,
-    'Document.bought_last_week' : 1,
-    'Document.bought_last_month' : 1,
-    'Document.bought_last_year' : 1,
-    'Document.time_spent' : 1,
-    'Document.time_spent_max' : 1,
-    'Document.month' : 1,
-    'Document.prob_buy_is_holiday_user' : 1,
-    'Document.prob_buy_is_before_holiday_user' : 1,
-    'Document.prop_buy_is_weekend_user' : 1,
-    'Document.is_from_mobile' : 1,
-    'Document.is_on_promotions_page' : 1,
-    'Document.before_visit_from_mobile' : 1,
-    'Document.time_before_leaving' : 1,
-    'Document.page_rank' : 1,
-    'Document.prop_buy_is_before_weekend_user' : 1,
-    'Document.visits_before_weekend' : 1,
-    'Document.visits_before_holidays' : 1,
-    'Document.visits_on_holidays' : 1,
-    'Document.visits_on_weekends' : 1,
-    'Document.days_visited_ebag' : 1,
-    'Document.mobile_visits' : 1,
-    'Document.mobile_purchases' : 1
-})
+
 userFeatures = []
 userData = []
-for doc in users:
-    tmpDoc = doc['Document']
-    userData.append({ 'uuid' : tmpDoc['uuid'], 'is_paying' : tmpDoc['is_paying'] })
+for tmpDoc in weekData:
+    uuid = tmpDoc["_id"]["uuid"]
+    
+    userData.append({ 'uuid' : uuid })
+    simscore = 0 if not "path_similarity_score" in tmpDoc else  tmpDoc["path_similarity_score"] 
+    simscore = 0 if simscore == None else simscore
+    simtime = 0 if not "path_similarity_score_time_spent" in tmpDoc else  tmpDoc["path_similarity_score_time_spent"]
+    simtime = 0 if simtime == None else simtime        
     userFeatures.append([
-        tmpDoc['max_time_spent_by_any_paying_user_ebag'],
-        tmpDoc['prob_buy_is_holiday'],
-        tmpDoc['prob_buy_is_before_holiday'],
-        tmpDoc['prop_buy_is_weekend'],
-        tmpDoc['visits_per_time'],
-        tmpDoc['bought_last_week'],
-        tmpDoc['bought_last_month'],
-        tmpDoc['bought_last_year'],
-        tmpDoc['time_spent'],
-        tmpDoc['time_spent_max'],
-        tmpDoc['month'],
-        tmpDoc['prob_buy_is_holiday_user'],
-        tmpDoc['prob_buy_is_before_holiday_user'],
-        tmpDoc['prop_buy_is_weekend_user'],
-        tmpDoc['is_from_mobile'],
-        tmpDoc['is_on_promotions_page'],
-        tmpDoc['before_visit_from_mobile'],
-        tmpDoc['time_before_leaving'],
-        tmpDoc['page_rank'],
-        tmpDoc['prop_buy_is_before_weekend_user'],
-        tmpDoc['visits_before_weekend'],
-        tmpDoc['visits_before_holidays'],
-        tmpDoc['visits_on_holidays'],
-        tmpDoc['visits_on_weekends'],
-        tmpDoc['days_visited_ebag'],
-        tmpDoc['mobile_visits'],
-        tmpDoc['mobile_purchases']])
-print "Loaded " + str(len(userFeatures)) + " test user items"
-filterFile = "NetInfo/filters/paying_users.csv"
-payingDict = dict()
-with open(filterFile, 'rb') as filterCsv:
-    filterReader = csv.reader(filterCsv, delimiter=';', quotechar='|')
-    for row in filterReader:
-        uuid = row[0].replace('"', '')
-        payingDict[uuid] = True
+        tmpDoc["visits_on_weekends"],
+        tmpDoc["p_online_weekend"],
+        tmpDoc["days_visited_ebag"],
+        tmpDoc["time_spent_ebag"],
+        tmpDoc["time_spent_on_mobile_sites"],
+        tmpDoc["mobile_visits"],
+        tmpDoc["visited_ebag"],
+        tmpDoc["p_buy_age_group"],
+        tmpDoc["p_buy_gender_group"],
+        tmpDoc["p_visit_ebag_age"],
+        tmpDoc["p_visit_ebag_gender"],
+        tmpDoc["p_to_go_online"],
+        tmpDoc["avg_time_spent_on_high_pageranksites"],
+        tmpDoc["highranking_page_0"],
+        tmpDoc["highranking_page_1"],
+        tmpDoc["highranking_page_2"],
+        tmpDoc["highranking_page_3"],
+        tmpDoc["highranking_page_4"],
+        tmpDoc["time_spent_online"],
+        simscore,
+        simtime
+    ])
+
+# print "Loaded " + str(len(userFeatures)) + " test user items"
+# filterFile = "NetInfo/filters/paying_users.csv"
+# payingDict = dict()
+# with open(filterFile, 'rb') as filterCsv:
+#     filterReader = csv.reader(filterCsv, delimiter=';', quotechar='|')
+#     for row in filterReader:
+#         uuid = row[0].replace('"', '')
+#         payingDict[uuid] = True
 
 filtered = 0
 for m in models:
-    predictions = m['model'].predict(userFeatures)
+    predictions = m['model'].predict_proba(userFeatures)
     fileName = company + '_prediction_' + m['type'] + ".csv"
     print "Writing predictions in: " + fileName
     with open(fileName, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow([ "uuid", "prediction", "actual"])
+        writer.writerow([ "uuid", "prediction"])
         for p in xrange(len(predictions)): 
             prediction = predictions[p] 
-            uuid = userData[p]['uuid']            
-            actual = userData[p]['is_paying']
-            if uuid in payingDict: #skip filtered users
-                filtered = filtered + 1
-                continue
-            else:
-                writer.writerow([ uuid, prediction, actual ])
+            uuid = userData[p]['uuid']       
+            # if uuid in payingDict: #skip filtered users
+            #     filtered = filtered + 1
+            #     continue
+            # else:
+            writer.writerow([ uuid, prediction ])
 
 print "Filtered users: " + str(filtered)
