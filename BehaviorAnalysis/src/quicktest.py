@@ -91,7 +91,10 @@ for index, week in enumerate(weeksAvailable):
         tmpDoc = week_session #["Document"] 
         uuid = tmpDoc["_id"]["uuid"]
         simscore = 0 if not "path_similarity_score" in tmpDoc else  tmpDoc["path_similarity_score"] 
+        simscore = 0 if simscore == None else simscore
         simtime = 0 if not "path_similarity_score_time_spent" in tmpDoc else  tmpDoc["path_similarity_score_time_spent"]
+        simtime = 0 if simtime == None else simtime
+        
         inputData.append([
             tmpDoc["visits_on_weekends"],
             tmpDoc["p_online_weekend"],
@@ -119,7 +122,7 @@ for index, week in enumerate(weeksAvailable):
         if uuid in next_week_purchases:
             targetVar = 1
         targetData.append(targetVar)
-
+print inputData[0]
 print "Prepared " + str(len(inputData)) + " items"
 conduct_experiment(inputData, targetData, 'Netinfo')
 
