@@ -25,8 +25,8 @@ weeksAvailable = collection.find({
 weeksAvailable.sort()
 
 #our test week
-weekLimit = 4
-weeksAvailable = weeksAvailable[ (-1) * weekLimit:] #last n weeks
+weekLimit = 0 #4
+weeksAvailable = weeksAvailable[ (-1) * weekLimit:] if weekLimit > 0 else weeksAvailable #last n weeks
 lastWeek = weeksAvailable.pop()
 targetData = []
 inputData = []
@@ -122,7 +122,7 @@ for index, week in enumerate(weeksAvailable):
         if uuid in next_week_purchases:
             targetVar = 1
         targetData.append(targetVar)
-print inputData[0]
+#print inputData[0]
 print "Prepared " + str(len(inputData)) + " items"
 conduct_experiment(inputData, targetData, 'Netinfo')
 
