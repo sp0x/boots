@@ -34,6 +34,7 @@ for index, week in enumerate(weeksAvailable):
     else:
         next_week = weeksAvailable[index+1]
     print "Preparing week: " + str(week) + "    " + str(index+1) + "/" + str(len(weeksAvailable))
+    next_week_purchases = dict()
     weekData = collection.find({
         "UserId" : appId,
         "TypeId" : userTypeId,
@@ -65,9 +66,17 @@ for index, week in enumerate(weeksAvailable):
         "path_similarity_score_time_spent" : 1
     }).batch_size(10000)
     next_week_end = next_week + timedelta(days=7)
-    for week_session in weekData:
+    next_week_purchases = collection.find({        
+        "TypeId" :  userTypeId,
+        "UserId" : appId,
+        "Document.noticed_date" : { "$gte" : next_week, "$lt" : next_week_end  }
+    }).distinct("Document.uuid")
+    print "CrWeek Visits: {0} NxWeek Purchased users: {1}".format(weekData.count(), len(next_week_purchases))
+    for week_session in weekData: 
         tmpDoc = week_session["Document"]
         uuid = tmpDoc["uuid"]
+        simscore = 0 if not "path_similarity_score" in week_session else  week_session["path_similarity_score"] 
+        simtime = 0 if not "path_similarity_score_time_spent" in week_session else  week_session["path_similarity_score_time_spent"]
         inputData.append([
             tmpDoc["visits_on_weekends"],
             tmpDoc["p_online_weekend"],
@@ -88,21 +97,14 @@ for index, week in enumerate(weeksAvailable):
             tmpDoc["highranking_page_3"],
             tmpDoc["highranking_page_4"],
             tmpDoc["time_spent_online"],
-            week_session["path_similarity_score"],
-            week_session["path_similarity_score_time_spent"]
+            simscore,
+            simtime
         ])
-        #next week user purchases
-        purchasesCount = collection.find({
-            "TypeId" :  userTypeId,
-            "UserId" : appId,
-            "Document.noticed_date" : { "$gte" : next_week, "$lt" : next_week_end  },
-            "Document.uuid" : uuid
-        }).count()
-        if purchasesCount > 0:
-            targetData.append(1)
-        else:
-            targetData.append(0)
+        targetVar = 0
+        if uuid in next_week_purchases:
+            targetVar = 1
+        targetData.append(targetVar)
 
-print "Prepared " + str(len(data)) + " items"
+print "Prepared " + str(len(inputData)) + " items"
 conduct_experiment(inputData, targetData, 'Netinfo')
 
