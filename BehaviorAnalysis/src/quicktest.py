@@ -33,6 +33,7 @@ for index, week in enumerate(weeksAvailable):
         next_week = lastWeek
     else:
         next_week = weeksAvailable[index+1]
+    print "Preparing week: " + str(week) + "    " + str(index+1) + "/" + str(len(weeksAvailable))
     weekData = collection.find({
         "UserId" : appId,
         "TypeId" : userTypeId,
