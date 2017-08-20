@@ -2,20 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Extensions;
-
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using System.Text;
 
 namespace Peeralize.Service.Integration.Blocks
 {
-
+    [DataContract]
     public class BehaviourTree
     {
+        [DataContract]
         public class BNode
         {
+            [DataMember]
             private BehaviourTree.BNode parent;
+            [DataMember]
             private string label;
+            [DataMember]
             private Dictionary<string, BehaviourTree.BNode> children = new Dictionary<string, BehaviourTree.BNode>();
+            [DataMember]
             private float visits;
+            [DataMember]
             private int depth;
+            [DataMember]
             private double[] time = new double[2]{0.0d,0.0d};
             public double Time
             {
@@ -105,6 +115,7 @@ namespace Peeralize.Service.Integration.Blocks
                 }
             }
         }
+        [DataMember]
         Dictionary<string,BNode> paths = new Dictionary<string,BNode>();
         public BehaviourTree(){            
         }
@@ -157,13 +168,34 @@ namespace Peeralize.Service.Integration.Blocks
             }
             return best_p;
         }
+        public void Save(string path){
+            var serializer = new DataContractJsonSerializer(typeof(BehaviourTree));           
+            using (var ms = new MemoryStream())
+            {
+                serializer.WriteObject(ms, this);
+                using (FileStream file = new FileStream(path, FileMode.Create, FileAccess.Write)) {
+                    ms.WriteTo(file);
+                }
+            }   
+        }
+        public static BehaviourTree load(string path){
+            var deserializer = new DataContractJsonSerializer(typeof(BehaviourTree));
+            BehaviourTree tree = null;
+            MemoryStream ms = new MemoryStream();
+            using(FileStream f = new FileStream(path, FileMode.Open, FileAccess.Read)){
+                f.CopyTo(ms);
+                tree = deserializer.ReadObject(ms) as BehaviourTree;
+            }              
+            ms.Close();
+            return tree;
+        }
         private static double IC(List<Dictionary<string,double>> path, string weight){
             if(path.Count==0)return 0;
             var sum = path.Sum(x=>x[weight]);
             var p = path.Select(x=>1.0*x[weight]/sum).ToArray();
             return -p.Sum(x=> x*Math.Log(x));
         }
-        public double Lin(BehaviourTree other, string w="frequency"){
+        public double LinScore(BehaviourTree other, string w="frequency"){
             var p1 = this.LongestPath();
             var p2 = other.LongestPath();
             var lcp = this.LCP(other);
