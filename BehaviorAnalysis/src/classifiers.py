@@ -1,5 +1,6 @@
 import logging
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import classification_report, accuracy_score
@@ -192,12 +193,18 @@ def conduct_experiment(data, targets, client='cashlend'):
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
     rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = c, random_state=RANDOM_SEED)
+    cart = DecisionTreeClassifier(random_state=RANDOM_SEED, class_weight=c)
     scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data,targets, c)
     rnn = KerasClassifier(builder.build_rnn)
     rf_params = {        
-        "n_estimators": [100,200,500,1000],
-        "max_features": [None, "auto", "sqrt"]
+        "n_estimators": [100, 200, 500, 1000],
+        "max_features": [None, "auto"],
+        "max_depth" : [20, 40, 80, 160, 320]
+    }
+    cart_params = {
+        "min_samples_split" : [2, 50, 100, 200],
+        "max_depth": [None, 8, 10, 20, 40]
     }
     rnn_params = { 
         "a": [2, 4, 10],
@@ -205,7 +212,8 @@ def conduct_experiment(data, targets, client='cashlend'):
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
     logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()),client))
-    e = Experiment(data,targets,[dict(model=rf,params=rf_params,scoring=scoring,type='rf')], client)    
+    e = Experiment(data,targets,[{'model':rf, 'params':rf_params, 'scoring':scoring, 'type':'rf'},
+                                 {'model':cart, 'params':cart_params, 'scoring':scoring, 'type':'cart'}], client)
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
     e.store_models()
