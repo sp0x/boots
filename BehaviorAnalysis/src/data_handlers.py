@@ -3,13 +3,13 @@ from pymongo import MongoClient
 from sklearn import preprocessing
 
 
-class MongoDataStream:
-    def __init__(self, host, password, db, collection, stat_date, end_date, chunk_size=10000, max_items=None):
+class MongoDataStream(object):
+    def __init__(self, host, password, db, collection, start_date, end_date, chunk_size=10000, max_items=None):
         self.client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
         self.source = self.client[db][collection]
         # total number of batches of data in the db/collection
         if not max_items:
-            self.len  = self.source.find({'Document.g_timestamp': {'$gte': self.start, '$lt': self.end}}).count()
+            self.len  = self.source.find({'Document.g_timestamp': {'$gte': start_date, '$lt': end_date}}).count()
         else:
             self.len = max_items
         self.slices = int(self.len / chunk_size)
@@ -17,7 +17,7 @@ class MongoDataStream:
         self.lock = threading.Lock()
         self.cond = threading.Condition()
         self.available = True
-        self.start = stat_date
+        self.start = start_date
         self.end = end_date
         self.offset = 0
         self.chunk_size = chunk_size
@@ -75,7 +75,7 @@ class MongoDataStream:
         return
 
 
-class MongoDataStreamReader:
+class MongoDataStreamReader(object):
     def __init__(self, stream, features, normalize=False):
         self.stream = stream
         self.features = features

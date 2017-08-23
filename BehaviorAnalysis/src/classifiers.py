@@ -1,5 +1,6 @@
 import logging
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import classification_report, accuracy_score
@@ -16,6 +17,7 @@ import time,os,datetime
 import pickle
 import pandas as pd
 import os
+import matplotlib.pyplot as plt
 
 
 np.random.seed(RANDOM_SEED)
@@ -122,7 +124,7 @@ class Experiment:
         return load(path)
 
     @staticmethod
-    def predict_explain(self, tree, data, labels, print_proba=False):
+    def predict_explain(tree, data, labels, print_proba=False):
         report = ""
         from treeinterpreter import treeinterpreter as ti
         prediction, bias, contributions = ti.predict(tree, data) if not print_proba else ti.predict_proba(tree,data)
@@ -132,6 +134,72 @@ class Experiment:
         for c, feature in zip(contributions[0],labels):
             report += feature + str(c) + '\n'
         return report
+
+    def make_lift(self,y_pred,y_pred_proba,y_true):
+        cols = ['actual', 'predicted', 'predicted_proba']
+        df = pd.DataFrame(dict(zip(cols, [y_true, y_pred, y_pred_proba[:, 1]])))
+        df.sort_values(by='predicted_proba', ascending=False, inplace=True)
+        subset = df[df['predicted'] == True]
+        rows = []
+        import sklearn
+        for g in np.array_split(subset, 10):
+            score = sklearn.metrics.accuracy_score(g['actual'].tolist(),
+                                                   g['predicted'].tolist(),
+                                                   normalize=False)
+            rows.append({'NumCases': len(g), 'NumCorrectPredictions': score})
+        lift = pd.DataFrame(rows)
+        # Cumulative Gains Calculation
+        lift['RunningCorrect'] = lift['NumCorrectPredictions'].cumsum()
+        lift['PercentCorrect'] = lift.apply(
+            lambda x: (100 / lift['NumCorrectPredictions'].sum()) * x['RunningCorrect'], axis=1)
+        lift['CumulativeCorrectBestCase'] = lift['NumCases'].cumsum()
+        lift['PercentCorrectBestCase'] = lift['CumulativeCorrectBestCase'].apply(
+            lambda x: 100 if (100 / lift['NumCorrectPredictions'].sum()) * x > 100 else (100 / lift[
+                'NumCorrectPredictions'].sum()) * x)
+        lift['AvgCase'] = lift['NumCorrectPredictions'].sum() / len(lift)
+        lift['CumulativeAvgCase'] = lift['AvgCase'].cumsum()
+        lift['PercentAvgCase'] = lift['CumulativeAvgCase'].apply(
+            lambda x: (100 / lift['NumCorrectPredictions'].sum()) * x)
+
+        # Lift Chart
+        lift['NormalisedPercentAvg'] = 1
+        lift['NormalisedPercentWithModel'] = lift['PercentCorrect'] / lift['PercentAvgCase']
+
+        return lift
+
+    def plot_cumulative_gains(self,lift):
+        fig, ax = plt.subplots()
+        fig.canvas.draw()
+        handles = []
+        handles.append(ax.plot(lift['PercentCorrect'], 'r-', label='Percent Correct Predictions'))
+        handles.append(ax.plot(lift['PercentCorrectBestCase'], 'g-', label='Best Case (for current model)'))
+        handles.append(ax.plot(lift['PercentAvgCase'], 'b-', label='Average Case (for current model)'))
+        ax.set_xlabel('Total Population (%)')
+        ax.set_ylabel('Buyers (%)')
+        ax.set_xlim([0, 9])
+        ax.set_ylim([10, 100])
+        labels = [int((label + 1) * 10) for label in [float(item.get_text()) for item in ax.get_xticklabels()]]
+        ax.set_xticklabels(labels)
+
+        fig.legend(handles, labels=[h[0].get_label() for h in handles])
+        #fig.show()
+        fig1 = fig.gcf()
+        fig1.savefig(abs_path('cumulative_gains.png'), dpi=100)
+
+    def plot_lift_chart(self,lift):
+        plt.figure()
+        plt.plot(lift['NormalisedPercentAvg'], 'r-', label='Normalised \'response rate\' with no model')
+        plt.plot(lift['NormalisedPercentWithModel'], 'g-', label='Normalised \'response rate\' with using model')
+        plt.legend()
+        #plt.show()
+        fig1 = plt.gcf()
+        fig1.savefig(abs_path('lift_viz.png'), dpi=100)
+
+    def make_graphs(self, y_pred, y_pred_proba, y_true):
+        lift = self.make_lift(y_pred,y_pred_proba,y_true)
+        self.plot_cumulative_gains(lift)
+        self.plot_lift_chart(lift)
+
 
     def create_and_train(self):
         #rnn = KerasClassifier(self.build_rnn)
@@ -151,38 +219,40 @@ class Experiment:
             log_data['model'] = m['type']
             best_models.append(dict(type=m['type'],model=gs.best_estimator_))
             y_true, y_pred = y_test, gs.predict(X_test)
+            y_pred_proba = gs.predict_proba(X_test)
             log_data['best_performance'] = classification_report(y_true,y_pred)
             log_data['accuracy'] = accuracy_score(y_true, y_pred)
             self._log_data_(log_data)
+            self.make_graphs(y_pred,y_pred_proba,y_true)
         self.best_models = best_models
 
-        def create_and_train_from_stream(self,stream_reader):
-            """
-            Train using a stream reader rather than loading everything into memory
-            :param self: 
-            :param stream_reader: MongoDataStreamReader
-            """
-            data, targets = stream_reader.get_training_set()
-            X_train, X_test, y_train, y_test = train_test_split(data, targets, test_size=0.25,
+    def create_and_train_from_stream(self,stream_reader):
+        """
+        Train using a stream reader rather than loading everything into memory
+        :param self: 
+        :param stream_reader: MongoDataStreamReader
+        """
+        data, targets = stream_reader.get_training_set()
+        X_train, X_test, y_train, y_test = train_test_split(data, targets, test_size=0.25,
                                                                 random_state=RANDOM_SEED)
-            stream_reader.set_order(X_train.extends(X_test))
-            best_models = []
-            for m in self.models:
-                gs = GridSearchCV(estimator=m['model'], param_grid=m['params'], cv=10, scoring=m['scoring'])
-                stream_reader.reset_cursor()
-                if 'nn' in m['type']:
-                    stream_reader.set_normalize(True)
-                else:
-                    stream_reader.set_normalize(False)
-                gs.fit(stream_reader.read(), y_train)
-                log_data = dict(results=gs.cv_results_, best=gs.best_params_)
-                log_data['model'] = m['type']
-                best_models.append(dict(type=m['type'], model=gs.best_estimator_))
-                y_true, y_pred = y_test, gs.predict(stream_reader.read())
-                log_data['best_performance'] = classification_report(y_true, y_pred)
-                log_data['accuracy'] = accuracy_score(y_true, y_pred)
-                self._log_data_(log_data)
-            self.best_models = best_models
+        stream_reader.set_order(X_train.extends(X_test))
+        best_models = []
+        for m in self.models:
+            gs = GridSearchCV(estimator=m['model'], param_grid=m['params'], cv=10, scoring=m['scoring'])
+            stream_reader.reset_cursor()
+            if 'nn' in m['type']:
+                stream_reader.set_normalize(True)
+            else:
+                stream_reader.set_normalize(False)
+            gs.fit(stream_reader.read(), y_train)
+            log_data = dict(results=gs.cv_results_, best=gs.best_params_)
+            log_data['model'] = m['type']
+            best_models.append(dict(type=m['type'], model=gs.best_estimator_))
+            _true, y_pred = y_test, gs.predict(stream_reader.read())
+            log_data['best_performance'] = classification_report(y_true, y_pred)
+            log_data['accuracy'] = accuracy_score(y_true, y_pred)
+            self._log_data_(log_data)
+        self.best_models = best_models
 
 
 def conduct_experiment(data, targets, client='cashlend'):
@@ -192,12 +262,18 @@ def conduct_experiment(data, targets, client='cashlend'):
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
     rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = c, random_state=RANDOM_SEED)
+    cart = DecisionTreeClassifier(random_state=RANDOM_SEED, class_weight=c)
     scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data,targets, c)
     rnn = KerasClassifier(builder.build_rnn)
     rf_params = {        
-        "n_estimators": [100,200,500,1000],
-        "max_features": [None, "auto", "sqrt"]
+        "n_estimators": [100, 200, 500, 1000],
+        "max_features": [None, "auto"],
+        "max_depth" : [20, 40, 80, 160, 320]
+    }
+    cart_params = {
+        "min_samples_split" : [2, 50, 100, 200],
+        "max_depth": [None, 8, 10, 20, 40]
     }
     rnn_params = { 
         "a": [2, 4, 10],
@@ -205,7 +281,8 @@ def conduct_experiment(data, targets, client='cashlend'):
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
     logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()),client))
-    e = Experiment(data,targets,[dict(model=rf,params=rf_params,scoring=scoring,type='rf')], client)    
+    e = Experiment(data,targets,[{'model':rf, 'params':rf_params, 'scoring':scoring, 'type':'rf'},
+                                 {'model':cart, 'params':cart_params, 'scoring':scoring, 'type':'cart'}], client)
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
     e.store_models()
