@@ -27,10 +27,9 @@ target_week_end = target_week + timedelta(days=7)
 print "Target week " + str(target_week)
 pipeline = [
         {"$match" : { 
-            "TypeId" : userTypeId, 
+            "TypeId" : userTypeId,
             "UserId" : appId,
-            "Document.g_timestamp" : {'$gte': target_week, '$lt': target_week_end},
-            "Document.is_paying" : 1
+            "Document.g_timestamp" : {'$gte': target_week, '$lt': target_week_end}
          }
         },
         {"$group": {
@@ -119,7 +118,7 @@ for m in models:
     print "Writing predictions in: " + fileName
     with open(fileName, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow([ "uuid", "prediction"])
+        writer.writerow([ "uuid", "%will not purchase", "%will purchase"])
         for p in xrange(len(predictions)): 
             prediction = predictions[p] 
             uuid = userData[p]['uuid']       
@@ -127,6 +126,6 @@ for m in models:
             #     filtered = filtered + 1
             #     continue
             # else:
-            writer.writerow([ uuid, prediction ])
+            writer.writerow([ uuid, prediction[0], prediction[1] ])
 
 print "Filtered users: " + str(filtered)

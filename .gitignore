@@ -32,3 +32,5 @@ storage.ide
 /BehaviorAnalysis/src/system/*
 /BehaviorAnalysis/src/Netinfo
 **.7z
+*cookie_*.tmp
+*.zip

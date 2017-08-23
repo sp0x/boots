@@ -18,6 +18,7 @@ using Microsoft.Extensions.Options;
 using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
 using nvoid.Integration;
+using nvoid.Security.Ciphers;
 using Peeralize.Controllers;
 using Peeralize.Service.Auth;
 
@@ -28,11 +29,16 @@ namespace Peeralize.Middleware.Hmac
         private readonly IMemoryCache _memoryCache;
         private readonly RemoteDataSource<ApiAuth> _authSource;
         private string _iv;
+        private int _iterations;
+        private byte[] _salt;
         public HmacHandler(IMemoryCache memoryCache)
         {
             _memoryCache = memoryCache;
             _authSource = typeof(ApiAuth).GetDataSource<ApiAuth>();
-            _iv = "452871829734829374289375892375892";
+            _iv = "9595948593968468"; //new byte[]{ 4,5,2,8,7,1,8,2,
+                  //              9,7,3,4,8,2,9,3 };
+            _iterations = 200;
+            _salt = new byte[] { }; //243, 133, 64, 76, 111, 136, 1, 78};
         }
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
@@ -92,7 +98,9 @@ namespace Peeralize.Middleware.Hmac
                     {
                         if (!string.IsNullOrEmpty(body))
                         {
-                            body = DecryptRJ256(Convert.FromBase64String(body), apiAuth.AppSecret, this._iv);
+                            var encoding = System.Text.Encoding.ASCII;
+                            var iv = this._iv;
+                            body = Decrypt(body, apiAuth.AppSecret);
                             byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
                             Request.Body = new MemoryStream(bodyBytes); 
                         }
@@ -173,7 +181,9 @@ namespace Peeralize.Middleware.Hmac
         private string DecodeMessage(string text, string key)
         {
             var bytes = Convert.FromBase64String(text);
-            return DecryptRJ256(bytes, key, this._iv);
+            var encoding = System.Text.Encoding.ASCII;
+            var iv = this._iv;
+            return Decrypt(text, key);
         }
 
         public byte[] Decode(string str)
@@ -182,41 +192,109 @@ namespace Peeralize.Middleware.Hmac
             return decbuff;
         }
 
-        static public String DecryptRJ256(byte[] cypher, string KeyString, string IVString)
+        //        private String DecryptRJ256(byte[] cypher, string KeyString, byte[] iv)
+        //        {
+        //            var sRet = "";
+        //
+        //            var encoding = new UTF8Encoding();
+        //            var keyBytes = encoding.GetBytes(KeyString); 
+        ////            var crypto = new RijndaelEnhanced(KeyString, IVString, 0, 0, 256, "SHA256", "", 200);
+        ////            var ret = crypto.DecryptToBytes(cypher);
+        //            using (var rj = new RijndaelManaged())
+        //            {
+        //                try
+        //                { 
+        //                    var derivedKey = new Rfc2898DeriveBytes(keyBytes, _salt , _iterations);
+        //                    //AES.Key = key.GetBytes(AES.KeySize / 8);
+        //                    rj.Mode = CipherMode.CBC;
+        //                    rj.BlockSize = 128;
+        //                    rj.Padding = PaddingMode.Zeros;
+        //                    rj.Key = derivedKey.GetBytes(rj.KeySize / 8);
+        //                    rj.IV = iv;
+        //                    var ms = new MemoryStream(cypher);
+        //
+        //                    using (var cs = new CryptoStream(ms, rj.CreateDecryptor(), CryptoStreamMode.Read))
+        //                    {
+        //                        using (var sr = new StreamReader(cs))
+        //                        {
+        //                            sRet = sr.ReadLine();
+        //                        }
+        //                    }
+        //                }
+        //                catch (Exception ex)
+        //                {
+        //                    ex = ex;
+        //                }
+        //                finally
+        //                {
+        //                    rj.Clear();
+        //                }
+        //            }
+        //
+        //            return sRet;
+        //        }
+
+
+        public String Decrypt(String text, String key)
         {
-            var sRet = "";
-
-            var encoding = new UTF8Encoding();
-            var Key = encoding.GetBytes(KeyString);
-            var IV = encoding.GetBytes(IVString);
-
-            using (var rj = new RijndaelManaged())
-            {
-                try
+            try
+            { 
+                MD5 md5 = System.Security.Cryptography.MD5.Create();
+                byte[] keyBytes = System.Text.Encoding.ASCII.GetBytes(key);
+                byte[] keyBytesHash = md5.ComputeHash(keyBytes);
+                var keySize = 128;
+                var passwordSize = keySize / 8;
+                //pad key out to 32 bytes (256bits) if its too short
+                if (keyBytesHash.Length < passwordSize)
                 {
-                    rj.Padding = PaddingMode.PKCS7;
-                    rj.Mode = CipherMode.CBC;
-                    rj.KeySize = 256;
-                    rj.BlockSize = 256;
-                    rj.Key = Key;
-                    rj.IV = IV;
-                    var ms = new MemoryStream(cypher);
+                    var paddedkey = new byte[passwordSize];
+                    Buffer.BlockCopy(keyBytesHash, 0, paddedkey, 0, keyBytesHash.Length);
+                    keyBytesHash = paddedkey;
+                }
 
-                    using (var cs = new CryptoStream(ms, rj.CreateDecryptor(Key, IV), CryptoStreamMode.Read))
+                var ivBytes = Encoding.ASCII.GetBytes(this._iv);
+                var rawData = System.Convert.FromBase64String(text);
+                using (AesManaged aes = new AesManaged())
+                {
+
+                    var ivhex = BitConverter.ToString(keyBytesHash).Replace("-", string.Empty);
+                    var keyhex = BitConverter.ToString(ivBytes).Replace("-", string.Empty);
+
+                    // Encrypt File
+                    using (var ms = new MemoryStream())
                     {
-                        using (var sr = new StreamReader(cs))
-                        {
-                            sRet = sr.ReadLine();
-                        }
+                        aes.Mode = CipherMode.CBC;
+                        aes.Padding = PaddingMode.None;
+                        aes.KeySize = 128;
+                        aes.BlockSize = 128;
+
+                        var decryptor = aes.CreateEncryptor(keyBytesHash, ivBytes);
+                        var result = PerformCryptography(decryptor, rawData);
+                        var ascii = Encoding.ASCII.GetString(result);
+                        var utf = Encoding.UTF8.GetString(result);
+                        return ascii;
                     }
                 }
-                finally
+
+            }
+            catch (Exception ex)
+            {
+                ex = ex;
+            }
+            return "";
+        }
+
+        private byte[] PerformCryptography(ICryptoTransform cryptoTransform, byte[] data)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var cryptoStream = new CryptoStream(memoryStream, cryptoTransform, CryptoStreamMode.Write))
                 {
-                    rj.Clear();
+                    cryptoStream.Write(data, 0, data.Length);
+                    cryptoStream.FlushFinalBlock();
+                    return memoryStream.ToArray();
                 }
             }
-
-            return sRet;
         }
 
         private string[] GetAuthenticationValues(string rawAuthenticationHeader)
@@ -364,4 +442,4 @@ namespace Peeralize.Middleware.Hmac
         //
         //        }
     }
-}
+} 
