@@ -3,7 +3,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.utils.class_weight import compute_class_weight
-from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.models import save_model, load_model, Model
 from sklearn import preprocessing
@@ -17,6 +17,8 @@ import time,os,datetime
 import pickle
 import pandas as pd
 import os
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
@@ -133,82 +135,119 @@ class Experiment:
         report += "Feature contributions:\n"
         for c, feature in zip(contributions[0],labels):
             report += feature + str(c) + '\n'
-        return report
+        return report   
 
-    def make_lift(self,y_pred,y_pred_proba,y_true):
-        cols = ['actual', 'predicted', 'predicted_proba']
-        df = pd.DataFrame(dict(zip(cols, [y_true, y_pred, y_pred_proba[:, 1]])))
-        df.sort_values(by='predicted_proba', ascending=False, inplace=True)
-        subset = df[df['predicted'] == True]
-        rows = []
-        import sklearn
-        for g in np.array_split(subset, 10):
-            score = sklearn.metrics.accuracy_score(g['actual'].tolist(),
-                                                   g['predicted'].tolist(),
-                                                   normalize=False)
-            rows.append({'NumCases': len(g), 'NumCorrectPredictions': score})
-        lift = pd.DataFrame(rows)
-        # Cumulative Gains Calculation
-        lift['RunningCorrect'] = lift['NumCorrectPredictions'].cumsum()
-        lift['PercentCorrect'] = lift.apply(
-            lambda x: (100 / lift['NumCorrectPredictions'].sum()) * x['RunningCorrect'], axis=1)
-        lift['CumulativeCorrectBestCase'] = lift['NumCases'].cumsum()
-        lift['PercentCorrectBestCase'] = lift['CumulativeCorrectBestCase'].apply(
-            lambda x: 100 if (100 / lift['NumCorrectPredictions'].sum()) * x > 100 else (100 / lift[
-                'NumCorrectPredictions'].sum()) * x)
-        lift['AvgCase'] = lift['NumCorrectPredictions'].sum() / len(lift)
-        lift['CumulativeAvgCase'] = lift['AvgCase'].cumsum()
-        lift['PercentAvgCase'] = lift['CumulativeAvgCase'].apply(
-            lambda x: (100 / lift['NumCorrectPredictions'].sum()) * x)
+    @staticmethod
+    def make_graphs(y_pred, y_pred_proba, y_true,model='model'):
+        y_true = np.array(y_true)
+        df = pd.DataFrame({'total users': [100] * 10,
+                           'buyers': [100 * 0.5] * 10})
+        df['userPopulation'] = 100 * df['total users'].cumsum() / \
+                                          df['total users'].sum()
 
-        # Lift Chart
-        lift['NormalisedPercentAvg'] = 1
-        lift['NormalisedPercentWithModel'] = lift['PercentCorrect'] / lift['PercentAvgCase']
+        df['buyers cumulative'] = 100 * df['buyers'].cumsum() / \
+                                            df['buyers'].sum()
 
-        return lift
+        df.plot('userPopulation', 'buyers cumulative', figsize=(8, 6))
+        plt.ylabel('Buyers %')
 
-    def plot_cumulative_gains(self,lift):
-        fig, ax = plt.subplots()
-        fig.canvas.draw()
-        handles = []
-        handles.append(ax.plot(lift['PercentCorrect'], 'r-', label='Percent Correct Predictions'))
-        handles.append(ax.plot(lift['PercentCorrectBestCase'], 'g-', label='Best Case (for current model)'))
-        handles.append(ax.plot(lift['PercentAvgCase'], 'b-', label='Average Case (for current model)'))
-        ax.set_xlabel('Total Population (%)')
-        ax.set_ylabel('Buyers (%)')
-        ax.set_xlim([0, 9])
-        ax.set_ylim([10, 100])
-        labels = [int((label + 1) * 10) for label in [float(item.get_text()) for item in ax.get_xticklabels()]]
-        ax.set_xticklabels(labels)
+        df = pd.DataFrame({'buyerProba': y_pred_proba[:,1], 'actual': y_true})
+        df.sort_values('buyerProba', ascending=False, inplace=True)
+        df['total users'] = 1
+        df['userPopulation'] = 100 * df['total users'].cumsum() / df['total users'].sum()
+        decile = pd.cut(df['userPopulation'],
+                        np.arange(0, 1.1, 0.1) * 100,
+                        labels=np.arange(0.1, 1.1, 0.1) * 100)
 
-        fig.legend(handles, labels=[h[0].get_label() for h in handles])
-        #fig.show()
-        fig1 = fig.gcf()
-        fig1.savefig(abs_path('cumulative_gains.png'), dpi=100)
+        df = df.groupby(decile)['actual'].sum().reset_index()
+        df = pd.DataFrame(np.concatenate([[[0, 0]], df.values, ]), columns=df.columns)
+        df['cumulativeActual'] = 100 * df['actual'].cumsum() / df['actual'].sum()
+        df['userPopulation'] = df['userPopulation'].astype('float64')
+        df.plot('userPopulation',
+                'cumulativeActual',
+                xlim=[0, 100], ylim=[0, 110],
+                label='Model', figsize=(8, 6))
 
-    def plot_lift_chart(self,lift):
-        plt.figure()
-        plt.plot(lift['NormalisedPercentAvg'], 'r-', label='Normalised \'response rate\' with no model')
-        plt.plot(lift['NormalisedPercentWithModel'], 'g-', label='Normalised \'response rate\' with using model')
-        plt.legend()
-        #plt.show()
-        fig1 = plt.gcf()
-        fig1.savefig(abs_path('lift_viz.png'), dpi=100)
+        plt.plot(df['userPopulation'],
+                 df['userPopulation'],
+                 label='Random')
+        plt.legend(loc='lower right')
+        plt.ylabel('Buyers %')
+        plt.xlabel('User Population %')
+        plt.savefig(abs_path("{0}_gain.png".format(model)))
+        df = df.loc[1:]
+        df['lift'] = df['cumulativeActual'] / (df['userPopulation'])
+        df.plot('userPopulation', 'lift', ylim=[0, 3], figsize=(8, 6))
+        plt.xlabel('User Population %')
+        plt.hlines(1, 0, 100)
+        plt.savefig(abs_path('{0}_lift.png'.format(model)))
+    
+    @staticmethod
+    def plot_confusion_matrix(cm, classes,
+                              normalize=False,
+                              title='Confusion matrix',
+                              model='model',
+                              cmap=plt.cm.Blues):
+        """
+        This function prints and plots the confusion matrix.
+        Normalization can be applied by setting `normalize=True`.
+        """
+        import itertools
+        if normalize:
+            cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+            print("Normalized confusion matrix")
+        else:
+            print('Confusion matrix, without normalization')
 
-    def make_graphs(self, y_pred, y_pred_proba, y_true):
-        lift = self.make_lift(y_pred,y_pred_proba,y_true)
-        self.plot_cumulative_gains(lift)
-        self.plot_lift_chart(lift)
+        print(cm)
+
+        plt.imshow(cm, interpolation='nearest', cmap=cmap)
+        plt.title(title)
+        plt.colorbar()
+        tick_marks = np.arange(len(classes))
+        plt.xticks(tick_marks, classes, rotation=45)
+        plt.yticks(tick_marks, classes)
+
+        fmt = '.2f' if normalize else 'd'
+        thresh = cm.max() / 2.
+        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+            plt.text(j, i, format(cm[i, j], fmt),
+                     horizontalalignment="center",
+                     color="white" if cm[i, j] > thresh else "black")
+
+        plt.tight_layout()
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+        plt.savefig(abs_path('{0}_confusion_matrix.png'.format(model)))
+
+    @staticmethod
+    def t_test(y_pred, y_true, x_train=None, y_train=None, x_test=None, confidence=0.95):
+        from scipy.stats import ttest_rel
+        y_pred = y_pred.tolist()
+        y_true = y_true.tolist() if type(y_true) != list else y_true 
+        if x_train and y_train and x_test:
+            from sklearn.dummy import DummyClassifier
+            dc = DummyClassifier(strategy='most_frequent', random_state=RANDOM_SEED)
+            dc.fit(x_train, y_train)
+            dc_pred = dc.predict(x_test).tolist()
+        else:
+            from numpy.random import normal
+            dc_pred = np.random.binomial(1, 0.5, len(y_pred)).tolist()#normal(0.5, 0.2,len(y_pred)).tolist()
+        dc_acc_scores, model_acc_scores = [], []
+        for i in xrange(len(y_pred)):
+            dc_acc_scores.append(accuracy_score([y_true[i]], [dc_pred[i]]))
+            model_acc_scores.append(accuracy_score([y_true[i]], [y_pred[i]]))
+        #diff = np.mean(dc_acc_scores) - np.mean(model_acc_scores)
+        t, p = ttest_rel(dc_acc_scores, model_acc_scores)
+        print("T-Test results t = {0} p = {1}".format(t,p))
+        if p < 1.0-confidence:
+            print ("Null Hypothesis rejected. Classifier A better than random classifier")
+        else:
+            print("Null Hypothesis NOT rejected. Classifier A is random")
 
 
     def create_and_train(self):
-        #rnn = KerasClassifier(self.build_rnn)
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
-        #cross_val_score(rf, data, target)
-        #clf = GridSearchCV(rf, rf_params, cv=10, scoring="roc_auc")
-        #clf.fit(X_train, y_train)
-        #clf2 = GridSearchCV(rnn, rnn_params, cv=10, scoring="roc_auc")
-        #clf2.fit(X_train, y_train)
         best_models = [] 
         for m in self.models:
             gs = GridSearchCV(estimator=m['model'],param_grid=m['params'],cv=10,scoring=m['scoring'])
@@ -222,8 +261,10 @@ class Experiment:
             y_pred_proba = gs.predict_proba(X_test)
             log_data['best_performance'] = classification_report(y_true,y_pred)
             log_data['accuracy'] = accuracy_score(y_true, y_pred)
-            self._log_data_(log_data)
-            self.make_graphs(y_pred,y_pred_proba,y_true)
+            self._log_data_(log_data)            
+            cm = confusion_matrix(y_true, y_pred)
+            Experiment.plot_confusion_matrix(cm, ['Non-Buyers','Buyers'], True, model=m['type'])
+            Experiment.make_graphs(y_pred,y_pred_proba,y_true, m['type'])
         self.best_models = best_models
 
     def create_and_train_from_stream(self,stream_reader):
@@ -248,7 +289,7 @@ class Experiment:
             log_data = dict(results=gs.cv_results_, best=gs.best_params_)
             log_data['model'] = m['type']
             best_models.append(dict(type=m['type'], model=gs.best_estimator_))
-            _true, y_pred = y_test, gs.predict(stream_reader.read())
+            y_true, y_pred = y_test, gs.predict(stream_reader.read())
             log_data['best_performance'] = classification_report(y_true, y_pred)
             log_data['accuracy'] = accuracy_score(y_true, y_pred)
             self._log_data_(log_data)
@@ -267,9 +308,9 @@ def conduct_experiment(data, targets, client='cashlend'):
     builder = RNNBuilder(data,targets, c)
     rnn = KerasClassifier(builder.build_rnn)
     rf_params = {        
-        "n_estimators": [100, 200, 500, 1000],
+        "n_estimators": [100, 200, 300, 500],
         "max_features": [None, "auto"],
-        "max_depth" : [20, 40, 80, 160, 320]
+        "max_depth" : [20, 40, 80]
     }
     cart_params = {
         "min_samples_split" : [2, 50, 100, 200],
