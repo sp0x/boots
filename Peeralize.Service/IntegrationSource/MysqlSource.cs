@@ -1,43 +1,29 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Source;
 
 namespace Peeralize.Service.IntegrationSource
 {
-    public class MysqlSource : IInputSource
+    public class MysqlSource : InputSource
     {
-        private bool _disposed;
-        public IInputFormatter Formatter { get; }
-        public IIntegrationTypeDefinition GetTypeDefinition()
+        public MysqlSource(IInputFormatter formatter) : base(formatter)
+        {
+        }
+        public override IIntegrationTypeDefinition GetTypeDefinition()
         {
             throw new System.NotImplementedException();
         }
 
-        public dynamic GetNext()
+        public override dynamic GetNext()
         {
             throw new System.NotImplementedException();
         }
 
-        public int Size { get; }
-        public Encoding Encoding { get; set; }
-
-        public void Dispose()
+        public override void DoDispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        public void Dispose(bool disposing)
-        {
-            if (!_disposed && disposing)
-            {
-                _disposed = true;
-            }
-        }
-
-        ~MysqlSource()
-        {
-            Dispose(false);
         }
     }
 }

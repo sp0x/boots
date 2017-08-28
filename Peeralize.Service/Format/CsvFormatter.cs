@@ -64,5 +64,11 @@ namespace Peeralize.Service.Format
             }
             return default(T);
         }
+
+        public IInputFormatter Clone()
+        {
+            var formatter = new CsvFormatter();
+            return formatter;
+        }
     }
 }

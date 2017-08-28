@@ -18,6 +18,7 @@ using Peeralize.Service.Integration;
 using Peeralize.Service.Integration.Blocks;
 using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Source;
+using Peeralize.Service.Time;
 using Peeralize.ServiceTests.IntegrationSource;
 using Xunit;
 
@@ -78,7 +79,6 @@ namespace Peeralize.ServiceTests
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
-
             var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
             Assert.NotNull(type);
 
@@ -86,37 +86,45 @@ namespace Peeralize.ServiceTests
             var userApiId = Guid.NewGuid().ToString();
             var harvester = new Harvester();
             type.UserId = userId;
-            IntegrationTypeDefinition existingDataType;
-            if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
-            {
-                type.SaveType(userApiId);
-            }
-            else type = existingDataType;
-
-            var grouper = new EntityGroup(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
-            //var saver = new MongoSink(userId); 
-            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats); 
-            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
-            grouper.Helper = helper;
-            //demographyImporter.LinkTo(featureGen); 
-            //featureGen.LinkTo(saver);
+//            IntegrationTypeDefinition existingDataType;
+//            if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
+//            {
+//                type.SaveType(userApiId);
+//            }
+//            else type = existingDataType;
+//
+//            var grouper = new EntityGroup(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
+//            //var saver = new MongoSink(userId); 
+//            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats); 
+//            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+//            grouper.Helper = helper;
+//            //demographyImporter.LinkTo(featureGen); 
+//            //featureGen.LinkTo(saver);
+//            
+//            //Group the users
+//            grouper.ContinueWith((grpr) =>
+//            {
+//                //DumpUsergroupSessionsToCsv(grpr);
+//                DumpUsergroupSessionsToMongo(userId, grpr);
+//            }); 
+            var outBlock = new Log(userId); 
             
-            //Group the users
-            grouper.ContinueWith((grpr) =>
-            {
-                //DumpUsergroupSessionsToCsv(grpr);
-                DumpUsergroupSessionsToMongo(userId, grpr);
-            }); 
-
-            harvester.SetDestination(grouper);
+            harvester.SetDestination(outBlock);
             harvester.AddType(type, fileSource);
             harvester.Synchronize();
 
             //Task.WaitAll(grouper.Completion, featureGen.Completion, );
-            await grouper.Completion;
+            //await grouper.Completion;
             Console.ReadLine(); // TODO: Fix dataflow action after grouping of all users
         }
 
+
+        [Theory]
+        [InlineData(new object[] {"TestData\\Ebag\\1156", "TestData\\Ebag\\demograpy.csv"})]
+        public async void EntityDataJoin(string inputSource, string additionalDataSource)
+        {
+            
+        }
 
         [Theory]
         [InlineData(new object[]{"TestData\\Ebag\\1156", "TestData\\Ebag\\demograpy.csv" })]

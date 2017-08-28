@@ -248,7 +248,7 @@ class Experiment:
 
     def create_and_train(self):
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
-        best_models = [] 
+        best_models = []
         for m in self.models:
             gs = GridSearchCV(estimator=m['model'],param_grid=m['params'],cv=10,scoring=m['scoring'])
             if 'nn' in m['type']:
@@ -264,6 +264,14 @@ class Experiment:
             self._log_data_(log_data)            
             cm = confusion_matrix(y_true, y_pred)
             Experiment.plot_confusion_matrix(cm, ['Non-Buyers','Buyers'], True, model=m['type'])
+
+            #save(X_train, os.path.join(self._for, "x_train_{0}.dmp".format(log_data['model']) ))
+            #save(X_test, os.path.join(self._for, "x_test_{0}.dmp".format(log_data['model'])))
+            #save(y_train, os.path.join(self._for, "y_train_{0}.dmp".format(log_data['model'])))
+            #save(y_pred, os.path.join(self._for, "y_pred_{0}.dmp".format(log_data['model'])))
+            #save(y_pred_proba, os.path.join(self._for, "y_pred_proba_{0}.dmp".format(log_data['model'])))
+            #save(y_true, os.path.join(self._for, "y_true_{0}.dmp".format(log_data['model'])))
+
             Experiment.make_graphs(y_pred,y_pred_proba,y_true, m['type'])
         self.best_models = best_models
 

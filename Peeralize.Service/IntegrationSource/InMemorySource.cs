@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Peeralize.Service.Integration;
@@ -6,24 +8,19 @@ using Peeralize.Service.Source;
 
 namespace Peeralize.Service.IntegrationSource
 {
-    public class InMemorySource : IInputSource
-    {
-        public int Size { get; }
-        public IInputFormatter Formatter { get; }
-        public Stream Content { get; private set; }
-        public Encoding Encoding { get; set; } = Encoding.UTF8;
+    public class InMemorySource : InputSource
+    { 
+        public Stream Content { get; private set; } 
         private object _lock = new object();
         private dynamic _cachedInstance;
 
-        public InMemorySource(string content, IInputFormatter formatter = null)
+        public InMemorySource(string content, IInputFormatter formatter = null) : base(formatter)
         {
-            this.Content = new MemoryStream(Encoding.GetBytes(content));
-            this.Formatter = formatter;
+            this.Content = new MemoryStream(Encoding.GetBytes(content)); 
         }
 
-        public InMemorySource(Stream stream, IInputFormatter formatter = null)
-        {
-            this.Formatter = formatter;
+        public InMemorySource(Stream stream, IInputFormatter formatter = null) : base(formatter)
+        { 
             this.Content = stream;
         }
 
@@ -51,7 +48,7 @@ namespace Peeralize.Service.IntegrationSource
             return src;
         }
 
-        public IIntegrationTypeDefinition GetTypeDefinition()
+        public override IIntegrationTypeDefinition GetTypeDefinition()
         {
             var firstInstance = _cachedInstance = Formatter.GetNext(Content, true);
             IntegrationTypeDefinition typeDef = null;
@@ -69,7 +66,7 @@ namespace Peeralize.Service.IntegrationSource
         /// Gets the next object instance
         /// </summary>
         /// <returns></returns>
-        public dynamic GetNext()
+        public override dynamic GetNext()
         {
             lock (_lock)
             {
@@ -86,25 +83,11 @@ namespace Peeralize.Service.IntegrationSource
             }
         }
 
-        private bool _disposed;
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed && disposing)
-            {
-                Content?.Dispose();
-                _disposed = true;
-            }    
+        public override void DoDispose()
+        { 
+            Content?.Dispose(); 
         }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        ~InMemorySource()
-        {
-            Dispose(false);
-        }
+ 
+        
     }
 }

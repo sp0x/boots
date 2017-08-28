@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Peeralize.Service.Integration.Blocks
+namespace Peeralize.Service.Time
 {
     public class DateHelper
     {

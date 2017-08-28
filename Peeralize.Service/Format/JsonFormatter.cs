@@ -90,6 +90,10 @@ namespace Peeralize.Service.Format
             } 
         }
 
-        
+        public IInputFormatter Clone()
+        {
+            var jsf = new JsonFormatter();
+            return jsf;
+        }
     }
 }

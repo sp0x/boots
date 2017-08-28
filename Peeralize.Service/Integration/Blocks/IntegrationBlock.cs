@@ -54,6 +54,7 @@ namespace Peeralize.Service.Integration.Blocks
 
         /// <summary>
         /// Consumes available integration documents.
+        /// @Deprecated
         /// </summary>
         public async void ConsumeAsync(CancellationToken token)
         {

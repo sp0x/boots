@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using nvoid.db.DB;
@@ -11,6 +12,7 @@ namespace Peeralize.Service
 {
     /// <summary>
     /// Data integration handler.
+    /// Handles type, sourse and destination piping, to control the integration data flow with multiple block scenarios.
     /// </summary>
     public class Harvester : Entity
     {
@@ -31,7 +33,7 @@ namespace Peeralize.Service
         /// </summary>
         /// <param name="input">Details about the type</param>
         /// <param name="source">The source from which to pull the input</param>
-        public Harvester AddType(IIntegrationTypeDefinition input, IInputSource source)
+        public Harvester AddType(IIntegrationTypeDefinition input, InputSource source)
         {
             if (input == null) throw new ArgumentException(nameof(input));
             var newSet = new IntegrationSet(input, source);
@@ -51,21 +53,37 @@ namespace Peeralize.Service
         }
 
         /// <summary>
-        /// Performs the synchronization
+        /// Starts reading all the sets that are available
         /// </summary>
         public void Synchronize()
         { 
             Destination.ConsumeAsync(CancellationToken.None);
             var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = ThreadCount };
+            //Go through all type sets
             Parallel.ForEach(Sets, parallelOptions,
                 (IntegrationSet itemSet, ParallelLoopState state) =>
-                {  
-                    IntegratedDocument item;
-
-                    while(null != (item = itemSet.Read()))
+                {   
+                    if (itemSet.Source.SupportsSeeking)
                     {
-                        Destination.Post(item);
+                        Parallel.ForEach(itemSet.AsEnumerable(), (doc) =>
+                        {
+                            Destination.Post(doc);
+                        });
                     }
+                    else
+                    {
+                        Parallel.ForEach(itemSet.Source.Shards(), (InputSource sourceShard) =>
+                        {
+                            dynamic entry;
+                            FileSource fsShard = sourceShard as FileSource;
+                            Debug.WriteLine($"Reading file: {fsShard.Path}");
+                            while ((entry = sourceShard.GetNext()) !=null)
+                            {
+                                var document = itemSet.Wrap(entry);
+                                Destination.Post(document);
+                            }
+                        });
+                    } 
             });
             Destination.Close();
         }

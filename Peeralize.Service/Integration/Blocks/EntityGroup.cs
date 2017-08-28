@@ -8,7 +8,7 @@ using System.Linq;
 namespace Peeralize.Service.Integration.Blocks
 {
     /// <summary>
-    /// 
+    /// An entity grouping block
     /// </summary>
     public class EntityGroup : IntegrationBlock
     {

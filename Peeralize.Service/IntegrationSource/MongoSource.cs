@@ -1,46 +1,31 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Source;
 
 namespace Peeralize.Service.IntegrationSource
 {
-    public class MongoSource : IInputSource
+    public class MongoSource : InputSource
     {
-        private bool _disposed;
-        public IInputFormatter Formatter { get; }
-        public IIntegrationTypeDefinition GetTypeDefinition()
+
+        public MongoSource(IInputFormatter formatter) : base(formatter)
+        {
+        }
+        public override IIntegrationTypeDefinition GetTypeDefinition()
         {
             throw new System.NotImplementedException();
         }
 
-        public dynamic GetNext()
+        public override dynamic GetNext()
         {
             throw new System.NotImplementedException();
-        }
-
-        public int Size { get; }
-        public Encoding Encoding { get; set; }
-
-        protected virtual void Dispose(bool disposing)
+        } 
+        
+        public override void DoDispose()
         {
-            if (!_disposed && disposing)
-            {
-                Encoding = null;
-                _disposed = true;
-            }
         }
 
-        public void Dispose()
-        {
-
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        ~MongoSource()
-        {
-            Dispose(false);
-        }
     }
 }
