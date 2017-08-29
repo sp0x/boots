@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Reflection.Metadata;
 using nvoid.db.DB;
 using Peeralize.Service.Source;
@@ -23,7 +24,7 @@ namespace Peeralize.Service.Integration
         IntegrationTypeExtras Extras { get; }
         bool Save();
         IIntegrationTypeDefinition SaveType(string userApiId);
-        string Id { get; set; }
+        Lazy<string> Id { get; set; }
          
     }
 }

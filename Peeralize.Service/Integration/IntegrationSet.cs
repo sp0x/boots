@@ -56,7 +56,7 @@ namespace Peeralize.Service.Integration
             if (entry == null) return null;
             var doc = new IntegratedDocument();
             doc.SetDocument(entry);
-            doc.TypeId = Definition.Id;
+            doc.TypeId = Definition.Id.Value;
             return doc;
         }
 
@@ -64,7 +64,7 @@ namespace Peeralize.Service.Integration
         {
             var doc = new IntegratedDocument();
             doc.SetDocument(data);
-            doc.TypeId = Definition.Id;
+            doc.TypeId = Definition.Id.Value;
             return doc;
         }
     }

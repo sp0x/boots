@@ -21,6 +21,7 @@ using Peeralize.Service.Source;
 using Peeralize.Service.Time;
 using Peeralize.ServiceTests.IntegrationSource;
 using Xunit;
+using Harvester = Peeralize.Service.Harvester;
 
 namespace Peeralize.ServiceTests
 {
@@ -60,14 +61,13 @@ namespace Peeralize.ServiceTests
 
             var userId = "123123123";
             var userApiId = Guid.NewGuid().ToString();
-            var harvester = new Harvester();
+            var harvester = new Peeralize.Service.Harvester();
             type.UserId = userId;
             type.SaveType(userApiId);
 
             var saver = new MongoSink(userId);
             var modifier = new EntityFeatureGenerator(userId);
             modifier.LinkTo(saver); //We modify the entity to fill all it's data, then generate feature, and then save
-
             harvester.SetDestination(modifier);
             harvester.AddType(type, fileSource);
             harvester.Synchronize();
@@ -84,7 +84,7 @@ namespace Peeralize.ServiceTests
 
             var userId = "123123123";
             var userApiId = Guid.NewGuid().ToString();
-            var harvester = new Harvester();
+            var harvester = new Peeralize.Service.Harvester(20);
             type.UserId = userId;
 //            IntegrationTypeDefinition existingDataType;
 //            if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
@@ -107,15 +107,20 @@ namespace Peeralize.ServiceTests
 //                //DumpUsergroupSessionsToCsv(grpr);
 //                DumpUsergroupSessionsToMongo(userId, grpr);
 //            }); 
-            var outBlock = new Log(userId); 
+            var outBlock = new Log(userId, (x) =>
+            {
+                var y = x;
+            } ); 
             
             harvester.SetDestination(outBlock);
             harvester.AddType(type, fileSource);
             harvester.Synchronize();
+            var syncDuration = harvester.ElapsedTime();
+            Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
 
             //Task.WaitAll(grouper.Completion, featureGen.Completion, );
             //await grouper.Completion;
-            Console.ReadLine(); // TODO: Fix dataflow action after grouping of all users
+            //Console.ReadLine(); // TODO: Fix dataflow action after grouping of all users
         }
 
 
@@ -138,7 +143,7 @@ namespace Peeralize.ServiceTests
 
             var userId = "123123123";
             var userApiId = Guid.NewGuid().ToString();
-            var harvester = new Harvester();
+            var harvester = new Peeralize.Service.Harvester();
             type.UserId = userId;
             IntegrationTypeDefinition existingDataType;
             if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
@@ -152,7 +157,7 @@ namespace Peeralize.ServiceTests
             var demographyImporter = new EntityDataImporter(demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
             demographyImporter.SetDataKey((input) => input[0] );
-            demographyImporter.SetEntityKey((IntegratedDocument input) => input.Document["uuid"].ToString());
+            demographyImporter.SetEntityKey((IntegratedDocument input) => input.GetDocument()?["uuid"].ToString());
             demographyImporter.JoinOn(JoinDemography);
             demographyImporter.Map();
 
@@ -192,7 +197,8 @@ namespace Peeralize.ServiceTests
         private void JoinDemography(string[] demographyFields, IntegratedDocument userDocument)
         { 
             int tAge;
-            if (int.TryParse(demographyFields[3], out tAge)) userDocument.Document["age"] = tAge;
+            var userDocumentDocument = userDocument.GetDocument();
+            if (int.TryParse(demographyFields[3], out tAge)) userDocumentDocument["age"] = tAge;
             var gender = demographyFields[2];
             if (gender.Length > 0)
             {
@@ -201,20 +207,21 @@ namespace Peeralize.ServiceTests
                 else if (gender == "female") genderId = 2;
                 else if (gender == "t") genderId = 1;
                 else if (gender == "f") genderId = 2;
-                userDocument.Document["gender"] = genderId; //Gender is t or f anyways
+                userDocumentDocument["gender"] = genderId; //Gender is t or f anyways
             }
             else
             {
-                userDocument.Document["gender"] = 0;
+                userDocumentDocument["gender"] = 0;
             }
         }
 
         private object GroupDocuments(IntegratedDocument arg)
         {
-            var uuid = arg.Document["uuid"].ToString();
+            var argDocument = arg.GetDocument();
+            var uuid = argDocument["uuid"].ToString();
             //DateTimeFormatInfo dfi = DateTimeFormatInfo.CurrentInfo;
             //Calendar cal = dfi.Calendar;
-            var date = DateTime.Parse(arg.Document["ondate"].ToString());
+            var date = DateTime.Parse(argDocument["ondate"].ToString());
             //var week = cal.GetWeekOfYear(date, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
             return $"{uuid}_{date.Day}"; //_{date.Day}";
         }
@@ -238,15 +245,16 @@ namespace Peeralize.ServiceTests
                     try
                     {
                         var user = usersData.EntityDictionary[userDayInfoPairs.Key];
-                        var userIsPaying = user.Document.Contains("is_paying") &&
-                                           user.Document["is_paying"].AsInt32 == 1;
+                        var userDocument = user.GetDocument();
+                        var userIsPaying = userDocument.Contains("is_paying") &&
+                                           userDocument["is_paying"].AsInt32 == 1;
                         //We're only interested in paying users
                         //if (userIsPaying) continue;
 
-                        var uuid = user.Document["uuid"].ToString(); 
-                        var dateNoticed = DateTime.Parse(user.Document["noticed_date"].ToString());
-                        user.Document["events"] =
-                            ((BsonArray)user.Document["events"])
+                        var uuid = userDocument["uuid"].ToString(); 
+                        var dateNoticed = DateTime.Parse(userDocument["noticed_date"].ToString());
+                        userDocument["events"] =
+                            ((BsonArray)userDocument["events"])
                             .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
                             .ToBsonArray();
                         var sessions = usersData.Helper.GetWebSessions(user).ToList();
@@ -255,8 +263,9 @@ namespace Peeralize.ServiceTests
                         sessionWrapper.Created = dateNoticed;
 
                         var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAppId);
-                        document.Document["is_paying"] = userIsPaying ? 1 : 0;
-                        document.TypeId = typeDef.Id;
+                        var documentBson = document.GetDocument();
+                        documentBson["is_paying"] = userIsPaying ? 1 : 0;
+                        document.TypeId = typeDef.Id.Value;
                         document.Save();
                     }
                     catch (Exception ex2)
@@ -290,13 +299,14 @@ namespace Peeralize.ServiceTests
                     try
                     {
                         var user = usersData.EntityDictionary[userDayInfoPairs.Key];
-                        var userIsPaying = user.Document.Contains("is_paying") &&
-                                           user.Document["is_paying"].AsInt32 == 1;
+                        var userDocument = user.GetDocument();
+                        var userIsPaying = userDocument.Contains("is_paying") &&
+                                           userDocument["is_paying"].AsInt32 == 1;
                         //We're only interested in paying users
                         if (!userIsPaying) continue;
-                        var uuid = user.Document["uuid"].ToString();
-                        user.Document["events"] =
-                            ((BsonArray) user.Document["events"])
+                        var uuid = userDocument["uuid"].ToString();
+                        userDocument["events"] =
+                            ((BsonArray) userDocument["events"])
                             .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
                             .ToBsonArray(); 
                         foreach (DomainUserSession visitSession in usersData.Helper.GetWebSessions(user))
@@ -345,17 +355,18 @@ namespace Peeralize.ServiceTests
             foreach (var userDayInfoPairs in usersData.EntityDictionary)
             {
                 var user = usersData.EntityDictionary[userDayInfoPairs.Key];
-                user.Document["events"] =
-                    ((BsonArray)user.Document["events"])
+                var userDocument = user.GetDocument();
+                userDocument["events"] =
+                    ((BsonArray)userDocument["events"])
                     .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
                     .ToBsonArray();
-                var uuid = user.Document["uuid"]; 
-                var noticed = user.Document["noticed_date"].ToUniversalTime().ToString();
-                var g_timestamp = user.Document["noticed_date"].ToUniversalTime();
+                var uuid = userDocument["uuid"]; 
+                var noticed = userDocument["noticed_date"].ToUniversalTime().ToString();
+                var g_timestamp = userDocument["noticed_date"].ToUniversalTime();
                 var weekstart = g_timestamp.StartOfWeek(DayOfWeek.Monday);
                 g_timestamp = weekstart;
                 var g_timestr = g_timestamp.ToString();
-                user.Document["g_timestamp"] = g_timestamp;
+                userDocument["g_timestamp"] = g_timestamp;
 
                 //var args = new FindAndModifyArgs();
                 //args.Query = Query.EQ("Document.uuid", uuid);
@@ -363,11 +374,11 @@ namespace Peeralize.ServiceTests
                 //mongoClient.FindAndModify(args);
 
 
-                user.Document["max_time_spent_by_any_paying_user_ebag"] = max_time_spent_by_any_paying_user_ebag; 
+                userDocument["max_time_spent_by_any_paying_user_ebag"] = max_time_spent_by_any_paying_user_ebag; 
 
-                user.Document["prob_buy_is_holiday"] = prob_buy_is_holiday;
-                user.Document["prob_buy_is_before_holiday"] = prob_buy_is_before_holiday;
-                user.Document["prop_buy_is_weekend"] = prop_buy_is_weekend;
+                userDocument["prob_buy_is_holiday"] = prob_buy_is_holiday;
+                userDocument["prob_buy_is_before_holiday"] = prob_buy_is_before_holiday;
+                userDocument["prop_buy_is_weekend"] = prop_buy_is_weekend;
                 cnt++;
             }
             
@@ -387,12 +398,13 @@ namespace Peeralize.ServiceTests
         /// <param name="obj"></param>
         private void FilterUserCreatedData(IntegratedDocument obj)
         {
-            var date = DateTime.Parse(obj.Document["ondate"].ToString());
-            obj.Document.Remove("event_id");
-            obj.Document.Remove("ondate");
-            obj.Document.Remove("value");
-            obj.Document.Remove("type");
-            obj.Document["noticed_date"] = date;
+            var objDocument = obj.GetDocument();
+            var date = DateTime.Parse(objDocument["ondate"].ToString());
+            objDocument.Remove("event_id");
+            objDocument.Remove("ondate");
+            objDocument.Remove("value");
+            objDocument.Remove("type");
+            objDocument["noticed_date"] = date;
             //obj.Document["noticed_year"] = date.Year;
 
         }
@@ -434,7 +446,7 @@ namespace Peeralize.ServiceTests
                     _purchasesInWeekends.Add(newElement);
                 }
                 _purchases.Add(newElement);
-                accumulator.Document["is_paying"] = 1;
+                accumulator.GetDocument()["is_paying"] = 1;
                 
             }
             return newElement;

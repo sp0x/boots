@@ -6,7 +6,7 @@ namespace Peeralize.Service.Source
     /// <summary>
     /// 
     /// </summary>
-    public interface IInputFormatter
+    public interface IInputFormatter : IDisposable
     {
         string Name { get; }
         dynamic GetNext(Stream fs, bool reset);

@@ -58,10 +58,10 @@ namespace Peeralize.Middleware.Hmac
                 var appApiId = Context.Session.GetString("APP_API_ID");
                 if (appApiId == null)
                 {
-                    Context.Session.SetString("APP_API_ID", apiAuth.Id); 
+                    Context.Session.SetString("APP_API_ID", apiAuth.Id.Value); 
                     user.AddIdentity(claimsIdentity); 
                 }
-                Response.Headers.Add("APP_API_ID", apiAuth.Id);
+                Response.Headers.Add("APP_API_ID", apiAuth.Id.Value);
                 var ticket = new AuthenticationTicket(principal, new AuthenticationProperties(), Options.AuthenticationScheme);
                 return AuthenticateResult.Success(ticket);
             }

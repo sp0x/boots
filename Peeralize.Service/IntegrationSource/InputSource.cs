@@ -12,12 +12,11 @@ namespace Peeralize.Service.IntegrationSource
     {
         
         public int Size { get; }
-        private bool _disposed;
-        Encoding IInputSource.Encoding { get; set; } 
-
+        private bool _disposed;  
         public Encoding Encoding { get; set; } = Encoding.UTF8;
         public IInputFormatter Formatter { get; protected set; }
         public bool SupportsSeeking { get; set; }
+        
 
         public InputSource(IInputFormatter formatter)
         {
@@ -36,7 +35,9 @@ namespace Peeralize.Service.IntegrationSource
         {
             if (!_disposed && disposing)
             {
+                Formatter.Dispose();
                 DoDispose();
+                _disposed = true;
             }
         }
 
@@ -45,7 +46,6 @@ namespace Peeralize.Service.IntegrationSource
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
 
         ~InputSource()
         {
@@ -68,7 +68,10 @@ namespace Peeralize.Service.IntegrationSource
         {
             return GetEnumerator();
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns>Each part of the input segments if this source has multiple inputs.</returns>
         public virtual IEnumerable<InputSource> Shards()
         {
             while (false)
@@ -76,11 +79,16 @@ namespace Peeralize.Service.IntegrationSource
                 yield return null;
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns>Each input of the input segment, if this source has multiple inputs.</returns>
         public virtual IEnumerable<dynamic> ShardKeys(){
             while(false){
                 yield return null;
             }
         }
+
         public static TransformBlock<InputSource, IEnumerable<dynamic>> GetBlock()
         {
             var actionBlock = new TransformBlock<InputSource, IEnumerable<dynamic>>((f) =>
@@ -89,5 +97,6 @@ namespace Peeralize.Service.IntegrationSource
             });
             return actionBlock;
         }
+
     }
 }

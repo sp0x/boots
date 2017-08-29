@@ -54,7 +54,7 @@ namespace Peeralize.Controllers
         public async Task<ActionResult> SocialPermissions(string type = "Local")
         {
             var apiId = HttpContext.Session.GetUserApiId(); 
-            var api = _apiStore.First(x => x.Id == apiId);
+            var api = _apiStore.First(x => x.Id.Value == apiId);
             ActionResult result = null;
             if (api == null)
             {

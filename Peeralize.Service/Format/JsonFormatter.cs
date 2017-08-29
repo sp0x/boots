@@ -95,5 +95,11 @@ namespace Peeralize.Service.Format
             var jsf = new JsonFormatter();
             return jsf;
         }
+
+        public void Dispose()
+        {
+            ((IDisposable) _jsReader)?.Dispose();
+            _reader?.Dispose();
+        }
     }
 }

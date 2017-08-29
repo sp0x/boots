@@ -6,13 +6,15 @@ namespace Peeralize.Service.Integration.Blocks
 {
     public class Log : IntegrationBlock
     {
-        public Log(string userId)
+        private Action<IntegratedDocument> _logger;
+        public Log(string userId, Action<IntegratedDocument> logger)
         {
             this.UserId = userId;
+            _logger = logger;
         }
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
         {
-            Console.WriteLine(intDoc.Document.ToString());
+            _logger(intDoc);
             return intDoc;
         }
     }

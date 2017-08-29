@@ -70,7 +70,8 @@ namespace Peeralize.Service.Integration.Blocks
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
         {
             var key = GroupBySelector(intDoc);
-            var page = intDoc.Document["value"];
+            var intDocDocument = intDoc.GetDocument();
+            var page = intDocDocument["value"];
             if (page.ToString().IsNumeric())
             {
                 return intDoc;
@@ -89,7 +90,7 @@ namespace Peeralize.Service.Integration.Blocks
                 EntityDictionary[key] = docClone;
                 isNewUser = true;
             }
-            RecordPageStats(key.ToString(), intDoc.Document, isNewUser);
+            RecordPageStats(key.ToString(), intDocDocument, isNewUser);
             var newElement = ModifierAction(EntityDictionary[key], intDoc);
             return EntityDictionary[key];
         }
