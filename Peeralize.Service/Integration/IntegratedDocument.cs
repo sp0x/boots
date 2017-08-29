@@ -16,6 +16,14 @@ namespace Peeralize.Service.Integration
         {
             Reserved = new BsonDocument();
         }
+        public BsonValue this[string key]
+        {
+            get
+            {
+                return Document.Value[key];
+            }
+            set => Document.Value[key] =value;
+        }
 
         public void SetDocument(dynamic doc)
         { 
@@ -75,6 +83,37 @@ namespace Peeralize.Service.Integration
             document.TypeId = typedef.Id.Value;
             document.UserId = appId;
             return document;
+        }
+
+        public DateTime? GetDate(string key)
+        {
+            var documentValue = Document.Value;
+            if (!documentValue.Contains(key))
+            {
+                return null;
+            }
+            return DateTime.Parse(documentValue[key].ToString());
+        }
+        /// <summary>
+        /// Removes all elements by given keys
+        /// </summary>
+        /// <param name="keys"></param>
+        public IntegratedDocument RemoveAll(params string[] keys)
+        {
+            if (Document != null)
+            {
+                foreach (var key in keys)
+                {
+                    Document.Value.Remove(key);
+                }
+            }
+            return this;
+        }
+
+        public IntegratedDocument Define(string key, BsonValue value)
+        { 
+            Document.Value[key] = value;
+            return this;
         }
     }
      

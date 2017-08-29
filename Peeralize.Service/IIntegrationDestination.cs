@@ -9,6 +9,9 @@ namespace Peeralize.Service
 {
     public interface IIntegrationDestination
     {
+        Task BufferCompletion { get; }
+        Task ProcessingCompletion { get; }
+
         /// <summary>
         /// Consumes any available documents, and blocks.
         /// </summary>
@@ -21,7 +24,7 @@ namespace Peeralize.Service
         void Post(IntegratedDocument item);
         IIntegrationDestination LinkTo(ITargetBlock<IntegratedDocument> targetBlock, DataflowLinkOptions linkOptions = null);
         IIntegrationDestination LinkTo(IntegrationBlock targetDestination, DataflowLinkOptions linkOptions = null);
-        ITargetBlock<IntegratedDocument> GetActionBlock();
+        ITargetBlock<IntegratedDocument> GetProcessingBlock();
         IIntegrationDestination ContinueWith(Action<Task> action);
 
         string UserId { get; }

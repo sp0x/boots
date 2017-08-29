@@ -10,8 +10,31 @@ using Xunit;
 namespace Peeralize.ServiceTests
 {
     [Collection("Entity Parsers")]
-    public class Harvester
+    public class HarvesterTests
     {
+        /// <summary>
+        /// Test destination processing completion, synchronization returnins.
+        /// </summary>
+        /// <param name="inputDirectory"></param>
+        [Theory]
+        [InlineData(new object[] { "TestData\\Ebag\\1156" })]
+        public async void TestPipelineCompletion(string inputDirectory)
+        {
+            var threadCount = 8;
+            inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
+            var userId = "123123123";
+            var harvester = new Service.Harvester(threadCount);
+            harvester.LimitShards(1);
+            harvester.LimitEntries(10);
+            var outBlock = new Log(userId, (x) => { });
+            harvester.SetDestination(outBlock);
+            harvester.AddPersistentType(fileSource, userId); 
+            var hresult = await harvester.Synchronize();
+            Assert.True(outBlock.ProcessingCompletion.IsCompleted);
+            Assert.True(outBlock.BufferCompletion.IsCompleted);
+        }
+
         /// <summary>
         /// Test input limiting
         /// </summary>
@@ -22,19 +45,16 @@ namespace Peeralize.ServiceTests
         {
             var threadCount = 8;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
-            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
-            Assert.NotNull(type);
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var userId = "123123123";
             var harvester = new Service.Harvester(threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
-            var outBlock = new Log(userId, (x) =>
-                { });
+            var outBlock = new Log(userId, (x) => { });
             harvester.SetDestination(outBlock);
-            harvester.AddType(type, fileSource);
+            harvester.AddPersistentType(fileSource, userId);
             Assert.True(harvester.Sets.Count > 0);
-            var hresult = harvester.Synchronize();
+            var hresult = await harvester.Synchronize();
             Assert.True(hresult.ProcessedEntries == 10);
             Assert.True(hresult.ProcessedShards == 1);
         }

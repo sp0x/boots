@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MongoDB.Bson;
@@ -10,37 +11,54 @@ namespace Peeralize.Service.Integration.Blocks
     /// <summary>
     /// An entity grouping block
     /// </summary>
-    public class EntityGroup : IntegrationBlock
+    public class GroupingBlock : IntegrationBlock
     {
-        private Func<IntegratedDocument, object> GroupBySelector;
-        private Func<IntegratedDocument, IntegratedDocument, object> ModifierAction;
-        private Action<IntegratedDocument> OnUserCreatedFilter; 
+        #region "Variables"
+        private Func<IntegratedDocument, object> _groupBySelector;
+        /// <summary>
+        /// 
+        /// </summary>
+        private Func<IntegratedDocument, IntegratedDocument, object> _accumulator;
+        /// <summary>
+        /// 
+        /// </summary>
+        private Action<IntegratedDocument> _inputProjection;
+        #endregion
+
+        #region "Props"
         public event EventHandler<EventArgs> GroupingComplete;
 
-        public Dictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
+        public ConcurrentDictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
         public CrossPageStats PageStats { get; set; }
 
         public CrossSiteAnalyticsHelper Helper { get; set; }
         //public BsonArray Purchases { get; set; }
+        #endregion
 
-
-
-        public EntityGroup(string userId, Func<IntegratedDocument, object> selector,
-            Action<IntegratedDocument> filterUserCreation,
-            Func<IntegratedDocument, IntegratedDocument, object> accumulator) : base()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="selector"></param>
+        /// <param name="inputProjection">Projection to perform on the input</param>
+        /// <param name="accumulator">Accumulate input data to the resolved element</param>
+        public GroupingBlock(string userId, Func<IntegratedDocument, object> selector,
+            Action<IntegratedDocument> inputProjection,
+            Func<IntegratedDocument, IntegratedDocument, object> accumulator)
+            : base(capacity: 10000000, processingType: ProcessingType.Action)
         {
             base.UserId = userId;
-            GroupBySelector = selector;
-            ModifierAction = accumulator;
-            OnUserCreatedFilter = filterUserCreation;
+            _groupBySelector = selector;
+            this._accumulator = accumulator;
+            this._inputProjection = inputProjection;
             base.Completed += OnReadingCompleted;
-            EntityDictionary = new Dictionary<object, IntegratedDocument>();
+            EntityDictionary = new ConcurrentDictionary<object, IntegratedDocument>();
             PageStats = new CrossPageStats();
         }
 
-        public IIntegrationDestination ContinueWith(Action<EntityGroup> action)
+        public IIntegrationDestination ContinueWith(Action<GroupingBlock> action)
         {
-            var completion = GetActionBlock().Completion;
+            var completion = GetProcessingBlock().Completion;
             completion.ContinueWith(xTask =>
             {
                 action(this);
@@ -66,10 +84,10 @@ namespace Peeralize.Service.Integration.Blocks
             base.Close();
         }
 
-
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
         {
-            var key = GroupBySelector(intDoc);
+            //Get key
+            var key = _groupBySelector(intDoc);
             var intDocDocument = intDoc.GetDocument();
             var page = intDocDocument["value"];
             if (page.ToString().IsNumeric())
@@ -82,16 +100,17 @@ namespace Peeralize.Service.Integration.Blocks
             {
                 var docClone = intDoc;
                 //Ignore non valid values
-                if (OnUserCreatedFilter != null)
+                if (_inputProjection != null)
                 {
                     docClone = intDoc.Clone();
-                    OnUserCreatedFilter(docClone); 
+                    _inputProjection(docClone); 
                 }
                 EntityDictionary[key] = docClone;
                 isNewUser = true;
             }
             RecordPageStats(key.ToString(), intDocDocument, isNewUser);
-            var newElement = ModifierAction(EntityDictionary[key], intDoc);
+            var newElement = _accumulator(EntityDictionary[key], intDoc);
+
             return EntityDictionary[key];
         }
 

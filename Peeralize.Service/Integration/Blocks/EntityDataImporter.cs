@@ -82,7 +82,7 @@ namespace Peeralize.Service.Integration.Blocks
 
         public IIntegrationDestination ContinueWith(Action<EntityDataImporter> action)
         {
-            var completion = GetActionBlock().Completion;
+            var completion = GetProcessingBlock().Completion;
             completion.ContinueWith(xTask =>
             {
                 action(this);

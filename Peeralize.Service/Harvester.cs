@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using nvoid.db.DB;
 using Peeralize.Service.Integration;
+using Peeralize.Service.Integration.Blocks;
 using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Source;
 
@@ -61,6 +62,26 @@ namespace Peeralize.Service
         }
 
         /// <summary>
+        /// Resolves the type from the input, persists it to the DB, and adds it as an integration set from the given source.
+        /// </summary>
+        /// <param name="inputSource"></param>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public IntegrationTypeDefinition AddPersistentType(InputSource inputSource, string userId)
+        {
+            var type = inputSource.GetTypeDefinition() as IntegrationTypeDefinition;
+            if (type == null)
+            {
+                throw new Exception("Could not resolve type!");
+            }
+            type.UserId = userId;
+            if (!IntegrationTypeDefinition.TypeExists(type, userId, out var existingDataType)) type.SaveType(userId);
+            else type = existingDataType;
+            AddType(type, inputSource);
+            return type;
+        }
+
+        /// <summary>
         /// Set the destination to which to push all data.
         /// </summary>
         /// <param name="dest">A destination/block in your integration flow</param>
@@ -78,9 +99,10 @@ namespace Peeralize.Service
         }
 
         /// <summary>
-        /// Starts reading all the sets that are available
+        /// Starts reading all the sets that are available.
+        /// Returns whenever the whole pipeline is complete.
         /// </summary>
-        public HarvesterResult Synchronize(CancellationToken? cancellationToken = null)
+        public Task<HarvesterResult> Synchronize(CancellationToken? cancellationToken = null)
         {
             var cToken = cancellationToken ?? CancellationToken.None;
             Destination.ConsumeAsync(cToken);
@@ -93,11 +115,15 @@ namespace Peeralize.Service
             var shardsUsed = 0;
             //Go through all type sets
             Parallel.ForEach(Sets, parallelOptions,
-                (IntegrationSet itemSet, ParallelLoopState state) =>
+                (IntegrationSet itemSet, ParallelLoopState itemSetState) =>
                 {
                     //We shouldn't get any more items
                     if ((ShardLimit != 0 && shardsUsed >= ShardLimit) ||
-                        (TotalEntryLimit != 0 && totalItemsUsed > TotalEntryLimit)) return;
+                        (TotalEntryLimit != 0 && totalItemsUsed > TotalEntryLimit))
+                    {
+                        itemSetState.Break();
+                        return;
+                    }
 
                     var shards = itemSet.Source.Shards();
                     if (ShardLimit > 0)
@@ -110,7 +136,11 @@ namespace Peeralize.Service
                     {
                         //No more shards allowed
                         if ((ShardLimit != 0 && shardsUsed >= ShardLimit) ||
-                            (TotalEntryLimit != 0 && totalItemsUsed > TotalEntryLimit)) return; 
+                            (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit))
+                        {
+                            loopState.Break();
+                            return;
+                        }
 
                         using (sourceShard)
                         {
@@ -122,17 +152,20 @@ namespace Peeralize.Service
                                     var entriesLeft = TotalEntryLimit - totalItemsUsed;
                                     elements = elements.Take(entriesLeft);
                                 }
-                                Parallel.ForEach(elements, parallelOptions, (entry) =>
+                                Parallel.ForEach(elements, parallelOptions, (entry, itemLoopState, itemIndex) =>
                                 {
-                                    if (TotalEntryLimit != 0 && totalItemsUsed > TotalEntryLimit) return;
+                                    if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit)
+                                    {
+                                        itemSetState.Break();
+                                        return;
+                                    }
                                     var document = itemSet.Wrap(entry);
                                     Destination.Post(document);
                                     Interlocked.Increment(ref totalItemsUsed);
                                 });
                             }
                             else
-                            {
-                                var entries = sourceShard.AsEnumerable();
+                            { 
                                 dynamic entry;
                                 while ((entry = sourceShard.GetNext()) != null)
                                 {
@@ -145,12 +178,23 @@ namespace Peeralize.Service
                             
                         }
                         Interlocked.Increment(ref shardsUsed);
-                    }); 
+                    });
             });
-            Destination.Close();
-            _stopwatch.Stop();
-            var output = new HarvesterResult(shardsUsed, totalItemsUsed);
-            return output;
+//Test destination buffering and processing
+//            Destination.ProcessingCompletion.ContinueWith((t) =>
+//            { 
+//            });
+//            Destination.BufferCompletion.ContinueWith((t) =>
+//            { 
+//            });
+            Destination.Close(); 
+            //_stopwatch.Stop(); 
+            return Destination.ProcessingCompletion.ContinueWith<HarvesterResult>((t) =>
+            {
+                _stopwatch.Stop();
+                var output = new HarvesterResult(shardsUsed, totalItemsUsed);
+                return output;
+            });
         }
         /// <summary>
         /// Gets the elapsed time for syncs
@@ -177,5 +221,7 @@ namespace Peeralize.Service
         {
             _totalEntryLimit = max;
         }
+
+
     }
 }

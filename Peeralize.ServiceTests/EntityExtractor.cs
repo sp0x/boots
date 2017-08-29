@@ -86,33 +86,31 @@ namespace Peeralize.ServiceTests
             var userApiId = Guid.NewGuid().ToString();
             var harvester = new Peeralize.Service.Harvester(20);
             type.UserId = userId;
-//            IntegrationTypeDefinition existingDataType;
-//            if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
-//            {
-//                type.SaveType(userApiId);
-//            }
-//            else type = existingDataType;
-//
-//            var grouper = new EntityGroup(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
-//            //var saver = new MongoSink(userId); 
-//            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats); 
-//            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
-//            grouper.Helper = helper;
-//            //demographyImporter.LinkTo(featureGen); 
-//            //featureGen.LinkTo(saver);
-//            
-//            //Group the users
-//            grouper.ContinueWith((grpr) =>
-//            {
-//                //DumpUsergroupSessionsToCsv(grpr);
-//                DumpUsergroupSessionsToMongo(userId, grpr);
-//            }); 
-            var outBlock = new Log(userId, (x) =>
+            IntegrationTypeDefinition existingDataType;
+            if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
             {
-                var y = x;
-            } ); 
-            
-            harvester.SetDestination(outBlock);
+                type.SaveType(userApiId);
+            }
+            else type = existingDataType;
+            var grouper = new GroupingBlock(userId,
+                (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
+                (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
+                AccumulateUserEvent);
+            //var saver = new MongoSink(userId); 
+            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
+            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            grouper.Helper = helper;
+            //demographyImporter.LinkTo(featureGen); 
+            //featureGen.LinkTo(saver);
+
+            //Group the users
+            grouper.ContinueWith((grpr) =>
+            {
+                //DumpUsergroupSessionsToCsv(grpr);
+                DumpUsergroupSessionsToMongo(userId, grpr);
+            });
+
+            harvester.SetDestination(grouper);
             harvester.AddType(type, fileSource);
             harvester.Synchronize();
             var syncDuration = harvester.ElapsedTime();
@@ -122,14 +120,7 @@ namespace Peeralize.ServiceTests
             //await grouper.Completion;
             //Console.ReadLine(); // TODO: Fix dataflow action after grouping of all users
         }
-
-
-        [Theory]
-        [InlineData(new object[] {"TestData\\Ebag\\1156", "TestData\\Ebag\\demograpy.csv"})]
-        public async void EntityDataJoin(string inputSource, string additionalDataSource)
-        {
-            
-        }
+        
 
         [Theory]
         [InlineData(new object[]{"TestData\\Ebag\\1156", "TestData\\Ebag\\demograpy.csv" })]
@@ -152,7 +143,7 @@ namespace Peeralize.ServiceTests
             }
             else type = existingDataType;
 
-          var grouper = new EntityGroup(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
+            var grouper = new GroupingBlock(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
             var saver = new MongoSink(userId);
             var demographyImporter = new EntityDataImporter(demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
@@ -189,7 +180,7 @@ namespace Peeralize.ServiceTests
             harvester.Synchronize();
             
             //Task.WaitAll(grouper.Completion, featureGen.Completion, );
-            await saver.Completion;
+            await saver.ProcessingCompletion;
         }
 
 
@@ -219,14 +210,11 @@ namespace Peeralize.ServiceTests
         {
             var argDocument = arg.GetDocument();
             var uuid = argDocument["uuid"].ToString();
-            //DateTimeFormatInfo dfi = DateTimeFormatInfo.CurrentInfo;
-            //Calendar cal = dfi.Calendar;
             var date = DateTime.Parse(argDocument["ondate"].ToString());
-            //var week = cal.GetWeekOfYear(date, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
             return $"{uuid}_{date.Day}"; //_{date.Day}";
         }
 
-        private void DumpUsergroupSessionsToMongo(string userAppId, EntityGroup usersData)
+        private void DumpUsergroupSessionsToMongo(string userAppId, GroupingBlock usersData)
         { 
             var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>(userAppId);
             typeDef.AddField("is_paying", typeof(int));
@@ -269,19 +257,16 @@ namespace Peeralize.ServiceTests
                         document.Save();
                     }
                     catch (Exception ex2)
-                    {
-                        ex2 = ex2;
+                    { 
                     }
                 }
             }
             catch (Exception ex)
-            {
-                ex = ex;
-            }
-            typeDef = typeDef;
+            { 
+            } 
 
         }
-        private void DumpUsergroupSessionsToCsv(EntityGroup usersData)
+        private void DumpUsergroupSessionsToCsv(GroupingBlock usersData)
         {
             var userValues = usersData.EntityDictionary.Values;
             var outputFile = Path.Combine(Environment.CurrentDirectory, "payingBrowsingSessions.csv");
@@ -334,7 +319,7 @@ namespace Peeralize.ServiceTests
         /// </summary>
         /// <param name="dataImporter"></param>
         /// <param name="usersData"></param>
-        private void OnUsersGrouped(EntityDataImporter dataImporter, EntityGroup usersData)
+        private void OnUsersGrouped(EntityDataImporter dataImporter, GroupingBlock usersData)
         {
             var userValues = usersData.EntityDictionary.Values; 
             //var today = DateTime.Today;
@@ -385,7 +370,7 @@ namespace Peeralize.ServiceTests
             dataImporter.PostAll(userValues);
         }
 
-        private void OnUserDemographyImported(EntityFeatureGenerator gen, EntityGroup usersData)
+        private void OnUserDemographyImported(EntityFeatureGenerator gen, GroupingBlock usersData)
         { 
             var userValues = usersData.EntityDictionary.Values;
             gen.Helper.GroupDemographics();
@@ -406,7 +391,6 @@ namespace Peeralize.ServiceTests
             objDocument.Remove("type");
             objDocument["noticed_date"] = date;
             //obj.Document["noticed_year"] = date.Year;
-
         }
 
         /// <summary>
@@ -416,8 +400,8 @@ namespace Peeralize.ServiceTests
         /// <param name="newEntry"></param>
         private object AccumulateUserEvent(IntegratedDocument accumulator, IntegratedDocument newEntry)
         {
-            var value = newEntry.GetString("value");
-            var onDate = newEntry.GetString("ondate");
+            var value = newEntry["value"]?.ToString();
+            var onDate = newEntry["ondate"].ToString();
             var newElement = new
             {
                 ondate = onDate,
@@ -447,7 +431,6 @@ namespace Peeralize.ServiceTests
                 }
                 _purchases.Add(newElement);
                 accumulator.GetDocument()["is_paying"] = 1;
-                
             }
             return newElement;
         }

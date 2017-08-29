@@ -8,6 +8,7 @@ namespace Peeralize.Service.Integration.Blocks
     {
         private Action<IntegratedDocument> _logger;
         public Log(string userId, Action<IntegratedDocument> logger)
+            :base(capacity: 100000, processingType: ProcessingType.Action)
         {
             this.UserId = userId;
             _logger = logger;
