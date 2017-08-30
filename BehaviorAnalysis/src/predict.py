@@ -1,6 +1,6 @@
 import time
 from constants import *
-from classifiers import conduct_experiment,Experiment
+from classifiers import conduct_experiment, plot_cutoff, Experiment
 from pymongo import MongoClient
 import urllib
 import csv
@@ -114,7 +114,9 @@ for tmpDoc in weekData:
 filtered = 0
 for m in models:
     predictions = m['model'].predict_proba(userFeatures)
+    plot_cutoff(m, userFeatures, None, client=company)
     fileName = company + '_prediction_' + m['type'] + ".csv"
+
     print "Writing predictions in: " + fileName
     with open(fileName, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -122,10 +124,9 @@ for m in models:
         for p in xrange(len(predictions)): 
             prediction = predictions[p] 
             uuid = userData[p]['uuid']       
-            # if uuid in payingDict: #skip filtered users
-            #     filtered = filtered + 1
-            #     continue
+            #if uuid in payingDict: #skip filtered users
+            #    filtered = filtered + 1
+            #   continue
             # else:
             writer.writerow([ uuid, prediction[0], prediction[1] ])
-
 print "Filtered users: " + str(filtered)

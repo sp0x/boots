@@ -265,12 +265,12 @@ class Experiment:
             cm = confusion_matrix(y_true, y_pred)
             Experiment.plot_confusion_matrix(cm, ['Non-Buyers','Buyers'], True, model=m['type'])
 
-            #save(X_train, os.path.join(self._for, "x_train_{0}.dmp".format(log_data['model']) ))
-            #save(X_test, os.path.join(self._for, "x_test_{0}.dmp".format(log_data['model'])))
-            #save(y_train, os.path.join(self._for, "y_train_{0}.dmp".format(log_data['model'])))
-            #save(y_pred, os.path.join(self._for, "y_pred_{0}.dmp".format(log_data['model'])))
-            #save(y_pred_proba, os.path.join(self._for, "y_pred_proba_{0}.dmp".format(log_data['model'])))
-            #save(y_true, os.path.join(self._for, "y_true_{0}.dmp".format(log_data['model'])))
+            # save(X_train, os.path.join(self._for, "x_train_{0}.dmp".format(log_data['model']) ))
+            # save(X_test, os.path.join(self._for, "x_test_{0}.dmp".format(log_data['model'])))
+            # save(y_train, os.path.join(self._for, "y_train_{0}.dmp".format(log_data['model'])))
+            # save(y_pred, os.path.join(self._for, "y_pred_{0}.dmp".format(log_data['model'])))
+            # save(y_pred_proba, os.path.join(self._for, "y_pred_proba_{0}.dmp".format(log_data['model'])))
+            # save(y_true, os.path.join(self._for, "y_true_{0}.dmp".format(log_data['model'])))
 
             Experiment.make_graphs(y_pred,y_pred_proba,y_true, m['type'])
         self.best_models = best_models
@@ -304,16 +304,52 @@ class Experiment:
         self.best_models = best_models
 
 
+def plot_cutoff(model, data, target = None, client='cashlend'):
+    import seaborn as sns
+    classifier = model['model']
+    c_type = model['type']
+
+    def cutoff_predict(x, cutoff):
+        return (classifier.predict_proba(x)[:, 1] > cutoff).astype(int)
+
+    def custom_f1(cutoff):
+        def f1_cutoff(clf, x, y):
+            ypred = cutoff_predict(x, cutoff)
+            return sklearn.metrics.f1_score(y, ypred)
+        return f1_cutoff
+
+    def custom_roc_auc(cutoff):
+        def roc_cutoff(clf, x, y):
+            ypred = cutoff_predict(x, cutoff)
+            return sklearn.metrics.roc_auc_score(y, ypred)
+        return roc_cutoff
+
+    scores = []
+    cutoffs = np.arange(0.1, 0.9, 0.1)
+    for cut_off in cutoffs:
+        # In case of supervised learning
+        # validated = cross_val_score(classifier, data, target, cv=10, scoring=custom_roc_auc(cut_off))
+        validated = cross_val_score(classifier, data, None, cv=10, scoring=custom_roc_auc(cut_off))
+        scores.append(validated)
+
+    sns.boxplot(scores, names=cutoffs)
+    plt.title('F scores for each tree')
+    plt.xlabel('each cut off value')
+    plt.ylabel('custom F score')
+    fig_path = os.path.join(client, abs_path('cutoff_{0}.png'.format(c_type)))
+    plt.savefig(fig_path)
+
+
 def conduct_experiment(data, targets, client='cashlend'):
     tmp = np.unique(targets)
     c = dict()
     cw = compute_class_weight('balanced', tmp, targets)
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
-    rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = c, random_state=RANDOM_SEED)
+    rf = RandomForestClassifier(n_jobs=-1, oob_score=True, class_weight=c, random_state=RANDOM_SEED)
     cart = DecisionTreeClassifier(random_state=RANDOM_SEED, class_weight=c)
-    scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
-    builder = RNNBuilder(data,targets, c)
+    scoring = "roc_auc"  # "f1_micro" uncomment this if performance is too poor
+    builder = RNNBuilder(data, targets, c)
     rnn = KerasClassifier(builder.build_rnn)
     rf_params = {        
         "n_estimators": [100, 200, 300, 500],
