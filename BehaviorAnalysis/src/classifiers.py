@@ -117,7 +117,9 @@ class Experiment:
             f.write(report)
 
     def store_models(self):
-        path = abs_path(os.path.join(self._for,"models.pickle"))
+
+        models_file = "models_{0}.pickle".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        path = abs_path(os.path.join(self._for, models_file))
         save(self.best_models, path)
 
     @staticmethod
@@ -366,8 +368,7 @@ def conduct_experiment(data, targets, client='cashlend'):
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
     logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()),client))
-    e = Experiment(data,targets,[{'model':rf, 'params':rf_params, 'scoring':scoring, 'type':'rf'},
-                                 {'model':cart, 'params':cart_params, 'scoring':scoring, 'type':'cart'}], client)
+    e = Experiment(data,targets,[{'model':rf, 'params':rf_params, 'scoring':scoring, 'type':'rf'}], client)
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
     e.store_models()

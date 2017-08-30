@@ -88,7 +88,7 @@ for index, week in enumerate(weeksAvailable):
     weekData = list(weekData)
     print "CrWeek Visits: {0} NxWeek Purchased users: {1}".format(len(weekData), len(next_week_purchases))
     for week_session in weekData:
-        tmpDoc = week_session #["Document"] 
+        tmpDoc = week_session
         uuid = tmpDoc["_id"]["uuid"]
         simscore = 0 if not "path_similarity_score" in tmpDoc else  tmpDoc["path_similarity_score"] 
         simscore = 0 if simscore == None else simscore
