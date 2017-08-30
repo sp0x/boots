@@ -166,7 +166,7 @@ namespace Peeralize.Service.Integration.Blocks
         }
 
 
-        public void PostAll(Dictionary<object, IntegratedDocument>.ValueCollection valueCollection, bool completeOnDone = true)
+        public void PostAll(IEnumerable<IntegratedDocument> valueCollection, bool completeOnDone = true)
         {
             foreach (var elem in valueCollection)
             {

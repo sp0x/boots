@@ -20,7 +20,7 @@ import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
+import glob
 
 np.random.seed(RANDOM_SEED)
 
@@ -95,11 +95,12 @@ class Experiment:
         self.started = time.time()
         #self.meta_size = len(data['meta'][0])
         #self.realtime_size = len(data['time'][0])
+        self.base_path = "/experiments"
         self.best_models = []
         sub_dir = "experiments/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
         if not os.path.exists(self._for):
             os.makedirs(self._for)
-        self.log = abs_path(os.path.join(self._for,sub_dir))
+        self.log = abs_path(os.path.join(self._for, sub_dir))
         if not os.path.exists(self._for):
             os.makedirs(self._for + "/experiments")
 
@@ -117,15 +118,20 @@ class Experiment:
             f.write(report)
 
     def store_models(self):
-
         models_file = "models_{0}.pickle".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        path = abs_path(os.path.join(self._for, models_file))
-        save(self.best_models, path)
+        models_path = abs_path(os.path.join(self.base_path, self._for))
+        if not os.path.exists(models_path):
+            os.makedirs(models_path)
+        models_path = os.path.join(models_path, models_file)
+        save(self.best_models, models_path)
 
-    @staticmethod
-    def load_models(company):
-        path = abs_path(os.path.join(company,"models.pickle"))
-        return load(path)
+    def load_models(self):
+        models_path = abs_path(os.path.join(self.base_path, self._for))
+        if not os.path.exists(models_path):
+            os.makedirs(models_path)
+        models = glob.glob(os.path.join(models_path, "models_*"))
+        last_model = max(models, key=os.path.getctime)
+        return load(last_model)
 
     @staticmethod
     def predict_explain(tree, data, labels, print_proba=False):
@@ -306,7 +312,7 @@ class Experiment:
         self.best_models = best_models
 
 
-def plot_cutoff(model, data, target = None, client='cashlend'):
+def plot_cutoff(model, data, data_y, target = None, client='cashlend'):
     import seaborn as sns
     classifier = model['model']
     c_type = model['type']
@@ -331,7 +337,7 @@ def plot_cutoff(model, data, target = None, client='cashlend'):
     for cut_off in cutoffs:
         # In case of supervised learning
         # validated = cross_val_score(classifier, data, target, cv=10, scoring=custom_roc_auc(cut_off))
-        validated = cross_val_score(classifier, data, None, cv=10, scoring=custom_roc_auc(cut_off))
+        validated = cross_val_score(classifier, data, data_y, cv=10, scoring=custom_roc_auc(cut_off))
         scores.append(validated)
 
     sns.boxplot(scores, names=cutoffs)
@@ -368,7 +374,8 @@ def conduct_experiment(data, targets, client='cashlend'):
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
     logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()),client))
-    e = Experiment(data,targets,[{'model':rf, 'params':rf_params, 'scoring':scoring, 'type':'rf'}], client)
+    e = Experiment(data, targets, [{'model': rf, 'params': rf_params, 'scoring': scoring, 'type': 'rf'},
+                                   {'model': cart, 'params': cart_params, 'scoring': scoring, 'type': 'cart'}], client)
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
     e.store_models()

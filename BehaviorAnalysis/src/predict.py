@@ -65,7 +65,8 @@ weekData = list(weekData)
 
 company = "Netinfo"
 offset = 1000 * 200
-models = Experiment.load_models(company)
+exp = Experiment(None, None, None, company)
+models = exp.load_models()
 print "Loaded prediction models"
 
 userFeatures = []

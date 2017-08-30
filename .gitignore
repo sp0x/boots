@@ -34,3 +34,6 @@ storage.ide
 **.7z
 *cookie_*.tmp
 *.zip
+/BehaviorAnalysis/src/rf_confusion_matrix.png
+/BehaviorAnalysis/src/rf_gain.png
+/BehaviorAnalysis/src/rf_lift.png

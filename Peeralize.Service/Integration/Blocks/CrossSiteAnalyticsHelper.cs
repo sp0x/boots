@@ -9,7 +9,7 @@ namespace Peeralize.Service.Integration.Blocks
 {
     public class CrossSiteAnalyticsHelper
     {
-        public Dictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
+        public IDictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
         public CrossPageStats DomainVisitStats { get; private set; }
         //public int DomainVisitsTotal { get; private set; }
         //public Dictionary<string, int> DomainVisits { get; private set; }
@@ -20,7 +20,7 @@ namespace Peeralize.Service.Integration.Blocks
         public Dictionary<string, List<IntegratedDocument>> GenderGroups { get; set; }
         public Dictionary<string, List<IntegratedDocument>> DistinctUsers { get; set; }
 
-        public CrossSiteAnalyticsHelper(Dictionary<object, IntegratedDocument> sessions,
+        public CrossSiteAnalyticsHelper(IDictionary<object, IntegratedDocument> sessions,
             CrossPageStats domainVisitStats)
         {
             EntityDictionary = sessions;

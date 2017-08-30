@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using Peeralize.Service.Format;
@@ -65,9 +66,11 @@ namespace Peeralize.ServiceTests.Integration.Blocks
             var harvester = new Peeralize.Service.Harvester(20);
 
             var grouper = GetGrouper(userId);
+            var statsCounter = 0;
             var statsCollector = new ActionBlock<dynamic>((visit) =>
             {
                 visit = visit;
+                Interlocked.Increment(ref statsCounter);
             }); 
             grouper.LinkAction(statsCollector);
             harvester.LimitEntries(10);
@@ -75,6 +78,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
             harvester.AddPersistentType(fileSource, userId);
             var results = await harvester.Synchronize();
             Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
+            Assert.True(statsCounter == 10);
             var syncDuration = harvester.ElapsedTime();
             Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
         }

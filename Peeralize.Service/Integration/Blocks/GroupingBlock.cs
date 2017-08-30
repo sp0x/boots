@@ -108,7 +108,7 @@ namespace Peeralize.Service.Integration.Blocks
                 EntityDictionary[key] = docClone;
                 isNewUser = true;
             }
-            RecordPageStats(key.ToString(), intDocDocument, isNewUser);
+            //RecordPageStats(key.ToString(), intDocDocument, isNewUser);
             var newElement = _accumulator(EntityDictionary[key], intDoc);
 
             return EntityDictionary[key];
