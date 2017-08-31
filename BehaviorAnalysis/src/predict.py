@@ -24,7 +24,7 @@ weeksAvailable = collection.find({
 weeksAvailable.sort()
 target_week = weeksAvailable[len(weeksAvailable) - 2]
 target_week_end = target_week + timedelta(days=7)
-print "Target week " + str(target_week)
+print "Gathering data from week " + str(target_week)
 pipeline = [
         {"$match" : { 
             "TypeId" : userTypeId,
@@ -62,46 +62,46 @@ pipeline = [
         }}]
 weekData = collection.aggregate(pipeline)
 weekData = list(weekData) 
-
+#
 company = "Netinfo"
-offset = 1000 * 200
+# offset = 1000 * 200
 exp = Experiment(None, None, None, company)
 models = exp.load_models()
-print "Loaded prediction models"
-
-userFeatures = []
-userData = []
-for tmpDoc in weekData:
-    uuid = tmpDoc["_id"]["uuid"]
-    
-    userData.append({ 'uuid' : uuid })
-    simscore = 0 if not "path_similarity_score" in tmpDoc else  tmpDoc["path_similarity_score"] 
-    simscore = 0 if simscore == None else simscore
-    simtime = 0 if not "path_similarity_score_time_spent" in tmpDoc else  tmpDoc["path_similarity_score_time_spent"]
-    simtime = 0 if simtime == None else simtime        
-    userFeatures.append([
-        tmpDoc["visits_on_weekends"],
-        tmpDoc["p_online_weekend"],
-        tmpDoc["days_visited_ebag"],
-        tmpDoc["time_spent_ebag"],
-        tmpDoc["time_spent_on_mobile_sites"],
-        tmpDoc["mobile_visits"],
-        tmpDoc["visited_ebag"],
-        tmpDoc["p_buy_age_group"],
-        tmpDoc["p_buy_gender_group"],
-        tmpDoc["p_visit_ebag_age"],
-        tmpDoc["p_visit_ebag_gender"],
-        tmpDoc["p_to_go_online"],
-        tmpDoc["avg_time_spent_on_high_pageranksites"],
-        tmpDoc["highranking_page_0"],
-        tmpDoc["highranking_page_1"],
-        tmpDoc["highranking_page_2"],
-        tmpDoc["highranking_page_3"],
-        tmpDoc["highranking_page_4"],
-        tmpDoc["time_spent_online"],
-        simscore,
-        simtime
-    ])
+# print "Loaded prediction models"
+#
+# userFeatures = []
+# userData = []
+# for tmpDoc in weekData:
+#     uuid = tmpDoc["_id"]["uuid"]
+#
+#     userData.append({ 'uuid' : uuid })
+#     simscore = 0 if not "path_similarity_score" in tmpDoc else  tmpDoc["path_similarity_score"]
+#     simscore = 0 if simscore == None else simscore
+#     simtime = 0 if not "path_similarity_score_time_spent" in tmpDoc else  tmpDoc["path_similarity_score_time_spent"]
+#     simtime = 0 if simtime == None else simtime
+#     userFeatures.append([
+#         tmpDoc["visits_on_weekends"],
+#         tmpDoc["p_online_weekend"],
+#         tmpDoc["days_visited_ebag"],
+#         tmpDoc["time_spent_ebag"],
+#         tmpDoc["time_spent_on_mobile_sites"],
+#         tmpDoc["mobile_visits"],
+#         tmpDoc["visited_ebag"],
+#         tmpDoc["p_buy_age_group"],
+#         tmpDoc["p_buy_gender_group"],
+#         tmpDoc["p_visit_ebag_age"],
+#         tmpDoc["p_visit_ebag_gender"],
+#         tmpDoc["p_to_go_online"],
+#         tmpDoc["avg_time_spent_on_high_pageranksites"],
+#         tmpDoc["highranking_page_0"],
+#         tmpDoc["highranking_page_1"],
+#         tmpDoc["highranking_page_2"],
+#         tmpDoc["highranking_page_3"],
+#         tmpDoc["highranking_page_4"],
+#         tmpDoc["time_spent_online"],
+#         simscore,
+#         simtime
+#     ])
 
 # print "Loaded " + str(len(userFeatures)) + " test user items"
 # filterFile = "NetInfo/filters/paying_users.csv"
@@ -114,11 +114,12 @@ for tmpDoc in weekData:
 
 filtered = 0
 for m in models:
-    predictions = m['model'].predict_proba(userFeatures)
+    # ignore predictions for now
+    # predictions = m['model'].predict_proba(userFeatures)
     c_type = m['type']
-    x_train_dmp = Experiment.load_dump(company, 'x_train_{0}.dmp'.format(c_type))
-    x_test_dmp = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
-    plot_cutoff(m, x_train_dmp, y_test_dmp, client=company)
+    x_data = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
+    y_data = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
+    plot_cutoff(m, x_data, y_data, client=company)
     fileName = '{0}_prediction_{1}.csv'.format(company, c_type)
 
     print "Writing predictions in: " + fileName

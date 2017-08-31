@@ -80,6 +80,7 @@ class RNNBuilder:
         model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics='accuracy',loss_weights=self.class_weights)
 
 class Experiment:
+    base_path = "/experiments"
     def __init__(self,data,targets,models,client):
         """
         :param data: stuff to train and test with 
@@ -95,7 +96,6 @@ class Experiment:
         self.started = time.time()
         #self.meta_size = len(data['meta'][0])
         #self.realtime_size = len(data['time'][0])
-        self.base_path = "/experiments"
         self.best_models = []
         sub_dir = "experiments/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
         if not os.path.exists(self._for):
@@ -119,14 +119,14 @@ class Experiment:
 
     def store_models(self):
         models_file = "models_{0}.pickle".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        models_path = abs_path(os.path.join(self.base_path, self._for))
+        models_path = self.get_experiments_dir()
         if not os.path.exists(models_path):
             os.makedirs(models_path)
         models_path = os.path.join(models_path, models_file)
         save(self.best_models, models_path)
 
     def load_models(self):
-        models_path = abs_path(os.path.join(self.base_path, self._for))
+        models_path = abs_path(os.path.join(Experiment.base_path, self._for))
         if not os.path.exists(models_path):
             os.makedirs(models_path)
         models = glob.glob(os.path.join(models_path, "models_*"))
@@ -195,7 +195,8 @@ class Experiment:
                               normalize=False,
                               title='Confusion matrix',
                               model='model',
-                              cmap=plt.cm.Blues):
+                              cmap=plt.cm.Blues,
+                              company=''):
         """
         This function prints and plots the confusion matrix.
         Normalization can be applied by setting `normalize=True`.
@@ -226,7 +227,14 @@ class Experiment:
         plt.tight_layout()
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
-        plt.savefig(abs_path('{0}_confusion_matrix.png'.format(model)))
+        filename = '{0}_confusion_matrix.png'.format(model)
+        filepath = None
+        if len(company)>0:
+            filepath = abs_path(os.path.join(company, filename))
+        else:
+            filepath = abs_path(filename)
+
+        plt.savefig(filepath)
 
     @staticmethod
     def t_test(y_pred, y_true, x_train=None, y_train=None, x_test=None, confidence=0.95):
@@ -255,9 +263,15 @@ class Experiment:
 
     @staticmethod
     def load_dump(company, name):
-        file = abs_path(os.path.join(company, "dumps", name))
+        file = abs_path(os.path.join(Experiment.base_path, company, "dumps", name))
         dump = load(file)
         return dump
+
+    def get_client_dir(self):
+        return abs_path(os.path.join(Experiment.base_path, self._for))
+
+    def get_experiments_dir(self):
+        return abs_path(os.path.join(self._for) )
 
     def create_and_train(self):
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
@@ -278,12 +292,15 @@ class Experiment:
             cm = confusion_matrix(y_true, y_pred)
             Experiment.plot_confusion_matrix(cm, ['Non-Buyers','Buyers'], True, model=m['type'])
 
-            # save(X_train, os.path.join(self._for, "x_train_{0}.dmp".format(log_data['model']) ))
-            # save(X_test, os.path.join(self._for, "x_test_{0}.dmp".format(log_data['model'])))
-            # save(y_train, os.path.join(self._for, "y_train_{0}.dmp".format(log_data['model'])))
-            # save(y_pred, os.path.join(self._for, "y_pred_{0}.dmp".format(log_data['model'])))
-            # save(y_pred_proba, os.path.join(self._for, "y_pred_proba_{0}.dmp".format(log_data['model'])))
-            # save(y_true, os.path.join(self._for, "y_true_{0}.dmp".format(log_data['model'])))
+            dump_dir = os.path.join(self.get_experiments_dir(), 'dumps')
+            if not os.path.exists(dump_dir):
+                os.makedirs(dump_dir)
+            save(X_train, os.path.join(dump_dir, "x_train_{0}.dmp".format(log_data['model']) ))
+            save(X_test, os.path.join(dump_dir, "x_test_{0}.dmp".format(log_data['model'])))
+            save(y_train, os.path.join(dump_dir, "y_train_{0}.dmp".format(log_data['model'])))
+            save(y_pred, os.path.join(dump_dir, "y_pred_{0}.dmp".format(log_data['model'])))
+            save(y_pred_proba, os.path.join(dump_dir, "y_pred_proba_{0}.dmp".format(log_data['model'])))
+            save(y_true, os.path.join(dump_dir, "y_true_{0}.dmp".format(log_data['model'])))
 
             Experiment.make_graphs(y_pred,y_pred_proba,y_true, m['type'])
         self.best_models = best_models
@@ -327,48 +344,54 @@ def plot_cutoff(model, data, data_y, client='cashlend'):
 
     def custom_f1(cutoff):
         def f1_cutoff(clf, x, y):
+            import sklearn
             ypred = cutoff_predict(x, cutoff)
             return sklearn.metrics.f1_score(y, ypred)
         return f1_cutoff
 
     def custom_roc_auc(cutoff):
         def roc_cutoff(clf, x, y):
+            import sklearn
             ypred = cutoff_predict(x, cutoff)
             return sklearn.metrics.roc_auc_score(y, ypred)
         return roc_cutoff
 
     scores = []
-    cutoffs = np.arange(0.1, 0.9, 0.1)
+    cutoffs = np.arange(0.9, 1.0, 0.01)
     for cut_off in cutoffs:
         # In case of supervised learning
         # validated = cross_val_score(classifier, data, target, cv=10, scoring=custom_roc_auc(cut_off))
         validated = cross_val_score(classifier, data, data_y, cv=10, scoring=custom_roc_auc(cut_off))
         scores.append(validated)
+    print "Score count: {0}".format(str(len(scores)))
 
     sns.boxplot(scores, names=cutoffs)
-    plt.title('F scores for each tree')
-    plt.xlabel('each cut off value')
-    plt.ylabel('custom F score')
-    fig_path = os.path.join(client, abs_path('cutoff_{0}.png'.format(c_type)))
-    plt.savefig(fig_path)
+    plt.title("F scores for each tree")
+    plt.xlabel("each cut off value")
+    plt.ylabel("custom F score")
 
+    fig_path = os.path.join(client, abs_path('cutoff_{0}.png'.format(c_type)))
+    # fig_path_1 = os.path.join(client, abs_path('cutoff_{0}_alt.png'.format(c_type)))
+    plt.savefig(fig_path)
 
 
 def conduct_experiment(data, targets, client='cashlend'):
     tmp = np.unique(targets)
     c = dict()
     cw = compute_class_weight('balanced', tmp, targets)
+    
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
     rf = RandomForestClassifier(n_jobs=-1, oob_score=True, class_weight=c, random_state=RANDOM_SEED)
     cart = DecisionTreeClassifier(random_state=RANDOM_SEED, class_weight=c)
-    scoring = "roc_auc"  # "f1_micro" uncomment this if performance is too poor
+    scoring = "f1_micro" # roc_auc"  # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data, targets, c)
     rnn = KerasClassifier(builder.build_rnn)
     rf_params = {        
         "n_estimators": [100, 200, 300, 500],
         "max_features": [None, "auto"],
-        "max_depth" : [20, 40, 80]
+        "max_depth" : [20, 40, 80],
+        "class_weight" : [ None, "balanced", c]
     }
     cart_params = {
         "min_samples_split" : [2, 50, 100, 200],
