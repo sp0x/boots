@@ -115,8 +115,11 @@ for tmpDoc in weekData:
 filtered = 0
 for m in models:
     predictions = m['model'].predict_proba(userFeatures)
-    plot_cutoff(m, userFeatures, None, client=company)
-    fileName = company + '_prediction_' + m['type'] + ".csv"
+    c_type = m['type']
+    x_train_dmp = Experiment.load_dump(company, 'x_train_{0}.dmp'.format(c_type))
+    x_test_dmp = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
+    plot_cutoff(m, x_train_dmp, y_test_dmp, client=company)
+    fileName = '{0}_prediction_{1}.csv'.format(company, c_type)
 
     print "Writing predictions in: " + fileName
     with open(fileName, 'wb') as csvfile:

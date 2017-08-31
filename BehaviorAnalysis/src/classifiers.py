@@ -253,6 +253,11 @@ class Experiment:
         else:
             print("Null Hypothesis NOT rejected. Classifier A is random")
 
+    @staticmethod
+    def load_dump(company, name):
+        file = abs_path(os.path.join(company, "dumps", name))
+        dump = load(file)
+        return dump
 
     def create_and_train(self):
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
@@ -312,7 +317,7 @@ class Experiment:
         self.best_models = best_models
 
 
-def plot_cutoff(model, data, data_y, target = None, client='cashlend'):
+def plot_cutoff(model, data, data_y, client='cashlend'):
     import seaborn as sns
     classifier = model['model']
     c_type = model['type']
@@ -346,6 +351,7 @@ def plot_cutoff(model, data, data_y, target = None, client='cashlend'):
     plt.ylabel('custom F score')
     fig_path = os.path.join(client, abs_path('cutoff_{0}.png'.format(c_type)))
     plt.savefig(fig_path)
+
 
 
 def conduct_experiment(data, targets, client='cashlend'):
