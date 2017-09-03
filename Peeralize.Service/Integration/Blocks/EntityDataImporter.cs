@@ -61,6 +61,11 @@ namespace Peeralize.Service.Integration.Blocks
             _fs.Close();
         }
 
+        protected override IEnumerable<IntegratedDocument> GetCollectedItems()
+        {
+            return null;
+        }
+
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
         {
             string[] matchingRow = null;

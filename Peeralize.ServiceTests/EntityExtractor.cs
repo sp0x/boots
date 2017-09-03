@@ -67,7 +67,7 @@ namespace Peeralize.ServiceTests
 
             var saver = new MongoSink(userId);
             var modifier = new EntityFeatureGenerator(userId);
-            modifier.LinkTo(saver); //We modify the entity to fill all it's data, then generate feature, and then save
+            modifier.BroadcastTo(saver, null); //We modify the entity to fill all it's data, then generate feature, and then save
             harvester.SetDestination(modifier);
             harvester.AddType(type, fileSource);
             harvester.Synchronize();
@@ -98,7 +98,7 @@ namespace Peeralize.ServiceTests
                 AccumulateUserEvent);
             //var saver = new MongoSink(userId); 
             var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
-            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            grouper.BroadcastTo(DataflowBlock.NullTarget<IntegratedDocument>());
             grouper.Helper = helper;
             //demographyImporter.LinkTo(featureGen); 
             //featureGen.LinkTo(saver);
@@ -157,14 +157,14 @@ namespace Peeralize.ServiceTests
             demographyImporter.Helper = helper;
             grouper.Helper = helper;
             
-            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
-            demographyImporter.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            grouper.BroadcastTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            demographyImporter.BroadcastTo(DataflowBlock.NullTarget<IntegratedDocument>());
             var featureGen = new EntityFeatureGenerator(userId);
             featureGen.Helper = helper;
             //demographyImporter.LinkTo(featureGen); 
-            featureGen.LinkTo(saver);
+            featureGen.BroadcastTo(saver, null);
 
-            saver.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            saver.BroadcastTo(DataflowBlock.NullTarget<IntegratedDocument>());
 
             grouper.ContinueWith((grpr) =>
             {
@@ -409,6 +409,7 @@ namespace Peeralize.ServiceTests
                 type = newEntry.GetInt("type"),
                 value = value
             }.ToBsonDocument();
+
             accumulator.AddDocumentArrayItem("events", newElement);
             if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
             {

@@ -28,9 +28,13 @@ namespace Peeralize.Service.Integration.Blocks
             UserId = userId;
             _source = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>(); 
             
-        } 
+        }
 
 
+        protected override IEnumerable<IntegratedDocument> GetCollectedItems()
+        {
+            return null;
+        }
 
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
         {

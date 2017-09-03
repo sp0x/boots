@@ -45,7 +45,7 @@ namespace Peeralize.Service.Integration.Blocks
         public GroupingBlock(string userId, Func<IntegratedDocument, object> selector,
             Action<IntegratedDocument> inputProjection,
             Func<IntegratedDocument, IntegratedDocument, object> accumulator)
-            : base(capacity: 10000000, processingType: ProcessingType.Action)
+            : base(capacity: 10000000, procType: ProcessingType.Action)
         {
             base.UserId = userId;
             _groupBySelector = selector;
@@ -72,8 +72,12 @@ namespace Peeralize.Service.Integration.Blocks
             GroupingComplete?.Invoke(this, EventArgs.Empty);
         }
 
+        protected override IEnumerable<IntegratedDocument> GetCollectedItems()
+        {
+            return EntityDictionary.Values;
+        }
 
-        public override void Close()
+        public override void Complete()
         {
 //            foreach (var group in EntityDictionary)
 //            {
@@ -81,7 +85,7 @@ namespace Peeralize.Service.Integration.Blocks
 //                EntityDictionary[group.Key].Document["events"] = new BsonArray(
 //                    bsonValue.OrderBy(x=>DateTime.Parse(x["ondate"].ToString())));
 //            }
-            base.Close();
+            base.Complete();
         }
 
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)

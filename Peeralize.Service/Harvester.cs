@@ -67,7 +67,7 @@ namespace Peeralize.Service
         /// <param name="inputSource"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public IntegrationTypeDefinition AddPersistentType(InputSource inputSource, string userId)
+        public IntegrationTypeDefinition AddPersistentType(InputSource inputSource, string userId, bool persist = true)
         {
             var type = inputSource.GetTypeDefinition() as IntegrationTypeDefinition;
             if (type == null)
@@ -75,8 +75,11 @@ namespace Peeralize.Service
                 throw new Exception("Could not resolve type!");
             }
             type.UserId = userId;
-            if (!IntegrationTypeDefinition.TypeExists(type, userId, out var existingDataType)) type.SaveType(userId);
-            else type = existingDataType;
+            if (persist)
+            {
+                if (!IntegrationTypeDefinition.TypeExists(type, userId, out var existingDataType)) type.SaveType(userId);
+                else type = existingDataType;
+            }
             AddType(type, inputSource);
             return type;
         }
@@ -187,14 +190,15 @@ namespace Peeralize.Service
 //            Destination.BufferCompletion.ContinueWith((t) =>
 //            { 
 //            });
-            Destination.Close(); 
+            //Let the dest know that we're finished passing data to it, so that it could complete.
+            Destination.Complete(); 
             //_stopwatch.Stop(); 
-            return Destination.ProcessingCompletion.ContinueWith<HarvesterResult>((t) =>
+            return Destination.FlowCompletion().ContinueWith(continuationFunction: (t) =>
             {
                 _stopwatch.Stop();
                 var output = new HarvesterResult(shardsUsed, totalItemsUsed);
                 return output;
-            });
+            }, cancellationToken: cToken);
         }
         /// <summary>
         /// Gets the elapsed time for syncs

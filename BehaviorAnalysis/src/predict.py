@@ -5,6 +5,7 @@ from pymongo import MongoClient
 import urllib
 import csv
 from datetime import datetime, timedelta
+import os
 
 ##host is local
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
@@ -21,6 +22,11 @@ weeksAvailable = collection.find({
     "UserId" : appId,
     "TypeId" : userTypeId
 }).distinct("Document.g_timestamp")
+paying_users = collection.find({
+    "UserId" : appId,
+    "TypeId" : userTypeId,
+    "Document.is_paying" : 1
+}).distinct("Document.uuid")
 weeksAvailable.sort()
 target_week = weeksAvailable[len(weeksAvailable) - 2]
 target_week_end = target_week + timedelta(days=7)
@@ -29,7 +35,7 @@ pipeline = [
         {"$match" : { 
             "TypeId" : userTypeId,
             "UserId" : appId,
-            "Document.g_timestamp" : {'$gte': target_week, '$lt': target_week_end}
+            "Document.g_timestamp" : {'$gte': target_week, '$lt': target_week_end}, 'Document.is_paying' : 0
          }
         },
         {"$group": {
@@ -67,60 +73,61 @@ company = "Netinfo"
 # offset = 1000 * 200
 exp = Experiment(None, None, None, company)
 models = exp.load_models()
-# print "Loaded prediction models"
-#
-# userFeatures = []
-# userData = []
-# for tmpDoc in weekData:
-#     uuid = tmpDoc["_id"]["uuid"]
-#
-#     userData.append({ 'uuid' : uuid })
-#     simscore = 0 if not "path_similarity_score" in tmpDoc else  tmpDoc["path_similarity_score"]
-#     simscore = 0 if simscore == None else simscore
-#     simtime = 0 if not "path_similarity_score_time_spent" in tmpDoc else  tmpDoc["path_similarity_score_time_spent"]
-#     simtime = 0 if simtime == None else simtime
-#     userFeatures.append([
-#         tmpDoc["visits_on_weekends"],
-#         tmpDoc["p_online_weekend"],
-#         tmpDoc["days_visited_ebag"],
-#         tmpDoc["time_spent_ebag"],
-#         tmpDoc["time_spent_on_mobile_sites"],
-#         tmpDoc["mobile_visits"],
-#         tmpDoc["visited_ebag"],
-#         tmpDoc["p_buy_age_group"],
-#         tmpDoc["p_buy_gender_group"],
-#         tmpDoc["p_visit_ebag_age"],
-#         tmpDoc["p_visit_ebag_gender"],
-#         tmpDoc["p_to_go_online"],
-#         tmpDoc["avg_time_spent_on_high_pageranksites"],
-#         tmpDoc["highranking_page_0"],
-#         tmpDoc["highranking_page_1"],
-#         tmpDoc["highranking_page_2"],
-#         tmpDoc["highranking_page_3"],
-#         tmpDoc["highranking_page_4"],
-#         tmpDoc["time_spent_online"],
-#         simscore,
-#         simtime
-#     ])
+print "Loaded prediction models"
 
-# print "Loaded " + str(len(userFeatures)) + " test user items"
-# filterFile = "NetInfo/filters/paying_users.csv"
-# payingDict = dict()
-# with open(filterFile, 'rb') as filterCsv:
-#     filterReader = csv.reader(filterCsv, delimiter=';', quotechar='|')
-#     for row in filterReader:
-#         uuid = row[0].replace('"', '')
-#         payingDict[uuid] = True
+userFeatures = []
+userData = []
+for tmpDoc in weekData:
+    uuid = tmpDoc["_id"]["uuid"]
+    if uuid in paying_users:    #skip users that have paid some time 
+        continue
+
+    userData.append({ 'uuid' : uuid })
+    simscore = 0 if not "path_similarity_score" in tmpDoc else  tmpDoc["path_similarity_score"]
+    simscore = 0 if simscore == None else simscore
+    simtime = 0 if not "path_similarity_score_time_spent" in tmpDoc else  tmpDoc["path_similarity_score_time_spent"]
+    simtime = 0 if simtime == None else simtime
+    userFeatures.append([
+        tmpDoc["visits_on_weekends"],
+        tmpDoc["p_online_weekend"],
+        tmpDoc["days_visited_ebag"],
+        tmpDoc["time_spent_ebag"],
+        tmpDoc["time_spent_on_mobile_sites"],
+        tmpDoc["mobile_visits"],
+        tmpDoc["visited_ebag"],
+        tmpDoc["p_buy_age_group"],
+        tmpDoc["p_buy_gender_group"],
+        tmpDoc["p_visit_ebag_age"],
+        tmpDoc["p_visit_ebag_gender"],
+        tmpDoc["p_to_go_online"],
+        tmpDoc["avg_time_spent_on_high_pageranksites"],
+        tmpDoc["highranking_page_0"],
+        tmpDoc["highranking_page_1"],
+        tmpDoc["highranking_page_2"],
+        tmpDoc["highranking_page_3"],
+        tmpDoc["highranking_page_4"],
+        tmpDoc["time_spent_online"],
+        simscore,
+        simtime
+    ])
+
+print "Loaded " + str(len(userFeatures)) + " test user items"
+filterFile = "Netinfo/filters/paying_users.csv"
+payingDict = dict()
+with open(filterFile, 'rb') as filterCsv:
+    filterReader = csv.reader(filterCsv, delimiter=';', quotechar='|')
+    for row in filterReader:
+        uuid = row[0].replace('"', '')
+        payingDict[uuid] = True
 
 filtered = 0
-for m in models:
-    # ignore predictions for now
-    # predictions = m['model'].predict_proba(userFeatures)
+for m in models: 
+    predictions = m['model'].predict_proba(userFeatures)
     c_type = m['type']
     x_data = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
     y_data = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
     plot_cutoff(m, x_data, y_data, client=company)
-    fileName = '{0}_prediction_{1}.csv'.format(company, c_type)
+    fileName = os.path.join(company, 'prediction_{0}.csv'.format(c_type))
 
     print "Writing predictions in: " + fileName
     with open(fileName, 'wb') as csvfile:
@@ -129,9 +136,9 @@ for m in models:
         for p in xrange(len(predictions)): 
             prediction = predictions[p] 
             uuid = userData[p]['uuid']       
-            #if uuid in payingDict: #skip filtered users
-            #    filtered = filtered + 1
-            #   continue
-            # else:
-            writer.writerow([ uuid, prediction[0], prediction[1] ])
+            if uuid in payingDict: #skip filtered users
+                filtered = filtered + 1
+                continue
+            else:
+                writer.writerow([ uuid, prediction[0], prediction[1] ])
 print "Filtered users: " + str(filtered)

@@ -19,6 +19,11 @@ namespace Peeralize.Service.Integration.Blocks
             base.UserId = userId;
         }
 
+        protected override IEnumerable<IntegratedDocument> GetCollectedItems()
+        {
+            return null;
+        }
+
         /// <summary>
         /// 
         /// </summary>

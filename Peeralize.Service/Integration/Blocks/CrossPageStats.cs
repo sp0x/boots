@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using nvoid.extensions;
@@ -14,11 +15,11 @@ namespace Peeralize.Service
         /// <summary>
         /// 
         /// </summary>
-        public Dictionary<string, PageStats> PageStats { get; set; }
+        public ConcurrentDictionary<string, PageStats> PageStats { get; set; }
         
         public CrossPageStats()
         {
-            PageStats = new Dictionary<string, PageStats>();
+            PageStats = new ConcurrentDictionary<string, PageStats>();
         }
 
         public long DomainVisitsTotal()
@@ -75,7 +76,7 @@ namespace Peeralize.Service
         /// <param name="pageStats"></param>
         public void AddPage(string page, PageStats pageStats)
         {
-            PageStats.Add(page, pageStats);
+            PageStats[page]= pageStats;
         }
 
         public PageStats this[string key] 

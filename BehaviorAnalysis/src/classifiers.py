@@ -146,7 +146,7 @@ class Experiment:
         return report   
 
     @staticmethod
-    def make_graphs(y_pred, y_pred_proba, y_true,model='model'):
+    def make_graphs(y_pred, y_pred_proba, y_true,model='model', company = 'cashlend'):
         y_true = np.array(y_true)
         df = pd.DataFrame({'total users': [100] * 10,
                            'buyers': [100 * 0.5] * 10})
@@ -182,13 +182,14 @@ class Experiment:
         plt.legend(loc='lower right')
         plt.ylabel('Buyers %')
         plt.xlabel('User Population %')
-        plt.savefig(abs_path("{0}_gain.png".format(model)))
+        base_path = abs_path(company)
+        plt.savefig(os.path.join(base_path, "{0}_gain.png".format(model)))
         df = df.loc[1:]
         df['lift'] = df['cumulativeActual'] / (df['userPopulation'])
         df.plot('userPopulation', 'lift', ylim=[0, 3], figsize=(8, 6))
         plt.xlabel('User Population %')
         plt.hlines(1, 0, 100)
-        plt.savefig(abs_path('{0}_lift.png'.format(model)))
+        plt.savefig(os.path.join(base_path, '{0}_lift.png'.format(model)))
     
     @staticmethod
     def plot_confusion_matrix(cm, classes,
@@ -267,11 +268,11 @@ class Experiment:
         dump = load(file)
         return dump
 
-    def get_client_dir(self):
-        return abs_path(os.path.join(Experiment.base_path, self._for))
+    def get_client_dir(self):        
+        return abs_path(os.path.join(self._for) )
 
     def get_experiments_dir(self):
-        return abs_path(os.path.join(self._for) )
+        return abs_path(os.path.join(Experiment.base_path, self._for))
 
     def create_and_train(self):
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
@@ -290,7 +291,7 @@ class Experiment:
             log_data['accuracy'] = accuracy_score(y_true, y_pred)
             self._log_data_(log_data)            
             cm = confusion_matrix(y_true, y_pred)
-            Experiment.plot_confusion_matrix(cm, ['Non-Buyers','Buyers'], True, model=m['type'])
+            Experiment.plot_confusion_matrix(cm, ['Non-Buyers','Buyers'], True, model=m['type'], company=self._for)
 
             dump_dir = os.path.join(self.get_experiments_dir(), 'dumps')
             if not os.path.exists(dump_dir):
@@ -302,7 +303,7 @@ class Experiment:
             save(y_pred_proba, os.path.join(dump_dir, "y_pred_proba_{0}.dmp".format(log_data['model'])))
             save(y_true, os.path.join(dump_dir, "y_true_{0}.dmp".format(log_data['model'])))
 
-            Experiment.make_graphs(y_pred,y_pred_proba,y_true, m['type'])
+            Experiment.make_graphs(y_pred,y_pred_proba,y_true, m['type'], self._for)
         self.best_models = best_models
 
     def create_and_train_from_stream(self,stream_reader):
@@ -363,14 +364,12 @@ def plot_cutoff(model, data, data_y, client='cashlend'):
         # validated = cross_val_score(classifier, data, target, cv=10, scoring=custom_roc_auc(cut_off))
         validated = cross_val_score(classifier, data, data_y, cv=10, scoring=custom_roc_auc(cut_off))
         scores.append(validated)
-    print "Score count: {0}".format(str(len(scores)))
 
     sns.boxplot(scores, names=cutoffs)
     plt.title("F scores for each tree")
     plt.xlabel("each cut off value")
     plt.ylabel("custom F score")
-
-    fig_path = os.path.join(client, abs_path('cutoff_{0}.png'.format(c_type)))
+    fig_path = abs_path(os.path.join(client, 'cutoff_{0}.png'.format(c_type))) 
     # fig_path_1 = os.path.join(client, abs_path('cutoff_{0}_alt.png'.format(c_type)))
     plt.savefig(fig_path)
 

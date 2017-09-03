@@ -19,8 +19,8 @@ userTypeId = "598da0a2bff3d758b4025d21"
 appId = "123123123"
 
 weeksAvailable = collection.find({    
-    "UserId" : appId,
-    "TypeId" : userTypeId
+    "UserId": appId,
+    "TypeId": userTypeId
 }).distinct("Document.g_timestamp")
 weeksAvailable.sort()
 
@@ -41,12 +41,12 @@ for index, week in enumerate(weeksAvailable):
         next_week = weeksAvailable[index+1]
     print "Preparing week: " + str(week) + "    " + str(index+1) + "/" + str(len(weeksAvailable))
     next_week_purchases = dict()
-
     pipeline = [
         {"$match" : { 
             "TypeId" : userTypeId, 
             "UserId" : appId,
             "Document.g_timestamp" : {'$gte': week, '$lt': next_week},
+            "Document.is_paying" : 0
          }
         },
         {"$group": {
@@ -86,6 +86,7 @@ for index, week in enumerate(weeksAvailable):
         "Document.noticed_date" : { "$gte" : next_week, "$lt" : next_week_end  }
     }).distinct("Document.uuid")
     weekData = list(weekData)
+    users_paid = []
     print "CrWeek Visits: {0} NxWeek Purchased users: {1}".format(len(weekData), len(next_week_purchases))
     for week_session in weekData:
         tmpDoc = week_session
@@ -119,8 +120,9 @@ for index, week in enumerate(weeksAvailable):
             simtime
         ])
         targetVar = 0
-        if uuid in next_week_purchases:
+        if uuid in next_week_purchases and not uuid in users_paid:
             targetVar = 1
+            users_paid.append(uuid)                                 #If user has ever purchased, use 0 for following targets from him
         targetData.append(targetVar)
 #print inputData[0]
 print "Prepared " + str(len(inputData)) + " items"

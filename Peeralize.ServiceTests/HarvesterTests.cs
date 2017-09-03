@@ -27,7 +27,7 @@ namespace Peeralize.ServiceTests
             var harvester = new Service.Harvester(threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
-            var outBlock = new Log(userId, (x) => { });
+            var outBlock = new IntegrationActionBlock(userId, (action, x) => { });
             harvester.SetDestination(outBlock);
             harvester.AddPersistentType(fileSource, userId); 
             var hresult = await harvester.Synchronize();
@@ -50,7 +50,7 @@ namespace Peeralize.ServiceTests
             var harvester = new Service.Harvester(threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
-            var outBlock = new Log(userId, (x) => { });
+            var outBlock = new IntegrationActionBlock(userId, (action, x) => { });
             harvester.SetDestination(outBlock);
             harvester.AddPersistentType(fileSource, userId);
             Assert.True(harvester.Sets.Count > 0);
@@ -75,7 +75,7 @@ namespace Peeralize.ServiceTests
 
             Assert.Equal(harvester.ThreadCount, threadCount);
             type.UserId = userId; 
-            var outBlock = new Log(userId, (x) =>
+            var outBlock = new IntegrationActionBlock(userId, (action, x) =>
             { });
             harvester.SetDestination(outBlock);
             harvester.AddType(type, fileSource);
