@@ -27,8 +27,7 @@ weeksAvailable.sort()
 #our test week
 weekLimit = 4
 # weeksAvailable = weeksAvailable[(-1) * weekLimit:] if weekLimit > 0 else weeksAvailable #last n weeks
-weeksAvailable = [weeksAvailable[1], weeksAvailable[2]]
-
+weeksAvailable = [weeksAvailable[1], weeksAvailable[2], weeksAvailable[3]]
 lastWeek = weeksAvailable.pop()
 targetData = []
 inputData = []
@@ -45,8 +44,7 @@ for index, week in enumerate(weeksAvailable):
         {"$match": {
             "TypeId": userTypeId,
             "UserId": appId,
-            "Document.g_timestamp": {'$gte': week, '$lt': next_week},
-            "Document.is_paying": 0
+            "Document.g_timestamp": {'$gte': week, '$lt': next_week}
          }
         },
         {"$group": {

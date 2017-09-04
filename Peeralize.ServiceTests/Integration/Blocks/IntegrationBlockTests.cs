@@ -107,15 +107,24 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                 block.LinkTo(action, null);
             }
             var iTransformOnCompletion = 0;
-            block.LinkOnComplete(new TransformBlock<IntegratedDocument, IntegratedDocument>(x =>
+            var blockOps = new ExecutionDataflowBlockOptions() {MaxDegreeOfParallelism = 10};
+            var blockA = new TransformBlock<IntegratedDocument, IntegratedDocument>(x =>
             {
                 finishingTasks[Thread.CurrentThread.ManagedThreadId.ToString()] = "";
                 Interlocked.Increment(ref iTransformOnCompletion);
                 return x;
-            }, new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = 10 }));
+            }, blockOps);
+            var blockB = new TransformBlock<IntegratedDocument, IntegratedDocument>(x =>
+            {
+                finishingTasks[Thread.CurrentThread.ManagedThreadId.ToString()] = "";
+                Interlocked.Increment(ref iTransformOnCompletion);
+                return x;
+            }, blockOps);
+            blockA.LinkTo(blockB);
+            block.LinkOnComplete(blockA);
             harv.SetDestination(block);
             var results = await harv.Synchronize();
-            Assert.Equal(results.ProcessedEntries, iTransformOnCompletion);
+            Assert.Equal(results.ProcessedEntries, iTransformOnCompletion / 2);
             Assert.Equal(results.ProcessedEntries, cnt);
             Assert.Equal(results.ProcessedEntries * rCycles, lCount);
             Debug.WriteLine($"Threads used: after harvest {setx.Count} - finishing {finishingTasks.Count}");
@@ -151,15 +160,22 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                 });
                 block.LinkTo(action, null);
             }
-            var iTransformOnCompletion = 0;
-            block.LinkOnComplete(new IntegrationActionBlock("1234", (actionblock, x) =>
+            var iOnDone = 0;
+            var iProcessDone = 0;
+            var onDoneBlock = new IntegrationActionBlock("1234", (actionblock, x) =>
             {
                 finishingTasks[Thread.CurrentThread.ManagedThreadId.ToString()] = "";
-                Interlocked.Increment(ref iTransformOnCompletion); 
-            }, 10));
+                Interlocked.Increment(ref iOnDone); 
+            }, 10);
+            onDoneBlock.LinkTo(new ActionBlock<IntegratedDocument>(x =>
+            {
+                Interlocked.Increment(ref iProcessDone);
+            }));
+            block.LinkOnComplete(onDoneBlock);
             harv.SetDestination(block);
             var results = await harv.Synchronize();
-            Assert.Equal(results.ProcessedEntries, iTransformOnCompletion);
+            Assert.Equal(results.ProcessedEntries, iOnDone);
+            Assert.Equal(results.ProcessedEntries, iProcessDone);
             Assert.Equal(results.ProcessedEntries, cnt);
             Assert.Equal(results.ProcessedEntries * rCycles, lCount);
             Debug.WriteLine($"Threads used: after harvest {setx.Count} - finishing {finishingTasks.Count}");

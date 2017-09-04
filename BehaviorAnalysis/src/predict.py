@@ -32,7 +32,7 @@ paying_users = collection.find({
 
 weeksAvailable.sort()
 #target_week = weeksAvailable[len(weeksAvailable) - 2]
-target_week = weeksAvailable[3]
+target_week = weeksAvailable[4]
 target_week_end = target_week + timedelta(days=7)
 next_week = target_week_end
 next_week_end = target_week_end + timedelta(days=7)
@@ -159,7 +159,8 @@ with open(filterFile, 'rb') as filterCsv:
         payingDict[uuid] = True
 
 filtered = 0
-for m in models: 
+for m in models:
+    t_started = time.time()
     predictions = m['model'].predict_proba(userFeatures)
     c_type = m['type']
     x_data = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
@@ -178,5 +179,7 @@ for m in models:
                 filtered = filtered + 1
                 continue
             else:
-                writer.writerow([ uuid, prediction[0], prediction[1]])
+                writer.writerow([uuid, prediction[0], prediction[1]])
+        time_taken = t_started - time.time()
+        print "{0} prediction took: {1}sec".format(c_type, time_taken)
 print "Filtered users: " + str(filtered)
