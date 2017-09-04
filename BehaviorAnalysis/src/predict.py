@@ -20,19 +20,19 @@ appId = "123123123"
 #
 company = "Netinfo"
 
-weeksAvailable = collection.find({    
+weeksAvailable = collection.find({
     "UserId": appId,
     "TypeId": userTypeId
 }).distinct("Document.g_timestamp")
+weeksAvailable.sort()
 paying_users = collection.find({
     "UserId": appId,
     "TypeId": userTypeId,
     "Document.is_paying": 1
 }).distinct("Document.uuid")
 
-weeksAvailable.sort()
 #target_week = weeksAvailable[len(weeksAvailable) - 2]
-target_week = weeksAvailable[4]
+target_week = weeksAvailable[3]
 target_week_end = target_week + timedelta(days=7)
 next_week = target_week_end
 next_week_end = target_week_end + timedelta(days=7)
@@ -83,7 +83,7 @@ weekData = list(weekData)
 previously_purchasing_users = collection.find({
     "TypeId": userTypeId,
     "UserId": appId,
-    "Document.noticed_date": {"$lte": target_week},
+    "Document.noticed_date": {"$lt": target_week},
     "Document.is_paying": 1
 }).distinct("Document.uuid")
 
@@ -96,9 +96,8 @@ userFeatures = []
 userData = []
 for tmpDoc in weekData:
     uuid = tmpDoc["_id"]["uuid"]
-    if uuid in paying_users:    #skip users that have paid some time 
-        continue
-
+    # if uuid in paying_users:    # skip users that have paid some time
+    #    continue
     userData.append({'uuid': uuid})
 
     simscore = 0 if "path_similarity_score" not in tmpDoc else tmpDoc["path_similarity_score"]
@@ -180,6 +179,8 @@ for m in models:
                 continue
             else:
                 writer.writerow([uuid, prediction[0], prediction[1]])
-        time_taken = t_started - time.time()
+        time_taken = time.time() - t_started
+        time_taken_per_user = time_taken / len(predictions)
         print "{0} prediction took: {1}sec".format(c_type, time_taken)
+        print "{0} prediction took: {1}sec/user".format(c_type, time_taken_per_user)
 print "Filtered users: " + str(filtered)

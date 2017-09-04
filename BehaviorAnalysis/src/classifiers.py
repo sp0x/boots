@@ -131,6 +131,7 @@ class Experiment:
             os.makedirs(models_path)
         models = glob.glob(os.path.join(models_path, "models_*"))
         last_model = max(models, key=os.path.getctime)
+        print "Loading model: {0}".format(last_model)
         return load(last_model)
 
     @staticmethod
@@ -278,7 +279,7 @@ class Experiment:
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
         best_models = []
         for m in self.models:
-            gs = GridSearchCV(estimator=m['model'],param_grid=m['params'],cv=10,scoring=m['scoring'])
+            gs = GridSearchCV(estimator=m['model'], param_grid=m['params'], cv=10, scoring=m['scoring'])
             if 'nn' in m['type']:
                 X_train = preprocessing.normalize(X_train)
             gs.fit(X_train,y_train)
@@ -381,7 +382,7 @@ def conduct_experiment(data, targets, client='cashlend'):
     
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
-    rf = RandomForestClassifier(n_jobs=-1, oob_score=True, class_weight=c, random_state=RANDOM_SEED)
+    rf = RandomForestClassifier(n_jobs=-1, oob_score=True, random_state=RANDOM_SEED)
     cart = DecisionTreeClassifier(random_state=RANDOM_SEED, class_weight=c)
     scoring = "f1_micro" # roc_auc"  # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data, targets, c)
@@ -389,8 +390,8 @@ def conduct_experiment(data, targets, client='cashlend'):
     rf_params = {        
         "n_estimators": [100, 200, 300, 500],
         "max_features": [None, "auto"],
-        "max_depth" : [20, 40, 80],
-        "class_weight" : [ None, "balanced", c]
+        "max_depth": [20, 40, 80],
+        "class_weight": [None, "balanced", c]
     }
     cart_params = {
         "min_samples_split" : [2, 50, 100, 200],
