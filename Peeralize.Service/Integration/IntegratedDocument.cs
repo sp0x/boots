@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using MongoDB.Bson;
 using nvoid.db.DB;
 using Peeralize.Service.Integration.Blocks;
@@ -11,6 +12,8 @@ namespace Peeralize.Service.Integration
         public BsonDocument Reserved { get; set; }
         public string UserId { get; set; }
         public string TypeId { get; set; }
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+
 
         public IntegratedDocument()
         {
@@ -22,7 +25,18 @@ namespace Peeralize.Service.Integration
             {
                 return Document.Value[key];
             }
-            set => Document.Value[key] =value;
+            set
+            {
+                _lock.EnterWriteLock();
+                try
+                {
+                    Document.Value[key] = value;
+                }
+                finally
+                {
+                    if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
+                }
+            }
         }
 
         public void SetDocument(dynamic doc)
@@ -102,9 +116,17 @@ namespace Peeralize.Service.Integration
         {
             if (Document != null)
             {
-                foreach (var key in keys)
+                _lock.EnterWriteLock();
+                try
+                { 
+                    foreach (var key in keys)
+                    {
+                        Document.Value.Remove(key);
+                    }
+                }
+                finally
                 {
-                    Document.Value.Remove(key);
+                    if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
                 }
             }
             return this;

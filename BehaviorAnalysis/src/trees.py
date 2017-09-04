@@ -1,4 +1,12 @@
 from time import sleep
+from threading import Thread, Lock, Condition
+from features import BNode, BTree, lin
+from pymongo import MongoClient
+from pymongo import UpdateMany
+import cPickle as pickle
+import urllib
+from utils import parse_timespan, chunks
+from Queue import Queue
 
 class BuildWorker(Thread):
 
@@ -33,8 +41,8 @@ class BuildWorker(Thread):
                     day_items.append({'time': duration, 'label': host})
 
                 userTree.build(day_items)
-            print "added daily sessions for {0}".format(uuid)
-            self.par.push_result(userTree,uuid)
+            #print "added daily sessions for {0}".format(uuid)
+            self.par.push_result(userTree, uuid)
         print "Worker stopping because no work is available"
         self.is_working = False
 
@@ -60,7 +68,7 @@ class MassTreeBuilder:
         # }).distinct("Document.UserId")
         self.query_filter = filter
         self.user_id_key = user_id_key
-        self.remaining = self.documents_col.find(self.query_filter).distrinct(user_id_key)
+        self.remaining = self.documents_col.find(self.query_filter).distinct(user_id_key)
         self.workers = []
         self.collecting_data = False
         self.io_lock = Lock()
@@ -77,13 +85,13 @@ class MassTreeBuilder:
         match_filter[self.user_id_key] = {"$in": ids}
         pipeline = [
             {"$match": match_filter },
-            {"$group": {"_id": self.user_id_key,
+            {"$group": {"_id": "$" + self.user_id_key,
                         "day_count": {"$sum": 1},
                         "daily_sessions": {"$push": "$Document.Sessions"}
                         }
              }
         ]
-        user_groups = documents_col.aggregate(pipeline)
+        user_groups = self.documents_col.aggregate(pipeline)
         with self.lock:
             for d in user_groups:
                 self.work_queue.put_nowait(d)
@@ -130,7 +138,8 @@ class MassTreeBuilder:
             w.start()
             self.workers.append(w)
 
-    def make(self):
+    def make(self, max_threads=8):
+        self.build(max_threads=max_threads)
         try:
             while self.work_available() and self.is_working():
                 sleep(1)

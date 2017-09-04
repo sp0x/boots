@@ -67,7 +67,7 @@ namespace Peeralize.ServiceTests
 
             var saver = new MongoSink(userId);
             var modifier = new EntityFeatureGenerator(userId);
-            modifier.BroadcastTo(saver, null); //We modify the entity to fill all it's data, then generate feature, and then save
+            modifier.LinkTo(saver, null); //We modify the entity to fill all it's data, then generate feature, and then save
             harvester.SetDestination(modifier);
             harvester.AddType(type, fileSource);
             harvester.Synchronize();
@@ -98,7 +98,7 @@ namespace Peeralize.ServiceTests
                 AccumulateUserEvent);
             //var saver = new MongoSink(userId); 
             var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
-            grouper.BroadcastTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
             grouper.Helper = helper;
             //demographyImporter.LinkTo(featureGen); 
             //featureGen.LinkTo(saver);
@@ -157,14 +157,14 @@ namespace Peeralize.ServiceTests
             demographyImporter.Helper = helper;
             grouper.Helper = helper;
             
-            grouper.BroadcastTo(DataflowBlock.NullTarget<IntegratedDocument>());
-            demographyImporter.BroadcastTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            demographyImporter.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
             var featureGen = new EntityFeatureGenerator(userId);
             featureGen.Helper = helper;
             //demographyImporter.LinkTo(featureGen); 
-            featureGen.BroadcastTo(saver, null);
+            featureGen.LinkTo(saver, null);
 
-            saver.BroadcastTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            saver.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
 
             grouper.ContinueWith((grpr) =>
             {

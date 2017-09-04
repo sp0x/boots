@@ -73,7 +73,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                 Interlocked.Increment(ref statsCounter);
                 Thread.Sleep(1000);
             }); 
-            grouper.BroadcastTo(statsBlock, null);
+            grouper.LinkTo(statsBlock, null);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper);
             harvester.AddPersistentType(fileSource, userId);

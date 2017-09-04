@@ -32,8 +32,8 @@ namespace Peeralize.Service
         void ConsumeAsync(CancellationToken token);
         void Complete();
         void Post(IntegratedDocument item);
-        IIntegrationDestination BroadcastTo(ITargetBlock<IntegratedDocument> targetBlock, DataflowLinkOptions linkOptions = null);
-        IIntegrationDestination BroadcastTo(IntegrationBlock targetDestination, DataflowLinkOptions linkOptions = null);
+        IIntegrationDestination LinkTo(ITargetBlock<IntegratedDocument> targetBlock, DataflowLinkOptions linkOptions = null);
+        IIntegrationDestination LinkTo(IntegrationBlock targetDestination, DataflowLinkOptions linkOptions = null);
         ITargetBlock<IntegratedDocument> GetProcessingBlock();
         IIntegrationDestination ContinueWith(Action<Task> action);
          

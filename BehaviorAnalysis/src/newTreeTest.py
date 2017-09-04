@@ -37,7 +37,7 @@ def create_sessions_tree(query, filter_uuids=None):
             domain = session_item["Domain"]
             duration = parse_timespan(session_item["Duration"])
             duration = duration.total_seconds()
-            cr_items.append({'time' : duration, 'label': domain})
+            cr_items.append({'time': duration, 'label': domain})
         tr.build(cr_items)
     return tr
 
@@ -79,9 +79,11 @@ builder = MassTreeBuilder(200, False, {
 }, "Document.UserId")
 non_paying_usertrees = builder.make()
 
-print "Finished!"
-for chnk in chunks(non_paying_usertrees, 10000):
-    items =[]
+print "Updating {0} users with new features!".format(len(non_paying_usertrees))
+chunkIndex = 0
+for chnk in chunks(non_paying_usertrees, 1000):
+    items = []
+    print "Processing chunk: {0} [{1}]".format(str(chunkIndex + 1), str(len(chnk)))
     for item in chnk:
         uuid = item['uuid']
         tree = item['result']
@@ -95,8 +97,11 @@ for chnk in chunks(non_paying_usertrees, 10000):
             "UserId": appId,
             "Document.uuid": uuid
         },  {'$set': {
-            "Document.path_similarity_score" : simscore,
-            "Document.path_similarity_score_time_spent" : simtime
+            "Document.non_paying_s_time": simtime,
+            "Document.non_paying_s_freq": simscore,
+            "Document.paying_s_time": simtime2,
+            "Document.paying_s_freq": simscore2,
         }})
         items.append(up)
     documents_col.bulk_write(items)
+    chunkIndex += 1

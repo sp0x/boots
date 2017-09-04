@@ -245,36 +245,6 @@ namespace Peeralize.Service.Integration.Blocks
         }
 #endregion
 
-        /// <summary>
-        /// Links to the given target block.
-        /// Beware that FlowCompletion would wait for the completion of the given block.
-        /// </summary>
-        /// <param name="targetBlock"></param>
-        /// <param name="linkOptions"></param>
-        /// <returns></returns>
-        public IIntegrationDestination BroadcastTo(ITargetBlock<IntegratedDocument> targetBlock,
-            DataflowLinkOptions linkOptions = null)
-        { 
-            if (_transformer != null)
-            {
-
-                if (linkOptions != null)
-                {
-                    _transformer.LinkTo(targetBlock, linkOptions);
-                }
-                else
-                {
-                    linkOptions = new DataflowLinkOptions() {PropagateCompletion = true};
-                    _transformer.LinkTo(targetBlock, linkOptions);
-                }
-                _linkedBlockCompletions.Add(targetBlock.Completion);
-            }
-            else
-            { 
-                throw new Exception("Can't link blocks which don`t produce data! Use " + nameof(BroadcastTo) + " instead!");
-            }
-            return this;
-        }
 
         #region Linking
 
@@ -286,7 +256,7 @@ namespace Peeralize.Service.Integration.Blocks
         /// </summary>
         /// <param name="actionBlock"></param>
         /// <param name="options"></param>
-        public void LinkToCompletion(IPropagatorBlock<IntegratedDocument, IntegratedDocument> actionBlock,
+        public void LinkOnComplete(IPropagatorBlock<IntegratedDocument, IntegratedDocument> actionBlock,
             DataflowLinkOptions options = null)
         {
             if (_transformerOnCompletion == null)
@@ -311,7 +281,7 @@ namespace Peeralize.Service.Integration.Blocks
         /// </summary>
         /// <param name="target"></param>
         /// <param name="options"></param>
-        public void LinkToCompletion(IntegrationBlock target,
+        public void LinkOnComplete(IntegrationBlock target,
             DataflowLinkOptions options = null)
         {
             var targetBuffer = target.GetBuffer();
@@ -319,19 +289,21 @@ namespace Peeralize.Service.Integration.Blocks
             if (options == null) options = new DataflowLinkOptions() { PropagateCompletion = true };
             //Determine the block that we'll be waiting for, since we're posting to a buffer, linked to an action block
             //use that block to link any secondary blocks to it!
-            IPropagatorBlock<IntegratedDocument, IntegratedDocument> targetPropagator = null;
+            IPropagatorBlock<IntegratedDocument, IntegratedDocument> targetOutputBlock = null;
             switch (target.ProcType)
             {
                 case ProcessingType.Action:
-                    //Create a proxy block
-                    targetPropagator = new TransformBlock<IntegratedDocument, IntegratedDocument>(x =>
-                    {
-                        targetAction.Post(x);
+                    //Create a blank transformer, and link the target to it
+                    targetOutputBlock = new TransformBlock<IntegratedDocument, IntegratedDocument>(x =>
+                    { 
                         return x;
                     });
+                    target.LinkTo(targetOutputBlock);
+                    
+                    
                     break;
                 case ProcessingType.Transform:
-                    targetPropagator = target._transformer;
+                    targetOutputBlock = target._transformer;
                     break;
             }
             //First link, link to the target's buffer
@@ -343,10 +315,10 @@ namespace Peeralize.Service.Integration.Blocks
             {
                 _lastTransformerBlockOnCompletion.LinkTo(targetBuffer, options);
             }
-            _lastTransformerBlockOnCompletion = targetPropagator;
-
-            var completionTask = target.FlowCompletion();
-            _linkedBlockCompletions.Add(completionTask);
+            //So that the next block can link to the output of the previous
+            _lastTransformerBlockOnCompletion = targetOutputBlock;
+             
+            _linkedBlockCompletions.Add(target.FlowCompletion());
         }
         /// <summary>
         /// Links an action to this block. Usefull if it's an action block.
@@ -371,6 +343,40 @@ namespace Peeralize.Service.Integration.Blocks
             //_lastLinkedBlock = target;
             return this;
         }
+
+
+        /// <summary>
+        /// Links to the given target block.
+        /// Beware that FlowCompletion would wait for the completion of the given block.
+        /// </summary>
+        /// <param name="targetBlock"></param>
+        /// <param name="linkOptions"></param>
+        /// <returns></returns>
+        public IIntegrationDestination LinkTo(ITargetBlock<IntegratedDocument> targetBlock,
+            DataflowLinkOptions linkOptions = null)
+        {
+            if (_transformer != null)
+            {
+
+                if (linkOptions != null)
+                {
+                    _transformer.LinkTo(targetBlock, linkOptions);
+                }
+                else
+                {
+                    linkOptions = new DataflowLinkOptions() { PropagateCompletion = true };
+                    _transformer.LinkTo(targetBlock, linkOptions);
+                }
+                _linkedBlockCompletions.Add(targetBlock.Completion);
+            }
+            else
+            { 
+                BroadcastTo(targetBlock);
+                //throw new Exception("Can't link blocks which don`t produce data! Use " + nameof(LinkTo) + " instead!");
+            }
+            return this;
+        }
+
         /// <summary>
         /// Links this block to a next one.
         /// If this block is an action block, it acts as a BroadcastBlock to all linked children.
@@ -378,7 +384,7 @@ namespace Peeralize.Service.Integration.Blocks
         /// <param name="target"></param>
         /// <param name="linkOptions"></param>
         /// <returns></returns>
-        public IIntegrationDestination BroadcastTo(IntegrationBlock target, DataflowLinkOptions linkOptions)
+        public IIntegrationDestination LinkTo(IntegrationBlock target, DataflowLinkOptions linkOptions)
         {
             var targetBuffer = target.GetBuffer();
             //var targetAction = target.GetProcessingBlock();

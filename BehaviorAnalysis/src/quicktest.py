@@ -26,33 +26,33 @@ weeksAvailable.sort()
 
 #our test week
 weekLimit = 4
-weeksAvailable = weeksAvailable[ (-1) * weekLimit:] if weekLimit > 0 else weeksAvailable #last n weeks
+# weeksAvailable = weeksAvailable[(-1) * weekLimit:] if weekLimit > 0 else weeksAvailable #last n weeks
+weeksAvailable = [weeksAvailable[1], weeksAvailable[2]]
+
 lastWeek = weeksAvailable.pop()
 targetData = []
 inputData = []
-limit = 2 * 100 * 1000
-userlimit = 15 * 1000
-
+# limit = 2 * 100 * 1000
+# userlimit = 15 * 1000
 
 for index, week in enumerate(weeksAvailable):
-    if index== (len(weeksAvailable) -1 ):
+    if index == (len(weeksAvailable) - 1):
         next_week = lastWeek
     else:
         next_week = weeksAvailable[index+1]
     print "Preparing week: " + str(week) + "    " + str(index+1) + "/" + str(len(weeksAvailable))
-    next_week_purchases = dict()
     pipeline = [
-        {"$match" : { 
-            "TypeId" : userTypeId, 
-            "UserId" : appId,
-            "Document.g_timestamp" : {'$gte': week, '$lt': next_week},
-            "Document.is_paying" : 0
+        {"$match": {
+            "TypeId": userTypeId,
+            "UserId": appId,
+            "Document.g_timestamp": {'$gte': week, '$lt': next_week},
+            "Document.is_paying": 0
          }
         },
         {"$group": {
             "_id": {
-                "uuid" : "$Document.uuid",
-                "week_start" : "$Document.g_timestamp"
+                "uuid": "$Document.uuid",
+                "week_start": "$Document.g_timestamp"
             }, 
             "visits_count": {"$sum": 1}, 
                 "visits_on_weekends" : { "$avg" : "$Document.visits_on_weekends"},
@@ -75,15 +75,19 @@ for index, week in enumerate(weeksAvailable):
                 "highranking_page_4" : { "$avg" : "$Document.highranking_page_4"},
                 "time_spent_online" : { "$avg" : "$Document.time_spent_online"},
                 "path_similarity_score" : { "$avg" : "$path_similarity_score"},
-                "path_similarity_score_time_spent" : { "$avg" : "$path_similarity_score_time_spent"}
-            
+                "path_similarity_score_time_spent" : { "$avg" : "$path_similarity_score_time_spent"},
+                "non_paying_s_time": {"$avg": "$Document.non_paying_s_time"},
+                "non_paying_s_freq": {"$avg": "$Document.non_paying_s_freq"},
+                "paying_s_time": {"$avg": "$Document.paying_s_time"},
+                "paying_s_freq": {"$avg": "$Document.paying_s_freq"}
         }}]
     weekData = collection.aggregate(pipeline)     
     next_week_end = next_week + timedelta(days=7)
     next_week_purchases = collection.find({        
-        "TypeId" :  userTypeId,
-        "UserId" : appId,
-        "Document.noticed_date" : { "$gte" : next_week, "$lt" : next_week_end  }
+        "TypeId": userTypeId,
+        "UserId": appId,
+        "Document.noticed_date": {"$gte": next_week, "$lt": next_week_end},
+        "Document.is_paying": 1
     }).distinct("Document.uuid")
     weekData = list(weekData)
     users_paid = []
@@ -91,12 +95,24 @@ for index, week in enumerate(weeksAvailable):
     for week_session in weekData:
         tmpDoc = week_session
         uuid = tmpDoc["_id"]["uuid"]
-        simscore = 0 if not "path_similarity_score" in tmpDoc else  tmpDoc["path_similarity_score"] 
+        simscore = 0 if "path_similarity_score" not in tmpDoc else tmpDoc["path_similarity_score"]
         simscore = 0 if simscore == None else simscore
-        simtime = 0 if not "path_similarity_score_time_spent" in tmpDoc else  tmpDoc["path_similarity_score_time_spent"]
+        simtime = 0 if "path_similarity_score_time_spent" not in tmpDoc else tmpDoc["path_similarity_score_time_spent"]
         simtime = 0 if simtime == None else simtime
-        
-        inputData.append([
+        non_paying_s_time = 0 if "non_paying_s_time" not in tmpDoc else tmpDoc["non_paying_s_time"]
+        non_paying_s_time = 0 if non_paying_s_time is None else non_paying_s_time
+
+        non_paying_s_freq = 0 if "non_paying_s_freq" not in tmpDoc else tmpDoc["non_paying_s_freq"]
+        non_paying_s_freq = 0 if non_paying_s_freq is None else non_paying_s_freq
+
+        paying_s_time = 0 if "paying_s_time" not in tmpDoc else tmpDoc["paying_s_time"]
+        paying_s_time = 0 if paying_s_time is None else paying_s_time
+
+        paying_s_freq = 0 if "paying_s_freq" not in tmpDoc else tmpDoc["paying_s_freq"]
+        paying_s_freq = 0 if paying_s_freq is None else paying_s_freq
+
+        has_paid_before = 1 if uuid in users_paid else 0
+        inputElement = [
             tmpDoc["visits_on_weekends"],
             tmpDoc["p_online_weekend"],
             tmpDoc["days_visited_ebag"],
@@ -117,14 +133,20 @@ for index, week in enumerate(weeksAvailable):
             tmpDoc["highranking_page_4"],
             tmpDoc["time_spent_online"],
             simscore,
-            simtime
-        ])
+            simtime,
+            non_paying_s_time,
+            non_paying_s_freq,
+            paying_s_time,
+            paying_s_freq,
+            has_paid_before
+        ]
+        inputData.append(inputElement)
         targetVar = 0
-        if uuid in next_week_purchases and not uuid in users_paid:
+        if uuid in next_week_purchases and not has_paid_before:
             targetVar = 1
             users_paid.append(uuid)                                 #If user has ever purchased, use 0 for following targets from him
         targetData.append(targetVar)
-#print inputData[0]
+
 print "Prepared " + str(len(inputData)) + " items"
 conduct_experiment(inputData, targetData, 'Netinfo')
 

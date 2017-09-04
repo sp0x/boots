@@ -66,7 +66,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                 x["lol"] = true;
                 Interlocked.Increment(ref cnt);
             });
-            block.BroadcastTo(new IntegrationActionBlock("1234",  (act, x) =>
+            block.LinkTo(new IntegrationActionBlock("1234",  (act, x) =>
             {
                 x["r"] = false;
                 Interlocked.Increment(ref lCount);
@@ -104,10 +104,10 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                     docset[x.Id.Value.ToString()] = "";
                     Interlocked.Increment(ref lCount);
                 });
-                block.BroadcastTo(action, null);
+                block.LinkTo(action, null);
             }
             var iTransformOnCompletion = 0;
-            block.LinkToCompletion(new TransformBlock<IntegratedDocument, IntegratedDocument>(x =>
+            block.LinkOnComplete(new TransformBlock<IntegratedDocument, IntegratedDocument>(x =>
             {
                 finishingTasks[Thread.CurrentThread.ManagedThreadId.ToString()] = "";
                 Interlocked.Increment(ref iTransformOnCompletion);
@@ -149,10 +149,10 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                     docset[x.Id.Value.ToString()] = "";
                     Interlocked.Increment(ref lCount);
                 });
-                block.BroadcastTo(action, null);
+                block.LinkTo(action, null);
             }
             var iTransformOnCompletion = 0;
-            block.LinkToCompletion(new IntegrationActionBlock("1234", (actionblock, x) =>
+            block.LinkOnComplete(new IntegrationActionBlock("1234", (actionblock, x) =>
             {
                 finishingTasks[Thread.CurrentThread.ManagedThreadId.ToString()] = "";
                 Interlocked.Increment(ref iTransformOnCompletion); 

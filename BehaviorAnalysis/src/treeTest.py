@@ -3,6 +3,7 @@ from constants import *
 from classifiers import conduct_experiment,Experiment
 from features import BNode, BTree, lin
 from pymongo import MongoClient
+from pymongo import UpdateMany
 import urllib
 from os import walk
 import csv
@@ -16,8 +17,7 @@ from Queue import Queue
 from threading import Thread, Lock, Condition
 from time import sleep
 import sys
-from multiprocessing import Pool
-from pymongo import UpdateMany
+
 
  
 #type used for web sessions
@@ -210,11 +210,11 @@ for chnk in chunks(results, 10000):
         simscore = lin(payingSessionsTree, tree, "frequency")
 
         up = UpdateMany({
-            "UserId" : appId,
-            "Document.uuid" : uuid
+            "UserId": appId,
+            "Document.uuid": uuid
         },  {'$set': {
-            "Document.path_similarity_score" : simscore,
-            "Document.path_similarity_score_time_spent" : simtime
+            "Document.path_similarity_score": simscore,
+            "Document.path_similarity_score_time_spent": simtime
         }})
         items.append(up)
     documents_col.bulk_write(items)

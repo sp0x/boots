@@ -79,7 +79,7 @@ namespace Peeralize.Controllers
             type.SaveType(userApiId);
             //Check if the entity type exists
             var harvester = new Harvester();
-            var destination = (new MongoSink(userApiId)).BroadcastTo(_behaviourContext.GetActionBlock());
+            var destination = (new MongoSink(userApiId)).LinkTo(_behaviourContext.GetActionBlock());
             harvester.SetDestination(destination);
             harvester.AddType(type, memSource);
             harvester.Synchronize();

@@ -17,25 +17,32 @@ collection = db.IntegratedDocument
 
 userTypeId = "598da0a2bff3d758b4025d21" 
 appId = "123123123"
+#
+company = "Netinfo"
 
 weeksAvailable = collection.find({    
-    "UserId" : appId,
-    "TypeId" : userTypeId
+    "UserId": appId,
+    "TypeId": userTypeId
 }).distinct("Document.g_timestamp")
 paying_users = collection.find({
-    "UserId" : appId,
-    "TypeId" : userTypeId,
-    "Document.is_paying" : 1
+    "UserId": appId,
+    "TypeId": userTypeId,
+    "Document.is_paying": 1
 }).distinct("Document.uuid")
+
 weeksAvailable.sort()
-target_week = weeksAvailable[len(weeksAvailable) - 2]
+#target_week = weeksAvailable[len(weeksAvailable) - 2]
+target_week = weeksAvailable[3]
 target_week_end = target_week + timedelta(days=7)
+next_week = target_week_end
+next_week_end = target_week_end + timedelta(days=7)
+
 print "Gathering data from week " + str(target_week)
 pipeline = [
-        {"$match" : { 
-            "TypeId" : userTypeId,
-            "UserId" : appId,
-            "Document.g_timestamp" : {'$gte': target_week, '$lt': target_week_end}, 'Document.is_paying' : 0
+        {"$match": {
+            "TypeId": userTypeId,
+            "UserId": appId,
+            "Document.g_timestamp": {'$gte': target_week, '$lt': target_week_end}, 'Document.is_paying': 0
          }
         },
         {"$group": {
@@ -44,32 +51,42 @@ pipeline = [
                 "week_start" : "$Document.g_timestamp"
             }, 
             "visits_count": {"$sum": 1}, 
-                "visits_on_weekends" : { "$avg" : "$Document.visits_on_weekends"},
-                "p_online_weekend" : { "$avg" : "$Document.p_online_weekend"},
-                "days_visited_ebag" : { "$avg" : "$Document.days_visited_ebag"},
-                "time_spent_ebag" : { "$avg" : "$Document.time_spent_ebag"},
-                "time_spent_on_mobile_sites" : { "$avg" : "$Document.time_spent_on_mobile_sites"},
-                "mobile_visits" : { "$avg" : "$Document.mobile_visits"},
-                "visited_ebag" : { "$avg" : "$Document.visited_ebag"},
-                "p_buy_age_group" : { "$avg" : "$Document.p_buy_age_group"},
-                "p_buy_gender_group" : { "$avg" : "$Document.p_buy_gender_group"},
-                "p_visit_ebag_age" : { "$avg" : "$Document.p_visit_ebag_age"},
-                "p_visit_ebag_gender" : { "$avg" : "$Document.p_visit_ebag_gender"},
-                "p_to_go_online" : { "$avg" : "$Document.p_to_go_online"},
-                "avg_time_spent_on_high_pageranksites" : { "$avg" : "$Document.avg_time_spent_on_high_pageranksites"},
-                "highranking_page_0" : { "$avg" : "$Document.highranking_page_0"},
-                "highranking_page_1" : { "$avg" : "$Document.highranking_page_1"},
-                "highranking_page_2" : { "$avg" : "$Document.highranking_page_2"},
-                "highranking_page_3" : { "$avg" : "$Document.highranking_page_3"},
-                "highranking_page_4" : { "$avg" : "$Document.highranking_page_4"},
-                "time_spent_online" : { "$avg" : "$Document.time_spent_online"},
-                "path_similarity_score" : { "$avg" : "$path_similarity_score"},
-                "path_similarity_score_time_spent" : { "$avg" : "$path_similarity_score_time_spent"} 
+            "visits_on_weekends": {"$avg": "$Document.visits_on_weekends"},
+            "p_online_weekend": {"$avg": "$Document.p_online_weekend"},
+            "days_visited_ebag": {"$avg": "$Document.days_visited_ebag"},
+            "time_spent_ebag": {"$avg" : "$Document.time_spent_ebag"},
+            "time_spent_on_mobile_sites" : { "$avg" : "$Document.time_spent_on_mobile_sites"},
+            "mobile_visits" : { "$avg" : "$Document.mobile_visits"},
+            "visited_ebag" : { "$avg" : "$Document.visited_ebag"},
+            "p_buy_age_group" : { "$avg" : "$Document.p_buy_age_group"},
+            "p_buy_gender_group" : { "$avg" : "$Document.p_buy_gender_group"},
+            "p_visit_ebag_age" : { "$avg" : "$Document.p_visit_ebag_age"},
+            "p_visit_ebag_gender" : { "$avg" : "$Document.p_visit_ebag_gender"},
+            "p_to_go_online" : { "$avg" : "$Document.p_to_go_online"},
+            "avg_time_spent_on_high_pageranksites" : { "$avg" : "$Document.avg_time_spent_on_high_pageranksites"},
+            "highranking_page_0" : {"$avg": "$Document.highranking_page_0"},
+            "highranking_page_1" : {"$avg": "$Document.highranking_page_1"},
+            "highranking_page_2" : {"$avg": "$Document.highranking_page_2"},
+            "highranking_page_3" : {"$avg": "$Document.highranking_page_3"},
+            "highranking_page_4" : {"$avg": "$Document.highranking_page_4"},
+            "time_spent_online" : { "$avg": "$Document.time_spent_online"},
+            "path_similarity_score" : { "$avg" : "$path_similarity_score"},
+            "path_similarity_score_time_spent" : { "$avg" : "$path_similarity_score_time_spent"},
+            "non_paying_s_time": {"$avg": "$Document.non_paying_s_time"},
+            "non_paying_s_freq": {"$avg": "$Document.non_paying_s_freq"},
+            "paying_s_time": {"$avg": "$Document.paying_s_time"},
+            "paying_s_freq": {"$avg": "$Document.paying_s_freq"}
         }}]
 weekData = collection.aggregate(pipeline)
-weekData = list(weekData) 
-#
-company = "Netinfo"
+weekData = list(weekData)
+
+previously_purchasing_users = collection.find({
+    "TypeId": userTypeId,
+    "UserId": appId,
+    "Document.noticed_date": {"$lte": target_week},
+    "Document.is_paying": 1
+}).distinct("Document.uuid")
+
 # offset = 1000 * 200
 exp = Experiment(None, None, None, company)
 models = exp.load_models()
@@ -82,12 +99,27 @@ for tmpDoc in weekData:
     if uuid in paying_users:    #skip users that have paid some time 
         continue
 
-    userData.append({ 'uuid' : uuid })
-    simscore = 0 if not "path_similarity_score" in tmpDoc else  tmpDoc["path_similarity_score"]
+    userData.append({'uuid': uuid})
+
+    simscore = 0 if "path_similarity_score" not in tmpDoc else tmpDoc["path_similarity_score"]
     simscore = 0 if simscore == None else simscore
-    simtime = 0 if not "path_similarity_score_time_spent" in tmpDoc else  tmpDoc["path_similarity_score_time_spent"]
+    simtime = 0 if "path_similarity_score_time_spent" not in tmpDoc else tmpDoc["path_similarity_score_time_spent"]
     simtime = 0 if simtime == None else simtime
-    userFeatures.append([
+    non_paying_s_time = 0 if "non_paying_s_time" not in tmpDoc else tmpDoc["non_paying_s_time"]
+    non_paying_s_time = 0 if non_paying_s_time is None else non_paying_s_time
+
+    non_paying_s_freq = 0 if "non_paying_s_freq" not in tmpDoc else tmpDoc["non_paying_s_freq"]
+    non_paying_s_freq = 0 if non_paying_s_freq is None else non_paying_s_freq
+
+    paying_s_time = 0 if "paying_s_time" not in tmpDoc else tmpDoc["paying_s_time"]
+    paying_s_time = 0 if paying_s_time is None else paying_s_time
+
+    paying_s_freq = 0 if "paying_s_freq" not in tmpDoc else tmpDoc["paying_s_freq"]
+    paying_s_freq = 0 if paying_s_freq is None else paying_s_freq
+    # since we have only 1 week
+    has_paid_before = 1 if uuid in previously_purchasing_users else 0
+
+    input_element = [
         tmpDoc["visits_on_weekends"],
         tmpDoc["p_online_weekend"],
         tmpDoc["days_visited_ebag"],
@@ -108,8 +140,14 @@ for tmpDoc in weekData:
         tmpDoc["highranking_page_4"],
         tmpDoc["time_spent_online"],
         simscore,
-        simtime
-    ])
+        simtime,
+        non_paying_s_time,
+        non_paying_s_freq,
+        paying_s_time,
+        paying_s_freq,
+        has_paid_before
+    ]
+    userFeatures.append(input_element)
 
 print "Loaded " + str(len(userFeatures)) + " test user items"
 filterFile = "Netinfo/filters/paying_users.csv"
@@ -140,5 +178,5 @@ for m in models:
                 filtered = filtered + 1
                 continue
             else:
-                writer.writerow([ uuid, prediction[0], prediction[1] ])
+                writer.writerow([ uuid, prediction[0], prediction[1]])
 print "Filtered users: " + str(filtered)
