@@ -219,12 +219,14 @@ class Experiment:
         plt.xlabel('User Population %')
         base_path = abs_path(company)
         plt.savefig(os.path.join(base_path, "{0}_gain.png".format(model)))
+		plt.clf()
         df = df.loc[1:]
         df['lift'] = df['cumulativeActual'] / (df['userPopulation'])
         df.plot('userPopulation', 'lift', ylim=[0, 3], figsize=(8, 6))
         plt.xlabel('User Population %')
         plt.hlines(1, 0, 100)
         plt.savefig(os.path.join(base_path, '{0}_lift.png'.format(model)))
+		plt.clf()
     
     @staticmethod
     def plot_confusion_matrix(cm, classes,
@@ -271,6 +273,7 @@ class Experiment:
             filepath = abs_path(filename)
 
         plt.savefig(filepath)
+		plt.clf()
 
     @staticmethod
     def t_test(y_pred, y_true, x_train=None, y_train=None, x_test=None, confidence=0.95):
