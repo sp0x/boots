@@ -50,21 +50,27 @@ namespace Peeralize.Service.Integration
         }
         public IntegratedDocument AddDocumentArrayItem(string key, object itemToAdd)
         {
+            _lock.EnterWriteLock();
             if (Document != null)
             {
                 var bval = itemToAdd.ToBsonDocument();
-                if (!Document.Value.Contains(key))
+                var documentValue = Document.Value;
+
+                if (!documentValue.Contains(key))
                 {
-                    Document.Value[key] = new BsonArray();
+                    documentValue[key] = new BsonArray();
                 }
-                ((BsonArray)Document.Value[key]).Add(bval);
+                ((BsonArray)documentValue[key]).Add(bval);
             }
+            if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
             return this;
         }
 
         public string GetString(string key)
         {
-            return Document!=null ? Document.Value[key]?.ToString() : null;
+            if (Document == null) return null;
+            var val = Document.Value;
+            return val[key]?.ToString();
         }
         public long GetInt64(string key)
         {
@@ -72,7 +78,11 @@ namespace Peeralize.Service.Integration
         }
         public int GetInt(string key)
         {
-            return Document!=null ? Document.Value[key].ToInt32() : 0;
+            if (Document == null) return 0;
+            if (!Document.Value.Contains(key)) return 0;
+            var val = Document.Value[key].ToString();
+            if (string.IsNullOrEmpty(val)) return 0;
+            return int.Parse(val);
         }
 
         public BsonDocument CloneDocument()
@@ -106,7 +116,12 @@ namespace Peeralize.Service.Integration
             {
                 return null;
             }
-            return DateTime.Parse(documentValue[key].ToString());
+            var s = documentValue[key].ToString();
+            if (string.IsNullOrEmpty(s))
+            {
+                return null;
+            }
+            return DateTime.Parse(s);
         }
         /// <summary>
         /// Removes all elements by given keys
@@ -134,8 +149,13 @@ namespace Peeralize.Service.Integration
 
         public IntegratedDocument Define(string key, BsonValue value)
         { 
-            Document.Value[key] = value;
+            this[key] = value;
             return this;
+        }
+
+        public bool Has(string key)
+        {
+            return Document.Value.Contains(key);
         }
     }
      

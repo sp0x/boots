@@ -359,7 +359,7 @@ def plot_cutoff(model, data, data_y, client='cashlend'):
         return roc_cutoff
 
     scores = []
-    cutoffs = np.arange(0.9, 1.0, 0.01)
+    cutoffs = np.arange(0.1, 1.0, 0.1)
     for cut_off in cutoffs:
         # In case of supervised learning
         # validated = cross_val_score(classifier, data, target, cv=10, scoring=custom_roc_auc(cut_off))
@@ -382,16 +382,16 @@ def conduct_experiment(data, targets, client='cashlend'):
     
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
-    rf = RandomForestClassifier(n_jobs=-1, oob_score=True, random_state=RANDOM_SEED)
-    cart = DecisionTreeClassifier(random_state=RANDOM_SEED, class_weight=c)
-    scoring = "f1_micro" # roc_auc"  # "f1_micro" uncomment this if performance is too poor
+    rf = RandomForestClassifier(n_jobs=-1, oob_score=True, class_weight=c, random_state=RANDOM_SEED)
+    # cart = DecisionTreeClassifier(random_state=RANDOM_SEED, class_weight=c)
+    scoring = "roc_auc"  # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data, targets, c)
     rnn = KerasClassifier(builder.build_rnn)
     rf_params = {        
         "n_estimators": [100, 200, 300, 500],
         "max_features": [None, "auto"],
         "max_depth": [20, 40, 80],
-        "class_weight": [None, "balanced", c]
+        "class_weight": [c]
     }
     cart_params = {
         "min_samples_split" : [2, 50, 100, 200],

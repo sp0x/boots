@@ -173,7 +173,7 @@ namespace Peeralize.Service
                                 while ((entry = sourceShard.GetNext()) != null)
                                 {
                                     if (TotalEntryLimit!=0 && totalItemsUsed >= TotalEntryLimit) break;
-                                    var document = itemSet.Wrap(entry);
+                                    IntegratedDocument document = itemSet.Wrap(entry);
                                     Destination.Post(document);
                                     Interlocked.Increment(ref totalItemsUsed);
                                 }

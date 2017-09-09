@@ -30,6 +30,10 @@ def save(obj, path):
     with open(path, 'wb') as f:
         pickle.dump(obj, f)
 
+def latest_file(filepath):
+    files = glob.glob(filepath + "*")
+    last_file = max(files, key=os.path.getctime)
+    return last_file
 
 def load(path):
     out = None

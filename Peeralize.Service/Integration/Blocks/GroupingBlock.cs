@@ -54,17 +54,7 @@ namespace Peeralize.Service.Integration.Blocks
             base.Completed += OnReadingCompleted;
             EntityDictionary = new ConcurrentDictionary<object, IntegratedDocument>();
             PageStats = new CrossPageStats();
-        }
-
-        public IIntegrationDestination ContinueWith(Action<GroupingBlock> action)
-        {
-            var completion = GetProcessingBlock().Completion;
-            completion.ContinueWith(xTask =>
-            {
-                action(this);
-            });
-            return this;
-        }
+        } 
 
         private void OnReadingCompleted()
         {

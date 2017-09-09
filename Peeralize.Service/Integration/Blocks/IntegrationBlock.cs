@@ -273,7 +273,14 @@ namespace Peeralize.Service.Integration.Blocks
             _lastTransformerBlockOnCompletion = actionBlock;
             _linkedBlockCompletions.Add(actionBlock.Completion);
         }
-
+        public IIntegrationDestination ContinueWith(Action<IntegrationBlock> action)
+        { 
+            _linkedBlockCompletions.Add(new Task(new Action(() =>
+            {
+                action(this);
+            })));
+            return this;
+        }
         /// <summary>
         /// Link this block to another, when it completes.
         /// N-th links are linked to the previous block.

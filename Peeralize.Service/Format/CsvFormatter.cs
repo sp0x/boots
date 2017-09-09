@@ -18,7 +18,7 @@ namespace Peeralize.Service.Format
 
         public CsvFormatter()
         {
-            
+
         }
 
         /// <summary>
@@ -47,37 +47,67 @@ namespace Peeralize.Service.Format
             }
 
             var outputObject = new ExpandoObject() as IDictionary<string, Object>;
-            if (_csvReader.ReadNextRecord())
+            var reader = new Func<T>(() =>
             {
-                for (var i = 0; i < _csvReader.FieldCount; i++)
+                while (true)
                 {
-                    string fldValue = _csvReader[i];
-                    string fldName = i>= _headers.Length ? ("NoName_" + i) : _headers[i];
-                    double dValue;
-                    if (double.TryParse(fldValue, out dValue))
+                    var failed = false;
+                    if (_csvReader.ReadNextRecord())
                     {
-                        if (fldValue.Contains(".") || fldValue.Contains(","))
+                        for (var i = 0; i < _csvReader.FieldCount; i++)
                         {
-                            outputObject.Add(fldName, dValue);
-                        }
-                        else
-                        {
-                            outputObject.Add(fldName, (long) dValue);
+                            string fldValue = _csvReader[i];
+                            string fldName = i >= _headers.Length ? ("NoName_" + i) : _headers[i];
+                            //Ignore invalid columns
+                            if (fldName == $"Column{i}" && string.IsNullOrEmpty(fldValue))
+                            {
+                                continue;
+                            }
+                            if (fldValue == _headers[i])
+                            {
+                                failed = true;
+                                break;
+                            }
+                            double dValue;
+                            fldValue = fldValue.Trim('"', '\t', '\n', '\r', '\'');
+                            if (double.TryParse(fldValue, out dValue))
+                            {
+                                if (fldValue.Contains(".") || fldValue.Contains(","))
+                                {
+                                    outputObject.Add(fldName, dValue);
+                                }
+                                else
+                                {
+                                    outputObject.Add(fldName, (long)dValue);
+                                }
+                            }
+                            else
+                            {
+                                outputObject.Add(fldName, fldValue);
+                            }
                         }
                     }
                     else
                     {
-                        outputObject.Add(fldName, fldValue);
+                        return default(T);
                     }
+                    if(!failed) break;
+                }
+
+                if (!outputObject.ContainsKey("uuid"))
+                {
+                    outputObject = outputObject;
                 }
                 return outputObject as T;
-            }
-            return default(T);
+
+            });
+            return reader();
         }
 
         public IInputFormatter Clone()
         {
             var formatter = new CsvFormatter();
+            formatter.Delimiter = this.Delimiter;
             return formatter;
         }
 
@@ -103,7 +133,7 @@ namespace Peeralize.Service.Format
                 _disposed = true;
             }
         }
-        
+
         ~CsvFormatter()
         {
             Dispose(false);

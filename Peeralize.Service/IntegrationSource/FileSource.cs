@@ -209,7 +209,7 @@ namespace Peeralize.Service.IntegrationSource
                     _fileStream.Close();
                     //We reset, because the stream changed
                     lastInstance = Formatter.GetNext(Open(), true);
-                }
+                } 
                 return lastInstance;
             }
         }

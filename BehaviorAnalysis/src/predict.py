@@ -6,6 +6,8 @@ import urllib
 import csv
 from datetime import datetime, timedelta
 import os
+from buyers import check_prediction, check_prediction_ex
+from utils import save, load, abs_path
 
 ##host is local
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
@@ -31,18 +33,19 @@ paying_users = collection.find({
     "Document.is_paying": 1
 }).distinct("Document.uuid")
 
-#target_week = weeksAvailable[len(weeksAvailable) - 2]
-target_week = weeksAvailable[3]
+target_week = weeksAvailable[4]
 target_week_end = target_week + timedelta(days=7)
 next_week = target_week_end
 next_week_end = target_week_end + timedelta(days=7)
+next_week_f = str(next_week).replace(':', '_')
+
 
 print "Gathering data from week " + str(target_week)
 pipeline = [
         {"$match": {
             "TypeId": userTypeId,
             "UserId": appId,
-            "Document.g_timestamp": {'$gte': target_week, '$lt': target_week_end}, 'Document.is_paying': 0
+            "Document.noticed_date": {'$gte': target_week, '$lt': target_week_end}, 'Document.is_paying': 0
          }
         },
         {"$group": {
@@ -165,22 +168,40 @@ for m in models:
     x_data = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
     y_data = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
     plot_cutoff(m, x_data, y_data, client=company)
-    fileName = os.path.join(company, 'prediction_{0}.csv'.format(c_type))
+    fileName = os.path.join(company, 'prediction_{0}_{1}.csv'.format(c_type, next_week_f))
 
     print "Writing predictions in: " + fileName
     with open(fileName, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow([ "uuid", "%will not purchase", "%will purchase"])
+        writer.writerow(["uuid", "chance to buy"])
         for p in xrange(len(predictions)): 
             prediction = predictions[p] 
             uuid = userData[p]['uuid']       
-            if uuid in payingDict: #skip filtered users
+            if uuid in payingDict:  # skip filtered users
                 filtered = filtered + 1
                 continue
             else:
-                writer.writerow([uuid, prediction[0], prediction[1]])
+                writer.writerow([uuid, prediction[1]])
         time_taken = time.time() - t_started
         time_taken_per_user = time_taken / len(predictions)
         print "{0} prediction took: {1}sec".format(c_type, time_taken)
         print "{0} prediction took: {1}sec/user".format(c_type, time_taken_per_user)
+        validation_file = abs_path(os.path.join(company, "validation", "validation.csv"))
+
+    cutoff = 0.1
+    check = check_prediction_ex(validation_file, next_week, cutoff, company, c_type)
+
+    matches_filename = abs_path(os.path.join(company, "validation_matches_{0}.csv".format(next_week_f)))
+    with open(matches_filename, 'wb') as validation_file:
+        validation_writer = csv.writer(validation_file, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        validation_writer.writerow(["uuid", "chance", "valid (cutoff " + str(cutoff) + ")"])
+        for match in check['matches']:
+            uuid = match['uuid']
+            chance = float(match['chance'])
+            validation_writer.writerow([uuid, chance, chance >= cutoff])
+
+    print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
+    print "Matches: {0}, positive {1}".format(len(check['matches']), check['positive_matches'])
+
 print "Filtered users: " + str(filtered)
+
