@@ -127,19 +127,22 @@ class Experiment:
         save(self.best_models, models_path)
 
     @staticmethod
-    def store_model(model):
+    def store_model(model, for_client):
         now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        exp_dir = Experiment.get_experiments_dir_for(for_client)
         if model['type'] == 'rnn':
-            save_model(model['model'],abs_path('rnn_{0}_model.hdf5'.format(now)))
+            hdf5_file = abs_path(os.path.join(exp_dir, 'model_rnn_{0}.hdf5'.format(now)))
+            save_model(model['model'], hdf5_file)
             return
-        path = abs_path("{0}_{1}_model.pickle".format(model['type'],now))
+        path = abs_path(os.path.join(exp_dir, "model_{0}_{1}.pickle".format(model['type'], now)))
         save(model, path)
 
     @staticmethod
-    def load_model(model_name):
+    def load_model(model_name, for_client):
+        mod_path = os.path.join(for_client, model_name)
         if 'hdf5' in model_name:
-            return load_model(abs_path(model_name))
-        path = abs_path(model_name)
+            return load_model(abs_path(mod_path))
+        path = abs_path(mod_path)
         return load(path)
 
     def load_models(self):
@@ -292,25 +295,30 @@ class Experiment:
     def get_experiments_dir(self):
         return abs_path(os.path.join(Experiment.base_path, self._for))
 
+    @staticmethod
+    def get_experiments_dir_for(for_client):
+        return abs_path(os.path.join(Experiment.base_path, for_client))
+
     def create_and_train(self):
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
         best_models = []
         for m in self.models:
+            #print "training " + m['type']
             gs = GridSearchCV(estimator=m['model'],param_grid=m['params'],cv=10,scoring=m['scoring'])
             if 'nn' in m['type'] or 'lr' in m['type']:
                 X_train = preprocessing.normalize(X_train)
-            gs.fit(X_train,y_train)
-            log_data = dict(results=gs.cv_results_,best=gs.best_params_)
+            gs.fit(X_train, y_train)
+            log_data = dict(results=gs.cv_results_, best=gs.best_params_)
             log_data['model'] = m['type']
-            best_models.append(dict(type=m['type'],model=gs.best_estimator_))
+            best_models.append(dict(type=m['type'], model=gs.best_estimator_))
             y_true, y_pred = y_test, gs.predict(X_test)
             y_pred_proba = gs.predict_proba(X_test)
-            log_data['best_performance'] = classification_report(y_true,y_pred)
+            log_data['best_performance'] = classification_report(y_true, y_pred)
             log_data['accuracy'] = accuracy_score(y_true, y_pred)
             self._log_data_(log_data)            
             cm = confusion_matrix(y_true, y_pred)
-            Experiment.store_model(m)
-            Experiment.plot_confusion_matrix(cm, ['Non-Buyers','Buyers'], True, model=m['type'], company=self._for)
+            Experiment.store_model(m, self._for)
+            Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], True, model=m['type'], company=self._for)
             dump_dir = os.path.join(self.get_experiments_dir(), 'dumps')
             if not os.path.exists(dump_dir):
                 os.makedirs(dump_dir)
@@ -401,18 +409,18 @@ def conduct_experiment(data, targets, client='cashlend'):
         c[tmp[i]] = cw[i]
 
     rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = c, random_state=RANDOM_SEED)
-    scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
-    builder = RNNBuilder(data,targets, c)
+    scoring = "roc_auc"  # "f1_micro" uncomment this if performance is too poor
+    builder = RNNBuilder(data, targets, c)
     rnn = KerasClassifier(builder.build_rnn)
     gba = GradientBoostingClassifier(random_state=RANDOM_SEED)
-    lr = LogisticRegression(penalty='l1', solver='saga',n_jobs=-1,random_state=RANDOM_SEED)
-    mlp = MLPClassifier(activation='logistic',random_state=RANDOM_SEED,solver='adam')
+    lr = LogisticRegression(penalty='l1', solver='saga',n_jobs=-1, random_state=RANDOM_SEED)
+    mlp = MLPClassifier(activation='logistic', random_state=RANDOM_SEED, solver='adam')
     gba_params = {'max_depth':[3, 6, 12, 24],
                   'n_estimators':[100, 200, 300]
                   }
     lr_params = {'C': [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]}
     mlp_params = {'hidden_layer_sizes':[(150, 2),(150,4),(150,6)],
-                  'learning_rate':['adaptive','constant']}
+                  'learning_rate': ['adaptive', 'constant']}
     rf_params = {        
         "n_estimators": [100, 200, 300, 500],
         "max_features": [None, "auto"],
