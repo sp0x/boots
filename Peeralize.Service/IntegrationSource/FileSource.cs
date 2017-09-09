@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using Peeralize.Service.Format;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Source;
@@ -9,73 +9,66 @@ using Peeralize.Service.Source;
 namespace Peeralize.Service.IntegrationSource
 {
     /// <summary>
-    /// 
+    ///     A source file or collection of files
     /// </summary>
-    public class FileSource : IInputSource
+    public class FileSource : InputSource
     {
-        private Stream _fileStream;
-        private string _filePath;
-        /// <summary>
-        /// Not supported
-        /// </summary>
-        public int Size => 0;
+        private dynamic _cachedInstance;
 
-        public IInputFormatter Formatter { get; private set; }
-        public Encoding Encoding { get; set; } = Encoding.UTF8;
+        //reserved for directory mode
+        private int _fileIndex;
+
+        private string[] _filesCache;
+        private Stream _fileStream;
+        private readonly object _lock;
+
+        public FileSource() : base(null)
+        {
+            _lock = new object();
+        }
+
+        public FileSource(string file, IInputFormatter formatter) : base(formatter)
+        {
+            _lock = new object();
+            Path = file;
+            Formatter = formatter;
+        }
+
+        public FileSource(Stream fileStream, IInputFormatter formatter) : this()
+        {
+            _fileStream = fileStream;
+            Formatter = formatter;
+        }
+
+        public FileSource(FileStream fileStream, IInputFormatter formatter) : this((Stream) fileStream, formatter)
+        {
+            Path = fileStream.Name;
+            _fileStream = fileStream;
+            Formatter = formatter;
+        }
+
         public bool IsOpen => _fileStream != null && (_fileStream.CanRead || _fileStream.CanWrite);
-        private object _lock;
-        public string FileName => System.IO.Path.GetFileNameWithoutExtension(_filePath);
+        public string FileName => System.IO.Path.GetFileNameWithoutExtension(Path);
+
         /// <summary>
-        /// The initial path that was used for this source.
+        ///     The initial path that was used for this source.
         /// </summary>
-        public string Path => _filePath;
+        public string Path { get; }
+
         public string CurrentPath { get; private set; }
 
         public FileSourceMode Mode { get; set; }
-        //reserved for directory mode
-        private int _fileIndex = 0;
-
-        private string[] _filesCache;
-
-
-        private dynamic _cachedInstance = null;
-        private bool _disposed;
-
-
-        public FileSource()
-        {
-            _lock = new object();
-            Encoding = System.Text.Encoding.Default;
-        }
-        public FileSource(string file, IInputFormatter formatter) : this()
-        {
-            _filePath = file;
-            this.Formatter = formatter;
-        }
-        public FileSource(Stream fileStream, IInputFormatter formatter) : this()
-        {
-            this._fileStream = fileStream;
-            Formatter = formatter;
-        }
-        public FileSource(FileStream fileStream, IInputFormatter formatter) : this((Stream)fileStream, formatter)
-        {
-            _filePath = fileStream.Name;
-            this._fileStream = fileStream;
-            Formatter = formatter;
-        }
-
-
 
         /// <summary>
-        /// Gets the type definition of this source.
+        ///     Gets the type definition of this source.
         /// </summary>
         /// <returns></returns>
-        public IIntegrationTypeDefinition GetTypeDefinition()
+        public override IIntegrationTypeDefinition GetTypeDefinition()
         {
             try
             {
-                using (Stream fStream = Open())
-                { 
+                using (var fStream = Open())
+                {
                     var firstInstance = _cachedInstance = Formatter.GetNext(fStream, true);
                     IntegrationTypeDefinition typedef = null;
                     if (firstInstance != null)
@@ -95,10 +88,8 @@ namespace Peeralize.Service.IntegrationSource
             return null;
         }
 
-
-
         /// <summary>
-        /// Opens a stream to the file source
+        ///     Opens a stream to the file source
         /// </summary>
         /// <param name="mode"></param>
         /// <returns></returns>
@@ -110,40 +101,41 @@ namespace Peeralize.Service.IntegrationSource
                 {
                     if (IsOpen) return _fileStream;
                     _cachedInstance = null;
-                    return _fileStream = System.IO.File.Open(_filePath, mode);
+                    return _fileStream = File.Open(Path, mode);
                 }
-                else if (Mode == FileSourceMode.Directory)
+                if (Mode == FileSourceMode.Directory)
                 {
                     if (IsOpen) return _fileStream;
                     //Don`t refresh the directory
                     if (_filesCache == null || _filesCache.Length == 0)
-                    {
-                        FileAttributes flAttributes = File.GetAttributes(Path);
-                        //TODO: Optimize this, for large directories
-                        if (flAttributes == FileAttributes.Directory)
-                        {
-                            _filesCache = Directory.GetFiles(Path, "*", SearchOption.TopDirectoryOnly);
-                        }
-                        else
-                        {
-                            _filesCache = Directory.GetFiles(System.IO.Path.GetDirectoryName(Path), FileName,
-                                SearchOption.TopDirectoryOnly);
-                        }
-                    }
+                        _filesCache = GetFilenames();
                     if (_fileIndex >= _filesCache.Length) return null;
                     CurrentPath = _filesCache[_fileIndex];
                     _cachedInstance = null;
-                    return _fileStream = System.IO.File.Open(CurrentPath, mode);
+                    return _fileStream = File.Open(CurrentPath, mode);
                 }
-                else
-                {
-                    return null;
-                }
+                return null;
             }
         }
 
         /// <summary>
-        /// Creates a new filesource
+        /// </summary>
+        /// <returns></returns>
+        private string[] GetFilenames()
+        {
+            var flAttributes = File.GetAttributes(Path);
+            //TODO: Optimize this, for large directories
+            string[] cache;
+            if (flAttributes == FileAttributes.Directory)
+                cache = Directory.GetFiles(Path, "*", SearchOption.TopDirectoryOnly);
+            else
+                cache = Directory.GetFiles(System.IO.Path.GetDirectoryName(Path), FileName,
+                    SearchOption.TopDirectoryOnly);
+            return cache;
+        }
+
+        /// <summary>
+        ///     Creates a new filesource
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="formatter"></param>
@@ -155,7 +147,7 @@ namespace Peeralize.Service.IntegrationSource
         }
 
         /// <summary>
-        /// Creates a new filesource
+        ///     Creates a new filesource
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="formatter"></param>
@@ -168,7 +160,7 @@ namespace Peeralize.Service.IntegrationSource
         }
 
         /// <summary>
-        /// Creates a new filesource
+        ///     Creates a new filesource
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="formatter"></param>
@@ -180,7 +172,6 @@ namespace Peeralize.Service.IntegrationSource
         }
 
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="fs"></param>
         /// <param name="formatter"></param>
@@ -191,17 +182,18 @@ namespace Peeralize.Service.IntegrationSource
             var src = new FileSource(fs, formatter);
             return src;
         }
+
         /// <summary>
-        /// Gets the next instance
+        ///     Gets the next instance
         /// </summary>
         /// <returns></returns>
-        public dynamic GetNext()
+        public override dynamic GetNext()
         {
             lock (_lock)
             {
                 dynamic lastInstance = null;
                 //If there was a previous run and there's cache open but the stream is not open, reset !
-                var resetNeeded = _cachedInstance != null && !IsOpen;
+                var resetNeeded = _cachedInstance != null && !IsOpen || !IsOpen;
                 if (resetNeeded)
                 {
                     Open();
@@ -211,39 +203,69 @@ namespace Peeralize.Service.IntegrationSource
                 lastInstance = Formatter.GetNext(_fileStream, resetNeeded);
                 //If there are no more records in the current file source, and we're using a whole directory as a source
                 //and we have any remaining files to check
-                if (lastInstance == null && Mode == FileSourceMode.Directory && _fileIndex < (_filesCache.Length-1))
+                if (lastInstance == null && Mode == FileSourceMode.Directory && _fileIndex < _filesCache.Length - 1)
                 {
                     _fileIndex++;
                     _fileStream.Close();
                     //We reset, because the stream changed
                     lastInstance = Formatter.GetNext(Open(), true);
-                }
+                } 
                 return lastInstance;
             }
         }
 
-
-        protected virtual void Dispose(bool disposing)
+        /// <summary>
+        /// </summary>
+        /// <inheritdoc/>
+        /// <returns>The input files as source</returns>
+        public override IEnumerable<InputSource> Shards()
         {
-            if (!_disposed && disposing)
+            if (Mode == FileSourceMode.File)
             {
-                _fileStream?.Dispose();
-                _disposed = true;
+                var inputSource = new FileSource(Path, Formatter);
+                yield return inputSource;
+            }
+            else if (Mode == FileSourceMode.Directory)
+            {
+                var cache = GetFilenames();
+                if (_fileIndex < cache.Length)
+                    for (var i = _fileIndex; i < cache.Length; i++)
+                    {
+                        var file = cache[i];
+                        var source = new FileSource(file, Formatter.Clone());
+                        source.Encoding = Encoding;
+                        yield return source;
+                    }
             }
         }
 
-        public void Dispose()
+        /// <summary>
+        /// </summary>
+        /// <inheritdoc/>
+        /// <returns>The input filenames</returns>
+        public override IEnumerable<dynamic> ShardKeys()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            if (Mode == FileSourceMode.File)
+            {
+                yield return Path;
+            }
+            else if (Mode == FileSourceMode.Directory)
+            {
+                var cache = GetFilenames();
+                if (_fileIndex < cache.Length)
+                    for (var i = _fileIndex; i < cache.Length; i++)
+                    {
+                        var file = cache[i];
+                        yield return file;
+                    }
+            }
         }
 
-        ~FileSource()
+
+        public override void DoDispose()
         {
-            Dispose(false);
+            _fileStream?.Dispose();
         }
+
     }
-
-
-
 }

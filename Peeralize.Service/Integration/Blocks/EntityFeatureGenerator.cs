@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
 using nvoid.extensions;
+using Peeralize.Service.Time;
 
 namespace Peeralize.Service.Integration.Blocks
 {
@@ -18,6 +19,11 @@ namespace Peeralize.Service.Integration.Blocks
             base.UserId = userId;
         }
 
+        protected override IEnumerable<IntegratedDocument> GetCollectedItems()
+        {
+            return null;
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -26,9 +32,10 @@ namespace Peeralize.Service.Integration.Blocks
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
         {
             //TODO: Clean this up..
-            var doc = intDoc.Document;
+            var intDocDocument = intDoc.GetDocument();
+            var doc = intDocDocument;
             var targetDomain = "ebag.bg";
-            var userId = intDoc.Document["uuid"].AsString;
+            var userId = intDocDocument["uuid"].AsString;
             var browsingStats = UserBrowsingStats.FromBson(doc["browsing_statistics"]);
 
             doc["events"] = ((BsonArray) doc["events"]);
@@ -155,79 +162,79 @@ namespace Peeralize.Service.Integration.Blocks
             Helper.AddBuyVisitValue(probBuyVisit);
 
 
-            intDoc.Document["visits_per_time"] = visitsPerTime;
+            intDocDocument["visits_per_time"] = visitsPerTime;
             
-            intDoc.Document["bought_last_week"] = boughtLastWeek.Count() /
+            intDocDocument["bought_last_week"] = boughtLastWeek.Count() /
                 mx1(CrossSiteAnalyticsHelper.GetPeriod(boughtLastWeek).Days);
-            intDoc.Document["bought_last_month"] = boughtLastMonth.Count() / 
+            intDocDocument["bought_last_month"] = boughtLastMonth.Count() / 
                 mx1(CrossSiteAnalyticsHelper.GetPeriod(boughtLastMonth).Days);
-            intDoc.Document["bought_last_year"] = boughtLastYear.Count() / 
+            intDocDocument["bought_last_year"] = boughtLastYear.Count() / 
                 mx1(CrossSiteAnalyticsHelper.GetPeriod(boughtLastYear).Days);
-            intDoc.Document["time_spent"] = CrossSiteAnalyticsHelper.GetVisitsTimeSpan(ebagVisits, realisticUserWebTime).TotalSeconds;
+            intDocDocument["time_spent"] = CrossSiteAnalyticsHelper.GetVisitsTimeSpan(ebagVisits, realisticUserWebTime).TotalSeconds;
 
-            intDoc.Document["time_spent_max"] = domainVisits?.Select(x => 
+            intDocDocument["time_spent_max"] = domainVisits?.Select(x => 
                 CrossSiteAnalyticsHelper.GetVisitsTimeSpan(x.ToBsonArray(), realisticUserWebTime)).Max().TotalSeconds;
-            intDoc.Document["month"] = purchasesInThisMonth.Count() / 
+            intDocDocument["month"] = purchasesInThisMonth.Count() / 
                 mx1(purchases.Count);
-            intDoc.Document["prob_buy_is_holiday_user"] = purchasesInHolidays.Count() / 
+            intDocDocument["prob_buy_is_holiday_user"] = purchasesInHolidays.Count() / 
                 mx1(purchases.Count);
-            intDoc.Document["prob_buy_is_before_holiday_user"] = purchasesBeforeHolidays.Count() / 
+            intDocDocument["prob_buy_is_before_holiday_user"] = purchasesBeforeHolidays.Count() / 
                 mx1(purchases.Count);
-            intDoc.Document["prop_buy_is_weekend_user"] = purchasesInWeekends.Count() /
+            intDocDocument["prop_buy_is_weekend_user"] = purchasesInWeekends.Count() /
                 mx1(purchases.Count);
 
-            intDoc.Document["is_from_mobile"] = hasVisitedMobile ? 1 : 0;
+            intDocDocument["is_from_mobile"] = hasVisitedMobile ? 1 : 0;
             
-            intDoc.Document["is_on_promotions_page"] = hasVisitedPromotion ? 1 : 0;
-            intDoc.Document["before_visit_from_mobile"] = hasVisitedMobileBeforeTarget ? 1 : 0;
-            intDoc.Document["time_before_leaving"] = browsingStats != null
+            intDocDocument["is_on_promotions_page"] = hasVisitedPromotion ? 1 : 0;
+            intDocDocument["before_visit_from_mobile"] = hasVisitedMobileBeforeTarget ? 1 : 0;
+            intDocDocument["time_before_leaving"] = browsingStats != null
                 ? browsingStats.TargetSiteVisitAverageDuration
                 : 0;
             var avgPageRating = Helper.GetAveragePageRating(domainVisits, targetDomain, false);
-            intDoc.Document["page_rank"] = avgPageRating; 
+            intDocDocument["page_rank"] = avgPageRating; 
 
-            intDoc.Document["prop_buy_is_before_weekend_user"] = purchasesBeforeWeekends.Count() /
+            intDocDocument["prop_buy_is_before_weekend_user"] = purchasesBeforeWeekends.Count() /
                                                                  mx1(purchases.Count);
-            intDoc.Document["visits_before_weekend"] = visitsBeforeWeekends.Count / mx1(completeTimeSpan.Days);
-            intDoc.Document["visits_before_holidays"] = visitsBeforeHolidays.Count / mx1(completeTimeSpan.Days);
+            intDocDocument["visits_before_weekend"] = visitsBeforeWeekends.Count / mx1(completeTimeSpan.Days);
+            intDocDocument["visits_before_holidays"] = visitsBeforeHolidays.Count / mx1(completeTimeSpan.Days);
             
-            intDoc.Document["days_visited_ebag"] = daysVisitedEbag / mx1(completeTimeSpan.Days);
-            intDoc.Document["mobile_visits"] = mobileEbagVisits.Count() / mx1(ebagVisits.Count());
-            intDoc.Document["mobile_purchases"] = mobilePurchases.Count() / mx1(purchases.Count());
+            intDocDocument["days_visited_ebag"] = daysVisitedEbag / mx1(completeTimeSpan.Days);
+            intDocDocument["mobile_visits"] = mobileEbagVisits.Count() / mx1(ebagVisits.Count());
+            intDocDocument["mobile_purchases"] = mobilePurchases.Count() / mx1(purchases.Count());
 
 
             //new features
-            intDoc.Document["visited_ebag"] = (ebagVisits.Count > 0) ? 1 : 0;
-            intDoc.Document["time_spent_online"] = realisticUserWebTime.TotalSeconds / 86400 * 7;
-            intDoc.Document["time_spent_on_mobile_sites"] = browsingStats?.TimeOnMobileSites / mx1(realisticUserWebTime.TotalSeconds) ;
-            intDoc.Document["time_spent_ebag"] = browsingStats?.TargetSiteTime / mx1(realisticUserWebTime.TotalSeconds);
-            intDoc.Document["visits_on_holidays"] = visitsOnHolidays.Count / mx1(completeTimeSpan.Days);
-            intDoc.Document["visits_on_weekends"] = visitsOnWeekends.Count / mx1(completeTimeSpan.Days);
-            intDoc.Document["p_online_weekend"] = browsingStats.WeekendVisits / mx1(browsingStats.DomainChanges);
-            intDoc.Document["p_buy_age_group"] = buyersWithSameAge.Count() / mxi1(usersWithSameAge.Count());
-            intDoc.Document["p_buy_gender_group"] = buyersWithSameGender.Count() / mx1(usersWithSameGender.Count());
+            intDocDocument["visited_ebag"] = (ebagVisits.Count > 0) ? 1 : 0;
+            intDocDocument["time_spent_online"] = realisticUserWebTime.TotalSeconds / 86400 * 7;
+            intDocDocument["time_spent_on_mobile_sites"] = browsingStats?.TimeOnMobileSites / mx1(realisticUserWebTime.TotalSeconds) ;
+            intDocDocument["time_spent_ebag"] = browsingStats?.TargetSiteTime / mx1(realisticUserWebTime.TotalSeconds);
+            intDocDocument["visits_on_holidays"] = visitsOnHolidays.Count / mx1(completeTimeSpan.Days);
+            intDocDocument["visits_on_weekends"] = visitsOnWeekends.Count / mx1(completeTimeSpan.Days);
+            intDocDocument["p_online_weekend"] = browsingStats.WeekendVisits / mx1(browsingStats.DomainChanges);
+            intDocDocument["p_buy_age_group"] = buyersWithSameAge.Count() / mxi1(usersWithSameAge.Count());
+            intDocDocument["p_buy_gender_group"] = buyersWithSameGender.Count() / mx1(usersWithSameGender.Count());
 
-            intDoc.Document["p_visit_ebag_age"] = Helper.TargetDomainVisitors(usersWithSameAge).Count() / Helper.GetEntityCount();
+            intDocDocument["p_visit_ebag_age"] = Helper.TargetDomainVisitors(usersWithSameAge).Count() / Helper.GetEntityCount();
             //p(visit_ebag|age)=visitors_same_age/visitors_total
-            intDoc.Document["p_visit_ebag_gender"] = Helper.TargetDomainVisitors(usersWithSameGender).Count() / Helper.GetEntityCount();
-            intDoc.Document["p_to_go_online"] = browsingStats.TargetSiteVisits / mx1(Helper.GetAverageDomainVisits());
-            intDoc.Document["p_buy_visit"] = Helper.BuyVisitValues;
+            intDocDocument["p_visit_ebag_gender"] = Helper.TargetDomainVisitors(usersWithSameGender).Count() / Helper.GetEntityCount();
+            intDocDocument["p_to_go_online"] = browsingStats.TargetSiteVisits / mx1(Helper.GetAverageDomainVisits());
+            intDocDocument["p_buy_visit"] = Helper.BuyVisitValues;
             var highPagerankSites = Helper.GetHighrankingPages(targetDomain, 5).ToArray();
-            intDoc.Document["avg_time_spent_on_high_pageranksites"] =
+            intDocDocument["avg_time_spent_on_high_pageranksites"] =
                 highPagerankSites.Sum(x=> x.GetUserVisitDuration(userId)) / mx1(realisticUserWebTime.TotalSeconds);
             for (int iHighPage = 0; iHighPage < 5; iHighPage++)
             {
                 if (iHighPage >= highPagerankSites.Length)  continue;
                 var name = $"highranking_page_{iHighPage}";
-                intDoc.Document[name] = 0;
+                intDocDocument[name] = 0;
                 var highPagerankSite = highPagerankSites[iHighPage];
                 var targetRating = highPagerankSite.GetTargetRating(targetDomain); //userId
-                intDoc.Document[name] = targetRating!=null ? targetRating.Value : 0; 
+                intDocDocument[name] = targetRating!=null ? targetRating.Value : 0; 
             }
 
             //Cleanup events
-            intDoc.Document.Remove("events");
-            intDoc.Document.Remove("browsing_statistics");
+            intDocDocument.Remove("events");
+            intDocDocument.Remove("browsing_statistics");
 //            //intDoc.Document["max_time_spent_by_any_paying_user_ebag"] =  
 //            var averagePageRank = Helper.GetAveragePageRating(domainVisits, "ebag.bg");
 

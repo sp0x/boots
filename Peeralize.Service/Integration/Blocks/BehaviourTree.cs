@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Extensions;
+using System.Linq; 
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using nvoid.extensions;
 
 namespace Peeralize.Service.Integration.Blocks
 {
@@ -115,6 +115,7 @@ namespace Peeralize.Service.Integration.Blocks
                 }
             }
         }
+
         [DataMember]
         Dictionary<string,BNode> paths = new Dictionary<string,BNode>();
         public BehaviourTree(){            
@@ -178,7 +179,7 @@ namespace Peeralize.Service.Integration.Blocks
                 }
             }   
         }
-        public static BehaviourTree load(string path){
+        public static BehaviourTree Load(string path){
             var deserializer = new DataContractJsonSerializer(typeof(BehaviourTree));
             BehaviourTree tree = null;
             MemoryStream ms = new MemoryStream();

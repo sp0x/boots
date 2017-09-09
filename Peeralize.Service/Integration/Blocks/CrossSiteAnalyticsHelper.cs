@@ -9,7 +9,7 @@ namespace Peeralize.Service.Integration.Blocks
 {
     public class CrossSiteAnalyticsHelper
     {
-        public Dictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
+        public IDictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
         public CrossPageStats DomainVisitStats { get; private set; }
         //public int DomainVisitsTotal { get; private set; }
         //public Dictionary<string, int> DomainVisits { get; private set; }
@@ -20,7 +20,7 @@ namespace Peeralize.Service.Integration.Blocks
         public Dictionary<string, List<IntegratedDocument>> GenderGroups { get; set; }
         public Dictionary<string, List<IntegratedDocument>> DistinctUsers { get; set; }
 
-        public CrossSiteAnalyticsHelper(Dictionary<object, IntegratedDocument> sessions,
+        public CrossSiteAnalyticsHelper(IDictionary<object, IntegratedDocument> sessions,
             CrossPageStats domainVisitStats)
         {
             EntityDictionary = sessions;
@@ -52,8 +52,9 @@ namespace Peeralize.Service.Integration.Blocks
         /// <returns></returns>
         public IEnumerable<DomainUserSession> GetWebSessions(IntegratedDocument userDoc)
         {
-            var visits = (BsonArray)userDoc.Document["events"];
-            var uuid = userDoc.Document["uuid"].ToString();
+            var userDocDocument = userDoc.GetDocument();
+            var visits = (BsonArray)userDocDocument["events"];
+            var uuid = userDocDocument["uuid"].ToString();
             var firstVisit = (BsonDocument)visits[0];
             var lastDomain = firstVisit["value"].ToString().ToHostname().ToLower();
 
@@ -130,8 +131,9 @@ namespace Peeralize.Service.Integration.Blocks
             //DomainVisitsTotal = 0;
             foreach (var userPair in this.EntityDictionary)
             {
-                string userId = userPair.Value.Document["uuid"].ToString();//Key.ToString();
-                var visits = (BsonArray)userPair.Value.Document["events"];
+                var valueDocument = userPair.Value.GetDocument();
+                string userId = valueDocument["uuid"].ToString();//Key.ToString();
+                var visits = (BsonArray)valueDocument["events"];
                 var userIsPaying = false;
                 //var userInternetBrowsingTime = TimeSpan.Zero;
 
@@ -259,8 +261,9 @@ namespace Peeralize.Service.Integration.Blocks
                 browsingStats.WeekendVisits = weekendDomainVisits;
 
                 var dictKey = userPair.Key.ToString();
-                this.EntityDictionary[dictKey].Document["browsing_statistics"] = browsingStats.ToBsonDocument();
-                this.EntityDictionary[dictKey].Document["is_paying"] = userIsPaying ? 1 : 0;
+                var document = this.EntityDictionary[dictKey].GetDocument();
+                document["browsing_statistics"] = browsingStats.ToBsonDocument();
+                document["is_paying"] = userIsPaying ? 1 : 0;
                 //} 
                 //aDomainVisitsTotal += domainChanges;
             }
@@ -529,8 +532,9 @@ namespace Peeralize.Service.Integration.Blocks
                 foreach (var pair in agedUsers)
                 {
                     var user = pair;
-                    if (!user.Document.Contains("gender")) continue;
-                    var tmpgender = user.Document["gender"].ToString();
+                    var userDocument = user.GetDocument();
+                    if (!userDocument.Contains("gender")) continue;
+                    var tmpgender = userDocument["gender"].ToString();
                     if (tmpgender == gender)
                     {
                         yield return user;
@@ -565,7 +569,11 @@ namespace Peeralize.Service.Integration.Blocks
             if (AgeGroups.ContainsKey(sage))
             {
                 return AgeGroups[sage]
-                    .Where(x => x.Document["is_paying"].AsInt32 != 0);
+                    .Where(x =>
+                    {
+                        var argDocument = x.GetDocument();
+                        return argDocument!=null && argDocument["is_paying"].AsInt32 != 0;
+                    });
             }
             return (new List<IntegratedDocument>());
         }
@@ -576,7 +584,11 @@ namespace Peeralize.Service.Integration.Blocks
             if (GenderGroups.ContainsKey(gender))
             {
                 return GenderGroups[gender]
-                    .Where(x => x.Document["is_paying"].AsInt32 != 0);
+                    .Where(x =>
+                    {
+                        var argDocument = x.GetDocument();
+                        return argDocument!=null && argDocument["is_paying"].AsInt32 != 0;
+                    });
             }
             return (new List<IntegratedDocument>());
         }
@@ -683,26 +695,32 @@ namespace Peeralize.Service.Integration.Blocks
         public void GroupDemographics()
         {
             this.DistinctUsers = EntityDictionary
-                .GroupBy(x => x.Value.Document["uuid"])
+                .GroupBy(x =>
+                {
+                    var valueDocument = x.Value.GetDocument();
+                    return valueDocument["uuid"];
+                })
                 .ToDictionary(x => x.Key.ToString(), y => y.Select(x => x.Value).ToList());
 
             this.GenderGroups = DistinctUsers
                 .SelectMany(x => x.Value)
-                .GroupBy(x => GetBsonString(x.Document, "gender"))
+                .GroupBy(x => GetBsonString(x.GetDocument(), "gender"))
                 .ToDictionary(x => x.Key, x => x
                      .Where(y =>
                          {
-                             var bsonValue = y.Document["browsing_statistics"] as BsonDocument;
+                             var argDocument = y.GetDocument();
+                             var bsonValue = argDocument["browsing_statistics"] as BsonDocument;
                              return bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0;
                          })
                      .ToList());
             this.AgeGroups = DistinctUsers
                 .SelectMany(x => x.Value)
-                .GroupBy(x => GetBsonString(x.Document, "age"))
+                .GroupBy(x => GetBsonString(x.GetDocument(), "age"))
                 .ToDictionary(x => x.Key, x => x
                     .Where(y =>
                     {
-                        var bsonValue = y.Document["browsing_statistics"] as BsonDocument;
+                        var argDocument = y.GetDocument();
+                        var bsonValue = argDocument["browsing_statistics"] as BsonDocument;
                         return bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0;
                     })
                 .ToList());

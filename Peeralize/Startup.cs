@@ -32,6 +32,7 @@ namespace Peeralize
     {
         public IConfigurationRoot Configuration { get; }
         private BehaviourContext BehaviourContext { get; }
+        
 
         public Startup(IHostingEnvironment env)
         {
@@ -61,6 +62,7 @@ namespace Peeralize
         {
 	        // Register identity framework services and also Mongo storage. 
             var mongoConnectionString = DBConfig.GetGeneralDatabase().Value;
+
             services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
                 .AddDefaultTokenProviders();
             services.AddAuthentication();
@@ -75,6 +77,7 @@ namespace Peeralize
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
 
             // Add application services.
+            services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<BehaviourContext>(this.BehaviourContext);
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<ApplicationUser>>();
@@ -101,22 +104,10 @@ namespace Peeralize
             app.UseSession();
             app.UseStaticFiles();
             app.UseIdentity();
+            var routeHelper = app.ApplicationServices.GetService<RoutingConfiguration>();
             // Add external authentication middleware below. To configure them please see http://go.microsoft.com/fwlink/?LinkID=532715
             //Map api.domain.... to api
-            app.MapWhen(ctx =>
-            {
-                StringValues hostname;
-                if (ctx.Request.Headers.TryGetValue("Host", out hostname))
-                {
-                    Console.WriteLine("App->Map check: " + hostname.ToString());
-                    return hostname.ToString().StartsWith("api.");
-                }
-                else
-                {
-                    return false;
-                }
-                
-            }, builder =>
+            app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), builder =>
             {
                 app.UseEnableRequestRewind();
                 builder.UseHmacAuthentication(new HmacOptions()

@@ -1,4 +1,6 @@
-﻿using Peeralize.Service.IntegrationSource;
+﻿using System.Collections.Generic;
+using System.Dynamic;
+using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Source;
 
 namespace Peeralize.Service.Integration
@@ -9,9 +11,9 @@ namespace Peeralize.Service.Integration
     public class IntegrationSet 
     {
         public IIntegrationTypeDefinition Definition { get; set; }
-        public IInputSource Source { get; set; }
+        public InputSource Source { get; set; }
 
-        public IntegrationSet(IIntegrationTypeDefinition inputDef, IInputSource source)
+        public IntegrationSet(IIntegrationTypeDefinition inputDef, InputSource source)
         {
             this.Definition = inputDef;
             this.Source = source;
@@ -29,9 +31,19 @@ namespace Peeralize.Service.Integration
             else return obj.Equals(this);
         }
 
+        
         public override int GetHashCode()
         {
             return base.GetHashCode();
+        }
+
+        public IEnumerable<IntegratedDocument> AsEnumerable()
+        {
+            dynamic nextItem;
+            while ((nextItem = Read()) != null)
+            {
+                yield return nextItem;
+            }
         }
 
         /// <summary>
@@ -44,7 +56,15 @@ namespace Peeralize.Service.Integration
             if (entry == null) return null;
             var doc = new IntegratedDocument();
             doc.SetDocument(entry);
-            doc.TypeId = Definition.Id;
+            doc.TypeId = Definition.Id.Value;
+            return doc;
+        }
+
+        public IntegratedDocument Wrap(ExpandoObject data)
+        {
+            var doc = new IntegratedDocument();
+            doc.SetDocument(data);
+            doc.TypeId = Definition.Id.Value;
             return doc;
         }
     }

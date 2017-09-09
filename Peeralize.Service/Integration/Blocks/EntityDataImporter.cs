@@ -6,6 +6,9 @@ using LumenWorks.Framework.IO.Csv;
 
 namespace Peeralize.Service.Integration.Blocks
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class EntityDataImporter : IntegrationBlock
     {
         private string _inputFileName;
@@ -30,7 +33,9 @@ namespace Peeralize.Service.Integration.Blocks
             MappedItems = new Dictionary<string, string[]>();
             if (map) Map();
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public void Map()
         {
             _fs = File.Open(_inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -53,8 +58,12 @@ namespace Peeralize.Service.Integration.Blocks
                     CacheItems.Add(row);
                 }
             }
-            
             _fs.Close();
+        }
+
+        protected override IEnumerable<IntegratedDocument> GetCollectedItems()
+        {
+            return null;
         }
 
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
@@ -78,7 +87,7 @@ namespace Peeralize.Service.Integration.Blocks
 
         public IIntegrationDestination ContinueWith(Action<EntityDataImporter> action)
         {
-            var completion = GetActionBlock().Completion;
+            var completion = GetProcessingBlock().Completion;
             completion.ContinueWith(xTask =>
             {
                 action(this);

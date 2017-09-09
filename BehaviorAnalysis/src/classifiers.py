@@ -21,7 +21,7 @@ import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
+import glob
 
 np.random.seed(RANDOM_SEED)
 
@@ -81,6 +81,7 @@ class RNNBuilder:
         model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics='accuracy',loss_weights=self.class_weights)
 
 class Experiment:
+    base_path = "/experiments"
     def __init__(self,data,targets,models,client):
         """
         :param data: stuff to train and test with 
@@ -100,7 +101,7 @@ class Experiment:
         sub_dir = "experiments/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
         if not os.path.exists(self._for):
             os.makedirs(self._for)
-        self.log = abs_path(os.path.join(self._for,sub_dir))
+        self.log = abs_path(os.path.join(self._for, sub_dir))
         if not os.path.exists(self._for):
             os.makedirs(self._for + "/experiments")
 
@@ -118,8 +119,12 @@ class Experiment:
             f.write(report)
 
     def store_models(self):
-        path = abs_path(os.path.join(self._for,"models.pickle"))
-        save(self.best_models, path)
+        models_file = "models_{0}.pickle".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        models_path = self.get_experiments_dir()
+        if not os.path.exists(models_path):
+            os.makedirs(models_path)
+        models_path = os.path.join(models_path, models_file)
+        save(self.best_models, models_path)
 
     @staticmethod
     def store_model(model):
@@ -137,10 +142,14 @@ class Experiment:
         path = abs_path(model_name)
         return load(path)
 
-    @staticmethod
-    def load_models(company):
-        path = abs_path(os.path.join(company,"models.pickle"))
-        return load(path)
+    def load_models(self):
+        models_path = abs_path(os.path.join(Experiment.base_path, self._for))
+        if not os.path.exists(models_path):
+            os.makedirs(models_path)
+        models = glob.glob(os.path.join(models_path, "models_*"))
+        last_model = max(models, key=os.path.getctime)
+        print "Loading model: {0}".format(last_model)
+        return load(last_model)
 
     @staticmethod
     def predict_explain(tree, data, labels, print_proba=False):
@@ -155,7 +164,7 @@ class Experiment:
         return report   
 
     @staticmethod
-    def make_graphs(y_pred, y_pred_proba, y_true,model='model'):
+    def make_graphs(y_pred, y_pred_proba, y_true,model='model', company = 'cashlend'):
         y_true = np.array(y_true)
         df = pd.DataFrame({'total users': [100] * 10,
                            'buyers': [100 * 0.5] * 10})
@@ -191,20 +200,22 @@ class Experiment:
         plt.legend(loc='lower right')
         plt.ylabel('Buyers %')
         plt.xlabel('User Population %')
-        plt.savefig(abs_path("{0}_gain.png".format(model)))
+        base_path = abs_path(company)
+        plt.savefig(os.path.join(base_path, "{0}_gain.png".format(model)))
         df = df.loc[1:]
         df['lift'] = df['cumulativeActual'] / (df['userPopulation'])
         df.plot('userPopulation', 'lift', ylim=[0, 3], figsize=(8, 6))
         plt.xlabel('User Population %')
         plt.hlines(1, 0, 100)
-        plt.savefig(abs_path('{0}_lift.png'.format(model)))
+        plt.savefig(os.path.join(base_path, '{0}_lift.png'.format(model)))
     
     @staticmethod
     def plot_confusion_matrix(cm, classes,
                               normalize=False,
                               title='Confusion matrix',
                               model='model',
-                              cmap=plt.cm.Blues):
+                              cmap=plt.cm.Blues,
+                              company=''):
         """
         This function prints and plots the confusion matrix.
         Normalization can be applied by setting `normalize=True`.
@@ -235,7 +246,14 @@ class Experiment:
         plt.tight_layout()
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
-        plt.savefig(abs_path('{0}_confusion_matrix.png'.format(model)))
+        filename = '{0}_confusion_matrix.png'.format(model)
+        filepath = None
+        if len(company)>0:
+            filepath = abs_path(os.path.join(company, filename))
+        else:
+            filepath = abs_path(filename)
+
+        plt.savefig(filepath)
 
     @staticmethod
     def t_test(y_pred, y_true, x_train=None, y_train=None, x_test=None, confidence=0.95):
@@ -262,10 +280,21 @@ class Experiment:
         else:
             print("Null Hypothesis NOT rejected. Classifier A is random")
 
+    @staticmethod
+    def load_dump(company, name):
+        file = abs_path(os.path.join(Experiment.base_path, company, "dumps", name))
+        dump = load(file)
+        return dump
+
+    def get_client_dir(self):        
+        return abs_path(os.path.join(self._for) )
+
+    def get_experiments_dir(self):
+        return abs_path(os.path.join(Experiment.base_path, self._for))
 
     def create_and_train(self):
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
-        best_models = [] 
+        best_models = []
         for m in self.models:
             gs = GridSearchCV(estimator=m['model'],param_grid=m['params'],cv=10,scoring=m['scoring'])
             if 'nn' in m['type'] or 'lr' in m['type']:
@@ -281,8 +310,18 @@ class Experiment:
             self._log_data_(log_data)            
             cm = confusion_matrix(y_true, y_pred)
             Experiment.store_model(m)
-            Experiment.plot_confusion_matrix(cm, ['Non-Buyers','Buyers'], True, model=m['type'])
-            Experiment.make_graphs(y_pred,y_pred_proba,y_true, m['type'])
+            Experiment.plot_confusion_matrix(cm, ['Non-Buyers','Buyers'], True, model=m['type'], company=self._for)
+            dump_dir = os.path.join(self.get_experiments_dir(), 'dumps')
+            if not os.path.exists(dump_dir):
+                os.makedirs(dump_dir)
+            save(X_train, os.path.join(dump_dir, "x_train_{0}.dmp".format(log_data['model']) ))
+            save(X_test, os.path.join(dump_dir, "x_test_{0}.dmp".format(log_data['model'])))
+            save(y_train, os.path.join(dump_dir, "y_train_{0}.dmp".format(log_data['model'])))
+            save(y_pred, os.path.join(dump_dir, "y_pred_{0}.dmp".format(log_data['model'])))
+            save(y_pred_proba, os.path.join(dump_dir, "y_pred_proba_{0}.dmp".format(log_data['model'])))
+            save(y_true, os.path.join(dump_dir, "y_true_{0}.dmp".format(log_data['model'])))
+            Experiment.make_graphs(y_pred,y_pred_proba,y_true, m['type'], self._for)
+
         self.best_models = best_models
 
     def create_and_train_from_stream(self,stream_reader):
@@ -314,12 +353,53 @@ class Experiment:
         self.best_models = best_models
 
 
+def plot_cutoff(model, data, data_y, client='cashlend'):
+    import seaborn as sns
+    classifier = model['model']
+    c_type = model['type']
+
+    def cutoff_predict(x, cutoff):
+        return (classifier.predict_proba(x)[:, 1] > cutoff).astype(int)
+
+    def custom_f1(cutoff):
+        def f1_cutoff(clf, x, y):
+            import sklearn
+            ypred = cutoff_predict(x, cutoff)
+            return sklearn.metrics.f1_score(y, ypred)
+        return f1_cutoff
+
+    def custom_roc_auc(cutoff):
+        def roc_cutoff(clf, x, y):
+            import sklearn
+            ypred = cutoff_predict(x, cutoff)
+            return sklearn.metrics.roc_auc_score(y, ypred)
+        return roc_cutoff
+
+    scores = []
+    cutoffs = np.arange(0.1, 1.0, 0.1)
+    for cut_off in cutoffs:
+        # In case of supervised learning
+        # validated = cross_val_score(classifier, data, target, cv=10, scoring=custom_roc_auc(cut_off))
+        validated = cross_val_score(classifier, data, data_y, cv=10, scoring=custom_roc_auc(cut_off))
+        scores.append(validated)
+
+    sns.boxplot(scores, names=cutoffs)
+    plt.title("F scores for each tree")
+    plt.xlabel("each cut off value")
+    plt.ylabel("custom F score")
+    fig_path = abs_path(os.path.join(client, 'cutoff_{0}.png'.format(c_type))) 
+    # fig_path_1 = os.path.join(client, abs_path('cutoff_{0}_alt.png'.format(c_type)))
+    plt.savefig(fig_path)
+
+
 def conduct_experiment(data, targets, client='cashlend'):
     tmp = np.unique(targets)
     c = dict()
     cw = compute_class_weight('balanced', tmp, targets)
+    
     for i in xrange (len(tmp)):
-        c[tmp[i]] = cw[i] 
+        c[tmp[i]] = cw[i]
+
     rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = c, random_state=RANDOM_SEED)
     scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data,targets, c)
@@ -336,7 +416,8 @@ def conduct_experiment(data, targets, client='cashlend'):
     rf_params = {        
         "n_estimators": [100, 200, 300, 500],
         "max_features": [None, "auto"],
-        "max_depth" : [20, 40, 80]
+        "max_depth": [20, 40, 80],
+        "class_weight": [c]
     }
     rnn_params = { 
         "a": [2, 4, 10],

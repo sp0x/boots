@@ -8,12 +8,19 @@ using Peeralize.Service.Source;
 
 namespace Peeralize.Service.Format
 {
-    public class CsvFormatter : IInputFormatter
+    public class CsvFormatter : IInputFormatter, IDisposable
     {
         public string Name => "Csv";
         public char Delimiter { get; set; } = ';';
+        private string[] _headers;
         private StreamReader _reader;
         private CsvReader _csvReader;
+
+        public CsvFormatter()
+        {
+
+        }
+
         /// <summary>
         /// Gets the next record in an Expando object
         /// </summary>
@@ -34,35 +41,102 @@ namespace Peeralize.Service.Format
             }
             _reader = (!reset && _reader != null) ? _reader : new StreamReader(fs);
             _csvReader = (!reset && _csvReader != null) ? _csvReader : new CsvReader(_reader, true, Delimiter);
-
-            var headers = _csvReader.GetFieldHeaders(); 
-            var outputObject = new ExpandoObject() as IDictionary<string, Object>;
-            if (_csvReader.ReadNextRecord())
+            if (_headers == null || reset)
             {
-                for (var i = 0; i < _csvReader.FieldCount; i++)
+                _headers = _csvReader.GetFieldHeaders();
+            }
+
+            var outputObject = new ExpandoObject() as IDictionary<string, Object>;
+            var reader = new Func<T>(() =>
+            {
+                while (true)
                 {
-                    string fldValue = _csvReader[i];
-                    string fldName = i>= headers.Length ? ("NoName_" + i) : headers[i];
-                    double dValue;
-                    if (double.TryParse(fldValue, out dValue))
+                    var failed = false;
+                    if (_csvReader.ReadNextRecord())
                     {
-                        if (fldValue.Contains(".") || fldValue.Contains(","))
+                        for (var i = 0; i < _csvReader.FieldCount; i++)
                         {
-                            outputObject.Add(fldName, dValue);
-                        }
-                        else
-                        {
-                            outputObject.Add(fldName, (long) dValue);
+                            string fldValue = _csvReader[i];
+                            string fldName = i >= _headers.Length ? ("NoName_" + i) : _headers[i];
+                            //Ignore invalid columns
+                            if (fldName == $"Column{i}" && string.IsNullOrEmpty(fldValue))
+                            {
+                                continue;
+                            }
+                            if (fldValue == _headers[i])
+                            {
+                                failed = true;
+                                break;
+                            }
+                            double dValue;
+                            fldValue = fldValue.Trim('"', '\t', '\n', '\r', '\'');
+                            if (double.TryParse(fldValue, out dValue))
+                            {
+                                if (fldValue.Contains(".") || fldValue.Contains(","))
+                                {
+                                    outputObject.Add(fldName, dValue);
+                                }
+                                else
+                                {
+                                    outputObject.Add(fldName, (long)dValue);
+                                }
+                            }
+                            else
+                            {
+                                outputObject.Add(fldName, fldValue);
+                            }
                         }
                     }
                     else
                     {
-                        outputObject.Add(fldName, fldValue);
+                        return default(T);
                     }
+                    if(!failed) break;
+                }
+
+                if (!outputObject.ContainsKey("uuid"))
+                {
+                    outputObject = outputObject;
                 }
                 return outputObject as T;
+
+            });
+            return reader();
+        }
+
+        public IInputFormatter Clone()
+        {
+            var formatter = new CsvFormatter();
+            formatter.Delimiter = this.Delimiter;
+            return formatter;
+        }
+
+
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private bool _disposed;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                if (!_csvReader.IsDisposed)
+                {
+                    _csvReader.Dispose();
+                }
+                _csvReader = null;
+                _reader.Dispose();
+                _disposed = true;
             }
-            return default(T);
+        }
+
+        ~CsvFormatter()
+        {
+            Dispose(false);
         }
     }
 }

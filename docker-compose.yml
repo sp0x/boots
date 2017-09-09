@@ -1,7 +1,8 @@
 version: '3'
 
 volumes:
-  mongodb:
+  mongodb: 
+  experiments:
 
 services:
   peeralize:
@@ -35,6 +36,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./BehaviorAnalysis/src:/app
+      - experiments:/experiments
     ports:
       - "5556:5556"
       - "5557:5557"

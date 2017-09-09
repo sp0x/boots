@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Peeralize.Service.Integration;
@@ -6,44 +8,36 @@ using Peeralize.Service.Source;
 
 namespace Peeralize.Service.IntegrationSource
 {
-    public class StreamSource : IInputSource
+    public class StreamSource : InputSource
     {
-        private bool _disposed;
-
-        public IInputFormatter Formatter { get; private set; }
+        
         public Stream Stream { get; set; }
 
-        public IIntegrationTypeDefinition GetTypeDefinition()
+        public StreamSource() : base(null)
+        {
+            
+        }
+
+        public StreamSource(IInputFormatter formatter) : base(formatter)
+        {
+        }
+
+        public override IIntegrationTypeDefinition GetTypeDefinition()
         {
             throw new System.NotImplementedException();
         }
 
-        public dynamic GetNext()
+        public override dynamic GetNext()
         {
             throw new System.NotImplementedException();
         }
 
-        public int Size { get; }
-        public Encoding Encoding { get; set; }
+          
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+        public override void DoDispose()
+        { 
+            Stream?.Dispose();
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed && disposing)
-            {
-                Stream?.Dispose(); 
-                _disposed = true;
-            }
-        }
-
-        ~StreamSource()
-        {
-            Dispose(false);
-        }
     }
 }

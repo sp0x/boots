@@ -3,6 +3,7 @@ from constants import *
 from classifiers import conduct_experiment,Experiment
 from features import BNode, BTree, lin
 from pymongo import MongoClient
+from pymongo import UpdateMany
 import urllib
 from os import walk
 import csv
@@ -16,8 +17,7 @@ from Queue import Queue
 from threading import Thread, Lock, Condition
 from time import sleep
 import sys
-from multiprocessing import Pool
-from pymongo import UpdateMany
+
 
  
 #type used for web sessions
@@ -39,7 +39,7 @@ class BuildWorker(Thread):
 
     def __init__(self,par):
         super(BuildWorker,self).__init__()
-        self.daemon = True        
+        self.daemon = True
         self.par = par
         self.keep_working = True
         self.is_working = True
@@ -50,13 +50,13 @@ class BuildWorker(Thread):
     def run(self):
         while self.par.work_available() and self.keep_working:
             job = self.par.__get_work__()
-            
+
             userTree = BTree()
             itemCount = 0
             uuid = job["_id"]
             day_count = job["day_count"]
             days = job["daily_sessions"]
-            
+
             day_index = 0
             for day in days:
                 day_index += 1
@@ -107,8 +107,16 @@ class MassTreeBuilder:
             del self.remaining[:self.batch_size]
         #job items are users, and all their daily sessions
         pipeline = [
-            {"$match" : { "TypeId" : self.userSessionTypeId, "Document.is_paying" : 0, "Document.UserId" : { "$in" : ids }  } },
-            {"$group": {"_id": "$Document.UserId", "day_count": {"$sum": 1}, "daily_sessions" : { "$push" : "$Document.Sessions"}}}
+            {"$match" : { "TypeId" : self.userSessionTypeId,
+                          "Document.is_paying" : 0,
+                          "Document.UserId" : { "$in" : ids }
+                          }
+             },
+            {"$group": {"_id": "$Document.UserId",
+                        "day_count": {"$sum": 1},
+                        "daily_sessions" : { "$push" : "$Document.Sessions"}
+                        }
+             }
         ]
         user_groups = documents_col.aggregate(pipeline)
         with self.lock:
@@ -185,6 +193,7 @@ for paying_user_day in paying_users:
 user_features = dict()
 builder = MassTreeBuilder(200, False)
 builder.build()
+
 try:
     while builder.work_available() and builder.is_working():
         sleep(1)
@@ -199,12 +208,13 @@ for chnk in chunks(results, 10000):
         tree = item['result']
         simtime = lin(payingSessionsTree, tree, "time")
         simscore = lin(payingSessionsTree, tree, "frequency")
+
         up = UpdateMany({
-            "UserId" : appId,
-            "Document.uuid" : uuid
+            "UserId": appId,
+            "Document.uuid": uuid
         },  {'$set': {
-            "Document.path_similarity_score" : simscore,
-            "Document.path_similarity_score_time_spent" : simtime
+            "Document.path_similarity_score": simscore,
+            "Document.path_similarity_score_time_spent": simtime
         }})
         items.append(up)
     documents_col.bulk_write(items)
