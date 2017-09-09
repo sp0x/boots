@@ -1,5 +1,7 @@
 import logging
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.utils.class_weight import compute_class_weight
@@ -13,8 +15,7 @@ from Queue import Queue
 from constants import RANDOM_SEED,MONITOR_RESPONSE_TIME
 from utils import save,load,abs_path
 import numpy as np
-import time,os,datetime
-import pickle
+import time, datetime
 import pandas as pd
 import os
 import matplotlib
@@ -119,6 +120,22 @@ class Experiment:
     def store_models(self):
         path = abs_path(os.path.join(self._for,"models.pickle"))
         save(self.best_models, path)
+
+    @staticmethod
+    def store_model(model):
+        now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        if model['type'] == 'rnn':
+            save_model(model['model'],abs_path('rnn_{0}_model.hdf5'.format(now)))
+            return
+        path = abs_path("{0}_{1}_model.pickle".format(model['type'],now))
+        save(model, path)
+
+    @staticmethod
+    def load_model(model_name):
+        if 'hdf5' in model_name:
+            return load_model(abs_path(model_name))
+        path = abs_path(model_name)
+        return load(path)
 
     @staticmethod
     def load_models(company):
@@ -251,7 +268,7 @@ class Experiment:
         best_models = [] 
         for m in self.models:
             gs = GridSearchCV(estimator=m['model'],param_grid=m['params'],cv=10,scoring=m['scoring'])
-            if 'nn' in m['type']:
+            if 'nn' in m['type'] or 'lr' in m['type']:
                 X_train = preprocessing.normalize(X_train)
             gs.fit(X_train,y_train)
             log_data = dict(results=gs.cv_results_,best=gs.best_params_)
@@ -263,6 +280,7 @@ class Experiment:
             log_data['accuracy'] = accuracy_score(y_true, y_pred)
             self._log_data_(log_data)            
             cm = confusion_matrix(y_true, y_pred)
+            Experiment.store_model(m)
             Experiment.plot_confusion_matrix(cm, ['Non-Buyers','Buyers'], True, model=m['type'])
             Experiment.make_graphs(y_pred,y_pred_proba,y_true, m['type'])
         self.best_models = best_models
@@ -303,18 +321,22 @@ def conduct_experiment(data, targets, client='cashlend'):
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i] 
     rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = c, random_state=RANDOM_SEED)
-    cart = DecisionTreeClassifier(random_state=RANDOM_SEED, class_weight=c)
     scoring = "roc_auc" # "f1_micro" uncomment this if performance is too poor
     builder = RNNBuilder(data,targets, c)
     rnn = KerasClassifier(builder.build_rnn)
+    gba = GradientBoostingClassifier(random_state=RANDOM_SEED)
+    lr = LogisticRegression(penalty='l1', solver='saga',n_jobs=-1,random_state=RANDOM_SEED)
+    mlp = MLPClassifier(activation='logistic',random_state=RANDOM_SEED,solver='adam')
+    gba_params = {'max_depth':[3, 6, 12, 24],
+                  'n_estimators':[100, 200, 300]
+                  }
+    lr_params = {'C': [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]}
+    mlp_params = {'hidden_layer_sizes':[(150, 2),(150,4),(150,6)],
+                  'learning_rate':['adaptive','constant']}
     rf_params = {        
         "n_estimators": [100, 200, 300, 500],
         "max_features": [None, "auto"],
         "max_depth" : [20, 40, 80]
-    }
-    cart_params = {
-        "min_samples_split" : [2, 50, 100, 200],
-        "max_depth": [None, 8, 10, 20, 40]
     }
     rnn_params = { 
         "a": [2, 4, 10],
@@ -322,8 +344,10 @@ def conduct_experiment(data, targets, client='cashlend'):
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
     logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()),client))
-    e = Experiment(data,targets,[{'model':rf, 'params':rf_params, 'scoring':scoring, 'type':'rf'},
-                                 {'model':cart, 'params':cart_params, 'scoring':scoring, 'type':'cart'}], client)
+    e = Experiment(data,targets, [{'model': rnn, 'params': rnn_params, 'scoring': scoring, 'type': 'rnn'},
+                                 {'model': gba, 'params': gba_params, 'scoring': scoring, 'type': 'gba'},
+                                 {'model': lr, 'params': lr_params, 'scoring': scoring, 'type': 'lr'},
+                                 {'model': mlp, 'params': mlp_params, 'scoring': scoring, 'type': 'mlpnn'},], client)
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
     e.store_models()

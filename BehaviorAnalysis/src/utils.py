@@ -3,8 +3,10 @@ from datetime import datetime, timedelta
 import pickle
 
 
-def abs_path(fl):
+def abs_path(fl=None):
     curr_dir = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+    if not fl:
+        return curr_dir
     abs_file_path = os.path.join(curr_dir, fl)
     return abs_file_path
 
