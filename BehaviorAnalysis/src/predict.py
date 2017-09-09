@@ -33,7 +33,7 @@ paying_users = collection.find({
     "Document.is_paying": 1
 }).distinct("Document.uuid")
 
-target_week = weeksAvailable[4]
+target_week = weeksAvailable[len(weeksAvailable) - 2]
 target_week_end = target_week + timedelta(days=7)
 next_week = target_week_end
 next_week_end = target_week_end + timedelta(days=7)
@@ -92,8 +92,6 @@ previously_purchasing_users = collection.find({
 
 # offset = 1000 * 200
 exp = Experiment(None, None, None, company)
-models = exp.load_models()
-print "Loaded prediction models"
 
 userFeatures = []
 userData = []
@@ -161,13 +159,19 @@ with open(filterFile, 'rb') as filterCsv:
         payingDict[uuid] = True
 
 filtered = 0
+models = exp.load_models() # exp.load_model_files(['gba', 'lr', 'mlpnn'])
+print "Loaded prediction models"
+
 for m in models:
     t_started = time.time()
+    c_type = m['type'] 
+    x_train = Experiment.load_dump(company, 'x_train_{0}.dmp'.format(c_type))
+    y_train = Experiment.load_dump(company, 'y_train_{0}.dmp'.format(c_type))
+    # m['model'].fit(x_train, y_train)
     predictions = m['model'].predict_proba(userFeatures)
-    c_type = m['type']
-    x_data = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
-    y_data = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
-    plot_cutoff(m, x_data, y_data, client=company)
+    x_test = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
+    y_true = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
+    plot_cutoff(m, x_test, y_true, client=company)
     fileName = os.path.join(company, 'prediction_{0}_{1}.csv'.format(c_type, next_week_f))
 
     print "Writing predictions in: " + fileName
@@ -200,8 +204,8 @@ for m in models:
             chance = float(match['chance'])
             validation_writer.writerow([uuid, chance, chance >= cutoff])
 
-    print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
+            # print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
     print "Matches: {0}, positive {1}".format(len(check['matches']), check['positive_matches'])
+    print "False positives: {0}%, count {1}".format(check['false_positives']['perc'], check['false_positives']['count'])
 
-print "Filtered users: " + str(filtered)
 

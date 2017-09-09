@@ -13,7 +13,7 @@ from keras.layers import *
 from threading import Thread,Condition
 from Queue import Queue
 from constants import RANDOM_SEED,MONITOR_RESPONSE_TIME
-from utils import save,load,abs_path
+from utils import save, load, abs_path, latest_file
 import numpy as np
 import time, datetime
 import pandas as pd
@@ -136,6 +136,20 @@ class Experiment:
             return
         path = abs_path(os.path.join(exp_dir, "model_{0}_{1}.pickle".format(model['type'], now)))
         save(model, path)
+
+    def load_model_files(self, model_names):
+        exp_dir = self.get_experiments_dir()
+        models = []
+        for m_name in model_names:
+            model_path = latest_file(os.path.join(exp_dir, "model_{0}_".format(m_name)))
+            print "Loading " + model_path
+            if 'hdf5' in m_name:
+                model = load_model(abs_path(model_path))
+            else:
+                model = load(model_path)
+            models.append(model)
+        return models
+
 
     @staticmethod
     def load_model(model_name, for_client):
@@ -317,6 +331,7 @@ class Experiment:
             log_data['accuracy'] = accuracy_score(y_true, y_pred)
             self._log_data_(log_data)            
             cm = confusion_matrix(y_true, y_pred)
+            m['model'] = gs.best_estimator_
             Experiment.store_model(m, self._for)
             Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], True, model=m['type'], company=self._for)
             dump_dir = os.path.join(self.get_experiments_dir(), 'dumps')
@@ -359,6 +374,7 @@ class Experiment:
             log_data['accuracy'] = accuracy_score(y_true, y_pred)
             self._log_data_(log_data)
         self.best_models = best_models
+
 
 
 def plot_cutoff(model, data, data_y, client='cashlend'):
@@ -404,7 +420,7 @@ def conduct_experiment(data, targets, client='cashlend'):
     tmp = np.unique(targets)
     c = dict()
     cw = compute_class_weight('balanced', tmp, targets)
-    
+
     for i in xrange (len(tmp)):
         c[tmp[i]] = cw[i]
 
@@ -433,10 +449,12 @@ def conduct_experiment(data, targets, client='cashlend'):
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
     logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()),client))
-    e = Experiment(data,targets, [{'model': rnn, 'params': rnn_params, 'scoring': scoring, 'type': 'rnn'},
-                                 {'model': gba, 'params': gba_params, 'scoring': scoring, 'type': 'gba'},
-                                 {'model': lr, 'params': lr_params, 'scoring': scoring, 'type': 'lr'},
-                                 {'model': mlp, 'params': mlp_params, 'scoring': scoring, 'type': 'mlpnn'},], client)
+    e = Experiment(data,targets, [
+        #{'model': rnn, 'params': rnn_params, 'scoring': scoring, 'type': 'rnn'},
+        {'model': gba, 'params': gba_params, 'scoring': scoring, 'type': 'gba'},
+        {'model': lr, 'params': lr_params, 'scoring': scoring, 'type': 'lr'},
+        {'model': mlp, 'params': mlp_params, 'scoring': scoring, 'type': 'mlpnn'},
+    ], client)
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
     e.store_models()
