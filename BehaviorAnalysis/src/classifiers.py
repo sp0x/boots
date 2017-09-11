@@ -182,7 +182,23 @@ class Experiment:
         report += "Feature contributions:\n"
         for c, feature in zip(contributions[0],labels):
             report += feature + str(c) + '\n'
-        return report   
+        return report
+
+    @staticmethod
+    def predict_explain_non_tree(clf, data, labels):
+        # Plot feature importance
+        feature_importance = clf.feature_importances_
+        # make importances relative to max importance
+        feature_importance = 100.0 * (feature_importance / feature_importance.max())
+        sorted_idx = np.argsort(feature_importance)
+        pos = np.arange(sorted_idx.shape[0]) + .5
+        plt.subplot(1, 2, 2)
+        plt.barh(pos, feature_importance[sorted_idx], align='center')
+        plt.yticks(pos, labels[sorted_idx])
+        plt.xlabel('Relative Importance')
+        plt.title('Variable Importance')
+        now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        plt.savefig(abs_path("{0}_importance".format(now)))
 
     @staticmethod
     def make_graphs(y_pred, y_pred_proba, y_true,model='model', company = 'cashlend'):
@@ -458,16 +474,13 @@ def conduct_experiment(data, targets, client='cashlend'):
     builder = RNNBuilder(data, targets, c)
     rnn = KerasClassifier(builder.build_rnn)
     gba = GradientBoostingClassifier(random_state=RANDOM_SEED)
-    lr = LogisticRegression(penalty='l1', solver='saga',n_jobs=-1, random_state=RANDOM_SEED)
-    mlp = MLPClassifier(activation='logistic', random_state=RANDOM_SEED, solver='adam')
+    gba_params = {
+                  'learning_rate': [0.1, 0.05, 0.02, 0.01],
     gba_params = {
                       # 'learning_rate': [0.1, 0.05, 0.02, 0.01],
                       'max_depth': [3, 6, 12, 24],
                       'n_estimators': [100, 200, 300]
     }
-    lr_params = {'C': [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]}
-    mlp_params = {'hidden_layer_sizes':[(150, 2),(150,4),(150,6)],
-                  'learning_rate': ['adaptive', 'constant']}
     rf_params = {        
         "n_estimators": [100, 200, 300, 500],
         "max_features": [None, "auto"],
