@@ -80,7 +80,7 @@ namespace Peeralize.ServiceTests
             harvester.SetDestination(outBlock);
             harvester.AddType(type, fileSource);
             Assert.True(harvester.Sets.Count > 0);
-            harvester.Synchronize();
+            await harvester.Synchronize();
             Assert.True(harvester.ElapsedTime().TotalMilliseconds > 0);
             var syncDuration = harvester.ElapsedTime();
             Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}"); 

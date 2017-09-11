@@ -144,7 +144,10 @@ namespace Peeralize.Service
                             loopState.Break();
                             return;
                         }
-
+#if DEBUG
+                        var threadId = Thread.CurrentThread.ManagedThreadId;
+                        Debug.WriteLine($"[T{threadId}]Harvester reading: {sourceShard}");
+#endif
                         using (sourceShard)
                         {
                             if (sourceShard.SupportsSeeking)

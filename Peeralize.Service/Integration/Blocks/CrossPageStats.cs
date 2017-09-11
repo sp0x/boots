@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using nvoid.extensions;
 using Peeralize.Service.Integration.Blocks;
+using Peeralize.Service.Models;
 
 namespace Peeralize.Service
 {
@@ -128,7 +129,7 @@ namespace Peeralize.Service
         {
             if (!PageStats.ContainsKey(pageLeadingToTarget))
             {
-                this.PageStats[pageLeadingToTarget] = new Integration.Blocks.PageStats();
+                this.PageStats[pageLeadingToTarget] = new PageStats();
             }
             this.PageStats[pageLeadingToTarget].AddRating(targetPage, rating);
         }
@@ -136,7 +137,7 @@ namespace Peeralize.Service
         {
             if (!PageStats.ContainsKey(pageLeadingToTarget))
             {
-                this.PageStats[pageLeadingToTarget] = new Integration.Blocks.PageStats();
+                this.PageStats[pageLeadingToTarget] = new PageStats();
             }
             this.PageStats[pageLeadingToTarget].SetRating(targetPage, rating);
         }
@@ -164,7 +165,7 @@ namespace Peeralize.Service
         {
             if (!PageStats.ContainsKey(domain))
             {
-                PageStats[domain] = new Integration.Blocks.PageStats(); 
+                PageStats[domain] = new PageStats(); 
             }
             PageStats[domain].AddVisit(userKey, visitDuration);
         }

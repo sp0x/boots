@@ -1,9 +1,13 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using MailKit;
 using MongoDB.Bson;
 using nvoid.extensions;
+using Peeralize.Service.Models;
 
 namespace Peeralize.Service.Integration.Blocks
 {
@@ -20,12 +24,24 @@ namespace Peeralize.Service.Integration.Blocks
         public Dictionary<string, List<IntegratedDocument>> GenderGroups { get; set; }
         public Dictionary<string, List<IntegratedDocument>> DistinctUsers { get; set; }
 
+        private ConcurrentDictionary<byte, Dictionary<string, Score>> _featureKeyDictionary;
+        private ConcurrentDictionary<string, Dictionary<byte, HashSet<string>>> _usersWithSpecialEvents;
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+
+        public CrossSiteAnalyticsHelper()
+        {
+            _featureKeyDictionary = new ConcurrentDictionary<byte, Dictionary<string, Score>>();
+            _usersWithSpecialEvents = new ConcurrentDictionary<string, Dictionary<byte, HashSet<string>>>();
+            HighrankPageCache = new Dictionary<string, IEnumerable<PageStats>>();
+        }
+
         public CrossSiteAnalyticsHelper(IDictionary<object, IntegratedDocument> sessions,
             CrossPageStats domainVisitStats)
+            :this()
         {
             EntityDictionary = sessions;
             this.DomainVisitStats = domainVisitStats;
-            HighrankPageCache = new Dictionary<string, IEnumerable<PageStats>>();
+            
 
             //DomainVisits = new Dictionary<string, int>();
         }
@@ -726,38 +742,54 @@ namespace Peeralize.Service.Integration.Blocks
                 .ToList());
 
         }
-
-    }
-
-    public class DomainUserSessionCollection
-    {
-        public IList<DomainUserSession> Sessions { get; set; }
-        public string UserId { get; set; }
-        public DateTime Created { get; set; }
-
-        public DomainUserSessionCollection()
+        public void AddRatingFeature(byte type, string uuid, string key_value)
         {
-            Sessions = new List<DomainUserSession>();
-        }
-        public DomainUserSessionCollection(IList<DomainUserSession> sessions) : this()
-        {
-            this.Sessions = sessions;
-        }
+            _lock.EnterWriteLock();
+            if (!_featureKeyDictionary.ContainsKey(type))
+            {
+                _featureKeyDictionary[type] = new Dictionary<string, Score>();
+            }
+            if (!_featureKeyDictionary[type].ContainsKey(key_value))
+            {
+                _featureKeyDictionary[type][key_value] = new Score();
+            }
+            _featureKeyDictionary[type][key_value] += 1;
 
-    }
 
-    public class DomainUserSession
-    {
-        public DomainUserSession(string lastDomain, DateTime visited, TimeSpan visitDuration)
-        {
-            this.Domain = lastDomain;
-            this.Visited = visited;
-            this.Duration = visitDuration;
+            if (!_usersWithSpecialEvents.ContainsKey(uuid))
+            {
+                _usersWithSpecialEvents[uuid] = new Dictionary<byte, HashSet<string>>();
+            }
+            if (!_usersWithSpecialEvents[uuid].ContainsKey(type))
+            {
+                _usersWithSpecialEvents[uuid][type] = new HashSet<string>();
+            }
+            _usersWithSpecialEvents[uuid][type].Add(key_value);
+            if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
         }
 
-        public TimeSpan Duration { get; private set; }
+        public IEnumerable<Score<string>> GetTopRatedFeatures(byte type, int atMost = 10)
+        {
+            var sortedFeatures = _featureKeyDictionary[type].OrderBy(x=>x.Key);
+            return sortedFeatures.Select(x=> new Score<string>(x.Value)
+            {
+                Value = x.Key
+            }).Take(atMost);
+        }
 
-        public string Domain { get; private set; }
-        public DateTime Visited { get; private set; }
+        public IEnumerable<int> GetTopRatedFeatures(string userId, byte type, int atMost = 10)
+        {
+            var sortedFeatures = this.GetTopRatedFeatures(type, atMost).ToArray();
+            for (var i = 0; i < atMost; i++)
+            {
+                Score<string> feature = i>= sortedFeatures.Length ? null : sortedFeatures[i];
+                var value = 0;
+                if (feature!=null && _usersWithSpecialEvents.ContainsKey(userId) && _usersWithSpecialEvents[userId].ContainsKey(type))
+                {
+                    value = _usersWithSpecialEvents[userId][type].Contains(feature.Value) ? 1 : 0;
+                }                
+                yield return value;
+            }
+        }
     }
 }

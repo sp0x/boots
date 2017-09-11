@@ -336,7 +336,10 @@ namespace Peeralize.Service.Integration.Blocks
         public IIntegrationDestination BroadcastTo<T>(T target, bool linkToCompletion = true)
             where T : ITargetBlock<IntegratedDocument>
         {
-            ItemProcessed += (x) => DataflowBlock.Post(target, x);
+            ItemProcessed += (x) =>
+            {
+                DataflowBlock.Post(target, x);
+            };
             if (linkToCompletion)
             {
                 _linkedBlockCompletions.Add(target.Completion);
@@ -391,9 +394,13 @@ namespace Peeralize.Service.Integration.Blocks
         /// <param name="target"></param>
         /// <param name="linkOptions"></param>
         /// <returns></returns>
-        public IIntegrationDestination LinkTo(IntegrationBlock target, DataflowLinkOptions linkOptions)
+        public IIntegrationDestination LinkTo(IntegrationBlock target, DataflowLinkOptions linkOptions = null)
         {
             var targetBuffer = target.GetBuffer();
+            if (!string.IsNullOrEmpty(UserId))
+            {
+                target.UserId = UserId;
+            }
             //var targetAction = target.GetProcessingBlock();
             if (this.ProcType == ProcessingType.Action)
             {

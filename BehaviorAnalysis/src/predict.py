@@ -39,7 +39,6 @@ next_week = target_week_end
 next_week_end = target_week_end + timedelta(days=7)
 next_week_f = str(next_week).replace(':', '_')
 
-
 print "Gathering data from week " + str(target_week)
 pipeline = [
         {"$match": {
@@ -78,7 +77,17 @@ pipeline = [
             "non_paying_s_time": {"$avg": "$Document.non_paying_s_time"},
             "non_paying_s_freq": {"$avg": "$Document.non_paying_s_freq"},
             "paying_s_time": {"$avg": "$Document.paying_s_time"},
-            "paying_s_freq": {"$avg": "$Document.paying_s_freq"}
+            "paying_s_freq": {"$avg": "$Document.paying_s_freq"},
+            "has_type_val_0": {"$avg": "$Document.has_type_val_0"},
+            "has_type_val_1": {"$avg": "$Document.has_type_val_1"},
+            "has_type_val_2": {"$avg": "$Document.has_type_val_2"},
+            "has_type_val_3": {"$avg": "$Document.has_type_val_3"},
+            "has_type_val_4": {"$avg": "$Document.has_type_val_4"},
+            "has_type_val_5": {"$avg": "$Document.has_type_val_5"},
+            "has_type_val_6": {"$avg": "$Document.has_type_val_6"},
+            "has_type_val_7": {"$avg": "$Document.has_type_val_7"},
+            "has_type_val_8": {"$avg": "$Document.has_type_val_8"},
+            "has_type_val_9": {"$avg": "$Document.has_type_val_9"}
         }}]
 weekData = collection.aggregate(pipeline)
 weekData = list(weekData)
@@ -147,6 +156,11 @@ for tmpDoc in weekData:
         paying_s_freq,
         has_paid_before
     ]
+    for i in xrange(10):
+        f_name = "has_type_val_{0}".format(i)
+        f_val = 0 if f_name not in tmpDoc else tmpDoc[f_name]
+        f_val = 0 if f_val is None else f_val
+        input_element.append(f_val)
     userFeatures.append(input_element)
 
 print "Loaded " + str(len(userFeatures)) + " test user items"
@@ -159,19 +173,58 @@ with open(filterFile, 'rb') as filterCsv:
         payingDict[uuid] = True
 
 filtered = 0
-models = exp.load_models() # exp.load_model_files(['gba', 'lr', 'mlpnn'])
+models = exp.load_models()  # exp.load_model_files(['gba', 'lr', 'mlpnn'])
 print "Loaded prediction models"
 
 for m in models:
     t_started = time.time()
-    c_type = m['type'] 
-    x_train = Experiment.load_dump(company, 'x_train_{0}.dmp'.format(c_type))
-    y_train = Experiment.load_dump(company, 'y_train_{0}.dmp'.format(c_type))
+    c_type = m['type']
+    # x_train = Experiment.load_dump(company, 'x_train_{0}.dmp'.format(c_type))
+    # y_train = Experiment.load_dump(company, 'y_train_{0}.dmp'.format(c_type))
     # m['model'].fit(x_train, y_train)
     predictions = m['model'].predict_proba(userFeatures)
     x_test = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
     y_true = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
     plot_cutoff(m, x_test, y_true, client=company)
+    Experiment.predict_explain_non_tree(m, company, [
+        "visits_on_weekends",
+        "p_online_weekend",
+        "days_visited_ebag",
+        "time_spent_ebag",
+        "time_spent_on_mobile_sites",
+        "mobile_visits",
+        "visited_ebag",
+        "p_buy_age_group",
+        "p_buy_gender_group",
+        "p_visit_ebag_age",
+        "p_visit_ebag_gender",
+        "p_to_go_online",
+        "avg_time_spent_on_high_pageranksites",
+        "highranking_page_0",
+        "highranking_page_1",
+        "highranking_page_2",
+        "highranking_page_3",
+        "highranking_page_4",
+        "time_spent_online",
+        "simscore",
+        "simtime",
+        "non_paying_s_time",
+        "non_paying_s_freq",
+        "paying_s_time",
+        "paying_s_freq",
+        "has_paid_before",
+        "has_type_val_0",
+        "has_type_val_1",
+        "has_type_val_2",
+        "has_type_val_3",
+        "has_type_val_4",
+        "has_type_val_5",
+        "has_type_val_6",
+        "has_type_val_7",
+        "has_type_val_8",
+        "has_type_val_9",
+    ])
+
     fileName = os.path.join(company, 'prediction_{0}_{1}.csv'.format(c_type, next_week_f))
 
     print "Writing predictions in: " + fileName
@@ -195,7 +248,7 @@ for m in models:
     cutoff = 0.1
     check = check_prediction_ex(validation_file, next_week, cutoff, company, c_type)
 
-    matches_filename = abs_path(os.path.join(company, "validation_matches_{0}.csv".format(next_week_f)))
+    matches_filename = abs_path(os.path.join(company, "validation_matches_{0}_{1}.csv".format(c_type, next_week_f)))
     with open(matches_filename, 'wb') as validation_file:
         validation_writer = csv.writer(validation_file, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
         validation_writer.writerow(["uuid", "chance", "valid (cutoff " + str(cutoff) + ")"])
@@ -205,7 +258,7 @@ for m in models:
             validation_writer.writerow([uuid, chance, chance >= cutoff])
 
             # print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
-    print "Matches: {0}, positive {1}".format(len(check['matches']), check['positive_matches'])
-    print "False positives: {0}%, count {1}".format(check['false_positives']['perc'], check['false_positives']['count'])
+    print c_type + " Matches: {0}, positive {1}".format(len(check['matches']), check['positive_matches'])
+    print c_type + " False positives: {0}%, count {1}".format(check['false_positives']['perc'], check['false_positives']['count'])
 
 

@@ -44,8 +44,7 @@ namespace Peeralize.Service.Integration.Blocks
             Func<int, double> mxi1 = (x) => Math.Max(1, x);
             var events = (BsonArray)doc["events"];
             IEnumerable<IGrouping<string, BsonValue>> domainVisits = events
-                .GroupBy(x => x["value"].ToString().ToHostname(true));
-            
+                .GroupBy(x => x["value"].ToString().ToHostname(true)); 
 
 
             var ebagVisits = domainVisits?

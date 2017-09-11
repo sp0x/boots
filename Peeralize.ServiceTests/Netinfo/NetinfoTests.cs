@@ -1,11 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -17,18 +16,17 @@ using Peeralize.Service.Format;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Integration.Blocks;
 using Peeralize.Service.IntegrationSource;
-using Peeralize.Service.Source;
+using Peeralize.Service.Models;
 using Peeralize.Service.Time;
 using Peeralize.ServiceTests.IntegrationSource;
 using Xunit;
-using Harvester = Peeralize.Service.Harvester;
 
-namespace Peeralize.ServiceTests
+namespace Peeralize.ServiceTests.Netinfo
 {
     [Collection("Entity Parsers")]
-    public class EntityExtractor
+    public class NetinfoTests
     {
-
+        public const byte VisitTypedValue = 1;
         private ConfigurationFixture _config;
         private BsonArray _purchases;
         private BsonArray _purchasesOnHolidays;
@@ -36,8 +34,10 @@ namespace Peeralize.ServiceTests
         private BsonArray _purchasesInWeekends;
         private BsonArray _purchasesBeforeWeekends;
         private DateHelper _dateHelper;
+        private CrossSiteAnalyticsHelper helper;
+        private MongoCollection<IntegratedDocument> _documentStore;
 
-        public EntityExtractor(ConfigurationFixture fixture)
+        public NetinfoTests(ConfigurationFixture fixture)
         {
             _config = fixture;
             _purchases = new BsonArray();
@@ -45,76 +45,63 @@ namespace Peeralize.ServiceTests
             _purchasesInWeekends = new BsonArray();
             _purchasesBeforeHolidays = new BsonArray();
             _purchasesBeforeWeekends = new BsonArray();
-            _dateHelper = new DateHelper();
+            _dateHelper = new DateHelper(); 
+            helper = new CrossSiteAnalyticsHelper();
+            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().MongoDb();
         }
 
-
-
-        [Theory]
-        [InlineData("TestData\\Ebag\\1155\\UUID_1155_all.csv")]
-        public void ExtractEntityFromSingleFile(string inputFile)
-        {
-            inputFile = Path.Combine(Environment.CurrentDirectory, inputFile);
-            var fileSource = FileSource.CreateFromFile(inputFile, new CsvFormatter());
-            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
-            Assert.NotNull(type);
-
-            var userId = "123123123";
-            var userApiId = Guid.NewGuid().ToString();
-            var harvester = new Peeralize.Service.Harvester();
-            type.UserId = userId;
-            type.SaveType(userApiId);
-
-            var saver = new MongoSink(userId);
-            var modifier = new EntityFeatureGenerator(userId);
-            modifier.LinkTo(saver, null); //We modify the entity to fill all it's data, then generate feature, and then save
-            harvester.SetDestination(modifier);
-            harvester.AddType(type, fileSource);
-            harvester.Synchronize();
-        }
-
+        
         [Theory]
         [InlineData(new object[] {"TestData\\Ebag\\1156"})] //was 6
-        public async void ParseEntityDump(string inputDirectory)
+        public async void ExtractEventValueFeatures(string inputDirectory)
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()
-            {
-                Delimiter = ';'
-            });
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
             var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
             Assert.NotNull(type);
-
-            var userId = "123123123";
-            var userApiId = Guid.NewGuid().ToString();
-            var harvester = new Peeralize.Service.Harvester(20);
-            type.UserId = userId;
-            IntegrationTypeDefinition existingDataType;
-            if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
-            {
-                type.SaveType(userApiId);
-            }
-            else type = existingDataType;
-            var grouper = new GroupingBlock(userId,
+            var appId = "123123123";  
+            var harvester = new Peeralize.Service.Harvester(10);
+            
+            harvester.AddPersistentType(fileSource, appId, true);
+            
+            var grouper = new GroupingBlock(appId,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
                 AccumulateUserEvent); 
             //var saver = new MongoSink(userId); 
-            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
-            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            
+            //grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
             grouper.Helper = helper;
             //demographyImporter.LinkTo(featureGen); 
             //featureGen.LinkTo(saver);
-
+            grouper.LinkTo(new ActionBlock<IntegratedDocument>((x) =>
+            {
+                CollectTypedValues(grouper, x);
+            }));
             //Group the users
-            grouper.LinkOnComplete(new IntegrationActionBlock(userId, (block, doc) =>
+            grouper.LinkOnComplete(new IntegrationActionBlock(appId, (block, doc) =>
             {
                 //DumpUsergroupSessionsToCsv(grpr);
-                DumpUsergroupSessionsToMongo(userId, block);
+                //= new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
+                var uuid = doc["uuid"].ToString();
+                var noticed_date = DateTime.Parse(doc["noticed_date"].ToString());
+                var topTypeValues = helper.GetTopRatedFeatures(uuid, VisitTypedValue, 10).ToList();
+                var newUpdate = new UpdateBuilder();
+                var query = Query.And(Query.EQ("Document.uuid", uuid), Query.EQ("Document.noticed_date", noticed_date));
+                for (int i = 0; i < 10; i++)
+                {
+                    var featureVal = topTypeValues[i];
+                    if (featureVal > 0)
+                    {
+                        featureVal = featureVal;
+                    }
+                    newUpdate.Set($"Document.has_type_val_{i}", featureVal);
+                }
+                UpdateFeatures(appId, query, newUpdate); 
             }));
-
+            
             harvester.SetDestination(grouper);
-            harvester.AddType(type, fileSource);
+            //harvester.AddType(type, fileSource);
             await harvester.Synchronize();
             var syncDuration = harvester.ElapsedTime();
             Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
@@ -124,9 +111,36 @@ namespace Peeralize.ServiceTests
             //Console.ReadLine(); // TODO: Fix dataflow action after grouping of all users
         }
 
+        private void UpdateFeatures(string appId, IMongoQuery query, UpdateBuilder newUpdate)
+        {
+            query = Query.And(Query.EQ("UserId", appId), query);
+            var args = new FindAndModifyArgs()
+            {
+                Query = query,
+                Update = newUpdate
+            };
+            var ret = _documentStore.FindAndModify(args);
+            ret = ret;
+        }
 
+        private void CollectTypedValues(IntegrationBlock block, IntegratedDocument arg)
+        { 
+            var value = arg["value"].ToString();
+            int intval;
+            if (int.TryParse(value, out intval))
+            {
+                var ev = int.Parse(arg["type"].ToString());
+                var key_value = $"{ev}_{intval}";
+                var uuid = arg["uuid"]?.ToString();
+                if (string.IsNullOrEmpty(uuid))
+                {
+                    return;
+                }
+                helper.AddRatingFeature(VisitTypedValue, uuid, key_value);
+            }
+            
+        } 
 
-        
 
         [Theory]
         [InlineData(new object[]{"TestData\\Ebag\\1156", "TestData\\Ebag\\demograpy.csv" })]
@@ -218,9 +232,9 @@ namespace Peeralize.ServiceTests
             var uuid = argDocument["uuid"].ToString();
             var date = DateTime.Parse(argDocument["ondate"].ToString());
             return $"{uuid}_{date.Day}"; //_{date.Day}";
-        }
+        } 
 
-        private void DumpUsergroupSessionsToMongo(string userAppId, IntegrationBlock usersData)
+        private void SaveNewFeatures(string userAppId, IntegrationBlock usersData)
         {
             var grouper = usersData as GroupingBlock;
             var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>(userAppId);
@@ -273,6 +287,8 @@ namespace Peeralize.ServiceTests
             } 
 
         }
+
+
         private void DumpUsergroupSessionsToCsv(GroupingBlock usersData)
         {
             var userValues = usersData.EntityDictionary.Values;
@@ -419,29 +435,6 @@ namespace Peeralize.ServiceTests
             }.ToBsonDocument();
 
             accumulator.AddDocumentArrayItem("events", newElement);
-            if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
-            {
-                var dateTime = DateTime.Parse(onDate);
-                if (_dateHelper.IsHoliday(dateTime))
-                {
-                    _purchasesOnHolidays.Add(newElement);
-                }
-                else if (_dateHelper.IsHoliday(dateTime.AddDays(1)))
-                {
-                    _purchasesBeforeHolidays.Add(newElement);
-                }
-                else if (dateTime.DayOfWeek == DayOfWeek.Friday)
-                {
-                    _purchasesBeforeWeekends.Add(newElement);
-                }
-                else if (dateTime.DayOfWeek > DayOfWeek.Friday)
-                {
-                    _purchasesInWeekends.Add(newElement);
-                }
-                _purchases.Add(newElement); 
-                accumulator["is_paying"] = 1;
-                //bsonDocument["is_paying"] = 1;
-            }
             return newElement;
         }
          

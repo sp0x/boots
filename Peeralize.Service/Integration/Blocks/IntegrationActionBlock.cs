@@ -6,7 +6,7 @@ namespace Peeralize.Service.Integration.Blocks
 {
     public class IntegrationActionBlock : IntegrationBlock
     {
-        private Func<IntegrationBlock, IntegratedDocument, IntegratedDocument> _action;
+        private Func<IntegrationBlock, IntegratedDocument, IntegratedDocument> _action; 
 
         public IntegrationActionBlock(string userId, Action<IntegrationBlock, IntegratedDocument> action, int threadCount = 4)
             :base(capacity: 100000, procType: ProcessingType.Action, threadCount: threadCount)
@@ -18,11 +18,32 @@ namespace Peeralize.Service.Integration.Blocks
                 return x;
             });
         }
+
+        public IntegrationActionBlock(Action<IntegrationBlock, IntegratedDocument> action, int threadCount = 4)
+            : base(capacity: 100000, procType: ProcessingType.Action, threadCount: threadCount)
+        {
+            _action = new Func<IntegrationBlock, IntegratedDocument, IntegratedDocument>((act, x) =>
+            {
+                action(act, x);
+                return x;
+            });
+        }
+
         public IntegrationActionBlock(string userId, Func<IntegrationBlock, IntegratedDocument, IntegratedDocument> action, int threadCount = 4)
             : base(capacity: 100000, procType: ProcessingType.Action, threadCount: threadCount)
         {
             this.UserId = userId;
             _action = action;
+        }
+
+        public IntegrationActionBlock(string userId, Action<IntegrationBlock, IntegratedDocument> action)
+        {
+            UserId = userId;
+            _action = new Func<IntegrationBlock, IntegratedDocument, IntegratedDocument>((act, x) =>
+            {
+                action(act, x);
+                return x;
+            });
         }
 
         protected override IEnumerable<IntegratedDocument> GetCollectedItems()

@@ -93,11 +93,7 @@ namespace Peeralize.Service.Format
                     }
                     if(!failed) break;
                 }
-
-                if (!outputObject.ContainsKey("uuid"))
-                {
-                    outputObject = outputObject;
-                }
+                 
                 return outputObject as T;
 
             });

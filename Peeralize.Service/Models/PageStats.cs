@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using nvoid.extensions;
+using Peeralize.Service.Integration.Blocks;
 
-namespace Peeralize.Service.Integration.Blocks
+namespace Peeralize.Service.Models
 {
     /// <summary>
     /// Page stats helper

@@ -138,6 +138,10 @@ class Experiment:
         save(model, path)
 
     def load_model_files(self, model_names):
+        """
+        :param model_names: Names of the models to load
+        :return:
+        """
         exp_dir = self.get_experiments_dir()
         models = []
         for m_name in model_names:
@@ -219,12 +223,14 @@ class Experiment:
         plt.xlabel('User Population %')
         base_path = abs_path(company)
         plt.savefig(os.path.join(base_path, "{0}_gain.png".format(model)))
+        plt.clf()
         df = df.loc[1:]
         df['lift'] = df['cumulativeActual'] / (df['userPopulation'])
         df.plot('userPopulation', 'lift', ylim=[0, 3], figsize=(8, 6))
         plt.xlabel('User Population %')
         plt.hlines(1, 0, 100)
         plt.savefig(os.path.join(base_path, '{0}_lift.png'.format(model)))
+        plt.clf()
     
     @staticmethod
     def plot_confusion_matrix(cm, classes,
@@ -269,8 +275,31 @@ class Experiment:
             filepath = abs_path(os.path.join(company, filename))
         else:
             filepath = abs_path(filename)
-
         plt.savefig(filepath)
+        plt.clf()
+
+    @staticmethod
+    def predict_explain_non_tree(clf, for_client, labels):
+        c_type = clf['type']
+        clf = clf['model']
+        # Plot feature importance
+        feature_importance = clf.feature_importances_
+        # make importances relative to max importance
+        feature_importance = 100.0 * (feature_importance / feature_importance.max())
+        sorted_idx = np.argsort(feature_importance)
+        pos = np.arange(sorted_idx.shape[0]) + .5
+        plt.subplot(1, 1, 1)
+        plt.barh(pos, feature_importance[sorted_idx], align='center')
+        yticks = []
+        for index in sorted_idx:
+            yticks.append(labels[index])
+        plt.yticks(pos, yticks)  # labels[sorted_idx])
+        plt.xlabel('Relative Importance')
+        plt.title('Variable Importance')
+        now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        path = os.path.join(for_client, "importance_{0}_{1}.png".format(c_type, now))
+        plt.savefig(abs_path(path))
+        plt.clf()
 
     @staticmethod
     def t_test(y_pred, y_true, x_train=None, y_train=None, x_test=None, confidence=0.95):
@@ -431,9 +460,11 @@ def conduct_experiment(data, targets, client='cashlend'):
     gba = GradientBoostingClassifier(random_state=RANDOM_SEED)
     lr = LogisticRegression(penalty='l1', solver='saga',n_jobs=-1, random_state=RANDOM_SEED)
     mlp = MLPClassifier(activation='logistic', random_state=RANDOM_SEED, solver='adam')
-    gba_params = {'max_depth':[3, 6, 12, 24],
-                  'n_estimators':[100, 200, 300]
-                  }
+    gba_params = {
+                      # 'learning_rate': [0.1, 0.05, 0.02, 0.01],
+                      'max_depth': [3, 6, 12, 24],
+                      'n_estimators': [100, 200, 300]
+    }
     lr_params = {'C': [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]}
     mlp_params = {'hidden_layer_sizes':[(150, 2),(150,4),(150,6)],
                   'learning_rate': ['adaptive', 'constant']}
@@ -448,14 +479,14 @@ def conduct_experiment(data, targets, client='cashlend'):
     }
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
-    logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()),client))
+    logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()), client))
     e = Experiment(data,targets, [
-        #{'model': rnn, 'params': rnn_params, 'scoring': scoring, 'type': 'rnn'},
+        # {'model': rnn, 'params': rnn_params, 'scoring': scoring, 'type': 'rnn'},
         {'model': gba, 'params': gba_params, 'scoring': scoring, 'type': 'gba'},
-        {'model': lr, 'params': lr_params, 'scoring': scoring, 'type': 'lr'},
-        {'model': mlp, 'params': mlp_params, 'scoring': scoring, 'type': 'mlpnn'},
+        # {'model': lr, 'params': lr_params, 'scoring': scoring, 'type': 'lr'},
+        # {'model': mlp, 'params': mlp_params, 'scoring': scoring, 'type': 'mlpnn'},
     ], client)
     e.create_and_train()
-    logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()),client))
+    logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()), client))
     e.store_models()
 

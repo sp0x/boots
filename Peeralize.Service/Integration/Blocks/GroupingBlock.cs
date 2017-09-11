@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using nvoid.extensions;
 using System.Linq;
+using Peeralize.Service.Models;
 
 namespace Peeralize.Service.Integration.Blocks
 {
@@ -104,8 +105,8 @@ namespace Peeralize.Service.Integration.Blocks
             }
             //RecordPageStats(key.ToString(), intDocDocument, isNewUser);
             var newElement = _accumulator(EntityDictionary[key], intDoc);
-
-            return EntityDictionary[key];
+            // return EntityDictionary[key];
+            return intDoc;
         }
 
         /// <summary>

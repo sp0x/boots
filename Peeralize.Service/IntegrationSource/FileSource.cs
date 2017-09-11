@@ -83,6 +83,7 @@ namespace Peeralize.Service.IntegrationSource
             }
             catch (Exception ex)
             {
+                Debug.WriteLine(ex.Message);
                 Trace.WriteLine(ex.Message);
             }
             return null;
@@ -262,9 +263,15 @@ namespace Peeralize.Service.IntegrationSource
         }
 
 
+
         public override void DoDispose()
         {
             _fileStream?.Dispose();
+        }
+
+        public override string ToString()
+        {
+            return FileName;
         }
 
     }
