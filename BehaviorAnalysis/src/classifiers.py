@@ -313,7 +313,7 @@ class Experiment:
         feature_importance = 100.0 * (feature_importance / feature_importance.max())
         sorted_idx = np.argsort(feature_importance)
         pos = np.arange(sorted_idx.shape[0]) + .5
-        plt.subplot(1, 1, 1)
+        plt.subplot(1, 2, 1)
         plt.barh(pos, feature_importance[sorted_idx], align='center')
         yticks = []
         for index in sorted_idx:
@@ -519,9 +519,10 @@ def conduct_experiment(data, targets, client='cashlend'):
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
     logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()), client))
-    e = Experiment(data,targets, [
+    e = Experiment(data, targets, [
         # {'model': rnn, 'params': rnn_params, 'scoring': scoring, 'type': 'rnn'},
         {'model': gba, 'params': gba_params, 'scoring': scoring, 'type': 'gba'},
+        {'model': rf, 'params': rf_params, 'scoring': scoring, 'type': 'rf'}
         # {'model': lr, 'params': lr_params, 'scoring': scoring, 'type': 'lr'},
         # {'model': mlp, 'params': mlp_params, 'scoring': scoring, 'type': 'mlpnn'},
     ], client)
