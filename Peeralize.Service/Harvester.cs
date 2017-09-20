@@ -196,7 +196,8 @@ namespace Peeralize.Service
             //Let the dest know that we're finished passing data to it, so that it could complete.
             Destination.Complete(); 
             //_stopwatch.Stop(); 
-            return Destination.FlowCompletion().ContinueWith(continuationFunction: (t) =>
+            var flowCompletion = Destination.FlowCompletion();
+            return flowCompletion.ContinueWith(continuationFunction: (t) =>
             {
                 _stopwatch.Stop();
                 var output = new HarvesterResult(shardsUsed, totalItemsUsed);

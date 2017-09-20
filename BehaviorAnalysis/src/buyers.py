@@ -27,6 +27,25 @@ appId = "123123123"
 # }).distinct("Document.g_timestamp")
 # weeksAvailable.sort()
 
+# def get_targets(data, prediction_week_start):
+#     target_week = prediction_week_start
+#     target_week_end = target_week + timedelta(days=7)
+#
+#     previously_purchasing_users = collection.find({
+#         "TypeId": userTypeId,
+#         "UserId": appId,
+#         "Document.noticed_date": {"$lt": target_week},
+#         "Document.is_paying": 1
+#     }).distinct("Document.uuid")
+#
+#     users = collection.find({
+#         "TypeId": userTypeId,
+#         "UserId": appId,
+#         "Document.is_paying": 1,
+#         "Document.noticed_date": {'$gte': target_week, '$lte': target_week_end}
+#     }).distinct("Document.uuid")
+
+
 
 def check_prediction_ex(validate_with, prediction_week_start, cutoff=0.5, company="Netinfo", model="rf"):
     target_week = prediction_week_start

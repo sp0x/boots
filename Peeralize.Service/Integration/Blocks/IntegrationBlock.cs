@@ -165,8 +165,11 @@ namespace Peeralize.Service.Integration.Blocks
         public virtual void Complete()
         {
             _buffer.Complete();
-            //if(_transformer!=null) _transformer.Complete();
-            //if(_actionBlock!=null) _actionBlock.Complete();
+            if (_transformer != null) _transformer.Complete();
+            else
+            {
+                if (_actionBlock != null) _actionBlock.Complete();
+            }
             Completed?.Invoke();
         }
 
@@ -239,16 +242,36 @@ namespace Peeralize.Service.Integration.Blocks
         /// <returns></returns>
         public Task FlowCompletion()
         {
-            var tasksToWaitFor = new List<Task>(_linkedBlockCompletions.ToArray());
+            var tasksToWaitFor = new List<Task>();
             tasksToWaitFor.Add(ProcessingCompletion);
-            return Task.WhenAll(tasksToWaitFor);
+            tasksToWaitFor.AddRange(_linkedBlockCompletions.ToArray());
+            var all = Task.WhenAll(tasksToWaitFor).ContinueWith(x =>
+            {
+                var air = 123;
+                air++;
+
+            });
+            return all;
         }
+
+        public void AddFlowCompletionTask(Task blockBCompletion)
+        {
+            _linkedBlockCompletions.Add(blockBCompletion);
+        }
+        public Task Completion => FlowCompletion();
 #endregion
 
 
         #region Linking
-
-
+         
+        public IIntegrationDestination ContinueWith(Action<IntegrationBlock> action)
+        { 
+            _linkedBlockCompletions.Add(new Task(new Action(() =>
+            {
+                action(this);
+            })));
+            return this;
+        }
 
         /// <summary>
         /// Link to this block when it completes
@@ -265,21 +288,13 @@ namespace Peeralize.Service.Integration.Blocks
             }
             else
             {
-                if (options == null) options = new DataflowLinkOptions() {PropagateCompletion = true};
-                
+                if (options == null) options = new DataflowLinkOptions() { PropagateCompletion = true };
+
                 //Make sure to link the next block to this one, instead of the first one ever added. 0
                 _lastTransformerBlockOnCompletion.LinkTo(actionBlock, options);
             }
             _lastTransformerBlockOnCompletion = actionBlock;
             _linkedBlockCompletions.Add(actionBlock.Completion);
-        }
-        public IIntegrationDestination ContinueWith(Action<IntegrationBlock> action)
-        { 
-            _linkedBlockCompletions.Add(new Task(new Action(() =>
-            {
-                action(this);
-            })));
-            return this;
         }
         /// <summary>
         /// Link this block to another, when it completes.
@@ -408,6 +423,8 @@ namespace Peeralize.Service.Integration.Blocks
             }
             else if (this.ProcType == ProcessingType.Transform)
             {
+
+                linkOptions = new DataflowLinkOptions() { PropagateCompletion = true };
                 if (_transformer != null)
                 {
                     if (linkOptions != null)
@@ -416,7 +433,6 @@ namespace Peeralize.Service.Integration.Blocks
                     }
                     else
                     {
-                        linkOptions = new DataflowLinkOptions() { PropagateCompletion = true };
                         _transformer.LinkTo(targetBuffer, linkOptions);
                     }
                 }

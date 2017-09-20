@@ -11,8 +11,7 @@ using Microsoft.AspNetCore.Identity.MongoDB;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
+using MongoDB.Driver; 
 using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
 using nvoid.Integration;
@@ -107,14 +106,14 @@ namespace Peeralize.Controllers
 
             //Todo: do this without relying on mongo, using the document store
             var mongoCollection = _documentStore.MongoDb();
-            var apiQuery = Query<IntegratedDocument>.Where(x => x.UserId == userApiId);
+            var apiQuery = Builders<IntegratedDocument>.Filter.Where(x => x.UserId == userApiId);
             var userDocumentFilter = BsonSerializer.Deserialize<BsonDocument>(userFilter.ToString());
-            var entityQuery = new QueryDocument(userDocumentFilter);
-            var query = Query.And(apiQuery, entityQuery);
+            //var entityQuery = Builders<IntegratedDocument>.Filter.(userDocumentFilter);
+            var query = Builders<IntegratedDocument>.Filter.And(apiQuery, userDocumentFilter);
 
 
             //Get the entity document
-            var matchingDocument = mongoCollection.FindOne(query);
+            var matchingDocument = mongoCollection.Find(query).First();
             if (matchingDocument == null)
             {
                 return Json(new {success = false, message = "Document does not exist!"});

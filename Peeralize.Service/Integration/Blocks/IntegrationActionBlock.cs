@@ -37,6 +37,7 @@ namespace Peeralize.Service.Integration.Blocks
         }
 
         public IntegrationActionBlock(string userId, Action<IntegrationBlock, IntegratedDocument> action)
+            : base(capacity: 100000, procType: ProcessingType.Action, threadCount : 4)
         {
             UserId = userId;
             _action = new Func<IntegrationBlock, IntegratedDocument, IntegratedDocument>((act, x) =>

@@ -16,6 +16,7 @@
   <ItemGroup>
     <PackageReference Include="Dynamitey" Version="1.0.2" />
     <PackageReference Include="LumenWorks.Framework.IO.Core" Version="1.0.0" />
+    <PackageReference Include="MongoDB.Driver" Version="2.4.4" />
     <PackageReference Include="NetMQ" Version="4.0.0.1" />
   </ItemGroup>
 </Project>

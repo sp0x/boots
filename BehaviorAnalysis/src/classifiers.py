@@ -163,12 +163,17 @@ class Experiment:
         path = abs_path(mod_path)
         return load(path)
 
-    def load_models(self):
+
+    def load_models(self, modelsFile=None):
         models_path = abs_path(os.path.join(Experiment.base_path, self._for))
         if not os.path.exists(models_path):
             os.makedirs(models_path)
-        models = glob.glob(os.path.join(models_path, "models_*"))
-        last_model = max(models, key=os.path.getctime)
+        if modelsFile is not None:
+            last_model = os.path.join(models_path, modelsFile)
+        else:
+            models = glob.glob(os.path.join(models_path, "models_*"))
+            last_model = max(models, key=os.path.getctime)
+
         print "Loading model: {0}".format(last_model)
         return load(last_model)
 
@@ -201,7 +206,11 @@ class Experiment:
         plt.savefig(abs_path("{0}_importance".format(now)))
 
     @staticmethod
-    def make_graphs(y_pred, y_pred_proba, y_true,model='model', company = 'cashlend'):
+    def make_graphs(y_pred_proba,
+                    y_true,
+                    model='model',
+                    company = 'cashlend',
+                    prefix=''):
         y_true = np.array(y_true)
         df = pd.DataFrame({'total users': [100] * 10,
                            'buyers': [100 * 0.5] * 10})
@@ -238,14 +247,14 @@ class Experiment:
         plt.ylabel('Buyers %')
         plt.xlabel('User Population %')
         base_path = abs_path(company)
-        plt.savefig(os.path.join(base_path, "{0}_gain.png".format(model)))
+        plt.savefig(os.path.join(base_path, "{0}{1}_gain.png".format(prefix, model)))
         plt.clf()
         df = df.loc[1:]
         df['lift'] = df['cumulativeActual'] / (df['userPopulation'])
         df.plot('userPopulation', 'lift', ylim=[0, 3], figsize=(8, 6))
         plt.xlabel('User Population %')
         plt.hlines(1, 0, 100)
-        plt.savefig(os.path.join(base_path, '{0}_lift.png'.format(model)))
+        plt.savefig(os.path.join(base_path, '{0}{1}_lift.png'.format(prefix, model)))
         plt.clf()
     
     @staticmethod
@@ -254,7 +263,8 @@ class Experiment:
                               title='Confusion matrix',
                               model='model',
                               cmap=plt.cm.Blues,
-                              company=''):
+                              company='',
+                              prefix=''):
         """
         This function prints and plots the confusion matrix.
         Normalization can be applied by setting `normalize=True`.
@@ -266,7 +276,6 @@ class Experiment:
         else:
             print('Confusion matrix, without normalization')
 
-        print(cm)
 
         plt.imshow(cm, interpolation='nearest', cmap=cmap)
         plt.title(title)
@@ -285,7 +294,7 @@ class Experiment:
         plt.tight_layout()
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
-        filename = '{0}_confusion_matrix.png'.format(model)
+        filename = '{0}{1}_confusion_matrix.png'.format(prefix, model)
         filepath = None
         if len(company)>0:
             filepath = abs_path(os.path.join(company, filename))
@@ -388,7 +397,7 @@ class Experiment:
             save(y_pred, os.path.join(dump_dir, "y_pred_{0}.dmp".format(log_data['model'])))
             save(y_pred_proba, os.path.join(dump_dir, "y_pred_proba_{0}.dmp".format(log_data['model'])))
             save(y_true, os.path.join(dump_dir, "y_true_{0}.dmp".format(log_data['model'])))
-            Experiment.make_graphs(y_pred,y_pred_proba,y_true, m['type'], self._for)
+            Experiment.make_graphs(y_pred_proba, y_true, m['type'], self._for)
 
         self.best_models = best_models
 
@@ -461,6 +470,25 @@ def plot_cutoff(model, data, data_y, client='cashlend'):
     plt.savefig(fig_path)
 
 
+def graph_experiment(data, targets, client='cashlend', model=None, modelsFile=None):
+    X_train, X_test, y_train, y_test = train_test_split(data, targets, test_size=0.25, random_state=RANDOM_SEED)
+    exp = Experiment(None, None, None, client)
+    if model is not None:
+        models = [model]
+    else:
+         models = exp.load_models(modelsFile)  # load_model_files(['gba'])
+
+    for m in models:
+        #print "training " + m['type']
+        model = m['model']
+        model_type = m['type']
+        y_true, y_pred = y_test, model.predict(X_test)
+        y_pred_proba = model.predict_proba(X_test)
+        cm = confusion_matrix(y_true, y_pred)
+        Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], True, m['type'], company=client, prefix='pred_')
+        Experiment.make_graphs(y_pred_proba, y_true, model_type, client, 'pred_')
+
+
 def conduct_experiment(data, targets, client='cashlend'):
     tmp = np.unique(targets)
     c = dict()
@@ -475,11 +503,9 @@ def conduct_experiment(data, targets, client='cashlend'):
     rnn = KerasClassifier(builder.build_rnn)
     gba = GradientBoostingClassifier(random_state=RANDOM_SEED)
     gba_params = {
-                  'learning_rate': [0.1, 0.05, 0.02, 0.01],
-    gba_params = {
-                      # 'learning_rate': [0.1, 0.05, 0.02, 0.01],
-                      'max_depth': [3, 6, 12, 24],
-                      'n_estimators': [100, 200, 300]
+        # 'learning_rate': [0.1, 0.05, 0.02, 0.01],
+        'max_depth': [3, 6, 12, 24],
+        'n_estimators': [100, 200, 300]
     }
     rf_params = {        
         "n_estimators": [100, 200, 300, 500],

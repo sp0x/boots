@@ -1,6 +1,6 @@
 import time
 from constants import *
-from classifiers import conduct_experiment, plot_cutoff, Experiment
+from classifiers import conduct_experiment, graph_experiment, plot_cutoff, Experiment
 from pymongo import MongoClient
 import urllib
 import csv
@@ -38,13 +38,15 @@ target_week_end = target_week + timedelta(days=7)
 next_week = target_week_end
 next_week_end = target_week_end + timedelta(days=7)
 next_week_f = str(next_week).replace(':', '_')
+filter_entries = False
 
 print "Gathering data from week " + str(target_week)
 pipeline = [
         {"$match": {
             "TypeId": userTypeId,
             "UserId": appId,
-            "Document.noticed_date": {'$gte': target_week, '$lt': target_week_end}, 'Document.is_paying': 0
+            "Document.noticed_date": {'$gte': target_week, '$lt': target_week_end},
+            'Document.is_paying': 1
          }
         },
         {"$group": {
@@ -104,6 +106,14 @@ exp = Experiment(None, None, None, company)
 
 userFeatures = []
 userData = []
+targets = []
+next_week_purchasing_users = users = collection.find({
+    "TypeId": userTypeId,
+    "UserId": appId,
+    "Document.is_paying": 1,
+    "Document.noticed_date": {'$gte': next_week, '$lte': next_week_end}
+}).distinct("Document.uuid")
+
 for tmpDoc in weekData:
     uuid = tmpDoc["_id"]["uuid"]
     # if uuid in paying_users:    # skip users that have paid some time
@@ -163,6 +173,12 @@ for tmpDoc in weekData:
         input_element.append(f_val)
     userFeatures.append(input_element)
 
+    target_val = 0
+    if uuid in next_week_purchasing_users and has_paid_before == 0:
+        target_val = 1
+    targets.append(target_val)
+
+
 print "Loaded " + str(len(userFeatures)) + " test user items"
 filterFile = "Netinfo/filters/paying_users.csv"
 payingDict = dict()
@@ -186,6 +202,7 @@ for m in models:
     x_test = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
     y_true = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
     plot_cutoff(m, x_test, y_true, client=company)
+    graph_experiment(userFeatures, targets, company, m)
     Experiment.predict_explain_non_tree(m, company, [
         "visits_on_weekends",
         "p_online_weekend",
@@ -234,7 +251,7 @@ for m in models:
         for p in xrange(len(predictions)): 
             prediction = predictions[p] 
             uuid = userData[p]['uuid']       
-            if uuid in payingDict:  # skip filtered users
+            if not filter_entries and uuid in payingDict:  # skip filtered users
                 filtered = filtered + 1
                 continue
             else:

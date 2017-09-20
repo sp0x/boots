@@ -25,7 +25,7 @@ def parse_timespan(span):
     hours = float(duration[0])
     mins = float(duration[1])
     seconds = float(duration[2])        
-    duration = timedelta(hours= hours, minutes= mins, seconds=seconds)
+    duration = timedelta(hours=hours, minutes= mins, seconds=seconds)
     return duration
 
 

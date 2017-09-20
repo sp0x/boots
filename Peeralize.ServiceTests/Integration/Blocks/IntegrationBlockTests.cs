@@ -49,7 +49,9 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                 x["1241"] = true;
                 Interlocked.Increment(ref lCnt);
             }));
+            harv.LimitEntries(100);
             harv.SetDestination(block);
+            
             var results = await harv.Synchronize();
             Assert.Equal(results.ProcessedEntries, cnt);
             Assert.Equal(results.ProcessedEntries, lCnt);
@@ -66,11 +68,13 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                 x["lol"] = true;
                 Interlocked.Increment(ref cnt);
             });
+            //Bug: this does not complete
             block.LinkTo(new IntegrationActionBlock("1234",  (act, x) =>
             {
                 x["r"] = false;
                 Interlocked.Increment(ref lCount);
-            }), null);
+            }));
+            harv.LimitEntries(100);
             harv.SetDestination(block);
             var results = await harv.Synchronize();
             Assert.Equal(results.ProcessedEntries, cnt);
@@ -103,7 +107,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                     setx[act.ThreadId.ToString()] = "";
                     docset[x.Id.Value.ToString()] = "";
                     Interlocked.Increment(ref lCount);
-                });
+                }, 4);
                 block.LinkTo(action, null);
             }
             var iTransformOnCompletion = 0;
@@ -122,6 +126,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
             }, blockOps);
             blockA.LinkTo(blockB);
             block.LinkOnComplete(blockA);
+            //block.AddFlowCompletionTask(blockB.Completion);
             harv.SetDestination(block);
             var results = await harv.Synchronize();
             Assert.Equal(results.ProcessedEntries, iTransformOnCompletion / 2);

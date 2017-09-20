@@ -16,6 +16,15 @@ services:
       - "5000:5000"
       - "80:80"
   
+  jenkins:
+    image: jenkins:latest
+    container_name: jenkins
+    restart: always
+    ports:
+      - 8080:8080
+    volumes:
+      - ./jenkins:/var/jenkins_home
+
   mongo.peeralize.com :
     image: library/mongo:3.4
     hostname: mongo.peeralize.com 

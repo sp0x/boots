@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks.Dataflow;
 using nvoid.db.DB.Configuration;
-using nvoid.db.DB.MongoDB;
 using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
 using Peeralize.Service.DataSets;
@@ -23,7 +21,8 @@ namespace Peeralize.Service.Integration.Blocks
         /// </summary>
         /// <param name="userId"></param>
         /// <param name="capacity">The capacity of this sink. If more blocks are posted, it will block untill there is some free space.</param>
-        public MongoSink(string userId, int capacity = 1000 * 1000) : base(capacity)
+        public MongoSink(string userId, int capacity = 1000 * 1000, int threadCount = 10) 
+            : base(capacity, ProcessingType.Action, threadCount: threadCount)
         {
             UserId = userId;
             _source = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>(); 
