@@ -1,8 +1,6 @@
 import logging
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, RandomForestRegressor
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
@@ -494,7 +492,7 @@ def conduct_experiment(data, targets, client='cashlend'):
     c = dict()
     cw = compute_class_weight('balanced', tmp, targets)
 
-    for i in xrange (len(tmp)):
+    for i in xrange(len(tmp)):
         c[tmp[i]] = cw[i]
 
     rf = RandomForestClassifier(n_jobs=-1, oob_score = True, class_weight = c, random_state=RANDOM_SEED)
@@ -530,3 +528,39 @@ def conduct_experiment(data, targets, client='cashlend'):
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()), client))
     e.store_models()
 
+
+def train_balancer(data, targets, client='netinfo'):
+    """
+    creates a balancing classifier
+    :param data: array of array of predict_probas from both classfiers [ [clf1.pred,clf2.pred] ]
+    :param targets: actual results
+    :return: 
+    """
+    tmp = np.unique(targets)
+    c = dict()
+    cw = compute_class_weight('balanced', tmp, targets)
+
+    for i in xrange(len(tmp)):
+        c[tmp[i]] = cw[i]
+    rf = RandomForestClassifier(n_jobs=-1, oob_score=True, class_weight=c, random_state=RANDOM_SEED)
+    mlp = MLPClassifier(activation='logistic', solver='lbfgs', random_state=RANDOM_SEED)
+    scoring = "f1_micro"
+    rf_params = {
+        "n_estimators": [20, 80, 100],
+        "max_features": [None],
+        "max_depth": [10, 20],
+        "class_weight": [c]
+    }
+    mlp_params = {
+        "hidden_layer_sizes":[(100,100,100,100,100),(80,100,140,100,80),(80,100,150,80,40)]
+    }
+    fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
+    logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()), client))
+    e = Experiment(data, targets, [
+        {'model': rf, 'params': rf_params, 'scoring': scoring, 'type': 'rf'},
+        {'model': mlp, 'params': mlp_params, 'scoring': scoring, 'type': 'dnn'}
+    ], client)
+    e.create_and_train()
+    logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()), client))
+    e.store_models()
