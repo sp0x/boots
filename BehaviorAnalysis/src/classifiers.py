@@ -558,8 +558,8 @@ def train_balancer(data, targets, client='netinfo'):
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
     logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()), client))
     e = Experiment(data, targets, [
-        {'model': rf, 'params': rf_params, 'scoring': scoring, 'type': 'rf'},
-        {'model': mlp, 'params': mlp_params, 'scoring': scoring, 'type': 'dnn'}
+        {'model': rf, 'params': rf_params, 'scoring': scoring, 'type': 'brf'},
+        {'model': mlp, 'params': mlp_params, 'scoring': scoring, 'type': 'bdnn'}
     ], client)
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()), client))
