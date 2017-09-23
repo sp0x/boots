@@ -529,17 +529,11 @@ def conduct_experiment(data, targets, client='cashlend'):
     e.store_models()
 
 
-def train_balancer(data, targets, client='netinfo'):
-    """
-    creates a balancing classifier
-    :param data: array of array of predict_probas from both classfiers [ [clf1.pred,clf2.pred] ]
-    :param targets: actual results
-    :return: 
-    """
+def train_balancer(predict1, predict2, targets, client='netinfo'):
     tmp = np.unique(targets)
     c = dict()
     cw = compute_class_weight('balanced', tmp, targets)
-
+    data = np.array(zip(predict1[:,1],predict2[:,1]))
     for i in xrange(len(tmp)):
         c[tmp[i]] = cw[i]
     rf = RandomForestClassifier(n_jobs=-1, oob_score=True, class_weight=c, random_state=RANDOM_SEED)
