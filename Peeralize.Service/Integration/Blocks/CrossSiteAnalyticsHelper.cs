@@ -61,12 +61,17 @@ namespace Peeralize.Service.Integration.Blocks
             //            else DomainVisits[domain]++;
         }
 
+        public static IEnumerable<DomainUserSession> GetWebSessions(IntegratedDocument userDoc, string targetDomain)
+        {
+            return GetWebSessions(userDoc).Where(x => x.Domain.ToHostname().ToLower().Contains(targetDomain));
+        }
+
         /// <summary>
         /// Gets the web browsing sessions that the user made
         /// </summary>
         /// <param name="userDoc"></param>
         /// <returns></returns>
-        public IEnumerable<DomainUserSession> GetWebSessions(IntegratedDocument userDoc)
+        public static IEnumerable<DomainUserSession> GetWebSessions(IntegratedDocument userDoc)
         {
             var userDocDocument = userDoc.GetDocument();
             var visits = (BsonArray)userDocDocument["events"];
@@ -777,16 +782,16 @@ namespace Peeralize.Service.Integration.Blocks
             }).Take(atMost);
         }
 
-        public IEnumerable<int> GetTopRatedFeatures(string userId, byte type, int atMost = 10)
+        public IEnumerable<int> GetTopRatedFeatures(string userId, byte featureId, int atMost = 10)
         {
-            var sortedFeatures = this.GetTopRatedFeatures(type, atMost).ToArray();
+            var sortedFeatures = this.GetTopRatedFeatures(featureId, atMost).ToArray();
             for (var i = 0; i < atMost; i++)
             {
                 Score<string> feature = i>= sortedFeatures.Length ? null : sortedFeatures[i];
                 var value = 0;
-                if (feature!=null && _usersWithSpecialEvents.ContainsKey(userId) && _usersWithSpecialEvents[userId].ContainsKey(type))
+                if (feature!=null && _usersWithSpecialEvents.ContainsKey(userId) && _usersWithSpecialEvents[userId].ContainsKey(featureId))
                 {
-                    value = _usersWithSpecialEvents[userId][type].Contains(feature.Value) ? 1 : 0;
+                    value = _usersWithSpecialEvents[userId][featureId].Contains(feature.Value) ? 1 : 0;
                 }                
                 yield return value;
             }

@@ -12,7 +12,13 @@ namespace Peeralize.Service
     public static class Utils
     {
 
-        public static UpdateDefinition<TRecord> ToMongoUpdate<TRecord>(this IEnumerable<KeyValuePair<string, double>> pairs)
+        /// <summary>
+        /// Creates an update from the list of key-value pairs
+        /// </summary>
+        /// <typeparam name="TRecord"></typeparam>
+        /// <param name="pairs"></param>
+        /// <returns></returns>
+        public static UpdateDefinition<TRecord> ToMongoUpdate<TRecord, Tval>(this IEnumerable<KeyValuePair<string, Tval>> pairs)
         {
             var updater = Builders<TRecord>.Update;
             var updates = new List<UpdateDefinition<TRecord>>();

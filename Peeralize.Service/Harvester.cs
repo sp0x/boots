@@ -114,6 +114,29 @@ namespace Peeralize.Service
 
             ResetStopwatch();
             _stopwatch.Start();
+            int shardsUsed;
+            var totalItemsUsed = ProcessInputShards(parallelOptions, out shardsUsed);
+//          Test destination buffering and processing
+//          Destination.ProcessingCompletion.ContinueWith((t) =>
+//          { 
+//          });
+//          Destination.BufferCompletion.ContinueWith((t) =>
+//          { 
+//          });
+            //Let the dest know that we're finished passing data to it, so that it could complete.
+            Destination.Complete(); 
+            //_stopwatch.Stop(); 
+            var flowCompletion = Destination.FlowCompletion();
+            return flowCompletion.ContinueWith(continuationFunction: (t) =>
+            {
+                _stopwatch.Stop();
+                var output = new HarvesterResult(shardsUsed, totalItemsUsed);
+                return output;
+            }, cancellationToken: cToken);
+        }
+
+        private int ProcessInputShards(ParallelOptions parallelOptions, out int totalShardsUsed)
+        {
             var totalItemsUsed = 0;
             var shardsUsed = 0;
             //Go through all type sets
@@ -171,39 +194,24 @@ namespace Peeralize.Service
                                 });
                             }
                             else
-                            { 
+                            {
                                 dynamic entry;
                                 while ((entry = sourceShard.GetNext()) != null)
                                 {
-                                    if (TotalEntryLimit!=0 && totalItemsUsed >= TotalEntryLimit) break;
+                                    if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit) break;
                                     IntegratedDocument document = itemSet.Wrap(entry);
                                     Destination.Post(document);
                                     Interlocked.Increment(ref totalItemsUsed);
                                 }
                             }
-                            
                         }
                         Interlocked.Increment(ref shardsUsed);
                     });
-            });
-//Test destination buffering and processing
-//            Destination.ProcessingCompletion.ContinueWith((t) =>
-//            { 
-//            });
-//            Destination.BufferCompletion.ContinueWith((t) =>
-//            { 
-//            });
-            //Let the dest know that we're finished passing data to it, so that it could complete.
-            Destination.Complete(); 
-            //_stopwatch.Stop(); 
-            var flowCompletion = Destination.FlowCompletion();
-            return flowCompletion.ContinueWith(continuationFunction: (t) =>
-            {
-                _stopwatch.Stop();
-                var output = new HarvesterResult(shardsUsed, totalItemsUsed);
-                return output;
-            }, cancellationToken: cToken);
+                });
+            totalShardsUsed = shardsUsed;
+            return totalItemsUsed;
         }
+
         /// <summary>
         /// Gets the elapsed time for syncs
         /// </summary>

@@ -156,6 +156,18 @@ namespace Peeralize.Service.Integration.Blocks
 //            }
 //            return TimeSpan.Zero;
 //        }
-         
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="act"></param>
+        /// <returns></returns>
+        public Task OnProcessingCompletion(Action act)
+        {
+            return ProcessingCompletion.ContinueWith((Task task) =>
+            {
+                act();
+            });
+        }
     }
 }

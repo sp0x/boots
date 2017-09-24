@@ -41,14 +41,13 @@ next_week_f = str(next_week).replace(':', '_')
 filter_entries = False
 
 print "Gathering data from week " + str(target_week)
+prediction_features_query =  {
+    "TypeId": userTypeId,
+    "UserId": appId,
+    "Document.noticed_date": {'$gte': target_week, '$lt': target_week_end}
+}
 pipeline = [
-        {"$match": {
-            "TypeId": userTypeId,
-            "UserId": appId,
-            "Document.noticed_date": {'$gte': target_week, '$lt': target_week_end},
-            'Document.is_paying': 1
-         }
-        },
+        {"$match": prediction_features_query },
         {"$group": {
             "_id": {
                 "uuid" : "$Document.uuid",
@@ -89,7 +88,8 @@ pipeline = [
             "has_type_val_6": {"$avg": "$Document.has_type_val_6"},
             "has_type_val_7": {"$avg": "$Document.has_type_val_7"},
             "has_type_val_8": {"$avg": "$Document.has_type_val_8"},
-            "has_type_val_9": {"$avg": "$Document.has_type_val_9"}
+            "has_type_val_9": {"$avg": "$Document.has_type_val_9"},
+            "time_between_visits_avg": {"$avg": "$Document.time_between_visits_avg"}
         }}]
 weekData = collection.aggregate(pipeline)
 weekData = list(weekData)
@@ -135,6 +135,10 @@ for tmpDoc in weekData:
 
     paying_s_freq = 0 if "paying_s_freq" not in tmpDoc else tmpDoc["paying_s_freq"]
     paying_s_freq = 0 if paying_s_freq is None else paying_s_freq
+
+    time_between_visits_avg = 0 if "time_between_visits_avg" not in tmpDoc else tmpDoc["time_between_visits_avg"]
+    time_between_visits_avg = 0 if time_between_visits_avg is None else time_between_visits_avg
+
     # since we have only 1 week
     has_paid_before = 1 if uuid in previously_purchasing_users else 0
 
@@ -164,9 +168,10 @@ for tmpDoc in weekData:
         non_paying_s_freq,
         paying_s_time,
         paying_s_freq,
-        has_paid_before
+        has_paid_before,
+        time_between_visits_avg
     ]
-    for i in xrange(10):
+    for i in xrange(10): 
         f_name = "has_type_val_{0}".format(i)
         f_val = 0 if f_name not in tmpDoc else tmpDoc[f_name]
         f_val = 0 if f_val is None else f_val
@@ -174,8 +179,11 @@ for tmpDoc in weekData:
     userFeatures.append(input_element)
 
     target_val = 0
-    if uuid in next_week_purchasing_users and has_paid_before == 0:
+    if "Document.is_paying" in prediction_features_query and prediction_features_query["Document.is_paying"] == 1:
         target_val = 1
+    else:
+        if uuid in next_week_purchasing_users and has_paid_before == 0:
+            target_val = 1
     targets.append(target_val)
 
 
@@ -240,6 +248,7 @@ for m in models:
         "has_type_val_7",
         "has_type_val_8",
         "has_type_val_9",
+        "time_between_visits_avg"
     ])
 
     fileName = os.path.join(company, 'prediction_{0}_{1}.csv'.format(c_type, next_week_f))

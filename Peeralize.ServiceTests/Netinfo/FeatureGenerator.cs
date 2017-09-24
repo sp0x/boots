@@ -1,35 +1,95 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Peeralize.Service.Integration;
 
 namespace Peeralize.ServiceTests.Netinfo
 {
-    public class DocumentFeatures
-    {
-        public IEnumerable<KeyValuePair<string, double>> Features { get; set; }
-        public IntegratedDocument Document { get; set; }
-
-        public DocumentFeatures(IntegratedDocument doc, IEnumerable<KeyValuePair<string, double>> features)
-        {
-            Document = doc;
-            this.Features = features;
-        }
-    }
-
+    /// <summary>
+    /// A tpl block which
+    /// </summary>
     public class FeatureGenerator 
     {
-        private Func<IntegratedDocument, IEnumerable<KeyValuePair<string, double>>> _generator;
-        public TransformBlock<IntegratedDocument, DocumentFeatures> Block { get; private set; }
-        public FeatureGenerator(Func<IntegratedDocument, IEnumerable<KeyValuePair<string,double>>> generator)
+        private List<Func<IntegratedDocument, IEnumerable<KeyValuePair<string, double>>>> _generators;
+        private int _threadCount;
+        /// <summary>
+        /// The block that generates features from an inputed document.
+        /// </summary>
+        //public IPropagatorBlock<IntegratedDocument, DocumentFeatures> Block { get; private set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="generator">Feature generator based on input documents</param>
+        public FeatureGenerator(Func<IntegratedDocument, IEnumerable<KeyValuePair<string,double>>> generator, int threadCount = 4)
         {
-            _generator = generator;
-            Block = new TransformBlock<IntegratedDocument, DocumentFeatures>(
-                (x) =>
+            _generators = new List<Func<IntegratedDocument, IEnumerable<KeyValuePair<string, double>>>>();
+            _threadCount = threadCount;
+            _generators.Add(generator);
+            //Block = CreateFeaturesBlock();
+        }
+        
+        public FeatureGenerator AddGenerator(
+            Func<IntegratedDocument, IEnumerable<KeyValuePair<string, double>>> generator)
+        {
+            _generators.Add(generator);
+            return this;
+        }
+
+        public IPropagatorBlock<IntegratedDocument, DocumentFeatures> CreateFeaturesBlock()
+        {
+            var options = new ExecutionDataflowBlockOptions();
+            options.MaxDegreeOfParallelism = _threadCount;
+            var transformerBlock = new TransformBlock<IntegratedDocument, DocumentFeatures>((doc) =>
+            {
+                var queue = new Queue<KeyValuePair<string, double>>();
+                Parallel.ForEach(_generators, (generator) =>
                 {
-                    var features = new DocumentFeatures(x, _generator(x));
-                    return features;
+                    var features = generator(doc);
+                    foreach (var feature in features)
+                    {
+                        queue.Enqueue(feature);
+                    }
                 });
+                var featuresDoc = new DocumentFeatures(doc, queue);
+                return featuresDoc;
+            }, options);
+            return transformerBlock;
+        }
+
+        /// <summary>
+        /// Create a feature generator block, with all the current feature generators.
+        /// </summary>
+        /// <param name="threadCount"></param>
+        /// <returns></returns>
+        public IPropagatorBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, double>>> CreateFeaturePairsBlock()
+        {
+            //Dataflow: poster -> each transformer -> buffer
+            var buffer = new BufferBlock<IEnumerable<KeyValuePair<string, double>>>();
+            // The target part receives data and adds them to the queue.
+            var transformers = _generators
+                .Select(x =>
+                { 
+                    var transformer =
+                        new TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, double>>>(x);
+                    transformer.LinkTo(buffer);
+                    return transformer;
+                });
+            var postOptions = new ExecutionDataflowBlockOptions();
+            postOptions.MaxDegreeOfParallelism = _threadCount;
+            //Post an item to each transformer
+            var poster = new ActionBlock<IntegratedDocument>(doc =>
+            {
+                foreach (var transformer in transformers)
+                {
+                    transformer.Post(doc);
+                }
+            },postOptions);
+            // Return a IPropagatorBlock<T, T[]> object that encapsulates the 
+            // target and source blocks.
+            return DataflowBlock.Encapsulate(poster, buffer);
         }
     }
     

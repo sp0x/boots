@@ -33,6 +33,9 @@ namespace Peeralize.Service.Integration.Blocks
 
         #region Props
         public ProcessingType ProcType { get; private set; }
+        /// <summary>
+        /// The completion task for this block
+        /// </summary>
         public Task ProcessingCompletion
         {
             get
@@ -165,11 +168,13 @@ namespace Peeralize.Service.Integration.Blocks
         public virtual void Complete()
         {
             _buffer.Complete();
-            if (_transformer != null) _transformer.Complete();
-            else
-            {
-                if (_actionBlock != null) _actionBlock.Complete();
-            }
+            //Commented out, due to actions completing only after all data is processed and buffer propagates a completion!
+            //otherwise this causes bugs.
+//            if (_transformer != null) _transformer.Complete();
+//            else
+//            {
+//                if (_actionBlock != null) _actionBlock.Complete();
+//            }
             Completed?.Invoke();
         }
 
@@ -245,13 +250,7 @@ namespace Peeralize.Service.Integration.Blocks
             var tasksToWaitFor = new List<Task>();
             tasksToWaitFor.Add(ProcessingCompletion);
             tasksToWaitFor.AddRange(_linkedBlockCompletions.ToArray());
-            var all = Task.WhenAll(tasksToWaitFor).ContinueWith(x =>
-            {
-                var air = 123;
-                air++;
-
-            });
-            return all;
+            return Task.WhenAll(tasksToWaitFor);
         }
 
         public void AddFlowCompletionTask(Task blockBCompletion)
@@ -272,7 +271,7 @@ namespace Peeralize.Service.Integration.Blocks
             })));
             return this;
         }
-
+         
         /// <summary>
         /// Link to this block when it completes
         /// N-th links are linked to the previous block.
@@ -295,6 +294,26 @@ namespace Peeralize.Service.Integration.Blocks
             }
             _lastTransformerBlockOnCompletion = actionBlock;
             _linkedBlockCompletions.Add(actionBlock.Completion);
+        }
+        /// <summary>
+        /// Posts all items to the given block, upon the full completion of the current one.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="actionBlock">Note: Ensure that you link the block to an output target. There is no automatic null-target block linking.</param>
+        public void LinkOnCompleteEx<T>(IPropagatorBlock<IntegratedDocument, T> actionBlock)
+        {
+            var standardTransformer = new TransformBlock<IntegratedDocument, IntegratedDocument>((doc) =>
+            {
+                actionBlock.Post(doc);
+                return doc;
+            }, new ExecutionDataflowBlockOptions()
+            {
+            });
+            standardTransformer.Completion.ContinueWith((Task t) =>
+            {
+                actionBlock.Complete();
+            });
+            LinkOnComplete(standardTransformer as IPropagatorBlock<IntegratedDocument, IntegratedDocument>);
         }
         /// <summary>
         /// Link this block to another, when it completes.
@@ -460,6 +479,11 @@ namespace Peeralize.Service.Integration.Blocks
             actionb.Fault(objException);
             //Maybe pass to the buffer that we faulted?
         }
+        /// <summary>
+        /// Add a task after the processing block is complete
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
         public IIntegrationDestination ContinueWith(Action<Task> action)
         {
             var actionBlock = GetProcessingBlock();

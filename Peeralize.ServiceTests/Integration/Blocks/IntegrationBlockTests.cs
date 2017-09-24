@@ -7,12 +7,16 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using MongoDB.Driver;
+using nvoid.db.DB.MongoDB;
 using Peeralize.Service;
 using Peeralize.Service.Format;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Integration.Blocks;
 using Peeralize.Service.IntegrationSource;
+using Peeralize.ServiceTests.Netinfo;
 using Xunit;
 
 namespace Peeralize.ServiceTests.Integration.Blocks
@@ -20,18 +24,32 @@ namespace Peeralize.ServiceTests.Integration.Blocks
     [Collection("Entity Parsers")]
     public class IntegrationBlockTests
     {
+        private static string AppId = "123123123";
         private Harvester GetHarvester(int threadCount = 20, int limit = 10)
         {
             var inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, "TestData\\Ebag\\1156");
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
-            var userId = "123123123";
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var harvester = new Peeralize.Service.Harvester(threadCount);
             harvester.LimitEntries(limit); 
-            harvester.AddPersistentType(fileSource, userId, false);
+            harvester.AddPersistentType(fileSource, AppId, false);
             return harvester;
         }
-
+        [Fact]
+        public async void TestSimple()
+        {
+            var harv = GetHarvester();
+            var cnt = 0;
+            var block = new StatsBlock(x =>
+            {
+                x["lol"] = true;
+                Interlocked.Increment(ref cnt);
+            });
+            harv.LimitEntries(100);
+            harv.SetDestination(block);
+            var results = await harv.Synchronize();
+            Assert.Equal(results.ProcessedEntries, cnt);
+        }
 
         [Fact]
         public async void TestSingleLambda()
@@ -185,7 +203,70 @@ namespace Peeralize.ServiceTests.Integration.Blocks
             Assert.Equal(results.ProcessedEntries * rCycles, lCount);
             Debug.WriteLine($"Threads used: after harvest {setx.Count} - finishing {finishingTasks.Count}");
             Debug.WriteLine($"Documents processed: " + docset.Count);
-        } 
+        }
+
+        [Fact]
+        public async void TestBranchedBlocks()
+        {
+            var harvester = GetHarvester(20);
+            harvester.LimitEntries(1000);
+            int cntFeatures=0, cntUpdates=0, cntBatchesApplied=0;
+            int batchSize = 3000;
+            var featureSize = 1;
+
+            var grouper = new GroupingBlock(AppId,
+                (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
+                (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
+                (doc, docx) =>
+                {
+                    return doc;
+                });
+            // create features for each user -> create Update -> batch update
+            var featureGenerator = new FeatureGenerator((doc) =>
+            {
+                Interlocked.Increment(ref cntFeatures);
+                return new[]{
+                        new KeyValuePair<string, double>("feature1", 0)
+                    };
+            } , 8);
+            var updateCreator = new TransformBlock<DocumentFeatures, FindAndModifyArgs<IntegratedDocument>>((docFeatures) =>
+            {
+                Interlocked.Increment(ref cntUpdates);
+                return new FindAndModifyArgs<IntegratedDocument>()
+                {
+                    Query = Builders<IntegratedDocument>.Filter.And(
+                                Builders<IntegratedDocument>.Filter.Eq("Document.uuid", docFeatures.Document["uuid"].ToString()),
+                                Builders<IntegratedDocument>.Filter.Eq("Document.noticed_date", docFeatures.Document.GetDate("noticed_date"))),
+                    Update = docFeatures.Features.ToMongoUpdate<IntegratedDocument, double>()
+                };
+            }); 
+            var updateBatcher = new BatchBlock<FindAndModifyArgs<IntegratedDocument>>(batchSize);
+            var updateApplier = new ActionBlock<FindAndModifyArgs<IntegratedDocument>[]>(x =>
+            {
+                Interlocked.Increment(ref cntBatchesApplied);
+            });
+            IPropagatorBlock<IntegratedDocument, DocumentFeatures> featuresBlock = featureGenerator.CreateFeaturesBlock();
+
+            featuresBlock.LinkTo(updateCreator, new DataflowLinkOptions() { PropagateCompletion = true });
+            updateCreator.LinkTo(updateBatcher, new DataflowLinkOptions() { PropagateCompletion = true });
+            updateBatcher.LinkTo(updateApplier, new DataflowLinkOptions() { PropagateCompletion = true });
+            grouper.AddFlowCompletionTask(updateApplier.Completion);
+            grouper.LinkOnCompleteEx(featuresBlock);
+            
+            //grouper.OnProcessingCompletion(()=>featuresBlock.Complete());
+//            grouper.ContinueWith((Task x) =>
+//            {
+//                featuresBlock.Complete();
+//            });
+            harvester.SetDestination(grouper);
+            var syncTask = harvester.Synchronize();
+            HarvesterResult results = await syncTask;
+            Debug.WriteLine($"Updates created {cntUpdates}");
+            Assert.True(cntBatchesApplied!=0 && (cntBatchesApplied * batchSize >= results.ProcessedEntries));
+            Assert.True(cntUpdates > 0);
+            Assert.True(cntUpdates == (cntFeatures * featureSize));
+            
+        }
          
     }
 }

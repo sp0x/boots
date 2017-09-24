@@ -87,7 +87,8 @@ for index, week in enumerate(weeksAvailable):
             "has_type_val_6": {"$avg": "$Document.has_type_val_6"},
             "has_type_val_7": {"$avg": "$Document.has_type_val_7"},
             "has_type_val_8": {"$avg": "$Document.has_type_val_8"},
-            "has_type_val_9": {"$avg": "$Document.has_type_val_9"}
+            "has_type_val_9": {"$avg": "$Document.has_type_val_9"},
+            "time_between_visits_avg": {"$avg": "$Document.time_between_visits_avg"}
         }}]
     weekData = collection.aggregate(pipeline)     
     next_week_end = next_week + timedelta(days=7)
@@ -118,6 +119,10 @@ for index, week in enumerate(weeksAvailable):
 
         paying_s_freq = 0 if "paying_s_freq" not in tmpDoc else tmpDoc["paying_s_freq"]
         paying_s_freq = 0 if paying_s_freq is None else paying_s_freq
+
+        time_between_visits_avg = 0 if "time_between_visits_avg" not in tmpDoc else tmpDoc["time_between_visits_avg"]
+        time_between_visits_avg = 0 if time_between_visits_avg is None else time_between_visits_avg
+
         has_paid_before = 1 if uuid in users_paid else 0
         inputElement = [
             tmpDoc["visits_on_weekends"],
@@ -145,9 +150,10 @@ for index, week in enumerate(weeksAvailable):
             non_paying_s_freq,
             paying_s_time,
             paying_s_freq,
-            has_paid_before
+            has_paid_before,
+            time_between_visits_avg
         ]
-        for i in xrange(10):
+        for i in xrange(10): 
             f_name = "has_type_val_{0}".format(i)
             f_val = 0 if f_name not in tmpDoc else tmpDoc[f_name]
             f_val = 0 if f_val is None else f_val

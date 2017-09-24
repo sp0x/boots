@@ -251,7 +251,7 @@ namespace Peeralize.ServiceTests
                             ((BsonArray)userDocument["events"])
                             .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
                             .ToBsonArray();
-                        var sessions = grouper.Helper.GetWebSessions(user).ToList();
+                        var sessions = CrossSiteAnalyticsHelper.GetWebSessions(user).ToList();
                         var sessionWrapper = new DomainUserSessionCollection(sessions);
                         sessionWrapper.UserId = uuid;
                         sessionWrapper.Created = dateNoticed;
@@ -289,8 +289,8 @@ namespace Peeralize.ServiceTests
                 {
                     try
                     {
-                        var user = usersData.EntityDictionary[userDayInfoPairs.Key];
-                        var userDocument = user.GetDocument();
+                        var userGroup = usersData.EntityDictionary[userDayInfoPairs.Key];
+                        var userDocument = userGroup.GetDocument();
                         var userIsPaying = userDocument.Contains("is_paying") &&
                                            userDocument["is_paying"].AsInt32 == 1;
                         //We're only interested in paying users
@@ -300,7 +300,7 @@ namespace Peeralize.ServiceTests
                             ((BsonArray) userDocument["events"])
                             .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
                             .ToBsonArray(); 
-                        foreach (DomainUserSession visitSession in usersData.Helper.GetWebSessions(user))
+                        foreach (DomainUserSession visitSession in CrossSiteAnalyticsHelper.GetWebSessions(userGroup))
                         {
                             var newLine = string.Format("{0},{1},{2},{3}", uuid, visitSession.Domain,
                                 visitSession.Duration.TotalSeconds, visitSession.Visited);

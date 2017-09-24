@@ -275,7 +275,7 @@ class Experiment:
             print("Normalized confusion matrix")
         else:
             print('Confusion matrix, without normalization')
-
+        plt.clf()
 
         plt.imshow(cm, interpolation='nearest', cmap=cmap)
         plt.title(title)
@@ -313,7 +313,7 @@ class Experiment:
         feature_importance = 100.0 * (feature_importance / feature_importance.max())
         sorted_idx = np.argsort(feature_importance)
         pos = np.arange(sorted_idx.shape[0]) + .5
-        plt.subplot(1, 2, 1)
+        plt.subplot(1, 2, 2)
         plt.barh(pos, feature_importance[sorted_idx], align='center')
         yticks = []
         for index in sorted_idx:
@@ -485,7 +485,7 @@ def graph_experiment(data, targets, client='cashlend', model=None, modelsFile=No
         y_true, y_pred = y_test, model.predict(X_test)
         y_pred_proba = model.predict_proba(X_test)
         cm = confusion_matrix(y_true, y_pred)
-        Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], True, m['type'], company=client, prefix='pred_')
+        Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], True, model=model_type, company=client, prefix='pred_')
         Experiment.make_graphs(y_pred_proba, y_true, model_type, client, 'pred_')
 
 

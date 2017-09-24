@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Driver;
@@ -12,7 +14,7 @@ namespace Peeralize.Service.Integration.Blocks
         public BatchBlock<FindAndModifyArgs<TRecord>> Block => _block;
         private CancellationToken _cancellationToken;
         private IMongoCollection<TRecord> _collection;
-
+        
         public MongoUpdateBatch(IMongoCollection<TRecord> collection, int batchSize = 10000, CancellationToken? cancellationToken = null)
         {
             _block = new BatchBlock<FindAndModifyArgs<TRecord>>(batchSize);
@@ -31,10 +33,14 @@ namespace Peeralize.Service.Integration.Blocks
                 var actionModel = new UpdateOneModel<TRecord>(mod.Query, mod.Update);
                 updateModels[i] = actionModel;
             }
-            return _collection.BulkWriteAsync(updateModels, new BulkWriteOptions()
+            var output = _collection.BulkWriteAsync(updateModels, new BulkWriteOptions()
             {
 
+            }, _cancellationToken).ContinueWith(x =>
+            {
+                Debug.WriteLine($"{DateTime.Now} Written batch[{modifications.Length}]");
             }, _cancellationToken);
+            return output;
         }
     }
 }

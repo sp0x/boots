@@ -35,19 +35,87 @@ namespace Peeralize.ServiceTests.Netinfo
             _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().MongoDb();
             _appId = "123123123";
         }
-         
+        /// <summary>
+        /// TODO: Make grouping keys(day) be day since unix timestamp start
+        /// </summary>
+        /// <param name="inputDirectory"></param>
+        /// <param name="targetDomain"></param>
+        [Theory]
+        [InlineData(new object[] { "TestData\\Ebag\\1156", "ebag.bg" })] 
+        public async void ExtractAvgTimeBetweenVisitFeatures(string inputDirectory, string targetDomain)
+        {
+            inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
+            var harvester = new Peeralize.Service.Harvester(10);
+            harvester.AddPersistentType(fileSource, _appId, true);
+
+            var grouper = new GroupingBlock(_appId,
+                (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
+                (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
+                AccumulateUserEvent);
+            grouper.Helper = helper;
+            //Group the users
+            // create features for each user -> create Update -> batch update
+            var featureGenerator = new FeatureGenerator((doc) =>
+                {
+                    int min = 0, max = 604800;
+                    var sessions = CrossSiteAnalyticsHelper.GetWebSessions(doc, targetDomain)
+                        .Select(x=>x.Visited).ToList();
+                    var timeBetweenSessionSum = 0.0d;
+                    for(var i=0; i<sessions.Count; i++)
+                    {
+                        if (i == 0) continue;
+                        var session = sessions[i];
+                        var diff = session - sessions[i - 1];
+                        timeBetweenSessionSum += diff.TotalSeconds;
+                    }
+                    timeBetweenSessionSum = timeBetweenSessionSum / Math.Max(sessions.Count, 1);
+                    if (timeBetweenSessionSum > 0)
+                    {
+                        timeBetweenSessionSum = timeBetweenSessionSum;
+                    }
+                    timeBetweenSessionSum = timeBetweenSessionSum == 0 ? 0 : (1 - (timeBetweenSessionSum / max));
+                    return new []{
+                        new KeyValuePair<string, double>("Document.time_between_visits_avg", timeBetweenSessionSum)
+                    };
+                }
+            , 8);
+            var updateCreator = new TransformBlock<DocumentFeatures, FindAndModifyArgs<IntegratedDocument>>((docFeatures) =>
+            {
+                return new FindAndModifyArgs<IntegratedDocument>()
+                {
+                    Query = Builders<IntegratedDocument>.Filter.And(
+                                Builders<IntegratedDocument>.Filter.Eq("Document.uuid", docFeatures.Document["uuid"].ToString()),
+                                Builders<IntegratedDocument>.Filter.Eq("Document.noticed_date", docFeatures.Document.GetDate("noticed_date"))),
+                    Update = docFeatures.Features.ToMongoUpdate<IntegratedDocument, double>()
+                };
+            });
+            var updateBatcher = new MongoUpdateBatch<IntegratedDocument>(_documentStore, 300);
+            var featuresBlock = featureGenerator.CreateFeaturesBlock();
+            featuresBlock.LinkTo(updateCreator);
+            updateCreator.LinkTo(updateBatcher.Block);
+            grouper.AddFlowCompletionTask(featuresBlock.Completion);
+            grouper.AddFlowCompletionTask(updateBatcher.Block.Completion);
+            grouper.LinkOnComplete(new TransformBlock<IntegratedDocument, IntegratedDocument>(doc =>
+            {
+                featuresBlock.Post(doc);
+                return doc;
+            }));
+
+            harvester.SetDestination(grouper);
+            var completion = await harvester.Synchronize();
+            var syncDuration = harvester.ElapsedTime();
+            Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
+        }
 
         [Theory]
-        [InlineData(new object[] { "TestData\\Ebag\\1156" })] //was 6
+        [InlineData(new object[] { "TestData\\Ebag\\1156" })]
         public async void ExtractEventValueFeatures(string inputDirectory)
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
-            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
-            Assert.NotNull(type);
             var harvester = new Peeralize.Service.Harvester(10);
             harvester.AddPersistentType(fileSource, _appId, true);
-            harvester.LimitEntries(1000);
 
             var grouper = new GroupingBlock(_appId,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
@@ -64,9 +132,10 @@ namespace Peeralize.ServiceTests.Netinfo
             }));
             //Group the users
             // create features for each user -> create Update -> batch update
-            var featureGenerator = new FeatureGenerator((doc) => helper
-                .GetTopRatedFeatures(doc["uuid"].ToString(), VisitTypedValue, 10)
-                .Select((x, i) => new KeyValuePair<string, double>($"Document._has_type_val_{i}", x)));
+            var featureGenerator = new FeatureGenerator((doc) => 
+                helper.GetTopRatedFeatures(doc["uuid"].ToString(), VisitTypedValue, 10)
+                .Select((value, index) => new KeyValuePair<string, double>($"Document._has_type_val_{index}", value))
+            );
             var updateCreator = new TransformBlock<DocumentFeatures, FindAndModifyArgs<IntegratedDocument>>((x) =>
             {
                 return new FindAndModifyArgs<IntegratedDocument>()
@@ -74,38 +143,20 @@ namespace Peeralize.ServiceTests.Netinfo
                     Query = Builders<IntegratedDocument>.Filter.And(
                                 Builders<IntegratedDocument>.Filter.Eq("Document.uuid", x.Document["uuid"].ToString()),
                                 Builders<IntegratedDocument>.Filter.Eq("Document.noticed_date", x.Document.GetDate("noticed_date"))),
-                    Update = x.Features.ToMongoUpdate<IntegratedDocument>()
+                    Update = x.Features.ToMongoUpdate<IntegratedDocument, double>()
                 };
             });
             var updateBatcher = new MongoUpdateBatch<IntegratedDocument>(_documentStore, 300);
-            
-            featureGenerator.Block.LinkTo(updateCreator);
-            updateCreator.LinkTo(updateBatcher.Block);
-            var onComplete = new TransformBlock<IntegratedDocument, IntegratedDocument>(doc =>
+            var featuresBlock = featureGenerator.CreateFeaturesBlock();
+            featuresBlock.LinkTo(updateCreator);
+            updateCreator.LinkTo(updateBatcher.Block); 
+            grouper.LinkOnComplete(new TransformBlock<IntegratedDocument, IntegratedDocument>(doc =>
             {
-                featureGenerator.Block.Post(doc);
+                featuresBlock.Post(doc);
                 return doc;
-            });
-            grouper.LinkOnComplete(onComplete);
+            })); 
 
-//            grouper.LinkOnComplete(new IntegrationActionBlock(_appId, (block, doc) =>
-//            {
-//                var uuid = doc["uuid"].ToString();
-//                var noticedDate = doc.GetDate("noticed_date");
-//                var topTypeValues = helper.GetTopRatedFeatures(uuid, VisitTypedValue, 10).ToList();
-//                
-//                var query = Query.And(Query.EQ("Document.uuid", uuid), Query.EQ("Document.noticed_date", noticedDate));
-//                var newUpdate = new UpdateBuilder();
-//                for (int i = 0; i < 10; i++)
-//                {
-//                    var featureVal = topTypeValues[i];
-//                    newUpdate.Set($"Document.has_type_val_{i}", featureVal);
-//                }
-//                UpdateFeatures(_appId, query, newUpdate);
-//            }));
-
-            harvester.SetDestination(grouper);
-            //harvester.AddType(type, fileSource);
+            harvester.SetDestination(grouper); 
             var completion = await harvester.Synchronize();
             var syncDuration = harvester.ElapsedTime();
             Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
