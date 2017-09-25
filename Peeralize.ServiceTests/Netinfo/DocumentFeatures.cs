@@ -11,13 +11,13 @@ namespace Peeralize.ServiceTests.Netinfo
         /// <summary>
         /// The features of the document.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, double>> Features { get; set; }
+        public IEnumerable<KeyValuePair<string, object>> Features { get; set; }
         /// <summary>
         /// The document to which the features are related
         /// </summary>
         public IntegratedDocument Document { get; set; }
 
-        public DocumentFeatures(IntegratedDocument doc, IEnumerable<KeyValuePair<string, double>> features)
+        public DocumentFeatures(IntegratedDocument doc, IEnumerable<KeyValuePair<string, object>> features)
         {
             Document = doc;
             this.Features = features;

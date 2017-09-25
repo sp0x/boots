@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
-using MongoDB.Driver; 
 using nvoid.db.Extensions;
 using nvoid.extensions;
 using Peeralize.Service;
@@ -16,7 +12,6 @@ using Peeralize.Service.Format;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Integration.Blocks;
 using Peeralize.Service.IntegrationSource;
-using Peeralize.Service.Source;
 using Peeralize.Service.Time;
 using Peeralize.ServiceTests.IntegrationSource;
 using Xunit;
@@ -53,58 +48,46 @@ namespace Peeralize.ServiceTests
         [InlineData("TestData\\Ebag\\1155\\UUID_1155_all.csv")]
         public void ExtractEntityFromSingleFile(string inputFile)
         {
-            inputFile = Path.Combine(Environment.CurrentDirectory, inputFile);
-            var fileSource = FileSource.CreateFromFile(inputFile, new CsvFormatter());
-            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
-            Assert.NotNull(type);
-
-            var userId = "123123123";
-            var userApiId = Guid.NewGuid().ToString();
-            var harvester = new Peeralize.Service.Harvester();
-            type.UserId = userId;
-            type.SaveType(userApiId);
-
-            var saver = new MongoSink(userId);
-            var modifier = new EntityFeatureGenerator(userId);
-            modifier.LinkTo(saver, null); //We modify the entity to fill all it's data, then generate feature, and then save
-            harvester.SetDestination(modifier);
-            harvester.AddType(type, fileSource);
-            harvester.Synchronize();
+//            inputFile = Path.Combine(Environment.CurrentDirectory, inputFile);
+//            var fileSource = FileSource.CreateFromFile(inputFile, new CsvFormatter());
+//            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
+//            Assert.NotNull(type);
+//
+//            var userId = "123123123";
+//            var userApiId = Guid.NewGuid().ToString();
+//            var harvester = new Peeralize.Service.Harvester();
+//            type.UserId = userId;
+//            type.SaveType(userApiId);
+//
+//            var saver = new MongoSink(userId);
+//            var featureGen = new FeatureGeneratorHelper();
+//            var featureBlock = featureGen.GetBlock();
+//            featureBlock.LinkTo(saver, new DataflowLinkOptions{ PropagateCompletion = true}); //We modify the entity to fill all it's data, then generate feature, and then save
+//            harvester.SetDestination(modifier);
+//            harvester.AddType(type, fileSource);
+//            harvester.Synchronize();
         }
 
         [Theory]
-        [InlineData(new object[] {"TestData\\Ebag\\1156"})] //was 6
+        [InlineData(new object[] {"TestData\\Ebag\\JoinedData"})] //was 6
         public async void ParseEntityDump(string inputDirectory)
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()
-            {
-                Delimiter = ';'
-            });
-            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
-            Assert.NotNull(type);
-
+            { Delimiter = ';' });
+            
             var userId = "123123123";
-            var userApiId = Guid.NewGuid().ToString();
             var harvester = new Peeralize.Service.Harvester(20);
-            type.UserId = userId;
-            IntegrationTypeDefinition existingDataType;
-            if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
-            {
-                type.SaveType(userApiId);
-            }
-            else type = existingDataType;
+            var type = harvester.AddPersistentType(fileSource, userId, true);
+            
             var grouper = new GroupingBlock(userId,
-                (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
+                (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.DaysTotal()}",
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
                 AccumulateUserEvent); 
             //var saver = new MongoSink(userId); 
             var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
-            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
             grouper.Helper = helper;
-            //demographyImporter.LinkTo(featureGen); 
-            //featureGen.LinkTo(saver);
-
+            
             //Group the users
             grouper.LinkOnComplete(new IntegrationActionBlock(userId, (block, doc) =>
             {
@@ -125,28 +108,20 @@ namespace Peeralize.ServiceTests
 
 
 
-        
 
-        [Theory]
+        /// <summary>
+        /// DEPRECATED
+        /// </summary>
+        /// <param name="inputDirectory"></param>
+        /// <param name="demographySheet"></param>
         [InlineData(new object[]{"TestData\\Ebag\\1156", "TestData\\Ebag\\demograpy.csv" })]
         public async void ExtractEntityFromDirectory(string inputDirectory, string demographySheet)
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
-
-            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
-            Assert.NotNull(type);
-
-            var userId = "123123123";
-            var userApiId = Guid.NewGuid().ToString();
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());  
+            var userId = "123123123"; 
             var harvester = new Peeralize.Service.Harvester();
-            type.UserId = userId;
-            IntegrationTypeDefinition existingDataType;
-            if (!IntegrationTypeDefinition.TypeExists(type, userId, out existingDataType))
-            {
-                type.SaveType(userApiId);
-            }
-            else type = existingDataType;
+            var type = harvester.AddPersistentType(fileSource, userId, true); 
 
             var grouper = new GroupingBlock(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
             var saver = new MongoSink(userId);
@@ -164,10 +139,13 @@ namespace Peeralize.ServiceTests
             
             grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
             demographyImporter.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
-            var featureGen = new EntityFeatureGenerator(userId);
+
+            var featureGen = new FeatureGeneratorHelper() { Helper = helper};
+            var featureGenBlock = featureGen.GetBlock();
             featureGen.Helper = helper;
             //demographyImporter.LinkTo(featureGen); 
-            featureGen.LinkTo(saver, null);
+
+            //featureGenBlock.LinkTo(saver.GetProcessingBlock());
 
             saver.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
 
@@ -341,9 +319,6 @@ namespace Peeralize.ServiceTests
             var prob_buy_is_holiday = (double)_purchasesOnHolidays.Count / purchasesCount;
             var prob_buy_is_before_holiday = (double)_purchasesBeforeHolidays.Count / purchasesCount;
             var prop_buy_is_weekend = (double)_purchasesInWeekends.Count / purchasesCount;
-            var mongoClient = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().MongoDb();
-            int cnt = 0;
-            int total = grouper.EntityDictionary.Count;
             foreach (var userDayInfoPairs in grouper.EntityDictionary)
             {
                 var user = grouper.EntityDictionary[userDayInfoPairs.Key];
@@ -352,36 +327,32 @@ namespace Peeralize.ServiceTests
                     ((BsonArray)userDocument["events"])
                     .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
                     .ToBsonArray();
-                var uuid = userDocument["uuid"]; 
-                var noticed = userDocument["noticed_date"].ToUniversalTime().ToString();
                 var g_timestamp = userDocument["noticed_date"].ToUniversalTime();
                 var weekstart = g_timestamp.StartOfWeek(DayOfWeek.Monday);
                 g_timestamp = weekstart;
-                var g_timestr = g_timestamp.ToString();
                 userDocument["g_timestamp"] = g_timestamp;
 
                 //var args = new FindAndModifyArgs();
                 //args.Query = Query.EQ("Document.uuid", uuid);
                 //args.Update = Update.Set("Document.g_timestamp", g_timestamp);
-                //mongoClient.FindAndModify(args);
-
+                //mongoClient.FindAndModify(args); 
 
                 userDocument["max_time_spent_by_any_paying_user_ebag"] = max_time_spent_by_any_paying_user_ebag; 
 
                 userDocument["prob_buy_is_holiday"] = prob_buy_is_holiday;
                 userDocument["prob_buy_is_before_holiday"] = prob_buy_is_before_holiday;
                 userDocument["prop_buy_is_weekend"] = prop_buy_is_weekend;
-                cnt++;
             }
             
             dataImporter.PostAll(userValues);
         }
 
-        private void OnUserDemographyImported(EntityFeatureGenerator gen, GroupingBlock usersData)
+        private void OnUserDemographyImported(FeatureGeneratorHelper gen, GroupingBlock usersData)
         { 
             var userValues = usersData.EntityDictionary.Values;
             gen.Helper.GroupDemographics();
-            gen.PostAll(userValues);
+            var featureblock = gen.GetBlock();
+            featureblock.PostAll(userValues); 
         }
 
         /// <summary>

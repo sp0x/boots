@@ -217,17 +217,12 @@ namespace Peeralize.ServiceTests.Integration.Blocks
             var grouper = new GroupingBlock(AppId,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
-                (doc, docx) =>
-                {
-                    return doc;
-                });
+                (doc, docx) => doc);
             // create features for each user -> create Update -> batch update
             var featureGenerator = new FeatureGenerator((doc) =>
             {
                 Interlocked.Increment(ref cntFeatures);
-                return new[]{
-                        new KeyValuePair<string, double>("feature1", 0)
-                    };
+                return new[]{ new KeyValuePair<string, object>("feature1", 0) };
             } , 8);
             var updateCreator = new TransformBlock<DocumentFeatures, FindAndModifyArgs<IntegratedDocument>>((docFeatures) =>
             {
@@ -237,7 +232,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                     Query = Builders<IntegratedDocument>.Filter.And(
                                 Builders<IntegratedDocument>.Filter.Eq("Document.uuid", docFeatures.Document["uuid"].ToString()),
                                 Builders<IntegratedDocument>.Filter.Eq("Document.noticed_date", docFeatures.Document.GetDate("noticed_date"))),
-                    Update = docFeatures.Features.ToMongoUpdate<IntegratedDocument, double>()
+                    Update = docFeatures.Features.ToMongoUpdate<IntegratedDocument, object>()
                 };
             }); 
             var updateBatcher = new BatchBlock<FindAndModifyArgs<IntegratedDocument>>(batchSize);
@@ -246,7 +241,6 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                 Interlocked.Increment(ref cntBatchesApplied);
             });
             IPropagatorBlock<IntegratedDocument, DocumentFeatures> featuresBlock = featureGenerator.CreateFeaturesBlock();
-
             featuresBlock.LinkTo(updateCreator, new DataflowLinkOptions() { PropagateCompletion = true });
             updateCreator.LinkTo(updateBatcher, new DataflowLinkOptions() { PropagateCompletion = true });
             updateBatcher.LinkTo(updateApplier, new DataflowLinkOptions() { PropagateCompletion = true });

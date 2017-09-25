@@ -22,7 +22,8 @@ namespace Peeralize.Service.Integration.Blocks
         public List<string[]> CacheItems { get; private set; }
         public Dictionary<string, string[]> MappedItems { get; private set; }
 
-        public EntityDataImporter(string inputFile, bool relative = false, bool map = false) : base()
+        public EntityDataImporter(string inputFile, bool relative = false, bool map = false) 
+            : base(procType: ProcessingType.Transform)
         {
             Delimiter = ',';
             if (relative)

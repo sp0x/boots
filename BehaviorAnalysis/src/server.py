@@ -22,7 +22,7 @@ class Server(threading.Thread):
         with self.cond:
             self.is_running = False
             if any(map(lambda x: x.is_alive,self.experiments)):
-                print "Waiting for all running experiments to finish executing"
+                print("Waiting for all running experiments to finish executing")
                 for e in self.experiments:
                     e.join()
 

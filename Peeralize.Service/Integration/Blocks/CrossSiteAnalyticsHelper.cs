@@ -24,6 +24,12 @@ namespace Peeralize.Service.Integration.Blocks
         public Dictionary<string, List<IntegratedDocument>> GenderGroups { get; set; }
         public Dictionary<string, List<IntegratedDocument>> DistinctUsers { get; set; }
 
+        public BsonArray Purchases { get; private set; }
+        public BsonArray PurchasesOnHolidays { get; private set; }
+        public BsonArray PurchasesBeforeHolidays { get; private set; }
+        public BsonArray PurchasesInWeekends { get; private set; }
+        public BsonArray PurchasesBeforeWeekends { get; private set; }
+
         private ConcurrentDictionary<byte, Dictionary<string, Score>> _featureKeyDictionary;
         private ConcurrentDictionary<string, Dictionary<byte, HashSet<string>>> _usersWithSpecialEvents;
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
@@ -32,6 +38,12 @@ namespace Peeralize.Service.Integration.Blocks
         {
             _featureKeyDictionary = new ConcurrentDictionary<byte, Dictionary<string, Score>>();
             _usersWithSpecialEvents = new ConcurrentDictionary<string, Dictionary<byte, HashSet<string>>>();
+            Purchases = new BsonArray();
+            PurchasesOnHolidays = new BsonArray();
+            PurchasesBeforeHolidays = new BsonArray();
+            PurchasesInWeekends = new BsonArray();
+            PurchasesBeforeWeekends = new BsonArray();
+
             HighrankPageCache = new Dictionary<string, IEnumerable<PageStats>>();
         }
 
@@ -137,6 +149,7 @@ namespace Peeralize.Service.Integration.Blocks
 
         }
 
+        private double? _longestVisitPurchaseDuration;
         /// <summary>
         /// Gets the max user time(secs) spent on the target domain, out of all the user's browsing times.
         /// Using: max(time_on_target_domain / time_in_all_domains) in seconds.
@@ -146,8 +159,9 @@ namespace Peeralize.Service.Integration.Blocks
         /// </summary>
         /// <param name="targetDomain"></param>
         /// <returns></returns>
-        public double GetLongestVisitPurchaseDuration(string targetDomain, string specialUrl)
+        public double GetLongestVisitPurchaseDuration(string targetDomain, string specialUrl, bool useCache = true)
         {
+            if (_longestVisitPurchaseDuration != null && useCache) return _longestVisitPurchaseDuration.Value;
             var spentTimes = new List<double>();
             //DomainVisitsTotal = 0;
             foreach (var userPair in this.EntityDictionary)
@@ -288,7 +302,8 @@ namespace Peeralize.Service.Integration.Blocks
                 //} 
                 //aDomainVisitsTotal += domainChanges;
             }
-            return spentTimes.Max();
+            _longestVisitPurchaseDuration = spentTimes.Max();
+            return _longestVisitPurchaseDuration.Value;
         }
 
 
