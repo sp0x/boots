@@ -39,3 +39,6 @@ storage.ide
 /BehaviorAnalysis/src/rf_lift.png
 /TestResults
 /jenkins
+**.psess
+**.vsp
+/Runner

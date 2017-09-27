@@ -91,6 +91,7 @@ namespace Peeralize.Service.Integration.Blocks
             var completion = GetProcessingBlock().Completion;
             completion.ContinueWith(xTask =>
             {
+                MappedItems.Clear();
                 action(this);
             });
             return this;

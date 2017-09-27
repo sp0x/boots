@@ -96,6 +96,8 @@ namespace Peeralize.Service.Format
             return jsf;
         }
 
+        public double Progress => 0;
+
         public void Dispose()
         {
             ((IDisposable) _jsReader)?.Dispose();

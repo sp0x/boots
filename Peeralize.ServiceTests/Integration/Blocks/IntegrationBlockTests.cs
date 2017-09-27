@@ -16,6 +16,7 @@ using Peeralize.Service.Format;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Integration.Blocks;
 using Peeralize.Service.IntegrationSource;
+using Peeralize.Service.Models;
 using Peeralize.ServiceTests.Netinfo;
 using Xunit;
 
@@ -235,7 +236,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                     Update = docFeatures.Features.ToMongoUpdate<IntegratedDocument, object>()
                 };
             }); 
-            var updateBatcher = new BatchBlock<FindAndModifyArgs<IntegratedDocument>>(batchSize);
+            var updateBatcher = BatchedBlockingBlock< FindAndModifyArgs < IntegratedDocument > >.CreateBlock(batchSize);
             var updateApplier = new ActionBlock<FindAndModifyArgs<IntegratedDocument>[]>(x =>
             {
                 Interlocked.Increment(ref cntBatchesApplied);

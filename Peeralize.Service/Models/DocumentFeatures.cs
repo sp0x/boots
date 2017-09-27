@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using Peeralize.Service.Integration;
 
-namespace Peeralize.ServiceTests.Netinfo
+namespace Peeralize.Service.Models
 {
     /// <summary>
     /// Describes a document and it's features as key-value(double) types

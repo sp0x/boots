@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
+using nvoid.db.DB;
 using nvoid.db.Extensions;
 using nvoid.extensions;
 using Peeralize.Service;
@@ -83,7 +84,7 @@ namespace Peeralize.ServiceTests
             var grouper = new GroupingBlock(userId,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.DaysTotal()}",
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
-                AccumulateUserEvent); 
+                (acc, doc) => AccumulateUserEvent(acc, doc)); 
             //var saver = new MongoSink(userId); 
             var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
             grouper.Helper = helper;
@@ -376,7 +377,7 @@ namespace Peeralize.ServiceTests
         /// </summary>
         /// <param name="accumulator"></param>
         /// <param name="newEntry"></param>
-        private object AccumulateUserEvent(IntegratedDocument accumulator, IntegratedDocument newEntry)
+        private object AccumulateUserEvent(IntegratedDocument accumulator, BsonDocument newEntry)
         {
             var value = newEntry["value"]?.ToString();
             var onDate = newEntry["ondate"].ToString();

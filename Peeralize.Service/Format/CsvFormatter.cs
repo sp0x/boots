@@ -47,57 +47,41 @@ namespace Peeralize.Service.Format
             }
 
             var outputObject = new ExpandoObject() as IDictionary<string, Object>;
-            var reader = new Func<T>(() =>
+            if (_csvReader.ReadNextRecord())
             {
-                while (true)
+                for (var i = 0; i < _csvReader.FieldCount; i++)
                 {
-                    var failed = false;
-                    if (_csvReader.ReadNextRecord())
+                    string fldValue = _csvReader[i];
+                    string fldName = i >= _headers.Length ? ("NoName_" + i) : _headers[i];
+                    //Ignore invalid columns
+                    if (fldName == $"Column{i}" && string.IsNullOrEmpty(fldValue))
                     {
-                        for (var i = 0; i < _csvReader.FieldCount; i++)
+                        continue;
+                    }
+                    double dValue;
+                    fldValue = fldValue.Trim('"', '\t', '\n', '\r', '\'');
+                    if (double.TryParse(fldValue, out dValue))
+                    {
+                        if (fldValue.Contains(".") || fldValue.Contains(","))
                         {
-                            string fldValue = _csvReader[i];
-                            string fldName = i >= _headers.Length ? ("NoName_" + i) : _headers[i];
-                            //Ignore invalid columns
-                            if (fldName == $"Column{i}" && string.IsNullOrEmpty(fldValue))
-                            {
-                                continue;
-                            }
-                            if (fldValue == _headers[i])
-                            {
-                                failed = true;
-                                break;
-                            }
-                            double dValue;
-                            fldValue = fldValue.Trim('"', '\t', '\n', '\r', '\'');
-                            if (double.TryParse(fldValue, out dValue))
-                            {
-                                if (fldValue.Contains(".") || fldValue.Contains(","))
-                                {
-                                    outputObject.Add(fldName, dValue);
-                                }
-                                else
-                                {
-                                    outputObject.Add(fldName, (long)dValue);
-                                }
-                            }
-                            else
-                            {
-                                outputObject.Add(fldName, fldValue);
-                            }
+                            outputObject.Add(fldName, dValue);
+                        }
+                        else
+                        {
+                            outputObject.Add(fldName, (long)dValue);
                         }
                     }
                     else
                     {
-                        return default(T);
+                        outputObject.Add(fldName, fldValue);
                     }
-                    if(!failed) break;
                 }
-                 
-                return outputObject as T;
-
-            });
-            return reader();
+            }
+            else
+            {
+                return default(T);
+            }
+            return outputObject as T;
         }
 
         public IInputFormatter Clone()
@@ -107,6 +91,7 @@ namespace Peeralize.Service.Format
             return formatter;
         }
 
+        public double Progress => 0;
 
 
         public void Dispose()

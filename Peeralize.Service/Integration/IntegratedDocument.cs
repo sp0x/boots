@@ -70,16 +70,16 @@ namespace Peeralize.Service.Integration
         {
             if (Document == null) return null;
             var val = Document.Value;
-            return val[key]?.ToString();
+            return val.Contains(key) ? val[key]?.ToString() : null;
         }
         public long GetInt64(string key)
         {
             return Document!=null ? Document.Value[key].ToInt64() : 0;
         }
-        public int GetInt(string key)
+        public int? GetInt(string key)
         {
-            if (Document == null) return 0;
-            if (!Document.Value.Contains(key)) return 0;
+            if (Document == null) return null;
+            if (!Document.Value.Contains(key)) return null; 
             var val = Document.Value[key].ToString();
             if (string.IsNullOrEmpty(val)) return 0;
             return int.Parse(val);
@@ -156,6 +156,15 @@ namespace Peeralize.Service.Integration
         public bool Has(string key)
         {
             return Document.Value.Contains(key);
+        }
+
+        public BsonArray GetArray(string key)
+        {
+            var doc = GetDocument();
+            if (doc == null) return null;
+            if (!doc.Contains(key)) return null;
+            var value = doc[key].AsBsonArray;
+            return value;
         }
     }
      

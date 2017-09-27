@@ -71,7 +71,7 @@ namespace Peeralize.Service.Integration.Blocks
 
 
 
-        public IntegrationBlock(int capacity = 1000 * 1000, 
+        public IntegrationBlock(int capacity = 1000 * 10, 
             ProcessingType procType = ProcessingType.Transform,
             int threadCount = 4)
         {
@@ -86,10 +86,14 @@ namespace Peeralize.Service.Integration.Blocks
             };
             _buffer = new BufferBlock<IntegratedDocument>(options);
             var ops = new DataflowLinkOptions
-            { PropagateCompletion = true};
+            {
+                PropagateCompletion = true
+                
+            };
             var executionBlockOptions = new ExecutionDataflowBlockOptions()
             {
-                MaxDegreeOfParallelism = threadCount
+                MaxDegreeOfParallelism = threadCount,
+                BoundedCapacity = capacity
             };
             switch (procType)
             {
@@ -180,6 +184,7 @@ namespace Peeralize.Service.Integration.Blocks
 
 
         #region "Input"
+
         /// <summary>
         /// Adds the item to the sink
         /// </summary>
@@ -188,22 +193,21 @@ namespace Peeralize.Service.Integration.Blocks
         {
             DataflowBlock.Post(_buffer, item);
         }
+         
 
-        /// <summary>
-        /// Adds the item to the sink
-        /// </summary>
-        /// <param name="item"></param>
-        public async Task<bool> PostAsync(IntegratedDocument item)
+        public Task<bool> SendAsync(IntegratedDocument item)
         {
-            return await DataflowBlock.SendAsync(_buffer, item);
+            return DataflowBlock.SendAsync(_buffer, item);
         }
+
+
 
 
         public void PostAll(IEnumerable<IntegratedDocument> valueCollection, bool completeOnDone = true)
         {
             foreach (var elem in valueCollection)
             {
-                Post(elem);
+                SendAsync(elem).Wait();
             }
             if (completeOnDone)
             {
@@ -231,7 +235,7 @@ namespace Peeralize.Service.Integration.Blocks
                     foreach (var element in elements)
                     {
                         if (element == null) continue;
-                        _transformerOnCompletion.Post(element);
+                        _transformerOnCompletion.SendAsync(element).Wait();
                     }
                 }
                 //Set it to complete
@@ -304,7 +308,7 @@ namespace Peeralize.Service.Integration.Blocks
         {
             var standardTransformer = new TransformBlock<IntegratedDocument, IntegratedDocument>((doc) =>
             {
-                actionBlock.Post(doc);
+                actionBlock.SendAsync(doc).Wait();
                 return doc;
             }, new ExecutionDataflowBlockOptions()
             {
@@ -372,7 +376,7 @@ namespace Peeralize.Service.Integration.Blocks
         {
             ItemProcessed += (x) =>
             {
-                DataflowBlock.Post(target, x);
+                DataflowBlock.SendAsync(target, x).Wait();
             };
             if (linkToCompletion)
             {
@@ -500,6 +504,6 @@ namespace Peeralize.Service.Integration.Blocks
 
         protected abstract IntegratedDocument OnBlockReceived(IntegratedDocument intDoc);
 
-         
+      
     }
 }

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using nvoid.db.DB;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Integration.Blocks;
@@ -108,21 +110,13 @@ namespace Peeralize.Service
         public Task<HarvesterResult> Synchronize(CancellationToken? cancellationToken = null)
         {
             var cToken = cancellationToken ?? CancellationToken.None;
-            Destination.ConsumeAsync(cToken);
+            //Destination.ConsumeAsync(cToken);
             var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = ThreadCount };
             parallelOptions.CancellationToken = cToken;
-
             ResetStopwatch();
             _stopwatch.Start();
             int shardsUsed;
             var totalItemsUsed = ProcessInputShards(parallelOptions, out shardsUsed);
-//          Test destination buffering and processing
-//          Destination.ProcessingCompletion.ContinueWith((t) =>
-//          { 
-//          });
-//          Destination.BufferCompletion.ContinueWith((t) =>
-//          { 
-//          });
             //Let the dest know that we're finished passing data to it, so that it could complete.
             Destination.Complete(); 
             //_stopwatch.Stop(); 
@@ -135,7 +129,32 @@ namespace Peeralize.Service
             }, cancellationToken: cToken);
         }
 
-        private int ProcessInputShards(ParallelOptions parallelOptions, out int totalShardsUsed)
+        public Task<HarvesterResult> ReadAll(ITargetBlock<ExpandoObject> target, CancellationToken? cancellationToken = null)
+        {
+            var cToken = cancellationToken ?? CancellationToken.None;
+            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = ThreadCount };
+            parallelOptions.CancellationToken = cToken;
+            ResetStopwatch();
+            _stopwatch.Start();
+            int shardsUsed;
+            var totalItemsUsed = ProcessInputShardsRaw(target, parallelOptions, out shardsUsed);
+            target.Complete();
+            return target.Completion.ContinueWith(x =>
+            {
+                _stopwatch.Stop();
+                var output = new HarvesterResult(shardsUsed, totalItemsUsed);
+                return output;
+            });
+        }
+
+        /// <summary>
+        /// Reads the input raw, as an array of string arrays and posts it to the target.
+        /// </summary>
+        /// <param name="targetBlock"></param>
+        /// <param name="parallelOptions"></param>
+        /// <param name="totalShardsUsed"></param>
+        /// <returns></returns>
+        private int ProcessInputShardsRaw(ITargetBlock<ExpandoObject> targetBlock, ParallelOptions parallelOptions, out int totalShardsUsed)
         {
             var totalItemsUsed = 0;
             var shardsUsed = 0;
@@ -188,8 +207,94 @@ namespace Peeralize.Service
                                         itemSetState.Break();
                                         return;
                                     }
+                                    var sendTask = targetBlock.SendAsync(entry as ExpandoObject);
+                                    sendTask.Wait();
+                                    if (!sendTask.IsCompleted || !sendTask.Result)
+                                    {
+                                        sendTask = sendTask;
+                                    }
+                                    Interlocked.Increment(ref totalItemsUsed);
+                                });
+                            }
+                            else
+                            {
+                                ExpandoObject entry;
+                                while ((entry = sourceShard.GetNext<ExpandoObject>()) != null)
+                                {
+                                    if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit) break;
+                                    targetBlock.SendChecked(entry,
+                                        () => TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit); 
+                                     
+                                    Interlocked.Increment(ref totalItemsUsed);
+                                }
+                            }
+                        }
+                        Interlocked.Increment(ref shardsUsed);
+                    });
+                });
+            totalShardsUsed = shardsUsed;
+            return totalItemsUsed;
+        }
+
+        private int ProcessInputShards(ParallelOptions parallelOptions, out int totalShardsUsed)
+        {
+            var totalItemsUsed = 0;
+            var shardsUsed = 0;
+            if (Sets.Count == 0)
+            {
+                throw new Exception("No sets to process!");
+            }
+            //Go through all type sets
+            Parallel.ForEach(Sets, parallelOptions,
+                (IntegrationSet itemSet, ParallelLoopState itemSetState) =>
+                {
+                    //We shouldn't get any more items
+                    if ((ShardLimit != 0 && shardsUsed >= ShardLimit) ||
+                        (TotalEntryLimit != 0 && totalItemsUsed > TotalEntryLimit))
+                    {
+                        itemSetState.Break();
+                        return;
+                    }
+
+                    var shards = itemSet.Source.Shards();
+                    if (ShardLimit > 0)
+                    {
+                        var shardsLeft = ShardLimit - shardsUsed;
+                        shards = shards.Take(shardsLeft);
+                    }
+                    //Interlocked.Add(ref shardsUsed, shards.Count());
+                    Parallel.ForEach(shards, parallelOptions, (sourceShard, loopState, index) =>
+                    {
+                        //No more shards allowed
+                        if ((ShardLimit != 0 && shardsUsed >= ShardLimit) ||
+                            (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit))
+                        {
+                            loopState.Break();
+                            return;
+                        }
+#if DEBUG
+                        var threadId = Thread.CurrentThread.ManagedThreadId;
+                        Debug.WriteLine($"[T{threadId}]Harvester reading: {sourceShard}");
+#endif
+                        using (sourceShard)
+                        {
+                            if (sourceShard.SupportsSeeking)
+                            {
+                                var elements = sourceShard.AsEnumerable();
+                                if (TotalEntryLimit != 0)
+                                {
+                                    var entriesLeft = TotalEntryLimit - totalItemsUsed;
+                                    elements = elements.Take(entriesLeft);
+                                }
+                                Parallel.ForEach(elements, parallelOptions, (entry, itemLoopState, itemIndex) =>
+                                {
+                                    if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit)
+                                    {
+                                        itemSetState.Break();
+                                        return;
+                                    }
                                     var document = itemSet.Wrap(entry);
-                                    Destination.Post(document);
+                                    Destination.SendAsync(document).Wait();
                                     Interlocked.Increment(ref totalItemsUsed);
                                 });
                             }
@@ -200,7 +305,12 @@ namespace Peeralize.Service
                                 {
                                     if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit) break;
                                     IntegratedDocument document = itemSet.Wrap(entry);
-                                    Destination.Post(document);
+                                    var sendTask = Destination.SendAsync(document);
+                                    var resultingTask = Task.WhenAny(Task.Delay(10000), sendTask).Result;
+                                    if (sendTask != resultingTask)
+                                    {
+                                        throw new Exception($"Block timeout while emitting {totalItemsUsed}-th item!");
+                                    }
                                     Interlocked.Increment(ref totalItemsUsed);
                                 }
                             }

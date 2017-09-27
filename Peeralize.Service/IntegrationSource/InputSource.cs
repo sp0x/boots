@@ -26,6 +26,11 @@ namespace Peeralize.Service.IntegrationSource
         public abstract IIntegrationTypeDefinition GetTypeDefinition();
         public abstract dynamic GetNext();
 
+        public dynamic GetNext<T>()
+            where T : class
+        {
+            return GetNext() as T;
+        }
 
         public virtual void DoDispose()
         {

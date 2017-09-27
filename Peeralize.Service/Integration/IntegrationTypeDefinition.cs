@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text;
+using System.Threading.Tasks;
 using Dynamitey;
+using MongoDB.Bson;
 using nvoid.db.DB;
 using nvoid.db.Extensions;
 using Peeralize.Service.IntegrationSource;
@@ -25,6 +28,7 @@ namespace Peeralize.Service.Integration
         /// </summary>
         public Dictionary<string, FieldDefinition> Fields { get; set; }
         public IntegrationTypeExtras Extras { get; set; }
+        public static IntegrationTypeDefinition Empty { get; set; } = new IntegrationTypeDefinition("Empty");
 
         public IntegrationTypeDefinition() { }
         public IntegrationTypeDefinition(string name) : this()
@@ -133,7 +137,7 @@ namespace Peeralize.Service.Integration
         public static bool TypeExists(IntegrationTypeDefinition type, string apiId, out IntegrationTypeDefinition existingDefinition)
         {
             var _typeStore = typeof(IntegrationTypeDefinition).GetDataSource<IntegrationTypeDefinition>();
-            var integrationTypeDefinitions = _typeStore.Where(x => x.UserId == apiId && x.Fields == type.Fields);
+            var integrationTypeDefinitions = _typeStore.Where(x => x.UserId == apiId && (x.Fields == type.Fields || x.Name == type.Name));
             if (integrationTypeDefinitions == null || integrationTypeDefinitions.Count() == 0)
             {
                 existingDefinition = null; 
@@ -174,6 +178,25 @@ namespace Peeralize.Service.Integration
         {
             var fdef = new FieldDefinition(fieldName, type); 
             Fields.Add(fieldName, fdef);
+        }
+
+        public BsonDocument WrapDocument(string[] strings)
+        {
+            var document = new BsonDocument();
+            var fieldNames = Fields.Keys.ToList();
+            for (int ix=0; ix<Fields.Count; ix++)
+            {
+                var field = fieldNames[ix]; 
+                document.Set(field, strings[ix]);
+            }
+            return document;
+        }
+
+        public static IIntegrationTypeDefinition Named(string appId, string name)
+        {
+            var typedef = new IntegrationTypeDefinition(name);
+            typedef.UserId = appId;
+            return typedef;
         }
     }
 }

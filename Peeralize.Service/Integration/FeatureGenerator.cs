@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using Peeralize.Service.Integration;
+using Peeralize.Service.Models;
 
-namespace Peeralize.ServiceTests.Netinfo
+namespace Peeralize.Service.Integration
 {
     /// <summary>
     /// A tpl block which
     /// </summary>
-    public class FeatureGenerator 
+    public class FeatureGenerator
     {
         private List<Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>> _generators;
         private int _threadCount;
@@ -30,7 +31,7 @@ namespace Peeralize.ServiceTests.Netinfo
             _generators.Add(generator);
             //Block = CreateFeaturesBlock();
         }
-        
+
         public FeatureGenerator AddGenerator(
             Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> generator)
         {
@@ -71,7 +72,7 @@ namespace Peeralize.ServiceTests.Netinfo
             // The target part receives data and adds them to the queue.
             var transformers = _generators
                 .Select(x =>
-                { 
+                {
                     var transformer =
                         new TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>(x);
                     transformer.LinkTo(buffer);
@@ -86,11 +87,10 @@ namespace Peeralize.ServiceTests.Netinfo
                 {
                     transformer.Post(doc);
                 }
-            },postOptions);
+            }, postOptions);
             // Return a IPropagatorBlock<T, T[]> object that encapsulates the 
             // target and source blocks.
             return DataflowBlock.Encapsulate(poster, buffer);
         }
     }
-    
 }

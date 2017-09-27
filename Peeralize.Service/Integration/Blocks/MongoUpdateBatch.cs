@@ -10,14 +10,14 @@ namespace Peeralize.Service.Integration.Blocks
 {
     public class MongoUpdateBatch<TRecord>
     {
-        private BatchBlock<FindAndModifyArgs<TRecord>> _block;
-        public BatchBlock<FindAndModifyArgs<TRecord>> Block => _block;
+        private IPropagatorBlock<FindAndModifyArgs<TRecord>, FindAndModifyArgs<TRecord>[]> _block;
+        public IPropagatorBlock<FindAndModifyArgs<TRecord>, FindAndModifyArgs<TRecord>[]>  Block => _block;
         private CancellationToken _cancellationToken;
         private IMongoCollection<TRecord> _collection;
         
         public MongoUpdateBatch(IMongoCollection<TRecord> collection, int batchSize = 10000, CancellationToken? cancellationToken = null)
         {
-            _block = new BatchBlock<FindAndModifyArgs<TRecord>>(batchSize);
+            _block = BatchedBlockingBlock<FindAndModifyArgs<TRecord>>.CreateBlock(batchSize);
             _block.LinkTo(new ActionBlock<FindAndModifyArgs<TRecord>[]>(UpdateAll), new DataflowLinkOptions {  PropagateCompletion =true});
             _collection = collection;
             _cancellationToken = cancellationToken == null ? CancellationToken.None : cancellationToken.Value;

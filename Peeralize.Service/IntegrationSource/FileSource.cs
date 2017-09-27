@@ -102,7 +102,7 @@ namespace Peeralize.Service.IntegrationSource
                 {
                     if (IsOpen) return _fileStream;
                     _cachedInstance = null;
-                    return _fileStream = File.Open(Path, mode);
+                    return _fileStream = File.Open(Path, mode, FileAccess.Read, FileShare.Read);
                 }
                 if (Mode == FileSourceMode.Directory)
                 {

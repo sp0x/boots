@@ -19,7 +19,7 @@ namespace Peeralize.Service.Integration.Blocks
         /// <summary>
         /// 
         /// </summary>
-        private Func<IntegratedDocument, IntegratedDocument, object> _accumulator;
+        private Func<IntegratedDocument, BsonDocument, object> _accumulator;
         /// <summary>
         /// 
         /// </summary>
@@ -45,8 +45,8 @@ namespace Peeralize.Service.Integration.Blocks
         /// <param name="accumulator">Accumulate input data to the resolved element</param>
         public GroupingBlock(string userId, Func<IntegratedDocument, object> selector,
             Action<IntegratedDocument> inputProjection,
-            Func<IntegratedDocument, IntegratedDocument, object> accumulator)
-            : base(capacity: 10000000, procType: ProcessingType.Action)
+            Func<IntegratedDocument, BsonDocument, object> accumulator)
+            : base(capacity: 1000, procType: ProcessingType.Action)
         {
             base.UserId = userId;
             _groupBySelector = selector;
@@ -82,29 +82,36 @@ namespace Peeralize.Service.Integration.Blocks
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
         {
             //Get key
-            var key = _groupBySelector(intDoc);
+            var key = _groupBySelector==null ? null : _groupBySelector(intDoc);
             var intDocDocument = intDoc.GetDocument();
-            var page = intDocDocument["value"];
-            if (page.ToString().IsNumeric())
-            {
-                return intDoc;
-            }
-
+//            var page = intDocDocument["value"];
+//            if (page.ToString().IsNumeric())
+//            {
+//                return intDoc;
+//            }
             var isNewUser = false;
-            if (!EntityDictionary.ContainsKey(key))
+            if (key != null)
             {
-                var docClone = intDoc;
-                //Ignore non valid values
-                if (_inputProjection != null)
+                if (!EntityDictionary.ContainsKey(key))
                 {
-                    docClone = intDoc.Clone();
-                    _inputProjection(docClone); 
+                    var docClone = intDoc;
+                    //Ignore non valid values
+                    if (_inputProjection != null)
+                    {
+                        docClone = intDoc.Clone();
+                        _inputProjection(docClone);
+                    }
+                    EntityDictionary[key] = docClone;
+                    isNewUser = true;
                 }
-                EntityDictionary[key] = docClone;
-                isNewUser = true;
             }
+            else
+            {
+                throw new Exception("No key to group with!");
+            }
+            
             //RecordPageStats(key.ToString(), intDocDocument, isNewUser);
-            var newElement = _accumulator(EntityDictionary[key], intDoc);
+            var newElement = _accumulator(EntityDictionary[key], intDocDocument);
             // return EntityDictionary[key];
             return intDoc;
         }

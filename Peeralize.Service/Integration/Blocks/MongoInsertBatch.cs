@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,43 +11,51 @@ namespace Peeralize.Service.Integration.Blocks
 {
     public class MongoInsertBatch<TRecord>
     {
-        private BatchBlock<TRecord> _block;
-        public BatchBlock<TRecord> Block => _block;
+        private IPropagatorBlock<TRecord, TRecord[]> _batchBlock;
+        public IPropagatorBlock<TRecord, TRecord[]> BatchBlock => _batchBlock;
         private CancellationToken _cancellationToken;
         private IMongoCollection<TRecord> _collection;
+        private int _batchesSent;
+
         /// <summary>
         /// Full import completion task
         /// </summary>
-        public Task Completion => _actionBlock?.Completion;
+        public Task Completion => _actionBlock.Completion;
         private readonly ActionBlock<TRecord[]> _actionBlock;
 
-        public MongoInsertBatch(IMongoCollection<TRecord> collection, int batchSize = 10000, CancellationToken? cancellationToken = null)
-        {
-            _block = new BatchBlock<TRecord>(batchSize);
-            _actionBlock = new ActionBlock<TRecord[]>(InsertAll);
-            _block.LinkTo(_actionBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            _collection = collection;
+        public MongoInsertBatch(IMongoCollection<TRecord> collection, int batchSize = 1000, CancellationToken? cancellationToken = null)
+        { 
+            _batchesSent = 0;
+            _batchBlock = BatchedBlockingBlock<TRecord>.CreateBlock(batchSize);
+
             _cancellationToken = cancellationToken == null ? CancellationToken.None : cancellationToken.Value;
+            Func<TRecord[], Task> targetAction = InsertAll;
+            _actionBlock = new ActionBlock<TRecord[]>(targetAction, new ExecutionDataflowBlockOptions
+            {
+                BoundedCapacity = batchSize,
+                CancellationToken = _cancellationToken
+            });
+            _batchBlock.LinkTo(_actionBlock, new DataflowLinkOptions { PropagateCompletion = true });
+            _collection = collection;
         }
 
         private Task InsertAll(TRecord[] newModels)
         {
-            var updateModels = new WriteModel<TRecord>[newModels.Length];
-            for (var i = 0; i < newModels.Length; i++)
+            return _collection.InsertManyAsync(newModels, null, cancellationToken: _cancellationToken).ContinueWith(x =>
             {
-                var mod = newModels[i];
-                //_collection.FindAndModify(mod);
-                var actionModel = new InsertOneModel<TRecord>(mod);
-                updateModels[i] = actionModel;
-            }
-            var output = _collection.BulkWriteAsync(updateModels, new BulkWriteOptions()
-            {
-
-            }, _cancellationToken).ContinueWith(x =>
-            {
-                Debug.WriteLine($"{DateTime.Now} Written batch[{newModels.Length}]");
+                Interlocked.Increment(ref _batchesSent);
+                Debug.WriteLine($"{DateTime.Now} Written batch{_batchesSent} [{newModels.Length}]");
             }, _cancellationToken);
-            return output;
+        }
+
+        public void Trigger()
+        {
+            //_batchBlock.TriggerBatch();
+        }
+
+        public void Complete()
+        {
+            _batchBlock.Complete();
         }
     }
 }
