@@ -35,6 +35,10 @@ namespace Peeralize.Service.Models
 //        public int TransitionsCount { get; set; }
         public Dictionary<string, PageVisit> UserVisits { get; set; }
 
+        private object _ratingLock;
+        private object _visitLock;
+
+
         public int GetUsersVisitedCount()
         {
             return UserVisits.Count;
@@ -66,7 +70,10 @@ namespace Peeralize.Service.Models
             FollowingReferences = new Dictionary<string, PageStats>();
             TargetRatings = new Dictionary<string, Score>();
             UserVisits = new Dictionary<string, PageVisit>();
+            _ratingLock = new object();
+            _visitLock = new object();
         }
+
         /// <summary>
         /// Gets the time spent for all the users
         /// </summary>
@@ -162,11 +169,14 @@ namespace Peeralize.Service.Models
         /// <param name="rating"></param>
         public void AddRating(string targetPage, double rating)
         {
-            if (!TargetRatings.ContainsKey(targetPage))
+            lock (_ratingLock)
             {
-                TargetRatings[targetPage] = new Score();
+                if (!TargetRatings.ContainsKey(targetPage))
+                {
+                    TargetRatings[targetPage] = new Score();
+                }
+                TargetRatings[targetPage] += rating;
             }
-            TargetRatings[targetPage] += rating; 
         }
         /// <summary>
         /// Gets the rating for this page, with respect to the given target page
@@ -185,17 +195,23 @@ namespace Peeralize.Service.Models
 
         public void ResetRating()
         {
-            TargetRatings.Clear();
+            lock (_ratingLock)
+            {
+                TargetRatings.Clear();
+            }
         }
 
         public void AddVisit(string userKey, TimeSpan visitDuration)
         {
-            if (visitDuration.TotalSeconds < 0) visitDuration += TimeSpan.FromSeconds(1);
-            if (!UserVisits.ContainsKey(userKey))
+            lock (_visitLock)
             {
-                UserVisits[userKey] = new PageVisit(visitDuration);
+                if (visitDuration.TotalSeconds < 0) visitDuration += TimeSpan.FromSeconds(1);
+                if (!UserVisits.ContainsKey(userKey))
+                {
+                    UserVisits[userKey] = new PageVisit(visitDuration);
+                }
+                else UserVisits[userKey].Add(visitDuration);
             }
-            else UserVisits[userKey].Add(visitDuration);
         }
     }
 }

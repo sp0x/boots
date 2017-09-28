@@ -92,6 +92,15 @@ namespace Peeralize.Service.IntegrationSource
             }
         }
 
+        public override void Cleanup()
+        {
+            if (Formatter != null)
+            {
+                Formatter.Dispose();
+                _cursor.Dispose();
+            }
+        }
+
         public override IEnumerable<InputSource> Shards()
         {
             yield return this;

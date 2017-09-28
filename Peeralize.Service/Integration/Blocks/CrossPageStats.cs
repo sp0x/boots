@@ -83,7 +83,10 @@ namespace Peeralize.Service
         public PageStats this[string key] 
         {
             get { return PageStats.ContainsKey(key) ? PageStats[key] : null; }
-            set { PageStats[key] = value; }
+            set
+            {
+                PageStats[key] = value;
+            }
         }
          
         /// <summary>

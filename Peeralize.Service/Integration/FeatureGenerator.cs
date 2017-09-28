@@ -43,6 +43,7 @@ namespace Peeralize.Service.Integration
         {
             var options = new ExecutionDataflowBlockOptions();
             options.MaxDegreeOfParallelism = _threadCount;
+            var queueLock = new object();
             var transformerBlock = new TransformBlock<IntegratedDocument, DocumentFeatures>((doc) =>
             {
                 var queue = new Queue<KeyValuePair<string, object>>();
@@ -51,7 +52,10 @@ namespace Peeralize.Service.Integration
                     var features = generator(doc);
                     foreach (var feature in features)
                     {
-                        queue.Enqueue(feature);
+                        lock (queueLock)
+                        {
+                            queue.Enqueue(feature);
+                        }
                     }
                 });
                 var featuresDoc = new DocumentFeatures(doc, queue);

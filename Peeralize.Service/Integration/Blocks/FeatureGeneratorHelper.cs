@@ -42,16 +42,22 @@ namespace Peeralize.Service.Integration.Blocks
             var doc = intDocDocument;
             var targetDomain = "ebag.bg";
             var userId = intDocDocument["uuid"].AsString;
-            var browsingStats = UserBrowsingStats.FromBson(doc["browsing_statistics"]);
+            
 
             var purchasesCount = (double)Helper.Purchases.Count;
             double max_time_spent_by_any_paying_user_ebag = Helper.GetLongestVisitPurchaseDuration("ebag.bg", "payments/finish");
+            //Todo: move this to the demo. importer...
+            Helper.GroupDemographics();
+
+            var browsingStats = UserBrowsingStats.FromBson(doc["browsing_statistics"]);
             var prob_buy_is_holiday = (double)Helper.PurchasesOnHolidays.Count / purchasesCount;
             var prob_buy_is_before_holiday = (double)Helper.PurchasesBeforeHolidays.Count / purchasesCount;
             var prop_buy_is_weekend = (double)Helper.PurchasesInWeekends.Count / purchasesCount;
 
-            object g_timestamp = doc["noticed_date"].ToUniversalTime(); 
+            object g_timestamp = doc["noticed_date"].AsDateTime; 
             yield return new KeyValuePair<string, object>("g_timestamp", g_timestamp);
+            yield return new KeyValuePair<string, object>("is_paying",
+                intDoc.Has("is_paying") && intDoc.GetInt("is_paying") == 1 ? 1 : 0);
             yield return new KeyValuePair<string, object>("max_time_spent_by_any_paying_user_ebag", max_time_spent_by_any_paying_user_ebag);
             yield return new KeyValuePair<string, object>("prob_buy_is_holiday", prob_buy_is_holiday);
             yield return new KeyValuePair<string, object>("prob_buy_is_before_holiday", prob_buy_is_before_holiday);
@@ -96,10 +102,10 @@ namespace Peeralize.Service.Integration.Blocks
             DateTime? lastEbagVisit = null;
             int userAge = doc.Contains("age") ? doc["age"].AsInt32 : 0;
             string userGender = doc.Contains("gender") ? doc["gender"].ToString() : "0";
-            var usersWithSameAge = Helper.GetUsersWithSameAge(userAge);
+            var usersWithSameAge = Helper.GetUsersWithSameAge(userAge).Count();
             var buyersWithSameAge = Helper.GetBuyersWithSameAge(userAge);
             var usersWithSameAgeAndGender = Helper.GetUsersWithSameAgeAndGender(userAge, userGender);
-            var buyersWithSameGender = Helper.GetBuyersWithSameGender(userGender);
+            var buyersWithSameGender = Helper.GetBuyersWithSameGender(userGender).Count();
             var usersWithSameGender = Helper.GetusersWithSameGender(userGender);
 
             BsonArray boughtLastWeek = new BsonArray(),
@@ -215,6 +221,8 @@ namespace Peeralize.Service.Integration.Blocks
             yield return toPair("mobile_visits", mobileEbagVisits.Count() / mx1(ebagVisits.Count()));
             yield return toPair("mobile_purchases", mobilePurchases.Count() / mx1(purchases.Count()));
 
+            var entityCount = Helper.GetEntityCount();
+
             yield return toPair("visited_ebag", (ebagVisits.Count > 0) ? 1 : 0);
             yield return toPair("time_spent_online", realisticUserWebTime.TotalSeconds / 86400 * 7);
             yield return toPair("time_spent_on_mobile_sites", browsingStats?.TimeOnMobileSites / mx1(realisticUserWebTime.TotalSeconds));
@@ -222,12 +230,12 @@ namespace Peeralize.Service.Integration.Blocks
             yield return toPair("visits_on_holidays", visitsOnHolidays.Count / mx1(completeTimeSpan.Days));
             yield return toPair("visits_on_weekends", visitsOnWeekends.Count / mx1(completeTimeSpan.Days));
             yield return toPair("p_online_weekend", browsingStats.WeekendVisits / mx1(browsingStats.DomainChanges));
-            yield return toPair("p_buy_age_group", buyersWithSameAge.Count() / mxi1(usersWithSameAge.Count()));
-            yield return toPair("p_buy_gender_group", buyersWithSameGender.Count() / mx1(usersWithSameGender.Count()));
+            yield return toPair("p_buy_age_group", buyersWithSameAge.Count() / mxi1(usersWithSameAge));
+            yield return toPair("p_buy_gender_group", buyersWithSameGender / mx1(usersWithSameGender.Count()));
 
-            yield return toPair("p_visit_ebag_age", Helper.TargetDomainVisitors(usersWithSameAge).Count() / Helper.GetEntityCount());
+            yield return toPair("p_visit_ebag_age", usersWithSameAge / entityCount);
             //p(visit_ebag|age)=visitors_same_age/visitors_total
-            yield return toPair("p_visit_ebag_gender", Helper.TargetDomainVisitors(usersWithSameGender).Count() / Helper.GetEntityCount());
+            yield return toPair("p_visit_ebag_gender", Helper.TargetDomainVisitors(usersWithSameGender).Count() / entityCount);
             yield return toPair("p_to_go_online", browsingStats.TargetSiteVisits / mx1(Helper.GetAverageDomainVisits()));
             yield return toPair("p_buy_visit", Helper.BuyVisitValues);
             var highPagerankSites = Helper.GetHighrankingPages(targetDomain, 5).ToArray();
@@ -245,8 +253,8 @@ namespace Peeralize.Service.Integration.Blocks
                 yield return toPair(name, endValue);
             }
             //Cleanup events
-            intDocDocument.Remove("events");
-            intDocDocument.Remove("browsing_statistics");
+            //intDocDocument.Remove("events");
+            //intDocDocument.Remove("browsing_statistics");
             //            //intDoc.Document["max_time_spent_by_any_paying_user_ebag"] =  
             //            var averagePageRank = Helper.GetAveragePageRating(domainVisits, "ebag.bg"); 
         }
@@ -267,7 +275,7 @@ namespace Peeralize.Service.Integration.Blocks
             }
             timeBetweenSessionSum = timeBetweenSessionSum / Math.Max(sessions.Count, 1); 
             timeBetweenSessionSum = timeBetweenSessionSum == 0 ? 0 : (1 - (timeBetweenSessionSum / max));
-            yield return new KeyValuePair<string, object>("Document.time_between_visits_avg", timeBetweenSessionSum);
+            yield return new KeyValuePair<string, object>("time_between_visits_avg", timeBetweenSessionSum);
         }
     }
 }

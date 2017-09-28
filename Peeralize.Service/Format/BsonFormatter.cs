@@ -32,6 +32,7 @@ namespace Peeralize.Service.Format
         {
             if (_cursor != null)
             {
+                _elementCache = null;
                 _cursor.Dispose();
             }
         }

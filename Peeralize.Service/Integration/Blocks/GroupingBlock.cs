@@ -29,8 +29,7 @@ namespace Peeralize.Service.Integration.Blocks
         #region "Props"
         public event EventHandler<EventArgs> GroupingComplete;
 
-        public ConcurrentDictionary<object, IntegratedDocument> EntityDictionary { get; private set; }
-        public CrossPageStats PageStats { get; set; }
+        public ConcurrentDictionary<object, IntegratedDocument> EntityDictionary { get; private set; } 
 
         public CrossSiteAnalyticsHelper Helper { get; set; }
         //public BsonArray Purchases { get; set; }
@@ -54,7 +53,7 @@ namespace Peeralize.Service.Integration.Blocks
             this._inputProjection = inputProjection;
             base.Completed += OnReadingCompleted;
             EntityDictionary = new ConcurrentDictionary<object, IntegratedDocument>();
-            PageStats = new CrossPageStats();
+            //PageStats = new CrossPageStats();
         } 
 
         private void OnReadingCompleted()
@@ -110,7 +109,7 @@ namespace Peeralize.Service.Integration.Blocks
                 throw new Exception("No key to group with!");
             }
             
-            //RecordPageStats(key.ToString(), intDocDocument, isNewUser);
+            RecordPageStats(intDocDocument, isNewUser);
             var newElement = _accumulator(EntityDictionary[key], intDocDocument);
             // return EntityDictionary[key];
             return intDoc;
@@ -122,15 +121,15 @@ namespace Peeralize.Service.Integration.Blocks
         /// <param name="userId"></param>
         /// <param name="eventData"></param>
         /// <param name="isNewUser"></param>
-        private void RecordPageStats(string userId, BsonDocument eventData, bool isNewUser)
+        private void RecordPageStats(BsonDocument eventData, bool isNewUser)
         {
             var page = eventData["value"].ToString();
             var pageHost = page.ToHostname();
             var pageSelector = pageHost;
             var isNewPage = false;
-            if (!PageStats.ContainsPage(pageHost))
+            if (!Helper.Stats.ContainsPage(pageHost))
             {
-                PageStats.AddPage(pageSelector, new PageStats()
+                Helper.Stats.AddPage(pageSelector, new PageStats()
                 {
                     Page = page
                 });
@@ -144,7 +143,7 @@ namespace Peeralize.Service.Integration.Blocks
             {
                 //var duration = this.PageStats[pageSelector].VisitStarted;
             }
-            this.PageStats[pageSelector].PageVisitsTotal++;
+            Helper.Stats[pageSelector].PageVisitsTotal++;
         }
         
 

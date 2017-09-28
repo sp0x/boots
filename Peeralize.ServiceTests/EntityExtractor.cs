@@ -86,7 +86,7 @@ namespace Peeralize.ServiceTests
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
                 (acc, doc) => AccumulateUserEvent(acc, doc)); 
             //var saver = new MongoSink(userId); 
-            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats);
+            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary);
             grouper.Helper = helper;
             
             //Group the users
@@ -133,7 +133,7 @@ namespace Peeralize.ServiceTests
             demographyImporter.JoinOn(JoinDemography);
             demographyImporter.Map();
 
-            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary, grouper.PageStats); 
+            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary); 
 
             demographyImporter.Helper = helper;
             grouper.Helper = helper;

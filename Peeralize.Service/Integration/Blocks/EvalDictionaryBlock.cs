@@ -12,7 +12,7 @@ namespace Peeralize.Service.Integration.Blocks
         private Func<IntegratedDocument, object> _keyResolver;
 
         public ConcurrentDictionary<object, IntegratedDocument> Elements { get; set; }
-        public CrossPageStats Stats { get; set; }
+        
         public CrossSiteAnalyticsHelper Helper { get; set; }
 
         public EvalDictionaryBlock(
@@ -24,7 +24,7 @@ namespace Peeralize.Service.Integration.Blocks
             _keyResolver = keyResolver;
             _action = action;
             _childSelector = childSelector;
-            Elements = new ConcurrentDictionary<object, IntegratedDocument>();
+            Elements = new ConcurrentDictionary<object, IntegratedDocument>(); 
         }
 
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
@@ -48,6 +48,11 @@ namespace Peeralize.Service.Integration.Blocks
                 }
             }
             return intDoc;
+        }
+
+        public override void Complete()
+        {
+            base.Complete();
         }
 
         protected override IEnumerable<IntegratedDocument> GetCollectedItems()

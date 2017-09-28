@@ -103,5 +103,8 @@ namespace Peeralize.Service.IntegrationSource
             return actionBlock;
         }
 
+        public virtual void Cleanup()
+        { 
+        }
     }
 }

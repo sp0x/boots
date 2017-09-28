@@ -317,6 +317,7 @@ namespace Peeralize.Service
                         }
                         Interlocked.Increment(ref shardsUsed);
                     });
+                    itemSet.Source.Cleanup();
                 });
             totalShardsUsed = shardsUsed;
             return totalItemsUsed;

@@ -192,7 +192,7 @@ namespace Peeralize.Service.Integration
             return document;
         }
 
-        public static IIntegrationTypeDefinition Named(string appId, string name)
+        public static IntegrationTypeDefinition Named(string appId, string name)
         {
             var typedef = new IntegrationTypeDefinition(name);
             typedef.UserId = appId;
