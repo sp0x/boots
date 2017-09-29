@@ -77,11 +77,12 @@ class BTree:
 
     def build(self, chain):
         n = chain[0]
-        if n['label'] in self.paths:
-            self.paths[n['label']].update_self(chain)
+        l = n['label']
+        if l in self.paths:
+            self.paths[l].update_self(chain)
         else:
-            r = BNode(n['label'], n['time'], None, 0)
-            self.paths[n['label']] = r
+            r = BNode(l, n['time'], None, 0)
+            self.paths[l] = r
             r.update_self(chain)
 
     def longest_path(self):

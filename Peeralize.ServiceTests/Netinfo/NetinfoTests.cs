@@ -256,40 +256,29 @@ function (key, values) {
             var appId = "123123123";
             MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter());
             source.SetProjection(x =>
-            { 
-                var value = x["value"].AsBsonDocument; 
-                if(!value.Contains("day")) value["day"] = x["_id"]["day"].ToInt32();
-                return value;
+            {
+                if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
+                return x["value"] as BsonDocument;
             });
             var harvester = new Peeralize.Service.Harvester(10);
-            IntegrationTypeDefinition type = IntegrationTypeDefinition.Named(appId, "NetInfoUserFeatures_7_8");
-            IntegrationTypeDefinition existingType = null;
-            if (!IntegrationTypeDefinition.TypeExists(type, appId, out existingType))
-            {
-                type.Save();
-            }
-            else
-            {
-                type = existingType; 
-            }
-            harvester.AddType(type, source);
-            //var type = harvester.AddPersistentType(source, userId, true);
+            var type = harvester.AddPersistentType("NetInfoUserFeatures_7_8", appId, source); 
 
             var dictEval = new EvalDictionaryBlock(
                 (document) => $"{document.GetString("uuid")}_{document.GetInt("day")}",
                 (rootElement, newDoc) => AccumulateUserDocument(rootElement, newDoc, false),
                 (rootElement) => rootElement.GetArray("events"));
-
             _helper = new CrossSiteAnalyticsHelper(dictEval.Elements);
             dictEval.Helper = _helper;
 
             var featureHelper = new FeatureGeneratorHelper() { Helper = _helper, TargetDomain = "ebag.bg" };
-            var featureGenerator = new FeatureGenerator(featureHelper.GetFeatures, 12);
-            featureGenerator.AddGenerator(featureHelper.GetAvgTimeBetweenSessionFeatures);
+            var featureGenerator = new FeatureGenerator(new Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>[]
+            {
+                featureHelper.GetFeatures,
+                featureHelper.GetAvgTimeBetweenSessionFeatures
+            }, 12); 
             var featureGeneratorBlock = featureGenerator.CreateFeaturesBlock();
 
-            var demographyImporter = new EntityDataImporter(
-                demographySheet, true);
+            var demographyImporter = new EntityDataImporter(demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
             demographyImporter.SetDataKey((input) => input[0]);
             demographyImporter.SetEntityKey((input) => input.GetString("uuid"));
@@ -299,6 +288,7 @@ function (key, values) {
             var insertCreator = new TransformBlock<DocumentFeatures, IntegratedDocument>((x) =>
             {
                 var doc = x.Document;
+                //Cleanup
                 doc.Document.Value.Remove("events");
                 doc.Document.Value.Remove("browsing_statistics");
                 foreach (var featurePair in x.Features)
@@ -308,9 +298,9 @@ function (key, values) {
                     var featureval = featurePair.Value; 
                     doc.Document.Value.Set(name, BsonValue.Create(featureval));
                 }
+                //Cleanup
                 doc.TypeId = type.Id.Value;
                 doc.UserId = appId;
-                //Remove from the dict
                 x.Features = null; 
                 return doc;
             });
@@ -318,23 +308,8 @@ function (key, values) {
 
             demographyImporter.Helper = _helper; 
             demographyImporter.LinkTo(featureGeneratorBlock);
-            demographyImporter.ContinueWith(x =>
-            {
-                //featureGeneratorBlock.Complete();
-            });
-            //Helper.GroupDemographics();
-
-            featureGeneratorBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
-            featureGeneratorBlock.Completion.ContinueWith(x =>
-            {
-                x = x;
-            });
-            insertCreator.Completion.ContinueWith(x =>
-            {
-                x = x;
-            });
-            insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions{ PropagateCompletion = true});
-            //insertCreator.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            featureGeneratorBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true }); 
+            insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions{ PropagateCompletion = true}); 
 
             dictEval.LinkOnComplete(demographyImporter);
             dictEval.AddFlowCompletionTask(insertBatcher.Completion);
@@ -342,7 +317,127 @@ function (key, values) {
             harvester.SetDestination(dictEval);
             var result = await harvester.Synchronize();
             Debug.WriteLine(result.ProcessedEntries);
-        } 
+        }
+
+
+        [Theory]
+        [InlineData(new object[] {"3e0f12d2-2c20-40f8-ac9c-031d3a33a216_reduced2"})]
+        public async void ParseEntitySessionsDumpCollection(string collectionName)
+        { 
+            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter());
+            source.SetProjection(x =>
+            {
+                if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
+                return x["value"] as BsonDocument;
+            });
+
+            var appId = "123123123";
+            var harvester = new Peeralize.Service.Harvester(20); 
+            harvester.AddPersistentType("NetInfoUserFeatures_7_8", appId, source);
+            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", appId);
+            typeDef.AddField("is_paying", typeof(int));
+            IntegrationTypeDefinition existingTypeDef;
+            if (!IntegrationTypeDefinition.TypeExists(typeDef, appId, out existingTypeDef)) typeDef.Save();
+            else typeDef = existingTypeDef;
+
+            var dictEval = new EvalDictionaryBlock(
+                (document) =>
+                {
+                    return $"{document.GetString("uuid")}_{document.GetInt("day")}";
+                },
+                (rootElement, newDoc) => AccumulateUserDocumentLite(rootElement, newDoc),
+                (rootElement) => rootElement.GetArray("events"));
+            dictEval.Helper = _helper = new CrossSiteAnalyticsHelper(dictEval.Elements);
+            //Session block
+            //Group the users
+            var sessionDocBlock = new TransformBlock<IntegratedDocument, IntegratedDocument>((IntegratedDocument userBlock) =>
+            {
+                var userDocument = userBlock.GetDocument();
+                var userIsPaying = userDocument.Contains("is_paying") &&
+                                   userDocument["is_paying"].AsInt32 == 1;
+                //We're only interested in paying users
+                //if (userIsPaying) continue;
+                var uuid = userDocument["uuid"].ToString();
+                var dateNoticed = DateTime.Parse(userDocument["noticed_date"].ToString());
+                userDocument["events"] =
+                    ((BsonArray)userDocument["events"])
+                    .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
+                    .ToBsonArray();
+                var sessions = CrossSiteAnalyticsHelper.GetWebSessions(userBlock).ToList();
+                var sessionWrapper = new DomainUserSessionCollection(sessions);
+                sessionWrapper.UserId = uuid;
+                sessionWrapper.Created = dateNoticed;
+
+                var document = IntegratedDocument.FromType(sessionWrapper, typeDef, appId);
+                var documentBson = document.GetDocument();
+                documentBson["is_paying"] = userIsPaying ? 1 : 0; 
+                return document;
+            });
+            var sessionBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 10000);
+            
+            dictEval.LinkOnCompleteEx(sessionDocBlock);
+            sessionDocBlock.LinkTo(sessionBatcher.BatchBlock, new DataflowLinkOptions{ PropagateCompletion=true });
+            dictEval.AddFlowCompletionTask(sessionBatcher.Completion);
+            dictEval.AddFlowCompletionTask(sessionDocBlock.Completion);
+            harvester.SetDestination(dictEval);
+            var syncResults = await harvester.Synchronize();
+
+            var syncDuration = harvester.ElapsedTime();
+            Debug.WriteLine($"Read all docs in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
+            //Task.WaitAll(grouper.Completion, featureGen.Completion, );
+            //await grouper.Completion;
+            //Console.ReadLine(); // TODO: Fix dataflow action after grouping of all users
+        }
+
+        private void DumpUsergroupSessionsToMongo(string userAppId, EvalDictionaryBlock usersData)
+        {
+            var entityBlock = usersData;
+            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8",userAppId);
+            typeDef.AddField("is_paying", typeof(int));
+            IntegrationTypeDefinition existingTypeDef;
+            if (!IntegrationTypeDefinition.TypeExists(typeDef, userAppId, out existingTypeDef)) typeDef.Save();
+            else typeDef = existingTypeDef;
+            var entityPairs = entityBlock.Elements;
+            try
+            {
+                foreach (var userDayInfoPairs in entityPairs)
+                {
+                    try
+                    {
+                        var user = entityPairs[userDayInfoPairs.Key];
+                        var userDocument = user.GetDocument();
+                        var userIsPaying = userDocument.Contains("is_paying") &&
+                                           userDocument["is_paying"].AsInt32 == 1;
+                        //We're only interested in paying users
+                        //if (userIsPaying) continue;
+
+                        var uuid = userDocument["uuid"].ToString();
+                        var dateNoticed = DateTime.Parse(userDocument["noticed_date"].ToString());
+                        userDocument["events"] =
+                            ((BsonArray)userDocument["events"])
+                            .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
+                            .ToBsonArray();
+                        var sessions = CrossSiteAnalyticsHelper.GetWebSessions(user).ToList();
+                        var sessionWrapper = new DomainUserSessionCollection(sessions);
+                        sessionWrapper.UserId = uuid;
+                        sessionWrapper.Created = dateNoticed;
+
+                        var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAppId);
+                        var documentBson = document.GetDocument();
+                        documentBson["is_paying"] = userIsPaying ? 1 : 0;
+                        document.TypeId = typeDef.Id.Value;
+                        //document.Save();
+                    }
+                    catch (Exception ex2)
+                    {
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+        }
+
 
         [Theory]
         [InlineData(new object[] { "TestData\\Ebag\\JoinedData", "TestData\\Ebag\\demograpy.csv" })]
@@ -495,7 +590,18 @@ function (key, values) {
                 userDocumentDocument["gender"] = 0;
             }
         }
-         
+
+        private object AccumulateUserDocumentLite(IntegratedDocument accumulator, BsonDocument newEntry)
+        {
+            var value = newEntry.GetString("value");
+            if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
+            {
+
+                accumulator["is_paying"] = 1;
+            }
+            return newEntry;
+        }
+
         private object AccumulateUserDocument(IntegratedDocument accumulator, BsonDocument newEntry, bool appendEvent = true)
         {
             var value = newEntry.GetString("value");

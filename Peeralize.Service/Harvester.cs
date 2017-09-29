@@ -63,6 +63,17 @@ namespace Peeralize.Service
             return this;
         }
 
+        public IntegrationTypeDefinition AddPersistentType(string name, string appId, InputSource source)
+        {
+
+            IntegrationTypeDefinition type = IntegrationTypeDefinition.Named(appId, name);
+            IntegrationTypeDefinition existingType = null;
+            if (!IntegrationTypeDefinition.TypeExists(type, appId, out existingType)) type.Save();
+            else type = existingType;
+            this.AddType(type, source); 
+            return type;
+        }
+
         /// <summary>
         /// Resolves the type from the input, persists it to the DB, and adds it as an integration set from the given source.
         /// </summary>

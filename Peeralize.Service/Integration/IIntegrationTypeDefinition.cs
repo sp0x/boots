@@ -27,7 +27,7 @@ namespace Peeralize.Service.Integration
         bool Save();
         IIntegrationTypeDefinition SaveType(string userApiId);
 
-        [BsonSerializer(typeof(LazySerializer))]
+        [BsonSerializer(typeof(LazyStringSerializer))]
         Lazy<string> Id { get; set; }
          
     }

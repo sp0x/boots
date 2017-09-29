@@ -22,7 +22,7 @@ import sys
  
 #type used for web sessions
 userSessionTypeId = "598f20d002d2516dd0dbcee2"
-userTypeId = "598da0a2bff3d758b4025d21"
+userTypeId = "59cbc103003e730508e87c2c"
 
 week4Start = datetime(2017, 7, 17, 0, 0, 0)
 appId = "123123123"
@@ -107,14 +107,14 @@ class MassTreeBuilder:
             del self.remaining[:self.batch_size]
         #job items are users, and all their daily sessions
         pipeline = [
-            {"$match" : { "TypeId" : self.userSessionTypeId,
-                          "Document.is_paying" : 0,
-                          "Document.UserId" : { "$in" : ids }
+            {"$match": {"TypeId": self.userSessionTypeId,
+                          "Document.is_paying": 0,
+                          "Document.UserId": {"$in": ids}
                           }
              },
             {"$group": {"_id": "$Document.UserId",
                         "day_count": {"$sum": 1},
-                        "daily_sessions" : { "$push" : "$Document.Sessions"}
+                        "daily_sessions": {"$push": "$Document.Sessions"}
                         }
              }
         ]
@@ -153,7 +153,7 @@ class MassTreeBuilder:
         if self.store:
             from utils import abs_path, save
             import os
-            path = abs_path(os.path.join("netinfo",id +".pickle"))
+            path = abs_path(os.path.join("netinfo", id +".pickle"))
             with self.io_lock:
                 save(res, path)
         else:

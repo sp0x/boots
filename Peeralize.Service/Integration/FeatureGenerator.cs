@@ -15,21 +15,33 @@ namespace Peeralize.Service.Integration
     {
         private List<Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>> _generators;
         private int _threadCount;
+
         /// <summary>
         /// The block that generates features from an inputed document.
         /// </summary>
         //public IPropagatorBlock<IntegratedDocument, DocumentFeatures> Block { get; private set; }
-
+        public FeatureGenerator(int threadCount)
+        {
+            _generators = new List<Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>>();
+            _threadCount = threadCount;
+        }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="generator">Feature generator based on input documents</param>
-        public FeatureGenerator(Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> generator, int threadCount = 4)
+        public FeatureGenerator(Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> generator, int threadCount = 4) 
+            : this(threadCount)
         {
-            _generators = new List<Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>>();
-            _threadCount = threadCount;
-            _generators.Add(generator);
-            //Block = CreateFeaturesBlock();
+            if(generator!=null) _generators.Add(generator);
+        }
+
+        public FeatureGenerator(IEnumerable<Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>> generators,
+            int threadCount = 4) : this(threadCount)
+        {
+            if (generators != null)
+            {
+                _generators.AddRange(generators);
+            }
         }
 
         public FeatureGenerator AddGenerator(

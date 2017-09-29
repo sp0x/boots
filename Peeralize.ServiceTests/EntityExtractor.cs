@@ -20,6 +20,7 @@ using Harvester = Peeralize.Service.Harvester;
 
 namespace Peeralize.ServiceTests
 {
+    //Note: All netinfo tests moved to netinfo
     [Collection("Entity Parsers")]
     public class EntityExtractor
     {
@@ -67,48 +68,7 @@ namespace Peeralize.ServiceTests
 //            harvester.SetDestination(modifier);
 //            harvester.AddType(type, fileSource);
 //            harvester.Synchronize();
-        }
-
-        [Theory]
-        [InlineData(new object[] {"TestData\\Ebag\\JoinedData"})] //was 6
-        public async void ParseEntityDump(string inputDirectory)
-        {
-            inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()
-            { Delimiter = ';' });
-            
-            var userId = "123123123";
-            var harvester = new Peeralize.Service.Harvester(20);
-            var type = harvester.AddPersistentType(fileSource, userId, true);
-            
-            var grouper = new GroupingBlock(userId,
-                (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.DaysTotal()}",
-                (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
-                (acc, doc) => AccumulateUserEvent(acc, doc)); 
-            //var saver = new MongoSink(userId); 
-            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary);
-            grouper.Helper = helper;
-            
-            //Group the users
-            grouper.LinkOnComplete(new IntegrationActionBlock(userId, (block, doc) =>
-            {
-                //DumpUsergroupSessionsToCsv(grpr);
-                DumpUsergroupSessionsToMongo(userId, block);
-            }));
-
-            harvester.SetDestination(grouper);
-            harvester.AddType(type, fileSource);
-            await harvester.Synchronize();
-            var syncDuration = harvester.ElapsedTime();
-            Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
-
-            //Task.WaitAll(grouper.Completion, featureGen.Completion, );
-            //await grouper.Completion;
-            //Console.ReadLine(); // TODO: Fix dataflow action after grouping of all users
-        }
-
-
-
+        } 
 
         /// <summary>
         /// DEPRECATED
@@ -197,60 +157,7 @@ namespace Peeralize.ServiceTests
             var date = DateTime.Parse(argDocument["ondate"].ToString());
             return $"{uuid}_{date.Day}"; //_{date.Day}";
         }
-
-        private void DumpUsergroupSessionsToMongo(string userAppId, IntegrationBlock usersData)
-        {
-            var grouper = usersData as GroupingBlock;
-            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>(userAppId);
-            typeDef.AddField("is_paying", typeof(int));
-
-            IntegrationTypeDefinition existingTypeDef;
-            if (!IntegrationTypeDefinition.TypeExists(typeDef, userAppId, out existingTypeDef))
-            {
-                typeDef.Save();
-            }
-            else typeDef = existingTypeDef;
-
-            try
-            {
-                foreach (var userDayInfoPairs in grouper.EntityDictionary)
-                {
-                    try
-                    {
-                        var user = grouper.EntityDictionary[userDayInfoPairs.Key];
-                        var userDocument = user.GetDocument();
-                        var userIsPaying = userDocument.Contains("is_paying") &&
-                                           userDocument["is_paying"].AsInt32 == 1;
-                        //We're only interested in paying users
-                        //if (userIsPaying) continue;
-
-                        var uuid = userDocument["uuid"].ToString(); 
-                        var dateNoticed = DateTime.Parse(userDocument["noticed_date"].ToString());
-                        userDocument["events"] =
-                            ((BsonArray)userDocument["events"])
-                            .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
-                            .ToBsonArray();
-                        var sessions = CrossSiteAnalyticsHelper.GetWebSessions(user).ToList();
-                        var sessionWrapper = new DomainUserSessionCollection(sessions);
-                        sessionWrapper.UserId = uuid;
-                        sessionWrapper.Created = dateNoticed;
-
-                        var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAppId);
-                        var documentBson = document.GetDocument();
-                        documentBson["is_paying"] = userIsPaying ? 1 : 0;
-                        document.TypeId = typeDef.Id.Value;
-                        //document.Save();
-                    }
-                    catch (Exception ex2)
-                    { 
-                    }
-                }
-            }
-            catch (Exception ex)
-            { 
-            } 
-
-        }
+         
         private void DumpUsergroupSessionsToCsv(GroupingBlock usersData)
         {
             var userValues = usersData.EntityDictionary.Values;

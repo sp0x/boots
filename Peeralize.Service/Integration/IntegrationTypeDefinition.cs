@@ -54,7 +54,7 @@ namespace Peeralize.Service.Integration
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public static IntegrationTypeDefinition CreateFromType<T>(string appId)
+        public static IntegrationTypeDefinition CreateFromType<T>(string name, string appId)
         {
             var type = typeof(T);
             var typedef = new IntegrationTypeDefinition(type.Name);
@@ -69,6 +69,7 @@ namespace Peeralize.Service.Integration
                 var fieldDefinition = new FieldDefinition(member.Name, memberType);
                 typedef.Fields.Add(member.Name, fieldDefinition);
             }
+            typedef.Name = name;
             return typedef;
         }
         /// <summary>

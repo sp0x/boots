@@ -72,7 +72,7 @@ tree_users_purchased_after_tweek = create_sessions_tree({
 }, target_week_buyers)
 
 # build trees for users that have not been paying in week 2 and 3
-builder = MassTreeBuilder(200, False, {
+builder = MassTreeBuilder(100, False, {
     "TypeId": userSessionTypeId,
     "Document.Created": {"$gte": weeksAvailable[1], "$lte": weeksAvailable[2] + timedelta(days=7)},
     "Document.is_paying": 0  # they have to be non paying

@@ -78,10 +78,19 @@ namespace Peeralize.Service.Integration
         }
         public int? GetInt(string key)
         {
-            if (Document == null) return null;
-            if (!Document.Value.Contains(key)) return null; 
+            if (Document == null)
+            {
+                return null;
+            }
+            if (!Document.Value.Contains(key))
+            {
+                return null;
+            }; 
             var val = Document.Value[key].ToString();
-            if (string.IsNullOrEmpty(val)) return 0;
+            if (string.IsNullOrEmpty(val))
+            {
+                return 0;
+            }
             return int.Parse(val);
         }
 
