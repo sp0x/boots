@@ -270,7 +270,6 @@ class Experiment:
         import itertools
         if normalize:
             cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-            print("Normalized confusion matrix")
         else:
             print('Confusion matrix, without normalization')
         plt.clf()
@@ -453,12 +452,17 @@ def plot_cutoff(model, data, data_y, client='cashlend'):
 
     scores = []
     cutoffs = np.arange(0.1, 1.0, 0.1)
+    max_median = 0
     for cut_off in cutoffs:
         # In case of supervised learning
         # validated = cross_val_score(classifier, data, target, cv=10, scoring=custom_roc_auc(cut_off))
         validated = cross_val_score(classifier, data, data_y, cv=10, scoring=custom_roc_auc(cut_off))
+        median = np.median(validated)
+        if median > max_median:
+            max_median = median
         scores.append(validated)
-
+    # print "Cutoffs"
+    # print scores
     sns.boxplot(scores, names=cutoffs)
     plt.title("F scores for each tree")
     plt.xlabel("each cut off value")
@@ -466,6 +470,7 @@ def plot_cutoff(model, data, data_y, client='cashlend'):
     fig_path = abs_path(os.path.join(client, 'cutoff_{0}.png'.format(c_type))) 
     # fig_path_1 = os.path.join(client, abs_path('cutoff_{0}_alt.png'.format(c_type)))
     plt.savefig(fig_path)
+    return max_median
 
 
 def graph_experiment(data, targets, client='cashlend', model=None, modelsFile=None):
@@ -546,7 +551,9 @@ def train_balancer(predict1, predict2, targets, client='netinfo'):
         "class_weight": [c]
     }
     mlp_params = {
-        "hidden_layer_sizes":[(100,100,100,100,100),(80,100,140,100,80),(80,100,150,80,40)]
+        "hidden_layer_sizes": [(100, 100, 100, 100, 100),
+                              (80, 100, 140, 100, 80),
+                              (80, 100, 150, 80, 40)]
     }
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)

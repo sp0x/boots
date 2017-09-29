@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
  
 #type used for web sessions
 userSessionTypeId = "598f20d002d2516dd0dbcee2"
-userTypeId = "598da0a2bff3d758b4025d21"
+userTypeId = "59cbc103003e730508e87c2c"
 
 week4Start = datetime(2017, 7, 17, 0, 0, 0)
 appId = "123123123"

@@ -54,7 +54,7 @@ namespace Peeralize.Service.Integration.Blocks
             var prob_buy_is_before_holiday = (double)Helper.PurchasesBeforeHolidays.Count / purchasesCount;
             var prop_buy_is_weekend = (double)Helper.PurchasesInWeekends.Count / purchasesCount;
 
-            object g_timestamp = doc["noticed_date"].AsDateTime; 
+            DateTime g_timestamp = doc["noticed_date"].AsDateTime.StartOfWeek(DayOfWeek.Monday); 
             yield return new KeyValuePair<string, object>("g_timestamp", g_timestamp);
             yield return new KeyValuePair<string, object>("is_paying",
                 intDoc.Has("is_paying") && intDoc.GetInt("is_paying") == 1 ? 1 : 0);

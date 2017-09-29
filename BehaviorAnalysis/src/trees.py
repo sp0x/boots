@@ -7,10 +7,10 @@ import cPickle as pickle
 import urllib
 from utils import parse_timespan, chunks
 from Queue import Queue
+import sys
 
 class BuildWorker(Thread):
-
-    def __init__(self,par):
+    def __init__(self, par):
         super(BuildWorker,self).__init__()
         self.daemon = True
         self.par = par
@@ -39,7 +39,6 @@ class BuildWorker(Thread):
                     host = session["Domain"]
                     duration = parse_timespan(session["Duration"]).total_seconds()
                     day_items.append({'time': duration, 'label': host})
-
                 userTree.build(day_items)
             #print "added daily sessions for {0}".format(uuid)
             self.par.push_result(userTree, uuid)

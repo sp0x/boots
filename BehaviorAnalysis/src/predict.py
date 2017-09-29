@@ -17,7 +17,7 @@ client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoi
 db = client.netvoid
 collection = db.IntegratedDocument
 
-userTypeId = "598da0a2bff3d758b4025d21" 
+userTypeId = "59cbc103003e730508e87c2c"
 appId = "123123123"
 #
 company = "Netinfo"
@@ -27,33 +27,36 @@ weeksAvailable = collection.find({
     "TypeId": userTypeId
 }).distinct("Document.g_timestamp")
 weeksAvailable.sort()
+target_week = weeksAvailable[9]  # last week has only 2 days, so use the one that's before it
+target_week_end = target_week + timedelta(days=7)
+
 paying_users = collection.find({
     "UserId": appId,
     "TypeId": userTypeId,
     "Document.is_paying": 1
 }).distinct("Document.uuid")
 
-target_week = weeksAvailable[len(weeksAvailable) - 2]
-target_week_end = target_week + timedelta(days=7)
+
+
 next_week = target_week_end
 next_week_end = target_week_end + timedelta(days=7)
 next_week_f = str(next_week).replace(':', '_')
-filter_entries = False
+filter_entries = True
 
 print "Gathering data from week " + str(target_week)
-prediction_features_query =  {
+prediction_features_query ={
     "TypeId": userTypeId,
     "UserId": appId,
     "Document.noticed_date": {'$gte': target_week, '$lt': target_week_end}
 }
 pipeline = [
-        {"$match": prediction_features_query },
+        {"$match": prediction_features_query},
         {"$group": {
             "_id": {
                 "uuid" : "$Document.uuid",
                 "week_start" : "$Document.g_timestamp"
-            }, 
-            "visits_count": {"$sum": 1}, 
+            },
+            "visits_count": {"$sum": 1},
             "visits_on_weekends": {"$avg": "$Document.visits_on_weekends"},
             "p_online_weekend": {"$avg": "$Document.p_online_weekend"},
             "days_visited_ebag": {"$avg": "$Document.days_visited_ebag"},
@@ -91,7 +94,7 @@ pipeline = [
             "has_type_val_9": {"$avg": "$Document.has_type_val_9"},
             "time_between_visits_avg": {"$avg": "$Document.time_between_visits_avg"}
         }}]
-weekData = collection.aggregate(pipeline)
+weekData = collection.aggregate(pipeline, allowDiskUse=True)
 weekData = list(weekData)
 
 previously_purchasing_users = collection.find({
@@ -162,12 +165,12 @@ for tmpDoc in weekData:
         tmpDoc["highranking_page_3"],
         tmpDoc["highranking_page_4"],
         tmpDoc["time_spent_online"],
-        simscore,
-        simtime,
-        non_paying_s_time,
-        non_paying_s_freq,
-        paying_s_time,
-        paying_s_freq,
+        # simscore,
+        # simtime,
+        # non_paying_s_time,
+        # non_paying_s_freq,
+        # paying_s_time,
+        # paying_s_freq,
         has_paid_before,
         time_between_visits_avg
     ]
@@ -209,7 +212,7 @@ for m in models:
     predictions = m['model'].predict_proba(userFeatures)
     x_test = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
     y_true = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
-    plot_cutoff(m, x_test, y_true, client=company)
+    cutoff_value = plot_cutoff(m, x_test, y_true, client=company)
     graph_experiment(userFeatures, targets, company, m)
     Experiment.predict_explain_non_tree(m, company, [
         "visits_on_weekends",
@@ -231,12 +234,12 @@ for m in models:
         "highranking_page_3",
         "highranking_page_4",
         "time_spent_online",
-        "simscore",
-        "simtime",
-        "non_paying_s_time",
-        "non_paying_s_freq",
-        "paying_s_time",
-        "paying_s_freq",
+        # "simscore",
+        # "simtime",
+        # "non_paying_s_time",
+        # "non_paying_s_freq",
+        # "paying_s_time",
+        # "paying_s_freq",
         "has_paid_before",
         "has_type_val_0",
         "has_type_val_1",
@@ -260,31 +263,33 @@ for m in models:
         for p in xrange(len(predictions)): 
             prediction = predictions[p] 
             uuid = userData[p]['uuid']       
-            if not filter_entries and uuid in payingDict:  # skip filtered users
+            if filter_entries and uuid in payingDict:  # skip filtered users
                 filtered = filtered + 1
                 continue
             else:
                 writer.writerow([uuid, prediction[1]])
+
         time_taken = time.time() - t_started
         time_taken_per_user = time_taken / len(predictions)
-        print "{0} prediction took: {1}sec".format(c_type, time_taken)
-        print "{0} prediction took: {1}sec/user".format(c_type, time_taken_per_user)
+        print "{0} prediction took: {1}sec ({2}sec/user)".format(c_type, time_taken, time_taken_per_user)
         validation_file = abs_path(os.path.join(company, "validation", "validation.csv"))
 
-    cutoff = 0.1
-    check = check_prediction_ex(validation_file, next_week, cutoff, company, c_type)
+    cutoff_value = 0.1
+    check = check_prediction_ex(validation_file, next_week, cutoff_value, company, c_type)
 
     matches_filename = abs_path(os.path.join(company, "validation_matches_{0}_{1}.csv".format(c_type, next_week_f)))
     with open(matches_filename, 'wb') as validation_file:
         validation_writer = csv.writer(validation_file, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        validation_writer.writerow(["uuid", "chance", "valid (cutoff " + str(cutoff) + ")"])
+        validation_writer.writerow(["uuid", "chance", "valid (cutoff " + str(cutoff_value) + ")"])
         for match in check['matches']:
             uuid = match['uuid']
             chance = float(match['chance'])
-            validation_writer.writerow([uuid, chance, chance >= cutoff])
+            validation_writer.writerow([uuid, chance, chance >= cutoff_value])
 
             # print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
-    print c_type + " Matches: {0}, positive {1}".format(len(check['matches']), check['positive_matches'])
-    print c_type + " False positives: {0}%, count {1}".format(check['false_positives']['perc'], check['false_positives']['count'])
+    print c_type + " Matches {0}%: {1}, pos{2} c{3}".format(check['positive_perc'], len(check['matches']), check['positive_matches'], cutoff_value)
+    print c_type + " False positives: {0}%, count {1} of {2}".format(check['false_positives']['perc'],
+                                                              check['false_positives']['count'],
+                                                              check['false_positives']['out_of'])
 
 

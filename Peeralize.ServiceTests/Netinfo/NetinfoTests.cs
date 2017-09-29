@@ -275,7 +275,7 @@ function (key, values) {
             {
                 featureHelper.GetFeatures,
                 featureHelper.GetAvgTimeBetweenSessionFeatures
-            }, 12); 
+            }, 16); 
             var featureGeneratorBlock = featureGenerator.CreateFeaturesBlock();
 
             var demographyImporter = new EntityDataImporter(demographySheet, true);
@@ -359,6 +359,7 @@ function (key, values) {
                 //if (userIsPaying) continue;
                 var uuid = userDocument["uuid"].ToString();
                 var dateNoticed = DateTime.Parse(userDocument["noticed_date"].ToString());
+                DateTime g_timestamp = userDocument["noticed_date"].AsDateTime.StartOfWeek(DayOfWeek.Monday);
                 userDocument["events"] =
                     ((BsonArray)userDocument["events"])
                     .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
@@ -370,7 +371,8 @@ function (key, values) {
 
                 var document = IntegratedDocument.FromType(sessionWrapper, typeDef, appId);
                 var documentBson = document.GetDocument();
-                documentBson["is_paying"] = userIsPaying ? 1 : 0; 
+                documentBson["is_paying"] = userIsPaying ? 1 : 0;
+                documentBson["g_timestamp"] = g_timestamp;
                 return document;
             });
             var sessionBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 10000);

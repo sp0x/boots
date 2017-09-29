@@ -18,7 +18,7 @@ client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoi
 db = client.netvoid
 collection = db.IntegratedDocument
 
-userTypeId = "598da0a2bff3d758b4025d21"
+userTypeId = "59cbc103003e730508e87c2c"
 appId = "123123123"
 
 # weeksAvailable = collection.find({
@@ -110,12 +110,14 @@ def check_prediction_ex(validate_with, prediction_week_start, cutoff=0.5, compan
             else:
                 if perc_will_buy > cutoff:
                     cnt_negatives += 1
-
+    positive_perc = (float(positive_matches)/float(len(prediction_matches))) * 100
     return {
         'false_positives': {
             'perc': (float(cnt_negatives) / float(cnt_predictions)) * 100,
-            'count': cnt_negatives
+            'count': cnt_negatives,
+            'out_of': cnt_predictions
         },
+        'positive_perc': positive_perc,
         'target_week': target_week,
         'payers': users_purchased,
         'filtered': 0,

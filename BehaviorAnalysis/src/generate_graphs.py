@@ -15,7 +15,7 @@ host = "10.10.1.5"
 client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
 db = client.netvoid
 collection = db.IntegratedDocument
-userTypeId = "598da0a2bff3d758b4025d21" 
+userTypeId = "59cbc103003e730508e87c2c"
 appId = "123123123"
 
 weeksAvailable = collection.find({    

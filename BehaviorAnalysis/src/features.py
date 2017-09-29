@@ -35,9 +35,12 @@ class BNode:
             return f
 
     def update_depth(self):
-        self.depth += 1
-        if self.parent:
-            self.parent.update_depth()
+        cur = self
+        while(cur.parent):
+            cur.depth += 1
+            if not cur.parent:
+                break
+            cur = cur.parent
 
     def find_common(self, other, path):
         n = filter(lambda x: x == other.label, self.children.keys())
@@ -55,21 +58,26 @@ class BNode:
 
     def update_self(self, chain):
         """chain=list(dict(label,time))"""
-        data = chain.pop(0)
-        self.visits += 1
-        self.update_time(data['time'])
-        if not chain:
-            return
-        n = chain[0]['label']
-        if n in self.children:
-            self.children[n].update_self(chain)
-        else:
-            if len(self.children) == 0:
-                self.update_depth()
-            c = BNode(n, chain[0]['time'], self, 0)
-            self.children[n] = c
-            c.update_self(chain)
-
+        cur=self
+        while(len(chain)>0):
+            data = chain.pop(0)
+            cur.visits += 1
+            cur.update_time(data['time'])
+            if not chain: break
+            n = chain[0]['label']
+            if n in cur.children:
+                cur = cur.children.get(n)
+            else:
+                if len(cur.children) == 0:
+                    try:
+                        cur.update_depth()
+                        c = BNode(n, chain[0]['time'], cur, 0)
+                        cur.children[n] = c
+                        cur = c
+                    except:
+                        print "----Recursion exception"
+                        print n
+                        print cur
 
 class BTree:
     def __init__(self):
