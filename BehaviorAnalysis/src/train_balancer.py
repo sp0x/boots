@@ -28,7 +28,7 @@ print weeksAvailable
 #our test week
 weekLimit = 0
 # weeksAvailable = weeksAvailable[(-1) * weekLimit:] if weekLimit > 0 else weeksAvailable  # last n weeks
-weeksAvailable = [weeksAvailable[7], weeksAvailable[8], weeksAvailable[9]]
+weeksAvailable = [weeksAvailable[6]]
 targetData = []
 inputData = []
 # limit = 2 * 100 * 1000
@@ -164,4 +164,5 @@ for index, week in enumerate(weeksAvailable):
         targetData.append(targetVar)
 
 print "Prepared " + str(len(inputData)) + " items"
-conduct_experiment(inputData, targetData, 'Netinfo')
+create_balancer(inputData, targetData, ['gba', 'rf'], 'Netinfo')
+

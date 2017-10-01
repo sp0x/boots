@@ -565,7 +565,6 @@ def create_balancer(input_data, target, classifier_types, client='netinfo'):
     arguments.append(target)
     arguments.append(client)
     train_balancer(*arguments)
-    print model_files
 
 def train_balancer(predict1, predict2, targets, client='netinfo'):
     tmp = np.unique(targets)

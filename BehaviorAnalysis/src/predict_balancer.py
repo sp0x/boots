@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import os
 from buyers import check_prediction, check_prediction_ex
 from utils import save, load, abs_path
+import numpy as np
 
 ##host is local
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
@@ -27,7 +28,7 @@ weeksAvailable = collection.find({
     "TypeId": userTypeId
 }).distinct("Document.g_timestamp")
 weeksAvailable.sort()
-target_week = weeksAvailable[9]  # last week has only 2 days, so use the one that's before it
+target_week = weeksAvailable[5]  # last week has only 2 days, so use the one that's before it
 target_week_end = target_week + timedelta(days=7)
 
 paying_users = collection.find({
@@ -107,7 +108,7 @@ previously_purchasing_users = collection.find({
 # offset = 1000 * 200
 exp = Experiment(None, None, None, company)
 
-userFeatures = []
+user_features = []
 userData = []
 targets = []
 next_week_purchasing_users = users = collection.find({
@@ -179,7 +180,7 @@ for tmpDoc in weekData:
         f_val = 0 if f_name not in tmpDoc else tmpDoc[f_name]
         f_val = 0 if f_val is None else f_val
         input_element.append(f_val)
-    userFeatures.append(input_element)
+    user_features.append(input_element)
 
     target_val = 0
     if "Document.is_paying" in prediction_features_query and prediction_features_query["Document.is_paying"] == 1:
@@ -190,7 +191,7 @@ for tmpDoc in weekData:
     targets.append(target_val)
 
 
-print "Loaded " + str(len(userFeatures)) + " test user items"
+print "Loaded " + str(len(user_features)) + " test user items"
 filterFile = "Netinfo/filters/paying_users.csv"
 payingDict = dict()
 with open(filterFile, 'rb') as filterCsv:
@@ -200,59 +201,23 @@ with open(filterFile, 'rb') as filterCsv:
         payingDict[uuid] = True
 
 filtered = 0
-models = exp.load_models()  # exp.load_model_files(['gba', 'lr', 'mlpnn'])
-print "Loaded prediction models"
-
+models = exp.load_model_files(['gba', 'rf'])  # Note: keep this in the same order as the way the balancer is trained
+balancers = exp.load_model_files(['bdnn', 'brf'])
+predictions = []
 for m in models:
+    prediction = m['model'].predict_proba(user_features)
+    predictions.append(prediction)
+user_features = np.array(zip(predictions[0][:, 1], predictions[1][:, 1]))
+
+for m in balancers:
     t_started = time.time()
     c_type = m['type']
-    # x_train = Experiment.load_dump(company, 'x_train_{0}.dmp'.format(c_type))
-    # y_train = Experiment.load_dump(company, 'y_train_{0}.dmp'.format(c_type))
-    # m['model'].fit(x_train, y_train)
-    predictions = m['model'].predict_proba(userFeatures)
+    predictions = m['model'].predict_proba(user_features)
     x_test = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
     y_true = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
     cutoff_value = plot_cutoff(m, x_test, y_true, client=company)
-    graph_experiment(userFeatures, targets, company, m)
-    Experiment.predict_explain_non_tree(m, company, [
-        "visits_on_weekends",
-        "p_online_weekend",
-        "days_visited_ebag",
-        "time_spent_ebag",
-        "time_spent_on_mobile_sites",
-        "mobile_visits",
-        "visited_ebag",
-        "p_buy_age_group",
-        "p_buy_gender_group",
-        "p_visit_ebag_age",
-        "p_visit_ebag_gender",
-        "p_to_go_online",
-        "avg_time_spent_on_high_pageranksites",
-        "highranking_page_0",
-        "highranking_page_1",
-        "highranking_page_2",
-        "highranking_page_3",
-        "highranking_page_4",
-        "time_spent_online",
-        # "simscore",
-        # "simtime",
-        # "non_paying_s_time",
-        # "non_paying_s_freq",
-        # "paying_s_time",
-        # "paying_s_freq",
-        "has_paid_before",
-        "has_type_val_0",
-        "has_type_val_1",
-        "has_type_val_2",
-        "has_type_val_3",
-        "has_type_val_4",
-        "has_type_val_5",
-        "has_type_val_6",
-        "has_type_val_7",
-        "has_type_val_8",
-        "has_type_val_9",
-        "time_between_visits_avg"
-    ])
+    graph_experiment(user_features, targets, company, m)
+    Experiment.predict_explain_non_tree(m, company, ["gba", "rf"])
 
     fileName = os.path.join(company, 'prediction_{0}_{1}.csv'.format(c_type, next_week_f))
 
@@ -260,9 +225,9 @@ for m in models:
     with open(fileName, 'wb') as csvfile:
         writer = csv.writer(csvfile, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(["uuid", "chance to buy"])
-        for p in xrange(len(predictions)): 
-            prediction = predictions[p] 
-            uuid = userData[p]['uuid']       
+        for p in xrange(len(predictions)):
+            prediction = predictions[p]
+            uuid = userData[p]['uuid']
             if filter_entries and uuid in payingDict:  # skip filtered users
                 filtered = filtered + 1
                 continue
@@ -288,7 +253,5 @@ for m in models:
             # print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
     print c_type + " Matches {0}%: {1}, pos{2} c{3}".format(check['positive_perc'], len(check['matches']), check['positive_matches'], cutoff_value)
     print c_type + " False positives: {0}%, count {1} of {2}".format(check['false_positives']['perc'],
-                                                              check['false_positives']['count'],
-                                                              check['false_positives']['out_of'])
-
-
+                                                                     check['false_positives']['count'],
+                                                                     check['false_positives']['out_of'])
