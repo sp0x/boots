@@ -1,6 +1,6 @@
 import time
 from constants import *
-from classifiers import conduct_experiment,Experiment
+from classifiers import conduct_experiment, create_balancer, Experiment
 from pymongo import MongoClient
 import urllib
 import sys
@@ -165,5 +165,9 @@ for index, week in enumerate(weeksAvailable):
         targetData.append(targetVar)
 
 print "Prepared " + str(len(inputData)) + " items"
-conduct_experiment(inputData, targetData, 'Netinfo')
-
+if len(sys.argv) < 2:
+    conduct_experiment(inputData, targetData, 'Netinfo')
+else:
+    mode = sys.argv[1]
+    if mode == "balancer":
+        create_balancer(inputData, targetData, ['gba', 'rf'], 'Netinfo')

@@ -364,6 +364,16 @@ class Experiment:
     def get_experiments_dir_for(for_client):
         return abs_path(os.path.join(Experiment.base_path, for_client))
 
+    def get_model(self, type, client):
+        exp_dir = self.get_experiments_dir_for(client)
+        models = self.best_models
+        if self.best_models == None or len(self.best_models) == 0:
+            models = self.load_model_files([type])
+        for model in models:
+            if model['type'] == type:
+                return model['model']
+        return None
+
     def create_and_train(self):
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
         best_models = []
@@ -532,7 +542,30 @@ def conduct_experiment(data, targets, client='cashlend'):
     e.create_and_train()
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()), client))
     e.store_models()
+    rf_model = e.get_model('rf', client)
+    gba_model = e.get_model('gba', client)
+    rf_prediction = rf_model.predict_proba(data)
+    gba_prediction = gba_model.predict_proba(data)
+    train_balancer(rf_prediction, gba_prediction, targets, client)
+    return e
 
+def create_balancer(input_data, target, classifier_types, client='netinfo'):
+    exp = Experiment(None, None, None, client)
+    model_files = exp.load_model_files(classifier_types)
+    predictions = []
+    if len(model_files) > 2:
+        raise ValueError('Only 2 classifiers supported for now!')
+    for model in model_files:
+        m_type = model['type']
+        model_obj = model['model']
+        print "Predicting with {0} - {1}".format(m_type, len(input_data))
+        prediction = model_obj.predict_proba(input_data)
+        predictions.append(prediction)
+    arguments = predictions
+    arguments.append(target)
+    arguments.append(client)
+    train_balancer(*arguments)
+    print model_files
 
 def train_balancer(predict1, predict2, targets, client='netinfo'):
     tmp = np.unique(targets)
