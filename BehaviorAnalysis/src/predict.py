@@ -119,8 +119,8 @@ next_week_purchasing_users = users = collection.find({
 
 for tmpDoc in weekData:
     uuid = tmpDoc["_id"]["uuid"]
-    # if uuid in paying_users:    # skip users that have paid some time
-    #    continue
+    if uuid in previously_purchasing_users:    # skip users that have paid some time
+        continue
     userData.append({'uuid': uuid})
 
     simscore = 0 if "path_similarity_score" not in tmpDoc else tmpDoc["path_similarity_score"]
