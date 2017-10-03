@@ -110,15 +110,26 @@ exp = Experiment(None, None, None, company)
 userFeatures = []
 userData = []
 targets = []
-next_week_purchasing_users = users = collection.find({
+# Filter previously paying users
+next_week_purchasing_users = collection.find({
     "TypeId": userTypeId,
     "UserId": appId,
     "Document.is_paying": 1,
     "Document.noticed_date": {'$gte': next_week, '$lte': next_week_end}
 }).distinct("Document.uuid")
+filterFile = "Netinfo/filters/paying_users.csv"
+payingDict = dict()
+with open(filterFile, 'rb') as filterCsv:
+    filterReader = csv.reader(filterCsv, delimiter=';', quotechar='|')
+    for row in filterReader:
+        uuid = row[0].replace('"', '')
+        payingDict[uuid] = True
 
 for tmpDoc in weekData:
     uuid = tmpDoc["_id"]["uuid"]
+    if uuid in previously_purchasing_users or uuid in payingDict:
+        continue
+
     # if uuid in paying_users:    # skip users that have paid some time
     #    continue
     userData.append({'uuid': uuid})
@@ -191,13 +202,6 @@ for tmpDoc in weekData:
 
 
 print "Loaded " + str(len(userFeatures)) + " test user items"
-filterFile = "Netinfo/filters/paying_users.csv"
-payingDict = dict()
-with open(filterFile, 'rb') as filterCsv:
-    filterReader = csv.reader(filterCsv, delimiter=';', quotechar='|')
-    for row in filterReader:
-        uuid = row[0].replace('"', '')
-        payingDict[uuid] = True
 
 filtered = 0
 models = exp.load_models()  # exp.load_model_files(['gba', 'lr', 'mlpnn'])
@@ -212,7 +216,7 @@ for m in models:
     predictions = m['model'].predict_proba(userFeatures)
     x_test = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
     y_true = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
-    cutoff_value = plot_cutoff(m, x_test, y_true, client=company)
+    cutoff = plot_cutoff(m, x_test, y_true, client=company)
     graph_experiment(userFeatures, targets, company, m)
     Experiment.predict_explain_non_tree(m, company, [
         "visits_on_weekends",
@@ -286,7 +290,7 @@ for m in models:
             chance = float(match['chance'])
             validation_writer.writerow([uuid, chance, chance >= cutoff_value])
             # print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
-    print c_type + " Matches {0}%: {1}, pos{2} c{3}".format(check['positive_perc'], len(check['matches']), check['positive_matches'], cutoff_value)
+    print c_type + " Matches {0}%: {1}, pos{2} c{3}".format(check['positive_perc'], len(check['matches']), check['positive_matches'], cutoff)
     print c_type + " False positives: {0}%, count {1} of {2}".format(check['false_positives']['perc'],
                                                               check['false_positives']['count'],
                                                               check['false_positives']['out_of'])

@@ -190,18 +190,24 @@ class Experiment:
     @staticmethod
     def predict_explain_non_tree(clf, data, labels):
         # Plot feature importance
-        feature_importance = clf.feature_importances_
-        # make importances relative to max importance
-        feature_importance = 100.0 * (feature_importance / feature_importance.max())
-        sorted_idx = np.argsort(feature_importance)
-        pos = np.arange(sorted_idx.shape[0]) + .5
-        plt.subplot(1, 2, 2)
-        plt.barh(pos, feature_importance[sorted_idx], align='center')
-        plt.yticks(pos, labels[sorted_idx])
-        plt.xlabel('Relative Importance')
-        plt.title('Variable Importance')
-        now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        plt.savefig(abs_path("{0}_importance".format(now)))
+        try:
+            if not hasattr(clf, 'feature_importances_'):
+                return
+            feature_importance = clf.feature_importances_
+
+            # make importances relative to max importance
+            feature_importance = 100.0 * (feature_importance / feature_importance.max())
+            sorted_idx = np.argsort(feature_importance)
+            pos = np.arange(sorted_idx.shape[0]) + .5
+            plt.subplot(1, 2, 2)
+            plt.barh(pos, feature_importance[sorted_idx], align='center')
+            plt.yticks(pos, labels[sorted_idx])
+            plt.xlabel('Relative Importance')
+            plt.title('Variable Importance')
+            now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+            plt.savefig(abs_path("{0}_importance".format(now)))
+        except AttributeError:
+            pass
 
     @staticmethod
     def make_graphs(y_pred_proba,
@@ -305,6 +311,8 @@ class Experiment:
         c_type = clf['type']
         clf = clf['model']
         # Plot feature importance
+        if not hasattr(clf, 'feature_importances_'):
+            return
         feature_importance = clf.feature_importances_
         # make importances relative to max importance
         feature_importance = 100.0 * (feature_importance / feature_importance.max())
