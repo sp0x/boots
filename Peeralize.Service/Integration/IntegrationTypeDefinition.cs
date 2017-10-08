@@ -175,6 +175,14 @@ namespace Peeralize.Service.Integration
             return this;
         }
 
+        public IntegratedDocument Wrap<T>(T data)
+        {
+            var doc = new IntegratedDocument();
+            doc.SetDocument(data);
+            doc.TypeId = Id.Value;
+            return doc;
+        }
+
         public void AddField(string fieldName, Type type)
         {
             var fdef = new FieldDefinition(fieldName, type); 

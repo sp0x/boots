@@ -20,11 +20,12 @@ namespace Peeralize.Service.IntegrationSource
     {
         private IMongoCollection<BsonDocument> _collection;
         private BsonDocument _cachedInstance;
-        private object _lock;
-        private IAsyncCursor<BsonDocument> _cursor;
+        private object _lock; 
         private FilterDefinition<BsonDocument> _query;
-        private IFindFluent<BsonDocument, BsonDocument> _finder;
+        private IAsyncCursorSource<BsonDocument> _cursorSource;
         private Func<BsonDocument, BsonDocument> _project;
+        private IAggregateFluent<BsonDocument> _aggregate;
+        public IMongoCollection<BsonDocument> Collection => _collection;
 
         public MongoSource(string collectionName, IInputFormatter formatter) : base(formatter)
         {
@@ -42,7 +43,15 @@ namespace Peeralize.Service.IntegrationSource
 
         public override IIntegrationTypeDefinition GetTypeDefinition()
         {
-            var firstElement = _collection.Find(Builders<BsonDocument>.Filter.Empty).First();
+            BsonDocument firstElement = null;
+            if (_aggregate != null)
+            {
+                firstElement = _aggregate.First();
+            }
+            else
+            {
+                _collection.Find(Builders<BsonDocument>.Filter.Empty).First();
+            }
             try
             {
                 var firstInstance = _cachedInstance = firstElement;
@@ -66,28 +75,64 @@ namespace Peeralize.Service.IntegrationSource
             return null;
         }
 
+        private long GetSize()
+        {
+            if (_aggregate != null)
+            {
+                _cursorSource = _aggregate; 
+                var counter = new BsonDocument
+                {
+                    { "$group", new BsonDocument
+                    {
+                        {"_id", "_id"},
+                        {"count", new BsonDocument("$sum", 1)}
+                    }}
+                };
+                var newAggregate = _aggregate.AppendStage<BsonDocument>(counter);
+                BsonDocument entry = newAggregate.First();
+                
+                return entry["count"].ToInt64();
+            }
+            else
+            {
+                var finder = _collection.Find(_query);
+                return finder.Count();
+            }
+        }
+
         public override dynamic GetNext()
         {
             lock (_lock)
             {
                 dynamic lastInstance = null;
                 var resetNeeded = _cachedInstance != null;
-                if (resetNeeded || _finder == null)
+                if (resetNeeded || _cursorSource == null)
                 {
-                    _finder = _collection.Find(_query);
+                    if (_aggregate != null)
+                    {
+                        _cursorSource = _aggregate;
+                        Size = GetSize();
+                    }
+                    else
+                    {
+                        _cursorSource = _collection.Find(_query);
+                    }
                 }
-                if (resetNeeded || _cursor==null)
-                {
-                    _cursor = _finder.ToCursor();
+
+                if (resetNeeded  )
+                { 
                     _cachedInstance = null;
                 }
-                var item = (Formatter as BsonFormatter).GetNext(_finder, resetNeeded);
+                var item = (Formatter as BsonFormatter).GetNext(_cursorSource, resetNeeded);
                 if (item == null) return item;
                 if (_project != null && item!=null) item = _project(item);
-                else if (item == null){
-                    item = item;
+                else if (item == null){ item = item;
                 }
                 lastInstance = BsonSerializer.Deserialize<ExpandoObject>(item);
+#if DEBUG
+                Debug.WriteLine($"Bson progress: %{Progress:0.0000} of {Size}");
+#endif
+
                 return lastInstance;
             }
         }
@@ -97,7 +142,7 @@ namespace Peeralize.Service.IntegrationSource
             if (Formatter != null)
             {
                 Formatter.Dispose();
-                _cursor.Dispose();
+                //_cursor.Dispose();
             }
         }
 
@@ -108,7 +153,7 @@ namespace Peeralize.Service.IntegrationSource
 
         public override void DoDispose()
         {
-            _cursor.Dispose();
+            //_cursor.Dispose();
             _collection = null;
         }
 
@@ -123,5 +168,32 @@ namespace Peeralize.Service.IntegrationSource
             return source;
         }
 
+        /// <summary>
+        /// Filters input from a given type
+        /// </summary>
+        /// <param name="type"></param>
+        public void Filter(IntegrationTypeDefinition type)
+        {
+            if (_collection.CollectionNamespace.CollectionName != "IntegratedDocument")
+            {
+                throw new Exception("Type definition filters are supported only on the IntegratedDocument collection");
+            }
+            var def = Builders<BsonDocument>.Filter.Eq("TypeId", type.Id);
+            _query = def;
+        }
+
+        public IAggregateFluent<BsonDocument> Aggregate(IAggregateFluent<BsonDocument> aggregate)
+        {
+            _aggregate = aggregate;
+            return aggregate;
+//                Group(new BsonDocument { { "_id", "$borough" }, { "count", new BsonDocument("$sum", 1) } });
+//            var results = await aggregate.ToListAsync();
+        }
+
+        public IAggregateFluent<BsonDocument> CreateAggregate()
+        {
+            var aggregateArgs = new AggregateOptions { AllowDiskUse = true };
+            return _collection.Aggregate< BsonDocument>(aggregateArgs); 
+        }
     }
 }

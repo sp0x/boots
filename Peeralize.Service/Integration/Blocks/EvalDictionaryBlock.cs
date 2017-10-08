@@ -5,7 +5,8 @@ using MongoDB.Bson;
 
 namespace Peeralize.Service.Integration.Blocks
 {
-    public class EvalDictionaryBlock : IntegrationBlock
+    public class EvalDictionaryBlock
+        : BaseFlowBlock<IntegratedDocument, IntegratedDocument>
     {
         private Action<IntegratedDocument, BsonDocument> _action;
         private Func<IntegratedDocument, BsonArray> _childSelector;

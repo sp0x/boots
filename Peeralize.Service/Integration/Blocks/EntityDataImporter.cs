@@ -9,7 +9,8 @@ namespace Peeralize.Service.Integration.Blocks
     /// <summary>
     /// 
     /// </summary>
-    public class EntityDataImporter : IntegrationBlock
+    public class EntityDataImporter 
+        : BaseFlowBlock<IntegratedDocument, IntegratedDocument>
     {
         private string _inputFileName;
         private Func<string[], IntegratedDocument, bool> _matcher;
@@ -86,7 +87,7 @@ namespace Peeralize.Service.Integration.Blocks
             return intDoc;
         }
 
-        public IIntegrationDestination ContinueWith(Action<EntityDataImporter> action)
+        public IIntegrationBlock ContinueWith(Action<EntityDataImporter> action)
         {
             var completion = GetProcessingBlock().Completion;
             completion.ContinueWith(xTask =>

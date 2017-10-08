@@ -22,5 +22,17 @@ namespace Peeralize.Service.Integration
                 sendTask.Wait();
             } while (!sendTask.IsCompleted || !sendTask.Result);
         }
+
+        public static void LinkToEnd<T>(this ISourceBlock<T> block, DataflowLinkOptions linkOptions = null)
+        {
+            if (linkOptions == null)
+            {
+                block.LinkTo(DataflowBlock.NullTarget<T>());
+            }
+            else
+            {
+                block.LinkTo(DataflowBlock.NullTarget<T>(), linkOptions);
+            }
+        }
     }
 }

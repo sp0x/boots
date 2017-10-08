@@ -11,12 +11,19 @@ namespace Peeralize.Service.IntegrationSource
     public abstract class InputSource : IInputSource
     {
         
-        public int Size { get; }
+        public long Size { protected set; get; }
         private bool _disposed;  
         public Encoding Encoding { get; set; } = Encoding.UTF8;
         public IInputFormatter Formatter { get; protected set; }
         public bool SupportsSeeking { get; set; }
-        
+
+        public double Progress
+        {
+            get
+            {
+                return 100 * ((double)Formatter.Position() / Math.Max(1, Size));
+            }
+        }
 
         public InputSource(IInputFormatter formatter)
         {

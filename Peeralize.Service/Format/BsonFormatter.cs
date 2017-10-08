@@ -14,12 +14,12 @@ namespace Peeralize.Service.Format
 {
     public class BsonFormatter : IInputFormatter
     {
-        IFindFluent<BsonDocument, BsonDocument> _finder = null;
+        IAsyncCursorSource<BsonDocument> _finder = null;
         IAsyncCursor<BsonDocument> _cursor;
         private BsonDocument[] _elementCache;
-        private int _position = 0;
+        private int _position = -1;
         
-        private long _size = 0;
+        
         private object _lock;
         private long _passedElements = 0;
 
@@ -43,24 +43,24 @@ namespace Peeralize.Service.Format
         {
             throw new NotImplementedException();
         }
-        private long GetTotalPosition()
+        public long Position()
         {
             return _passedElements + _position;
         }
 
-        public dynamic GetNext(IFindFluent<BsonDocument, BsonDocument> finder, bool reset)
+        public dynamic GetNext(IAsyncCursorSource<BsonDocument> cursorSource, bool reset)
         {
-            _finder = finder;
-            if (_size == 0 || reset)
-            {
-                _size = _finder.Count();
-            } 
+            _finder = cursorSource;
+//            if (_size == 0 || reset)
+//            {
+//                _size = _finder.Count();
+//            } 
             lock (_lock)
             {
 
                 if (_cursor == null || reset)
                 {
-                    _cursor = finder.ToCursor();
+                    _cursor = cursorSource.ToCursor();
                     _elementCache = _cursor.MoveNext() ? _cursor.Current.ToArray() : new BsonDocument[] { };
                 }
                 if (_elementCache != null && _position >= _elementCache.Count())
@@ -68,11 +68,10 @@ namespace Peeralize.Service.Format
                     _elementCache = _cursor.MoveNext() ? _cursor.Current.ToArray() : new BsonDocument[] { };
                     _passedElements += _position;
                     _position = 0;
-#if DEBUG
-                    Debug.WriteLine($"Bson progress: %{Progress:0.0000} of {_size}");
-#endif
+
                 }
-            } 
+            }
+            if (_position == -1) _position = 0;
             //if (reset) cursor.Dispose();
             if (_elementCache!=null && _elementCache.Count() > _position)
             {
@@ -98,13 +97,5 @@ namespace Peeralize.Service.Format
             formatter._cursor = null;
             return formatter;
         }
-
-        public double Progress
-        {
-            get
-            {
-                return 100 * ((double)GetTotalPosition() / Math.Max(1, _size));
-            }
-        } 
     }
 }

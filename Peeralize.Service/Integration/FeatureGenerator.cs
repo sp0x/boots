@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,9 +12,9 @@ namespace Peeralize.Service.Integration
     /// <summary>
     /// A tpl block which
     /// </summary>
-    public class FeatureGenerator
+    public class FeatureGenerator<TIn>
     {
-        private List<Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>> _generators;
+        private List<Func<TIn, IEnumerable<KeyValuePair<string, object>>>> _generators;
         private int _threadCount;
 
         /// <summary>
@@ -22,20 +23,20 @@ namespace Peeralize.Service.Integration
         //public IPropagatorBlock<IntegratedDocument, DocumentFeatures> Block { get; private set; }
         public FeatureGenerator(int threadCount)
         {
-            _generators = new List<Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>>();
+            _generators = new List<Func<TIn, IEnumerable<KeyValuePair<string, object>>>>();
             _threadCount = threadCount;
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="generator">Feature generator based on input documents</param>
-        public FeatureGenerator(Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> generator, int threadCount = 4) 
+        public FeatureGenerator(Func<TIn, IEnumerable<KeyValuePair<string, object>>> generator, int threadCount = 4) 
             : this(threadCount)
         {
             if(generator!=null) _generators.Add(generator);
         }
 
-        public FeatureGenerator(IEnumerable<Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>> generators,
+        public FeatureGenerator(IEnumerable<Func<TIn, IEnumerable<KeyValuePair<string, object>>>> generators,
             int threadCount = 4) : this(threadCount)
         {
             if (generators != null)
@@ -44,19 +45,24 @@ namespace Peeralize.Service.Integration
             }
         }
 
-        public FeatureGenerator AddGenerator(
-            Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> generator)
+        public FeatureGenerator<TIn>
+            AddGenerator(
+            Func<TIn, IEnumerable<KeyValuePair<string, object>>> generator)
         {
             _generators.Add(generator);
             return this;
         }
 
-        public IPropagatorBlock<IntegratedDocument, DocumentFeatures> CreateFeaturesBlock()
+        public IPropagatorBlock<TIn, FeaturesWrapper<TIn>> CreateFeaturesBlock()
         {
-            var options = new ExecutionDataflowBlockOptions();
-            options.MaxDegreeOfParallelism = _threadCount;
+            return CreateFeaturesBlock<FeaturesWrapper<TIn>>();
+        }
+        public IPropagatorBlock<TIn, T> CreateFeaturesBlock<T>()
+            where T : FeaturesWrapper<TIn>
+        {
+            var options = new ExecutionDataflowBlockOptions {MaxDegreeOfParallelism = _threadCount};
             var queueLock = new object();
-            var transformerBlock = new TransformBlock<IntegratedDocument, DocumentFeatures>((doc) =>
+            var transformerBlock = new TransformBlock<TIn, T>((doc) =>
             {
                 var queue = new Queue<KeyValuePair<string, object>>();
                 Parallel.ForEach(_generators, (generator) =>
@@ -70,7 +76,10 @@ namespace Peeralize.Service.Integration
                         }
                     }
                 });
-                var featuresDoc = new DocumentFeatures(doc, queue);
+                T featuresDoc = typeof(T).GetConstructor(new Type[] { }).Invoke(new object[]{}) as T;
+                Debug.Assert(featuresDoc != null, nameof(featuresDoc) + " != null");
+                featuresDoc.Document = doc;
+                featuresDoc.Features = queue; 
                 return featuresDoc;
             }, options);
             return transformerBlock;
@@ -81,7 +90,7 @@ namespace Peeralize.Service.Integration
         /// </summary>
         /// <param name="threadCount"></param>
         /// <returns></returns>
-        public IPropagatorBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> CreateFeaturePairsBlock()
+        public IPropagatorBlock<TIn, IEnumerable<KeyValuePair<string, object>>> CreateFeaturePairsBlock()
         {
             //Dataflow: poster -> each transformer -> buffer
             var buffer = new BufferBlock<IEnumerable<KeyValuePair<string, object>>>();
@@ -90,14 +99,14 @@ namespace Peeralize.Service.Integration
                 .Select(x =>
                 {
                     var transformer =
-                        new TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>(x);
+                        new TransformBlock<TIn, IEnumerable<KeyValuePair<string, object>>>(x);
                     transformer.LinkTo(buffer);
                     return transformer;
                 });
             var postOptions = new ExecutionDataflowBlockOptions();
             postOptions.MaxDegreeOfParallelism = _threadCount;
             //Post an item to each transformer
-            var poster = new ActionBlock<IntegratedDocument>(doc =>
+            var poster = new ActionBlock<TIn>(doc =>
             {
                 foreach (var transformer in transformers)
                 {

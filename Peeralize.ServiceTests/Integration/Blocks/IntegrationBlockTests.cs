@@ -220,12 +220,12 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
                 (doc, docx) => doc);
             // create features for each user -> create Update -> batch update
-            var featureGenerator = new FeatureGenerator((doc) =>
+            var featureGenerator = new FeatureGenerator<IntegratedDocument>((doc) =>
             {
                 Interlocked.Increment(ref cntFeatures);
                 return new[]{ new KeyValuePair<string, object>("feature1", 0) };
             } , 8);
-            var updateCreator = new TransformBlock<DocumentFeatures, FindAndModifyArgs<IntegratedDocument>>((docFeatures) =>
+            var updateCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, FindAndModifyArgs<IntegratedDocument>>((docFeatures) =>
             {
                 Interlocked.Increment(ref cntUpdates);
                 return new FindAndModifyArgs<IntegratedDocument>()
@@ -241,7 +241,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
             {
                 Interlocked.Increment(ref cntBatchesApplied);
             });
-            IPropagatorBlock<IntegratedDocument, DocumentFeatures> featuresBlock = featureGenerator.CreateFeaturesBlock();
+            IPropagatorBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>> featuresBlock = featureGenerator.CreateFeaturesBlock();
             featuresBlock.LinkTo(updateCreator, new DataflowLinkOptions() { PropagateCompletion = true });
             updateCreator.LinkTo(updateBatcher, new DataflowLinkOptions() { PropagateCompletion = true });
             updateBatcher.LinkTo(updateApplier, new DataflowLinkOptions() { PropagateCompletion = true });

@@ -28,7 +28,7 @@ print weeksAvailable
 #our test week
 weekLimit = 0
 # weeksAvailable = weeksAvailable[(-1) * weekLimit:] if weekLimit > 0 else weeksAvailable  # last n weeks
-weeksAvailable = [weeksAvailable[7], weeksAvailable[8], weeksAvailable[9]]
+weeksAvailable = [weeksAvailable[5], weeksAvailable[6], weeksAvailable[7], weeksAvailable[8], weeksAvailable[9]]
 targetData = []
 inputData = []
 # limit = 2 * 100 * 1000
@@ -69,12 +69,12 @@ for index, week in enumerate(weeksAvailable):
             "highranking_page_3": {"$avg": "$Document.highranking_page_3"},
             "highranking_page_4": {"$avg": "$Document.highranking_page_4"},
             "time_spent_online": {"$avg": "$Document.time_spent_online"},
-            # "path_similarity_score": {"$avg": "$path_similarity_score"},
-            # "path_similarity_score_time_spent": {"$avg": "$path_similarity_score_time_spent"},
-            # "non_paying_s_time": {"$avg": "$Document.non_paying_s_time"},
-            # "non_paying_s_freq": {"$avg": "$Document.non_paying_s_freq"},
-            # "paying_s_time": {"$avg": "$Document.paying_s_time"},
-            # "paying_s_freq": {"$avg": "$Document.paying_s_freq"},
+            "path_similarity_score": {"$avg": "$path_similarity_score"},
+            "path_similarity_score_time_spent": {"$avg": "$path_similarity_score_time_spent"},
+            "non_paying_s_time": {"$avg": "$Document.non_paying_s_time"},
+            "non_paying_s_freq": {"$avg": "$Document.non_paying_s_freq"},
+            "paying_s_time": {"$avg": "$Document.paying_s_time"},
+            "paying_s_freq": {"$avg": "$Document.paying_s_freq"},
             "has_type_val_0": {"$avg": "$Document.has_type_val_0"},
             "has_type_val_1": {"$avg": "$Document.has_type_val_1"},
             "has_type_val_2": {"$avg": "$Document.has_type_val_2"},
@@ -141,12 +141,12 @@ for index, week in enumerate(weeksAvailable):
             tmpDoc["highranking_page_3"],
             tmpDoc["highranking_page_4"],
             tmpDoc["time_spent_online"],
-            # simscore,
-            # simtime,
-            # non_paying_s_time,
-            # non_paying_s_freq,
-            # paying_s_time,
-            # paying_s_freq,
+            simscore,
+            simtime,
+            non_paying_s_time,
+            non_paying_s_freq,
+            paying_s_time,
+            paying_s_freq,
             has_paid_before,
             time_between_visits_avg
         ]

@@ -37,7 +37,11 @@ namespace Peeralize.Service
         private int _totalEntryLimit;
 
         public HashSet<IntegrationSet> Sets { get; private set; } 
-        public IIntegrationDestination Destination { get; private set; }
+        /// <summary>
+        /// The destination to which documents will be dispatched
+        /// </summary>
+        public IIntegrationBlock<IntegratedDocument> Destination { get; private set; }
+        public ITargetBlock<dynamic> DestinationBlock { get; private set; }
 
         protected int ShardLimit => _shardLimit;
         protected int TotalEntryLimit => _totalEntryLimit;
@@ -102,9 +106,15 @@ namespace Peeralize.Service
         /// </summary>
         /// <param name="dest">A destination/block in your integration flow</param>
         /// <returns></returns>
-        public Harvester SetDestination(IIntegrationDestination dest)
+        public Harvester SetDestination(IIntegrationBlock<IntegratedDocument> dest)
         {
             Destination = dest;
+            return this;
+        }
+
+        public Harvester SetDestination(ITargetBlock<dynamic> dest)
+        {
+            DestinationBlock = dest;
             return this;
         }
 
@@ -305,7 +315,15 @@ namespace Peeralize.Service
                                         return;
                                     }
                                     var document = itemSet.Wrap(entry);
-                                    Destination.SendAsync(document).Wait();
+                                    if (Destination == null)
+                                    {
+                                        Integration.Extensions.SendChecked(DestinationBlock, document, null);
+                                    }
+                                    else
+                                    {
+                                        Destination.SendAsync(document).Wait();
+                                    }
+                                    
                                     Interlocked.Increment(ref totalItemsUsed);
                                 });
                             }
@@ -316,7 +334,15 @@ namespace Peeralize.Service
                                 {
                                     if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit) break;
                                     IntegratedDocument document = itemSet.Wrap(entry);
-                                    var sendTask = Destination.SendAsync(document);
+                                    Task sendTask = null;
+                                    if (Destination == null)
+                                    {
+                                        sendTask = DestinationBlock.SendAsync<dynamic>(document);
+                                    }
+                                    else
+                                    {
+                                        sendTask = Destination.SendAsync(document);
+                                    }
                                     var resultingTask = Task.WhenAny(Task.Delay(10000), sendTask).Result;
                                     if (sendTask != resultingTask)
                                     {

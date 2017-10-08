@@ -12,6 +12,8 @@ namespace Peeralize.Service.Source
         dynamic GetNext(Stream fs, bool reset);
         T GetNext<T>(Stream fs, bool reset) where T : class;
         IInputFormatter Clone();
-        double Progress { get; }
+
+        long Position();
+        //double Progress { get; }
     }
 }

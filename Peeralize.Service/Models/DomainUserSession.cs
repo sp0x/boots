@@ -1,6 +1,6 @@
 using System;
 
-namespace Peeralize.Service.Integration.Blocks
+namespace Peeralize.Service.Models
 {
     public class DomainUserSession
     {

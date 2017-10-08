@@ -165,12 +165,12 @@ for tmpDoc in weekData:
         tmpDoc["highranking_page_3"],
         tmpDoc["highranking_page_4"],
         tmpDoc["time_spent_online"],
-        # simscore,
-        # simtime,
-        # non_paying_s_time,
-        # non_paying_s_freq,
-        # paying_s_time,
-        # paying_s_freq,
+        simscore,
+        simtime,
+        non_paying_s_time,
+        non_paying_s_freq,
+        paying_s_time,
+        paying_s_freq,
         has_paid_before,
         time_between_visits_avg
     ]
@@ -200,7 +200,11 @@ with open(filterFile, 'rb') as filterCsv:
         payingDict[uuid] = True
 
 filtered = 0
-models = exp.load_models()  # exp.load_model_files(['gba', 'lr', 'mlpnn'])
+models = exp.load_model_files(['gba', 'rf'])
+model_cutoffs = {
+    'gba': 0.1,
+    'rf': 0.2
+}
 print "Loaded prediction models"
 
 for m in models:
@@ -212,7 +216,7 @@ for m in models:
     predictions = m['model'].predict_proba(userFeatures)
     x_test = Experiment.load_dump(company, 'x_test_{0}.dmp'.format(c_type))
     y_true = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
-    cutoff_value = plot_cutoff(m, x_test, y_true, client=company)
+    real_cutoff = plot_cutoff(m, x_test, y_true, client=company)
     graph_experiment(userFeatures, targets, company, m)
     Experiment.predict_explain_non_tree(m, company, [
         "visits_on_weekends",
@@ -234,12 +238,12 @@ for m in models:
         "highranking_page_3",
         "highranking_page_4",
         "time_spent_online",
-        # "simscore",
-        # "simtime",
-        # "non_paying_s_time",
-        # "non_paying_s_freq",
-        # "paying_s_time",
-        # "paying_s_freq",
+        "simscore",
+        "simtime",
+        "non_paying_s_time",
+        "non_paying_s_freq",
+        "paying_s_time",
+        "paying_s_freq",
         "has_paid_before",
         "has_type_val_0",
         "has_type_val_1",
@@ -274,7 +278,7 @@ for m in models:
         print "{0} prediction took: {1}sec ({2}sec/user)".format(c_type, time_taken, time_taken_per_user)
         validation_file = abs_path(os.path.join(company, "validation", "validation.csv"))
 
-    cutoff_value = 0.1
+    cutoff_value = model_cutoffs[c_type]
     check = check_prediction_ex(validation_file, next_week, cutoff_value, company, c_type)
 
     matches_filename = abs_path(os.path.join(company, "validation_matches_{0}_{1}.csv".format(c_type, next_week_f)))
@@ -287,9 +291,11 @@ for m in models:
             validation_writer.writerow([uuid, chance, chance >= cutoff_value])
 
             # print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
-    print c_type + " Matches {0}%: {1}, pos{2} c{3}".format(check['positive_perc'], len(check['matches']), check['positive_matches'], cutoff_value)
-    print c_type + " False positives: {0}%, count {1} of {2}".format(check['false_positives']['perc'],
+    print c_type + " Matches {0:0.4f}%: {1}, pos{2} c{3}({4:0.4f})".format(check['positive_perc'], len(check['matches']), check['positive_matches'], cutoff_value, real_cutoff)
+    print c_type + " False positives: {0:0.4f}%, count {1} of {2} with ({3:0.4f}-{4:0.4f})% chance".format(check['false_positives']['perc'],
                                                               check['false_positives']['count'],
-                                                              check['false_positives']['out_of'])
+                                                              check['false_positives']['out_of'],
+                                                              check['false_positives']['chance']['median'],
+                                                              check['false_positives']['chance']['high'])
 
 

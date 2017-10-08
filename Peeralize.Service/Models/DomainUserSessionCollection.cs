@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Peeralize.Service.Models;
 
 namespace Peeralize.Service.Integration.Blocks
 {

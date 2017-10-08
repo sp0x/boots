@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
+using System.Threading.Tasks.Dataflow; 
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.DB;
@@ -18,6 +18,7 @@ using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
 using nvoid.extensions;
 using Peeralize.Service;
+using Peeralize.Service.Analytics;
 using Peeralize.Service.Format;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Integration.Blocks;
@@ -219,8 +220,8 @@ function (key, values) {
             //Group the users
             // create features for each user -> create Update -> batch update
             var featureHelper = new FeatureGeneratorHelper() { Helper = _helper, TargetDomain = "ebag.bg"};
-            var featureGenerator = new FeatureGenerator(featureHelper.GetAvgTimeBetweenSessionFeatures, 8);
-            var updateCreator = new TransformBlock<DocumentFeatures, FindAndModifyArgs<IntegratedDocument>>((docFeatures) =>
+            var featureGenerator = new FeatureGenerator<IntegratedDocument>(featureHelper.GetAvgTimeBetweenSessionFeatures, 8);
+            var updateCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, FindAndModifyArgs<IntegratedDocument>>((docFeatures) =>
             {
                 return new FindAndModifyArgs<IntegratedDocument>()
                 {
@@ -271,7 +272,7 @@ function (key, values) {
             dictEval.Helper = _helper;
 
             var featureHelper = new FeatureGeneratorHelper() { Helper = _helper, TargetDomain = "ebag.bg" };
-            var featureGenerator = new FeatureGenerator(new Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>[]
+            var featureGenerator = new FeatureGenerator<IntegratedDocument>(new Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>[]
             {
                 featureHelper.GetFeatures,
                 featureHelper.GetAvgTimeBetweenSessionFeatures
@@ -285,7 +286,7 @@ function (key, values) {
             demographyImporter.JoinOn(JoinDemography);
             demographyImporter.Map();
 
-            var insertCreator = new TransformBlock<DocumentFeatures, IntegratedDocument>((x) =>
+            var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, IntegratedDocument>((x) =>
             {
                 var doc = x.Document;
                 //Cleanup
@@ -319,6 +320,91 @@ function (key, values) {
             Debug.WriteLine(result.ProcessedEntries);
         }
 
+        [Theory]
+        [InlineData(new object[] { "IntegratedDocument" })]
+        public async void ConstructTrees(string reducedSource)
+        {
+            MongoSource source = MongoSource.CreateFromCollection(reducedSource, new BsonFormatter());
+            var appId = "123123123";
+            var harvester = new Peeralize.Service.Harvester(20);
+            var type = harvester.AddPersistentType("NetInfoUserSessions_7_8", appId, source);
+            var batchSize = 10000;
+            var updateBatchSize = 10000;
+            var recordLimit = 1000;
+            source.Aggregate(source.CreateAggregate()
+                .Match(new BsonDocument
+                {
+                    {"TypeId", type.Id.ToString()},
+                    {"Document.is_paying", 0}
+                })
+                .Group(new BsonDocument
+                {
+                    {"_id" , "$Document.UserId"},
+                    {"day_count" , new BsonDocument{{ "$sum", 1 } }},
+                    {"daily_sessions" , new BsonDocument{{"$push", "$Document.Sessions"}}},
+                }).Limit(recordLimit));
+            //Feed the builder with documents of distinct user_day
+            var builder = new TreeBuilder(batchSize, "_id");
+            var intDocRecords = new MongoList(DBConfig.GetGeneralDatabase(), "IntegratedDocument").Records;
+            var treePayingUsers = TreeBuilder.BuildFromItems(from x in intDocRecords.AsQueryable()
+                where x["TypeId"] == type.Id.ToString() && x["Document.is_paying"] == 1
+                select x);
+            var tweek = DateTime.Now;
+            var treeUsersNotPurchasedInTWeek = TreeBuilder.BuildFromItems(from x in intDocRecords.AsQueryable()
+                where 
+                x["TypeId"] == type.Id.ToString() &&
+                x["Document.Created"] >= tweek && x["Document.Created"] <= (tweek + TimeSpan.FromDays(7)) &&
+                x["Document.is_paying"] == 0
+                select x);
+            var treeUsersPurchasedAfterTWeek = TreeBuilder.BuildFromItems(from x in intDocRecords.AsQueryable()
+                where
+                    x["TypeId"] == type.Id.ToString() &&
+                    x["Document.Created"] >= tweek && x["Document.Created"] <= (tweek + TimeSpan.FromDays(7)) &&
+                    x["Document.is_paying"] == 1
+                select x);
+
+            var featureGenerator = new FeatureGenerator<Tuple<BehaviourTree, IntegratedDocument>>(5);
+            featureGenerator.AddGenerator(x =>
+            { 
+                var pairs = new List<KeyValuePair<string, object>>();
+                double simtime = treePayingUsers.LinScore(x.Item1, "time");
+                double simfreq = treePayingUsers.LinScore(x.Item1, "frequency");
+
+                pairs.Add(new KeyValuePair<string, object>("path_similarity_score", simtime));
+                pairs.Add(new KeyValuePair<string, object>("path_similarity_score_time_spent", simfreq));
+
+                pairs.Add(new KeyValuePair<string, object>("non_paying_s_time", simfreq));
+                pairs.Add(new KeyValuePair<string, object>("non_paying_s_freq", simfreq));
+                pairs.Add(new KeyValuePair<string, object>("paying_s_time", simfreq));
+                pairs.Add(new KeyValuePair<string, object>("paying_s_freq", simfreq));
+
+                return pairs;
+            });
+            var featureBlock = featureGenerator.CreateFeaturesBlock<TreeFeatures>();
+            builder.LinkTo(featureBlock, new DataflowLinkOptions{ PropagateCompletion = true});
+            var updateCreator = new TransformBlock<TreeFeatures, FindAndModifyArgs<IntegratedDocument>>((x) =>
+            {
+                return new FindAndModifyArgs<IntegratedDocument>()
+                {
+                    Query = Builders<IntegratedDocument>.Filter.And(
+                        Builders<IntegratedDocument>.Filter.Eq("Document.uuid", x.Document.Item2["_id"].ToString()),
+                        Builders<IntegratedDocument>.Filter.Eq("TypeId", type.Id.ToString())),
+                    Update = x.Features.ToMongoUpdate<IntegratedDocument, object>()
+                };
+            });
+            var updateBatch = new MongoUpdateBatch<IntegratedDocument>(_documentStore, updateBatchSize);
+            //BatchedBlockingBlock<FindAndModifyArgs<IntegratedDocument>>.CreateBlock(updateBatchSize);//
+            featureBlock.LinkTo(updateCreator, new DataflowLinkOptions { PropagateCompletion = true });
+            updateCreator.LinkTo(updateBatch.Block, new DataflowLinkOptions {PropagateCompletion = true});
+            //updateBatch.LinkToEnd(new DataflowLinkOptions { PropagateCompletion = true});
+
+            //"UserId": appId,
+            //"Document.uuid": uuid
+            builder.AddFlowCompletionTask(updateBatch.Block.Completion);
+            harvester.SetDestination(builder);
+            var results = await harvester.Synchronize();
+            Assert.True(results.ProcessedEntries == recordLimit); 
+        }
 
         [Theory]
         [InlineData(new object[] {"3e0f12d2-2c20-40f8-ac9c-031d3a33a216_reduced2"})]
@@ -339,7 +425,6 @@ function (key, values) {
             IntegrationTypeDefinition existingTypeDef;
             if (!IntegrationTypeDefinition.TypeExists(typeDef, appId, out existingTypeDef)) typeDef.Save();
             else typeDef = existingTypeDef;
-
             var dictEval = new EvalDictionaryBlock(
                 (document) =>
                 {
@@ -352,7 +437,7 @@ function (key, values) {
             //Group the users
             var sessionDocBlock = new TransformBlock<IntegratedDocument, IntegratedDocument>((IntegratedDocument userBlock) =>
             {
-                var userDocument = userBlock.GetDocument();
+                var userDocument = userBlock.GetDocument();;
                 var userIsPaying = userDocument.Contains("is_paying") &&
                                    userDocument["is_paying"].AsInt32 == 1;
                 //We're only interested in paying users
@@ -459,7 +544,7 @@ function (key, values) {
 
             var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary);
             var featureHelper = new FeatureGeneratorHelper() { Helper = helper, TargetDomain = "ebag.bg" };
-            var featureGenerator = new FeatureGenerator(featureHelper.GetFeatures, 12);
+            var featureGenerator = new FeatureGenerator<IntegratedDocument>(featureHelper.GetFeatures, 12);
             featureGenerator.AddGenerator(featureHelper.GetAvgTimeBetweenSessionFeatures);
             var featureGeneratorBlock = featureGenerator.CreateFeaturesBlock();
 
@@ -471,7 +556,7 @@ function (key, values) {
             demographyImporter.JoinOn(JoinDemography);
             demographyImporter.Map();
 
-            var insertCreator = new TransformBlock<DocumentFeatures, IntegratedDocument>((x) =>
+            var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, IntegratedDocument>((x) =>
             { 
                 var doc = x.Document;
                 //Todo: Fill doc with features 
@@ -528,11 +613,11 @@ function (key, values) {
             }));
             //Group the users
             // create features for each user -> create Update -> batch update
-            var featureGenerator = new FeatureGenerator((doc) => 
+            var featureGenerator = new FeatureGenerator<IntegratedDocument>((doc) => 
                 _helper.GetTopRatedFeatures(doc["uuid"].ToString(), VisitTypedValue, 10)
                 .Select((value, index) => new KeyValuePair<string, object>($"Document._has_type_val_{index}", value))
             );
-            var updateCreator = new TransformBlock<DocumentFeatures, FindAndModifyArgs<IntegratedDocument>>((x) =>
+            var updateCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, FindAndModifyArgs<IntegratedDocument>>((x) =>
             {
                 return new FindAndModifyArgs<IntegratedDocument>()
                 {
@@ -544,7 +629,7 @@ function (key, values) {
             });
             var updateBatcher = new MongoUpdateBatch<IntegratedDocument>(_documentStore, 300);
             var featuresBlock = featureGenerator.CreateFeaturesBlock();
-            featuresBlock.LinkTo(updateCreator);
+            featuresBlock.LinkTo(updateCreator, new DataflowLinkOptions{ PropagateCompletion = true});
             updateCreator.LinkTo(updateBatcher.Block); 
             
             grouper.LinkOnCompleteEx(featuresBlock); 

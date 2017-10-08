@@ -59,13 +59,14 @@ namespace Peeralize.Service.Integration
             doc.TypeId = Definition.Id.Value;
             return doc;
         }
-
+        /// <summary>
+        /// Wraps the data in an integration document
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         public IntegratedDocument Wrap(ExpandoObject data)
         {
-            var doc = new IntegratedDocument();
-            doc.SetDocument(data);
-            doc.TypeId = Definition.Id.Value;
-            return doc;
+            return Definition.Wrap(data);
         }
     }
 }

@@ -11,7 +11,8 @@ using Peeralize.Service.Source;
 
 namespace Peeralize.Service.Integration.Blocks
 {
-    public class MongoSink : IntegrationBlock
+    public class MongoSink 
+        : BaseFlowBlock<IntegratedDocument, IntegratedDocument>
     {  
         private RemoteDataSource<IntegratedDocument> _source;
         

@@ -15,6 +15,7 @@ namespace Peeralize.Service.Format
         private string[] _headers;
         private StreamReader _reader;
         private CsvReader _csvReader;
+        private long _position = -1;
 
         public CsvFormatter()
         {
@@ -81,6 +82,7 @@ namespace Peeralize.Service.Format
             {
                 return default(T);
             }
+            _position++;
             return outputObject as T;
         }
 
@@ -89,6 +91,11 @@ namespace Peeralize.Service.Format
             var formatter = new CsvFormatter();
             formatter.Delimiter = this.Delimiter;
             return formatter;
+        }
+
+        public long Position()
+        {
+            return _position;
         }
 
         public double Progress => 0;

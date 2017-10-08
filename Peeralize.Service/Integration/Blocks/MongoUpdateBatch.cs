@@ -8,6 +8,10 @@ using nvoid.db.DB.MongoDB;
 
 namespace Peeralize.Service.Integration.Blocks
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="TRecord">The type of the record that will be updated</typeparam>
     public class MongoUpdateBatch<TRecord>
     {
         private IPropagatorBlock<FindAndModifyArgs<TRecord>, FindAndModifyArgs<TRecord>[]> _block;

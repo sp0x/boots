@@ -13,6 +13,7 @@ using Peeralize.Service.Format;
 using Peeralize.Service.Integration;
 using Peeralize.Service.Integration.Blocks;
 using Peeralize.Service.IntegrationSource;
+using Peeralize.Service.Models;
 using Peeralize.Service.Time;
 using Peeralize.ServiceTests.IntegrationSource;
 using Xunit;
@@ -210,10 +211,10 @@ namespace Peeralize.ServiceTests
         /// Invoked after users are finished being grouped
         /// </summary>
         /// <param name="dataImporter"></param>
-        /// <param name="usersData"></param>
-        private void OnUsersGrouped(EntityDataImporter dataImporter, IntegrationBlock usersData)
+        /// <param name="fromBlock"></param>
+        private void OnUsersGrouped(EntityDataImporter dataImporter, IIntegrationBlock fromBlock)
         {
-            var grouper = usersData as GroupingBlock;
+            var grouper = fromBlock as GroupingBlock;
             var userValues = grouper.EntityDictionary.Values; 
             //var today = DateTime.Today;
             var dateHelper = new DateHelper();

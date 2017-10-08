@@ -7,7 +7,8 @@ using System.Threading.Tasks.Dataflow;
 
 namespace Peeralize.Service.Integration.Blocks
 {
-    public class StatsBlock : IntegrationBlock
+    public class StatsBlock
+        : BaseFlowBlock<IntegratedDocument, IntegratedDocument>
     {
         private Action<IntegratedDocument> _action;
         private BlockingCollection<IntegratedDocument> _items;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Reflection.Metadata;
 using MongoDB.Bson.Serialization.Attributes;
 using nvoid.db.DB;
@@ -29,6 +30,7 @@ namespace Peeralize.Service.Integration
 
         [BsonSerializer(typeof(LazyStringSerializer))]
         Lazy<string> Id { get; set; }
-         
+
+        IntegratedDocument Wrap<T>(T data); 
     }
 }

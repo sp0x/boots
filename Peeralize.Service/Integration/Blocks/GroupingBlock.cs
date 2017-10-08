@@ -12,7 +12,8 @@ namespace Peeralize.Service.Integration.Blocks
     /// <summary>
     /// An entity grouping block
     /// </summary>
-    public class GroupingBlock : IntegrationBlock
+    public class GroupingBlock
+        : BaseFlowBlock<IntegratedDocument, IntegratedDocument>
     {
         #region "Variables"
         private Func<IntegratedDocument, object> _groupBySelector;

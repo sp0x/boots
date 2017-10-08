@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using MongoDB.Bson;
 using nvoid.db.DB;
 using Peeralize.Service.Integration.Blocks;
@@ -174,6 +175,13 @@ namespace Peeralize.Service.Integration
             if (!doc.Contains(key)) return null;
             var value = doc[key].AsBsonArray;
             return value;
+        }
+
+        public static Task<IntegratedDocument> Wrap(object o)
+        {
+            var doc = new IntegratedDocument();
+            doc.Document = new Lazy<BsonDocument>(() => o.ToBsonDocument());
+            return Task.FromResult(doc);
         }
     }
      

@@ -8,7 +8,7 @@ namespace Peeralize.Service.IntegrationSource
 {
     public interface IInputSource : IDisposable, IEnumerable<object>
     {
-        int Size { get; }
+        long Size { get; }
         Encoding Encoding { get; set; }
         IInputFormatter Formatter { get;  } 
         IIntegrationTypeDefinition GetTypeDefinition();

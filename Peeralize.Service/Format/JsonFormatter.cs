@@ -15,6 +15,7 @@ namespace Peeralize.Service.Format
         private JsonSerializer _serializer;
         private JsonTextReader _jsReader;
         private StreamReader _reader;
+        private long _position = -1;
 
         public JsonFormatter()
         {
@@ -58,6 +59,7 @@ namespace Peeralize.Service.Format
 
                     string nextLine = _reader.ReadLine();
                     T json = JsonConvert.DeserializeObject<T>(nextLine);
+                    _position++;
                     return json; 
                 case LineMode.None:
                     //var startedObject = false;
@@ -76,6 +78,7 @@ namespace Peeralize.Service.Format
                             {
                                 _jsReader.Skip();
                             }
+                            _position++;
                             return obj == null ? default(T) : obj.ToObject<T>();
                         }
 //                        } else if (startedObject && jsonReader.TokenType == JsonToken.EndObject && startedDepth == jsonReader.Depth)
@@ -94,6 +97,11 @@ namespace Peeralize.Service.Format
         {
             var jsf = new JsonFormatter();
             return jsf;
+        }
+
+        public long Position()
+        {
+            return _position;
         }
 
         public double Progress => 0;
