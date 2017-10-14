@@ -33,7 +33,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var harvester = new Peeralize.Service.Harvester(threadCount);
             harvester.LimitEntries(limit); 
-            harvester.AddPersistentType(fileSource, AppId, false);
+            harvester.AddPersistentType(fileSource, AppId, null, false);
             return harvester;
         }
         [Fact]

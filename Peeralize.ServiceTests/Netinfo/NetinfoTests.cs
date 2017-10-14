@@ -51,7 +51,7 @@ namespace Peeralize.ServiceTests.Netinfo
         }
 
         [Theory]
-        [InlineData(new object[] { "TestData\\Ebag\\JoinedData"})]
+        [InlineData(new object[] { "TestData\\Ebag\\NewData"})]
         public async void ImportData(string inputDirectory)
         {
             try
@@ -62,7 +62,7 @@ namespace Peeralize.ServiceTests.Netinfo
                 Console.WriteLine($"Parsing data in: {inputDirectory}");
                 var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
                 var harvester = new Harvester(10);
-                var type = harvester.AddPersistentType(fileSource, _appId, true);
+                var type = harvester.AddPersistentType(fileSource, _appId, null, true);
                 var importCollectionId = Guid.NewGuid().ToString();
                 var mlist = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
                 mlist.Truncate();
@@ -99,7 +99,7 @@ namespace Peeralize.ServiceTests.Netinfo
 
         }
         [Theory]
-        [InlineData(new object[] { "TestData\\Ebag\\JoinedData" })]
+        [InlineData(new object[] { "TestData\\Ebag\\NewJoin" })]
         public async void CustomInsertExample(string inputDirectory)
         {
             var currentDir = Environment.CurrentDirectory;
@@ -108,12 +108,13 @@ namespace Peeralize.ServiceTests.Netinfo
             Console.WriteLine($"Parsing data in: {inputDirectory}");
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
             var harvester = new Harvester(10);
-            var type = harvester.AddPersistentType(fileSource, _appId, true);
+            var type = harvester.AddPersistentType(fileSource, _appId, "NetInfoUserFeatures_7_8", true);
 
             var importCollectionId = Guid.NewGuid().ToString();
             var rawEventsCollection = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
             var reducedEventsCollection = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId+"_reduced");
             rawEventsCollection.Truncate();
+            Debug.WriteLine($"Created temp collections: {rawEventsCollection.GetCollectionName()} & {reducedEventsCollection.GetCollectionName()}");
 
             var batchesInserted = 0;
             var batchSize = 30000;
@@ -165,6 +166,7 @@ function () {
   var eventData = [{ ondate : this.ondate, value : this.value, type : this.type }];
   emit({ uuid : this.uuid, day : time }, { 
     uuid : this.uuid,
+    noticed_date : this.ondate,
     events : eventData
   });
 }";
@@ -173,11 +175,10 @@ function (key, values) {
   var elements = [];
   var startTime = null;
   values.forEach(function(a){ 
-    elements = a.events;
-    if(startTime==null && elements.length>0) startTime = elements[0].ondate;
-  }); 
-  var day = parseInt((startTime.getTime() / 1000) / (60 * 60 * 24))
-  return {uuid : key.uuid, day : day, noticed_date : startTime, events : elements };
+	for(var i=0; i<a.events.length;i++) elements.push(a.events[i]);    
+  });  
+  if(startTime==null && elements.length>0) startTime = elements[0].ondate;
+  return {uuid : key.uuid, day : key.day, noticed_date : startTime, events : elements };
 }";
             var reduceCursor = rawEventsCollection.Records.MapReduce<BsonDocument>(map, reduce, new MapReduceOptions<BsonDocument,BsonDocument>
             {
@@ -251,7 +252,7 @@ function (key, values) {
 
 
         [Theory]
-        [InlineData(new object[] {"3e0f12d2-2c20-40f8-ac9c-031d3a33a216_reduced2", "TestData\\Ebag\\demograpy.csv" })]
+        [InlineData(new object[] { "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced", "TestData\\Ebag\\demograpy.csv" })]
         public async void ExtractEntitiesFromReducedCollection(string collectionName, string demographySheet)
         {
             var appId = "123123123";
@@ -262,7 +263,7 @@ function (key, values) {
                 return x["value"] as BsonDocument;
             });
             var harvester = new Peeralize.Service.Harvester(10);
-            var type = harvester.AddPersistentType("NetInfoUserFeatures_7_8", appId, source); 
+            var type = harvester.AddPersistentType("NetInfoUserFeatures_7_8_1", appId, source); 
 
             var dictEval = new EvalDictionaryBlock(
                 (document) => $"{document.GetString("uuid")}_{document.GetInt("day")}",
@@ -280,11 +281,10 @@ function (key, values) {
             var featureGeneratorBlock = featureGenerator.CreateFeaturesBlock();
 
             var demographyImporter = new EntityDataImporter(demographySheet, true);
-            //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
-            demographyImporter.SetDataKey((input) => input[0]);
+            demographyImporter.UseInputKey((input) => input[0]);
             demographyImporter.SetEntityKey((input) => input.GetString("uuid"));
             demographyImporter.JoinOn(JoinDemography);
-            demographyImporter.Map();
+            demographyImporter.ReadData();
 
             var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, IntegratedDocument>((x) =>
             {
@@ -300,24 +300,84 @@ function (key, values) {
                     doc.Document.Value.Set(name, BsonValue.Create(featureval));
                 }
                 //Cleanup
-                doc.TypeId = type.Id.Value;
-                doc.UserId = appId;
+                doc.TypeId = type.Id.Value; doc.UserId = appId;
                 x.Features = null; 
                 return doc;
             });
             var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 3000);
 
-            demographyImporter.Helper = _helper; 
+            demographyImporter.Helper = _helper;
+            dictEval.LinkOnComplete(demographyImporter);
             demographyImporter.LinkTo(featureGeneratorBlock);
             featureGeneratorBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true }); 
             insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions{ PropagateCompletion = true}); 
 
-            dictEval.LinkOnComplete(demographyImporter);
             dictEval.AddFlowCompletionTask(insertBatcher.Completion);
 
             harvester.SetDestination(dictEval);
             var result = await harvester.Synchronize();
             Debug.WriteLine(result.ProcessedEntries);
+        } 
+
+        [Theory]
+        [InlineData(new object[] { "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced" })]
+        public async void ParseEntitySessionsDumpCollection(string collectionName)
+        { 
+            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter());
+            source.SetProjection(x =>
+            {
+                if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
+                return x["value"] as BsonDocument;
+            });
+
+            var appId = "123123123";
+            var harvester = new Peeralize.Service.Harvester(20); 
+            harvester.AddPersistentType("NetInfoUserFeatures_7_8", appId, source);
+            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", appId);
+            typeDef.AddField("is_paying", typeof(int));
+            IntegrationTypeDefinition existingTypeDef;
+            if (!IntegrationTypeDefinition.TypeExists(typeDef, appId, out existingTypeDef)) typeDef.Save();
+            else typeDef = existingTypeDef;
+            var dictEval = new EvalDictionaryBlock(
+                (document) => $"{document.GetString("uuid")}_{document.GetInt("day")}",
+                (rootElement, newDoc) => AccumulateUserDocumentLite(rootElement, newDoc),
+                (rootElement) => rootElement.GetArray("events"));
+            dictEval.Helper = _helper = new CrossSiteAnalyticsHelper(dictEval.Elements);
+            //Session block
+            //Group the users
+            var sessionDocBlock = new TransformBlock<IntegratedDocument, IntegratedDocument>((IntegratedDocument userBlock) =>
+            {
+                var userDocument = userBlock.GetDocument();;
+                var userIsPaying = userDocument.Contains("is_paying") &&
+                                   userDocument["is_paying"].AsInt32 == 1;
+                var uuid = userDocument["uuid"].ToString();
+                var dateNoticed = DateTime.Parse(userDocument["noticed_date"].ToString());
+                DateTime g_timestamp = userDocument["noticed_date"].AsDateTime.StartOfWeek(DayOfWeek.Monday);
+                userDocument["events"] =
+                    ((BsonArray)userDocument["events"])
+                    .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
+                    .ToBsonArray();
+                var sessions = CrossSiteAnalyticsHelper.GetWebSessions(userBlock).ToList();
+                var sessionWrapper = new DomainUserSessionCollection(sessions) {UserId = uuid, Created = dateNoticed};
+                var document = IntegratedDocument.FromType(sessionWrapper, typeDef, appId);
+                var documentBson = document.GetDocument();
+                documentBson["is_paying"] = userIsPaying ? 1 : 0;
+                documentBson["g_timestamp"] = g_timestamp;
+                return document;
+            });
+            var sessionBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 10000);
+            
+            dictEval.LinkOnCompleteEx(sessionDocBlock);
+            sessionDocBlock.LinkTo(sessionBatcher.BatchBlock, new DataflowLinkOptions{ PropagateCompletion=true });
+            dictEval.AddFlowCompletionTask(sessionBatcher.Completion);
+            dictEval.AddFlowCompletionTask(sessionDocBlock.Completion);
+            harvester.SetDestination(dictEval);
+            var syncResults = await harvester.Synchronize();
+            var syncDuration = harvester.ElapsedTime();
+            Debug.WriteLine($"Read all docs in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
+            //Task.WaitAll(grouper.Completion, featureGen.Completion, );
+            //await grouper.Completion;
+            //Console.ReadLine(); // TODO: Fix dataflow action after grouping of all users
         }
 
         [Theory]
@@ -347,25 +407,25 @@ function (key, values) {
             var builder = new TreeBuilder(batchSize, "_id");
             var intDocRecords = new MongoList(DBConfig.GetGeneralDatabase(), "IntegratedDocument").Records;
             var treePayingUsers = TreeBuilder.BuildFromItems(from x in intDocRecords.AsQueryable()
-                where x["TypeId"] == type.Id.ToString() && x["Document.is_paying"] == 1
-                select x);
+                                                             where x["TypeId"] == type.Id.ToString() && x["Document.is_paying"] == 1
+                                                             select x);
             var tweek = DateTime.Now;
             var treeUsersNotPurchasedInTWeek = TreeBuilder.BuildFromItems(from x in intDocRecords.AsQueryable()
-                where 
-                x["TypeId"] == type.Id.ToString() &&
-                x["Document.Created"] >= tweek && x["Document.Created"] <= (tweek + TimeSpan.FromDays(7)) &&
-                x["Document.is_paying"] == 0
-                select x);
+                                                                          where
+                                                                          x["TypeId"] == type.Id.ToString() &&
+                                                                          x["Document.Created"] >= tweek && x["Document.Created"] <= (tweek + TimeSpan.FromDays(7)) &&
+                                                                          x["Document.is_paying"] == 0
+                                                                          select x);
             var treeUsersPurchasedAfterTWeek = TreeBuilder.BuildFromItems(from x in intDocRecords.AsQueryable()
-                where
-                    x["TypeId"] == type.Id.ToString() &&
-                    x["Document.Created"] >= tweek && x["Document.Created"] <= (tweek + TimeSpan.FromDays(7)) &&
-                    x["Document.is_paying"] == 1
-                select x);
+                                                                          where
+                                                                              x["TypeId"] == type.Id.ToString() &&
+                                                                              x["Document.Created"] >= tweek && x["Document.Created"] <= (tweek + TimeSpan.FromDays(7)) &&
+                                                                              x["Document.is_paying"] == 1
+                                                                          select x);
 
             var featureGenerator = new FeatureGenerator<Tuple<BehaviourTree, IntegratedDocument>>(5);
             featureGenerator.AddGenerator(x =>
-            { 
+            {
                 var pairs = new List<KeyValuePair<string, object>>();
                 double simtime = treePayingUsers.LinScore(x.Item1, "time");
                 double simfreq = treePayingUsers.LinScore(x.Item1, "frequency");
@@ -373,15 +433,14 @@ function (key, values) {
                 pairs.Add(new KeyValuePair<string, object>("path_similarity_score", simtime));
                 pairs.Add(new KeyValuePair<string, object>("path_similarity_score_time_spent", simfreq));
 
-                pairs.Add(new KeyValuePair<string, object>("non_paying_s_time", simfreq));
-                pairs.Add(new KeyValuePair<string, object>("non_paying_s_freq", simfreq));
-                pairs.Add(new KeyValuePair<string, object>("paying_s_time", simfreq));
-                pairs.Add(new KeyValuePair<string, object>("paying_s_freq", simfreq));
-
+//                pairs.Add(new KeyValuePair<string, object>("non_paying_s_time", simfreq));
+//                pairs.Add(new KeyValuePair<string, object>("non_paying_s_freq", simfreq));
+//                pairs.Add(new KeyValuePair<string, object>("paying_s_time", simfreq));
+//                pairs.Add(new KeyValuePair<string, object>("paying_s_freq", simfreq));
                 return pairs;
             });
             var featureBlock = featureGenerator.CreateFeaturesBlock<TreeFeatures>();
-            builder.LinkTo(featureBlock, new DataflowLinkOptions{ PropagateCompletion = true});
+            builder.LinkTo(featureBlock, new DataflowLinkOptions { PropagateCompletion = true });
             var updateCreator = new TransformBlock<TreeFeatures, FindAndModifyArgs<IntegratedDocument>>((x) =>
             {
                 return new FindAndModifyArgs<IntegratedDocument>()
@@ -395,85 +454,13 @@ function (key, values) {
             var updateBatch = new MongoUpdateBatch<IntegratedDocument>(_documentStore, updateBatchSize);
             //BatchedBlockingBlock<FindAndModifyArgs<IntegratedDocument>>.CreateBlock(updateBatchSize);//
             featureBlock.LinkTo(updateCreator, new DataflowLinkOptions { PropagateCompletion = true });
-            updateCreator.LinkTo(updateBatch.Block, new DataflowLinkOptions {PropagateCompletion = true});
+            updateCreator.LinkTo(updateBatch.Block, new DataflowLinkOptions { PropagateCompletion = true });
             //updateBatch.LinkToEnd(new DataflowLinkOptions { PropagateCompletion = true});
 
-            //"UserId": appId,
-            //"Document.uuid": uuid
             builder.AddFlowCompletionTask(updateBatch.Block.Completion);
             harvester.SetDestination(builder);
             var results = await harvester.Synchronize();
-            Assert.True(results.ProcessedEntries == recordLimit); 
-        }
-
-        [Theory]
-        [InlineData(new object[] {"3e0f12d2-2c20-40f8-ac9c-031d3a33a216_reduced2"})]
-        public async void ParseEntitySessionsDumpCollection(string collectionName)
-        { 
-            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter());
-            source.SetProjection(x =>
-            {
-                if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
-                return x["value"] as BsonDocument;
-            });
-
-            var appId = "123123123";
-            var harvester = new Peeralize.Service.Harvester(20); 
-            harvester.AddPersistentType("NetInfoUserFeatures_7_8", appId, source);
-            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", appId);
-            typeDef.AddField("is_paying", typeof(int));
-            IntegrationTypeDefinition existingTypeDef;
-            if (!IntegrationTypeDefinition.TypeExists(typeDef, appId, out existingTypeDef)) typeDef.Save();
-            else typeDef = existingTypeDef;
-            var dictEval = new EvalDictionaryBlock(
-                (document) =>
-                {
-                    return $"{document.GetString("uuid")}_{document.GetInt("day")}";
-                },
-                (rootElement, newDoc) => AccumulateUserDocumentLite(rootElement, newDoc),
-                (rootElement) => rootElement.GetArray("events"));
-            dictEval.Helper = _helper = new CrossSiteAnalyticsHelper(dictEval.Elements);
-            //Session block
-            //Group the users
-            var sessionDocBlock = new TransformBlock<IntegratedDocument, IntegratedDocument>((IntegratedDocument userBlock) =>
-            {
-                var userDocument = userBlock.GetDocument();;
-                var userIsPaying = userDocument.Contains("is_paying") &&
-                                   userDocument["is_paying"].AsInt32 == 1;
-                //We're only interested in paying users
-                //if (userIsPaying) continue;
-                var uuid = userDocument["uuid"].ToString();
-                var dateNoticed = DateTime.Parse(userDocument["noticed_date"].ToString());
-                DateTime g_timestamp = userDocument["noticed_date"].AsDateTime.StartOfWeek(DayOfWeek.Monday);
-                userDocument["events"] =
-                    ((BsonArray)userDocument["events"])
-                    .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
-                    .ToBsonArray();
-                var sessions = CrossSiteAnalyticsHelper.GetWebSessions(userBlock).ToList();
-                var sessionWrapper = new DomainUserSessionCollection(sessions);
-                sessionWrapper.UserId = uuid;
-                sessionWrapper.Created = dateNoticed;
-
-                var document = IntegratedDocument.FromType(sessionWrapper, typeDef, appId);
-                var documentBson = document.GetDocument();
-                documentBson["is_paying"] = userIsPaying ? 1 : 0;
-                documentBson["g_timestamp"] = g_timestamp;
-                return document;
-            });
-            var sessionBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 10000);
-            
-            dictEval.LinkOnCompleteEx(sessionDocBlock);
-            sessionDocBlock.LinkTo(sessionBatcher.BatchBlock, new DataflowLinkOptions{ PropagateCompletion=true });
-            dictEval.AddFlowCompletionTask(sessionBatcher.Completion);
-            dictEval.AddFlowCompletionTask(sessionDocBlock.Completion);
-            harvester.SetDestination(dictEval);
-            var syncResults = await harvester.Synchronize();
-
-            var syncDuration = harvester.ElapsedTime();
-            Debug.WriteLine($"Read all docs in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
-            //Task.WaitAll(grouper.Completion, featureGen.Completion, );
-            //await grouper.Completion;
-            //Console.ReadLine(); // TODO: Fix dataflow action after grouping of all users
+            Assert.True(results.ProcessedEntries == recordLimit);
         }
 
         private void DumpUsergroupSessionsToMongo(string userAppId, EvalDictionaryBlock usersData)
@@ -535,7 +522,7 @@ function (key, values) {
 
             var userId = "123123123"; 
             var harvester = new Peeralize.Service.Harvester(10);
-            var type = harvester.AddPersistentType(fileSource, userId, true);
+            var type = harvester.AddPersistentType(fileSource, userId, null, true);
             
             var grouper = new GroupingBlock(_appId,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.DaysTotal()}",
@@ -551,10 +538,10 @@ function (key, values) {
             var demographyImporter = new EntityDataImporter(
                 demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
-            demographyImporter.SetDataKey((input) => input[0]);
+            demographyImporter.UseInputKey((input) => input[0]);
             demographyImporter.SetEntityKey((IntegratedDocument input) => input.GetString("uuid"));
             demographyImporter.JoinOn(JoinDemography);
-            demographyImporter.Map();
+            demographyImporter.ReadData();
 
             var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, IntegratedDocument>((x) =>
             { 
@@ -589,7 +576,7 @@ function (key, values) {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
             var harvester = new Peeralize.Service.Harvester(10);
-            harvester.AddPersistentType(fileSource, _appId, true);
+            harvester.AddPersistentType(fileSource, _appId, null, true);
 
             var grouper = new GroupingBlock(_appId,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
@@ -682,8 +669,7 @@ function (key, values) {
         {
             var value = newEntry.GetString("value");
             if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
-            {
-
+            { 
                 accumulator["is_paying"] = 1;
             }
             return newEntry;

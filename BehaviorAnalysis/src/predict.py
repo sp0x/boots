@@ -26,16 +26,19 @@ weeksAvailable = collection.find({
     "UserId": appId,
     "TypeId": userTypeId
 }).distinct("Document.g_timestamp")
-weeksAvailable.sort()
-target_week = weeksAvailable[9]  # last week has only 2 days, so use the one that's before it
+weeksAvailable.sort() 
+print weeksAvailable
+
+
+target_week = weeksAvailable[10]  # last week has only 2 days, so use the one that's before it
 target_week_end = target_week + timedelta(days=7)
+print "Target week {0} will predict for {1}".format(target_week, target_week_end)
 
 paying_users = collection.find({
     "UserId": appId,
     "TypeId": userTypeId,
     "Document.is_paying": 1
 }).distinct("Document.uuid")
-
 
 
 next_week = target_week_end
@@ -53,8 +56,7 @@ pipeline = [
         {"$match": prediction_features_query},
         {"$group": {
             "_id": {
-                "uuid" : "$Document.uuid",
-                "week_start" : "$Document.g_timestamp"
+                "uuid" : "$Document.uuid"
             },
             "visits_count": {"$sum": 1},
             "visits_on_weekends": {"$avg": "$Document.visits_on_weekends"},
@@ -93,9 +95,9 @@ pipeline = [
             "has_type_val_8": {"$avg": "$Document.has_type_val_8"},
             "has_type_val_9": {"$avg": "$Document.has_type_val_9"},
             "time_between_visits_avg": {"$avg": "$Document.time_between_visits_avg"}
-        }}]
+        }}] 
 weekData = collection.aggregate(pipeline, allowDiskUse=True)
-weekData = list(weekData)
+weekData = list(weekData) 
 
 previously_purchasing_users = collection.find({
     "TypeId": userTypeId,

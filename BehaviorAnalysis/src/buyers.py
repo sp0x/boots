@@ -54,38 +54,13 @@ def check_prediction_ex(validate_with, prediction_week_start, cutoff=0.5, compan
     target_week_end = target_week + timedelta(days=7)
     prev_week = target_week - timedelta(days=7)
     prev_week_end = target_week
-
-    users_purchased = dict()
-
-    if validate_with == None:
-        users = collection.find({
+    print "Checking for sales between {0} - {1}".format(target_week, target_week_end)
+    users_purchased = collection.find({
             "TypeId": userTypeId,
+            "UserId": appId,
             "Document.is_paying": 1,
             "Document.noticed_date": {'$gte': target_week, '$lte': target_week_end}
         }).distinct("Document.uuid")
-        for user in users:
-            users_purchased[user] = True
-    else:
-        print "Validating with: " + validate_with
-        with open(validate_with, 'rb') as paying_csv:
-            paying_users_reader = csv.reader(paying_csv, delimiter=',', quotechar='|')
-            irow = 0
-            for row in paying_users_reader:
-                if irow == 0:
-                    irow += 1
-                    continue
-                if len(row) == 0:
-                    continue
-                try:
-                    uuid = row[0].replace('"', '')
-                    dt = row[1].replace('"', '')
-                    ondate = timestring.Date(dt)
-                    is_current = ondate > target_week and ondate < target_week_end
-                    if uuid == 'uuid' or not is_current:
-                        continue
-                    users_purchased[uuid] = True
-                except:
-                    pass
 
     predictions_file = latest_file(os.path.join(company, "prediction_{0}_".format(model)))
     prediction_matches = []
@@ -93,6 +68,7 @@ def check_prediction_ex(validate_with, prediction_week_start, cutoff=0.5, compan
     negative_changes_overall = []
     positive_matches = 0 
     cnt_predictions = 0
+    cnt_above_cutoff = 0
     print "Validating {0}".format(predictions_file)
     with open(predictions_file, 'rb') as prediction_csv:
         predicted_reader = csv.reader(prediction_csv, delimiter=',', quotechar='|')
@@ -104,6 +80,8 @@ def check_prediction_ex(validate_with, prediction_week_start, cutoff=0.5, compan
             cnt_predictions += 1
             uuid = row[0].replace('"', '')
             perc_will_buy = float(row[1])
+            if perc_will_buy >= cutoff:
+                cnt_above_cutoff += 1
             # if he really did make a purchase
             if uuid in users_purchased:
                 match = {'uuid': uuid, 'chance': perc_will_buy}
@@ -116,10 +94,10 @@ def check_prediction_ex(validate_with, prediction_week_start, cutoff=0.5, compan
                 negative_changes_overall.append(perc_will_buy)  
                 if perc_will_buy >= cutoff: 
                     negative_chances.append(perc_will_buy)  
-    positive_perc = (float(positive_matches)/float(len(prediction_matches))) * 100
+    positive_perc = (float(positive_matches)/float(max(1, len(prediction_matches)))) * 100
     return {
         'false_positives': {
-            'perc': (float(len(negative_chances)) / float(cnt_predictions)) * 100,
+            'perc': (float(len(negative_chances)) / float(max(1,cnt_predictions))) * 100,
             'count': len(negative_chances),
             'out_of': cnt_predictions,
             'chance': {
@@ -132,7 +110,8 @@ def check_prediction_ex(validate_with, prediction_week_start, cutoff=0.5, compan
         'payers': users_purchased,
         'filtered': 0,
         'matches': prediction_matches,
-        'positive_matches': positive_matches
+        'positive_matches': positive_matches,
+        'above_cutoff' : cnt_above_cutoff
     }
 
 
@@ -201,7 +180,7 @@ if __name__ == "__main__":
     weeksAvailable.sort()
     target_week = weeksAvailable[9]  # verify week 5 results
     next_week = target_week + timedelta(days=7)
-
+    print "Validating {0}".format(next_week)
     prediction_file = os.path.join(company, "prediction_rf_{0}.csv".format(next_week).replace(":", "_"))
     print "Checking file {0} for old buyers".format(prediction_file)
     previous_buyers = []
@@ -227,10 +206,15 @@ if __name__ == "__main__":
 
     cutoff = 0.7115
     c_types = ['rf']
+    model_cutoffs = {
+        'gba': 0.1,
+        'rf': 0.5
+    }
 
     for model_name in c_types:
+        cutoff_value = model_cutoffs[model_name]
         validation_file = abs_path(os.path.join(company, "validation", "validation.csv"))
-        check = check_prediction_ex(validation_file, next_week, cutoff, company, model_name)
+        check = check_prediction_ex(validation_file, next_week, cutoff_value, company, model_name)
         matches_filename = abs_path(os.path.join(company, "validation_matches_{0}.csv".format(next_week_f)))
         # with open(matches_filename, 'wb') as validation_file:
         #     validation_writer = csv.writer(validation_file, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -241,7 +225,8 @@ if __name__ == "__main__":
         #         validation_writer.writerow([uuid, chance, chance >= cutoff])
 
         # print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
-        print model_name + " Matches {0:0.4f}%: {1}, pos{2} c{3}({4:0.4f})".format(check['positive_perc'], len(check['matches']), check['positive_matches'], cutoff, cutoff)
+        print model_name + " Matches {0:0.4f}%: {1}, pos{2} c{3}({4:0.4f}) - {5} total".format(check['positive_perc'], 
+        len(check['matches']), check['positive_matches'], cutoff_value, cutoff, check['above_cutoff'])
         print model_name + " False positives: {0:0.4f}%, count {1} of {2} with ({3:0.4f}-{4:0.4f})% chance".format(check['false_positives']['perc'],
                                                                                                            check['false_positives']['count'],
                                                                                                            check['false_positives']['out_of'],

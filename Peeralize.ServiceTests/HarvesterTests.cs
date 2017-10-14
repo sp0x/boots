@@ -29,7 +29,7 @@ namespace Peeralize.ServiceTests
             harvester.LimitEntries(10);
             var outBlock = new IntegrationActionBlock(userId, (action, x) => { });
             harvester.SetDestination(outBlock);
-            harvester.AddPersistentType(fileSource, userId); 
+            harvester.AddPersistentType(fileSource, userId, null); 
             var hresult = await harvester.Synchronize();
             Assert.True(outBlock.ProcessingCompletion.IsCompleted);
             Assert.True(outBlock.BufferCompletion.IsCompleted);
@@ -52,7 +52,7 @@ namespace Peeralize.ServiceTests
             harvester.LimitEntries(10);
             var outBlock = new IntegrationActionBlock(userId, (action, x) => { });
             harvester.SetDestination(outBlock);
-            harvester.AddPersistentType(fileSource, userId);
+            harvester.AddPersistentType(fileSource, userId, null);
             Assert.True(harvester.Sets.Count > 0);
             var hresult = await harvester.Synchronize();
             Assert.True(hresult.ProcessedEntries == 10);

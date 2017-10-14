@@ -25,7 +25,7 @@ namespace Peeralize.Service.Models
         /// The document to which the features are related
         /// </summary>
         public T Document { get; set; }
-        protected FeaturesWrapper() { }
+        public FeaturesWrapper() { }
         protected FeaturesWrapper(T doc, IEnumerable<KeyValuePair<string, object>> features)
         {
             this.Document = doc;

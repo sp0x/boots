@@ -83,16 +83,16 @@ namespace Peeralize.ServiceTests
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());  
             var userId = "123123123"; 
             var harvester = new Peeralize.Service.Harvester();
-            var type = harvester.AddPersistentType(fileSource, userId, true); 
+            var type = harvester.AddPersistentType(fileSource, userId, null, true); 
 
             var grouper = new GroupingBlock(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
             var saver = new MongoSink(userId);
             var demographyImporter = new EntityDataImporter(demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
-            demographyImporter.SetDataKey((input) => input[0] );
+            demographyImporter.UseInputKey((input) => input[0] );
             demographyImporter.SetEntityKey((IntegratedDocument input) => input.GetDocument()?["uuid"].ToString());
             demographyImporter.JoinOn(JoinDemography);
-            demographyImporter.Map();
+            demographyImporter.ReadData();
 
             var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary); 
 

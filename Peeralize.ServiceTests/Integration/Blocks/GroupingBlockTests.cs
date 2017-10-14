@@ -49,7 +49,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
             var grouper = GetGrouper(userId);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper); 
-            harvester.AddPersistentType(fileSource, userId);
+            harvester.AddPersistentType(fileSource, userId, null);
             var results = await harvester.Synchronize();
             Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
             var syncDuration = harvester.ElapsedTime();
@@ -77,7 +77,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
             grouper.LinkTo(statsBlock, null);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper);
-            harvester.AddPersistentType(fileSource, userId);
+            harvester.AddPersistentType(fileSource, userId, null);
             var results = await harvester.Synchronize();
             //Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
             //Ensure that we went through all the items, with our entire dataflow.

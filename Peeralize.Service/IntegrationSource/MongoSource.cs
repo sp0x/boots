@@ -25,6 +25,8 @@ namespace Peeralize.Service.IntegrationSource
         private IAsyncCursorSource<BsonDocument> _cursorSource;
         private Func<BsonDocument, BsonDocument> _project;
         private IAggregateFluent<BsonDocument> _aggregate;
+        public double ProgressInterval { get; set; } = 0.5;
+        private double _lastProgress;
         public IMongoCollection<BsonDocument> Collection => _collection;
 
         public MongoSource(string collectionName, IInputFormatter formatter) : base(formatter)
@@ -116,10 +118,11 @@ namespace Peeralize.Service.IntegrationSource
                     else
                     {
                         _cursorSource = _collection.Find(_query);
+                        Size = ((IFindFluent<BsonDocument, BsonDocument>) _cursorSource).Count();
                     }
                 }
 
-                if (resetNeeded  )
+                if (resetNeeded)
                 { 
                     _cachedInstance = null;
                 }
@@ -129,10 +132,15 @@ namespace Peeralize.Service.IntegrationSource
                 else if (item == null){ item = item;
                 }
                 lastInstance = BsonSerializer.Deserialize<ExpandoObject>(item);
-#if DEBUG
-                Debug.WriteLine($"Bson progress: %{Progress:0.0000} of {Size}");
+#if DEBUG 
+                var crProgress = Progress;
+                if ((crProgress - _lastProgress) > ProgressInterval)
+                { 
+                    Debug.WriteLine($"Bson progress: %{Progress:0.0000} of {Size}");
+                    _lastProgress = crProgress;
+                }
 #endif
-
+                
                 return lastInstance;
             }
         }

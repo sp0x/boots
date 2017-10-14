@@ -18,5 +18,6 @@
     <PackageReference Include="LumenWorks.Framework.IO.Core" Version="1.0.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.4.4" />
     <PackageReference Include="NetMQ" Version="4.0.0.1" />
+    <PackageReference Include="ServiceStack.Redis.Core" Version="1.0.44" />
   </ItemGroup>
 </Project>

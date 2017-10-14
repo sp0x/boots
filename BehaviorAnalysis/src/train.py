@@ -28,7 +28,7 @@ print weeksAvailable
 #our test week
 weekLimit = 0
 # weeksAvailable = weeksAvailable[(-1) * weekLimit:] if weekLimit > 0 else weeksAvailable  # last n weeks
-weeksAvailable = [weeksAvailable[5], weeksAvailable[6], weeksAvailable[7], weeksAvailable[8], weeksAvailable[9]]
+weeksAvailable = [weeksAvailable[6], weeksAvailable[7], weeksAvailable[8], weeksAvailable[9]]
 targetData = []
 inputData = []
 # limit = 2 * 100 * 1000

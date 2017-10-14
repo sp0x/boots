@@ -76,7 +76,9 @@ namespace Peeralize.Service.Integration
                         }
                     }
                 });
-                T featuresDoc = typeof(T).GetConstructor(new Type[] { }).Invoke(new object[]{}) as T;
+                var type = typeof(T);
+                var constructorInfo = type.GetConstructor(new Type[] { });
+                T featuresDoc = constructorInfo.Invoke(new object[]{}) as T;
                 Debug.Assert(featuresDoc != null, nameof(featuresDoc) + " != null");
                 featuresDoc.Document = doc;
                 featuresDoc.Features = queue; 

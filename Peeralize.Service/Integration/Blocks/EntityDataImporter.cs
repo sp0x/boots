@@ -33,12 +33,13 @@ namespace Peeralize.Service.Integration.Blocks
             }
             _inputFileName = inputFile;
             MappedItems = new Dictionary<string, string[]>();
-            if (map) Map();
+            if (map) ReadData();
         }
+
         /// <summary>
-        /// 
+        /// Reads the input, mapping it with the input mapper.
         /// </summary>
-        public void Map()
+        public void ReadData()
         {
             _fs = File.Open(_inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             CacheItems = new List<string[]>();
@@ -48,9 +49,8 @@ namespace Peeralize.Service.Integration.Blocks
             if (_inputMapper != null)
             { 
                 foreach (var row in _csvReader)
-                {
-                    var key = _inputMapper(row);
-                    MappedItems[key] = row;
+                { 
+                    MappedItems[_inputMapper(row)] = row;
                 }
             }
             else
@@ -120,13 +120,16 @@ namespace Peeralize.Service.Integration.Blocks
         {
             _matcher = func;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="joiner"></param>
         public void JoinOn(Action<string[], IntegratedDocument> joiner)
         {
             _joiner = joiner;
         }
 
-        public void SetDataKey(Func<string[], string> func)
+        public void UseInputKey(Func<string[], string> func)
         {
             _inputMapper = func;
         }

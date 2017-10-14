@@ -13,8 +13,7 @@ from datetime import datetime, timedelta
 #type used for web sessions
 userSessionTypeId = "598f20d002d2516dd0dbcee2"
 userTypeId = "59cbc103003e730508e87c2c"
-
-week4Start = datetime(2017, 7, 17, 0, 0, 0)
+ 
 appId = "123123123"
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
 host = "10.10.1.5"

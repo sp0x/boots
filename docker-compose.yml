@@ -3,6 +3,7 @@ version: '3'
 volumes:
   mongodb: 
   experiments:
+  redis:
 
 services:
   peeralize:
@@ -11,6 +12,7 @@ services:
       context: ./Peeralize
       dockerfile: Dockerfile
     depends_on:
+      - redis
       - mongo.peeralize.com 
     ports:
       - "5000:5000"
@@ -24,6 +26,18 @@ services:
       - 8080:8080
     volumes:
       - ./jenkins:/var/jenkins_home
+
+  redis:
+    image: redis
+    build:
+      context: ./docker/redis
+      dockerfile: Dockerfile
+    container_name: redis.peeralize.com
+    hostname: redis.peeralize.com
+    ports:
+      - 6399:6399
+    volumes:
+      - redis:/data
 
   mongo.peeralize.com :
     image: library/mongo:3.4

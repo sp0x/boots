@@ -84,7 +84,7 @@ namespace Peeralize.Service
         /// <param name="inputSource"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public IntegrationTypeDefinition AddPersistentType(InputSource inputSource, string userId, bool persist = true)
+        public IntegrationTypeDefinition AddPersistentType(InputSource inputSource, string userId, string name, bool persist = true)
         {
             var type = inputSource.GetTypeDefinition() as IntegrationTypeDefinition;
             if (type == null)
@@ -92,6 +92,10 @@ namespace Peeralize.Service
                 throw new Exception("Could not resolve type!");
             }
             type.UserId = userId;
+            if (!string.IsNullOrEmpty(name))
+            {
+                type.Name = name;
+            }
             if (persist)
             {
                 if (!IntegrationTypeDefinition.TypeExists(type, userId, out var existingDataType)) type.SaveType(userId);
