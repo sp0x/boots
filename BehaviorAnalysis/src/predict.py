@@ -11,11 +11,11 @@ from utils import save, load, abs_path
 
 ##host is local
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
-host = "10.10.1.5"
+host = "mongo.peeralize.com"
 
 client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
 db = client.netvoid
-collection = db.IntegratedDocument
+collection = db.IntegratedDocument_copy_AllData_BadFeatures
 
 userTypeId = "59cbc103003e730508e87c2c"
 appId = "123123123"
@@ -30,7 +30,7 @@ weeksAvailable.sort()
 print weeksAvailable
 
 
-target_week = weeksAvailable[10]  # last week has only 2 days, so use the one that's before it
+target_week = weeksAvailable[5]  # last week has only 2 days, so use the one that's before it
 target_week_end = target_week + timedelta(days=7)
 print "Target week {0} will predict for {1}".format(target_week, target_week_end)
 
@@ -201,8 +201,10 @@ with open(filterFile, 'rb') as filterCsv:
         uuid = row[0].replace('"', '')
         payingDict[uuid] = True
 
-filtered = 0
-models = exp.load_model_files(['gba', 'rf'])
+filtered = 0 
+models = [
+    Experiment.load_model("/experiments/Netinfo/model_gba_2017-10-04_12:44:31.pickle",company),
+    Experiment.load_model("/experiments/Netinfo/model_rf_2017-10-04_14:57:34.pickle", company)]
 model_cutoffs = {
     'gba': 0.1,
     'rf': 0.2

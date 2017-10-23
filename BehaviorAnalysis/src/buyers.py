@@ -13,12 +13,12 @@ import sys
 
 ##host is local
 password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
-host = "10.10.1.5"
+host = "mongo.peeralize.com"
 filterFile = "Netinfo/filters/paying_users.csv"
 
 client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
 db = client.netvoid
-collection = db.IntegratedDocument
+collection = db.IntegratedDocument_copy_AllData_BadFeatures
 
 userTypeId = "59cbc103003e730508e87c2c"
 appId = "123123123"
