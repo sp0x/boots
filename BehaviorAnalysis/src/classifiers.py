@@ -135,6 +135,24 @@ class Experiment:
         path = abs_path(os.path.join(exp_dir, "model_{0}_{1}.pickle".format(model['type'], now)))
         save(model, path)
 
+    def load_models_file(self, modelsFile=None):
+        """
+        Loads a model collection file (models_*))
+        :param modelsFile: Name of the file to load, in which models are stored
+        :return:
+        """
+        models_path = abs_path(os.path.join(Experiment.base_path, self._for))
+        if not os.path.exists(models_path):
+            os.makedirs(models_path)
+        if modelsFile is not None:
+            last_model = os.path.join(models_path, modelsFile)
+        else:
+            models = glob.glob(os.path.join(models_path, "models_*"))
+            last_model = max(models, key=os.path.getctime)
+
+        print "Loading model: {0}".format(last_model)
+        return load(last_model)
+
     def load_model_files(self, model_names):
         """
         :param model_names: Names of the models to load
@@ -162,19 +180,6 @@ class Experiment:
         return load(path)
 
 
-    def load_models(self, modelsFile=None):
-        models_path = abs_path(os.path.join(Experiment.base_path, self._for))
-        if not os.path.exists(models_path):
-            os.makedirs(models_path)
-        if modelsFile is not None:
-            last_model = os.path.join(models_path, modelsFile)
-        else:
-            models = glob.glob(os.path.join(models_path, "models_*"))
-            last_model = max(models, key=os.path.getctime)
-
-        print "Loading model: {0}".format(last_model)
-        return load(last_model)
-
     @staticmethod
     def predict_explain(tree, data, labels, print_proba=False):
         report = ""
@@ -188,22 +193,26 @@ class Experiment:
         return report
 
     @staticmethod
-    def predict_explain_non_tree(clf, data, labels):
+    def predict_explain_non_tree(clf, data, labels, name):
         # Plot feature importance
         try:
             if not hasattr(clf, 'feature_importances_'):
-                return
-            feature_importance = clf.feature_importances_
+                return 
+            feature_importances = clf.feature_importances_
+            std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+             axis=0)
+            indices = np.argsort(feature_importances)[::-1]
 
-            # make importances relative to max importance
-            feature_importance = 100.0 * (feature_importance / feature_importance.max())
-            sorted_idx = np.argsort(feature_importance)
-            pos = np.arange(sorted_idx.shape[0]) + .5
             plt.subplot(1, 2, 2)
-            plt.barh(pos, feature_importance[sorted_idx], align='center')
-            plt.yticks(pos, labels[sorted_idx])
+            plt.title("Feature importances")
             plt.xlabel('Relative Importance')
-            plt.title('Variable Importance')
+            plt.bar(range(data.shape[1]), feature_importances[indices],
+                color="r", yerr=std[indices], align="center")
+            plt.xticks(range(data.shape[1]), indices)
+            plt.yticks(pos, labels[indices])
+            plt.xlim([-1, data.shape[1]])
+            plt.show()
+ 
             now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
             plt.savefig(abs_path("{0}_importance".format(now)))
         except AttributeError:
@@ -307,29 +316,30 @@ class Experiment:
         plt.clf()
 
     @staticmethod
-    def predict_explain_non_tree(clf, for_client, labels):
+    def predict_explain_non_tree2(clf, for_client, data, labels, name):
         c_type = clf['type']
         clf = clf['model']
         # Plot feature importance
         if not hasattr(clf, 'feature_importances_'):
             return
-        feature_importance = clf.feature_importances_
-        # make importances relative to max importance
-        feature_importance = 100.0 * (feature_importance / feature_importance.max())
-        sorted_idx = np.argsort(feature_importance)
-        pos = np.arange(sorted_idx.shape[0]) + .5
-        plt.subplot(1, 2, 2)
-        plt.barh(pos, feature_importance[sorted_idx], align='center')
-        yticks = []
-        for index in sorted_idx:
-            yticks.append(labels[index])
-        plt.yticks(pos, yticks)  # labels[sorted_idx])
-        plt.xlabel('Relative Importance')
-        plt.title('Variable Importance')
-        now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        path = os.path.join(for_client, "importance_{0}_{1}.png".format(c_type, now))
-        plt.savefig(abs_path(path))
+        feature_importances = clf.feature_importances_
         plt.clf()
+        std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+         axis=0)
+        indices = np.argsort(feature_importances)[::-1]
+
+        plt.subplot(1, 2, 2)
+        plt.title("Feature importances")
+        plt.xlabel('Relative Importance')
+        plt.bar(range(data.shape[1]), feature_importances[indices],
+         color="r", yerr=std[indices], align="center")
+        plt.xticks(range(data.shape[1]), indices)
+        plt.yticks(pos, labels[indices])
+        plt.xlim([-1, data.shape[1]]) 
+        now = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+        path = os.path.join(for_client, "importance_{0}_{1}_{2}.png".format(c_type, name, now))
+        plt.savefig(abs_path(path))
+        plt.clf() 
 
     @staticmethod
     def t_test(y_pred, y_true, x_train=None, y_train=None, x_test=None, confidence=0.95):
@@ -382,7 +392,7 @@ class Experiment:
                 return model['model']
         return None
 
-    def create_and_train(self):
+    def create_and_train(self, model_info = None):
         X_train, X_test, y_train, y_test = train_test_split(self.data, self.targets, test_size=0.25, random_state=RANDOM_SEED)
         best_models = []
         for m in self.models:
@@ -401,8 +411,9 @@ class Experiment:
             self._log_data_(log_data)            
             cm = confusion_matrix(y_true, y_pred)
             m['model'] = gs.best_estimator_
+            m['info'] = model_info
             Experiment.store_model(m, self._for)
-            Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], True, model=m['type'], company=self._for)
+            Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], False, model=m['type'], company=self._for)
             dump_dir = os.path.join(self.get_experiments_dir(), 'dumps')
             if not os.path.exists(dump_dir):
                 os.makedirs(dump_dir)
@@ -497,7 +508,7 @@ def graph_experiment(data, targets, client='cashlend', model=None, modelsFile=No
     if model is not None:
         models = [model]
     else:
-         models = exp.load_models(modelsFile)  # load_model_files(['gba'])
+         models = exp.load_models_file(modelsFile)  # load_model_files(['gba'])
 
     for m in models:
         #print "training " + m['type']
@@ -506,11 +517,11 @@ def graph_experiment(data, targets, client='cashlend', model=None, modelsFile=No
         y_true, y_pred = y_test, model.predict(X_test)
         y_pred_proba = model.predict_proba(X_test)
         cm = confusion_matrix(y_true, y_pred)
-        Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], True, model=model_type, company=client, prefix='pred_')
+        Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], False, model=model_type, company=client, prefix='pred_')
         Experiment.make_graphs(y_pred_proba, y_true, model_type, client, 'pred_')
 
 
-def conduct_experiment(data, targets, client='cashlend'):
+def conduct_experiment(data, targets, client='cashlend', extras=None):
     tmp = np.unique(targets)
     c = dict()
     cw = compute_class_weight('balanced', tmp, targets)
@@ -547,14 +558,14 @@ def conduct_experiment(data, targets, client='cashlend'):
         # {'model': lr, 'params': lr_params, 'scoring': scoring, 'type': 'lr'},
         # {'model': mlp, 'params': mlp_params, 'scoring': scoring, 'type': 'mlpnn'},
     ], client)
-    e.create_and_train()
+    e.create_and_train(extras)
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()), client))
-    e.store_models()
-    rf_model = e.get_model('rf', client)
-    gba_model = e.get_model('gba', client)
-    rf_prediction = rf_model.predict_proba(data)
-    gba_prediction = gba_model.predict_proba(data)
-    train_balancer(rf_prediction, gba_prediction, targets, client)
+    # e.store_models()
+    # rf_model = e.get_model('rf', client)
+    # gba_model = e.get_model('gba', client)
+    # rf_prediction = rf_model.predict_proba(data)
+    # gba_prediction = gba_model.predict_proba(data)
+    # train_balancer(rf_prediction, gba_prediction, targets, client)
     return e
 
 def create_balancer(input_data, target, classifier_types, client='netinfo'):

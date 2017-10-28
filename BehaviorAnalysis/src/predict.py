@@ -1,21 +1,18 @@
 import time
 from constants import *
 from classifiers import conduct_experiment, graph_experiment, plot_cutoff, Experiment
-from pymongo import MongoClient
 import urllib
 import csv
 from datetime import datetime, timedelta
 import os
 from buyers import check_prediction, check_prediction_ex
 from utils import save, load, abs_path
+import settings
+from openpyxl import Workbook
 
-##host is local
-password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
-host = "mongo.peeralize.com"
 
-client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-db = client.netvoid
-collection = db.IntegratedDocument_copy_AllData_BadFeatures
+db = settings.get_db()
+collection = db.IntegratedDocument
 
 userTypeId = "59cbc103003e730508e87c2c"
 appId = "123123123"
@@ -30,7 +27,7 @@ weeksAvailable.sort()
 print weeksAvailable
 
 
-target_week = weeksAvailable[5]  # last week has only 2 days, so use the one that's before it
+target_week = weeksAvailable[6]  # last week has only 2 days, so use the one that's before it
 target_week_end = target_week + timedelta(days=7)
 print "Target week {0} will predict for {1}".format(target_week, target_week_end)
 
@@ -192,19 +189,16 @@ for tmpDoc in weekData:
     targets.append(target_val)
 
 
-print "Loaded " + str(len(userFeatures)) + " test user items"
-filterFile = "Netinfo/filters/paying_users.csv"
-payingDict = dict()
-with open(filterFile, 'rb') as filterCsv:
-    filterReader = csv.reader(filterCsv, delimiter=';', quotechar='|')
-    for row in filterReader:
-        uuid = row[0].replace('"', '')
-        payingDict[uuid] = True
+print "Loaded " + str(len(userFeatures)) + " test user items" 
+payingDict = dict() 
 
 filtered = 0 
-models = [
-    Experiment.load_model("/experiments/Netinfo/model_gba_2017-10-04_12:44:31.pickle",company),
-    Experiment.load_model("/experiments/Netinfo/model_rf_2017-10-04_14:57:34.pickle", company)]
+models = exp.load_model_files(['rf'])
+# models = [
+#   Experiment.load_model("/experiments/Netinfo/model_gba_2017-10-04_12:44:31.pickle",company),
+#   Experiment.load_model("/experiments/Netinfo/model_rf_2017-10-04_14:57:34.pickle", company)
+#]
+
 model_cutoffs = {
     'gba': 0.1,
     'rf': 0.2
@@ -222,7 +216,8 @@ for m in models:
     y_true = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
     real_cutoff = plot_cutoff(m, x_test, y_true, client=company)
     graph_experiment(userFeatures, targets, company, m)
-    Experiment.predict_explain_non_tree(m, company, [
+    try:
+        Experiment.predict_explain_non_tree2(m, company, np.array(userFeatures), [
         "visits_on_weekends",
         "p_online_weekend",
         "days_visited_ebag",
@@ -260,46 +255,58 @@ for m in models:
         "has_type_val_8",
         "has_type_val_9",
         "time_between_visits_avg"
-    ])
-
-    fileName = os.path.join(company, 'prediction_{0}_{1}.csv'.format(c_type, next_week_f))
+        ], next_week_f)
+    except:
+        pass
+    fileName = os.path.join(company, 'prediction_{0}_{1}.xlsx'.format(c_type, next_week_f))
 
     print "Writing predictions in: " + fileName
-    with open(fileName, 'wb') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(["uuid", "chance to buy"])
-        for p in xrange(len(predictions)): 
-            prediction = predictions[p] 
-            uuid = userData[p]['uuid']       
-            if filter_entries and uuid in payingDict:  # skip filtered users
-                filtered = filtered + 1
-                continue
-            else:
-                writer.writerow([uuid, prediction[1]])
+    report = Workbook()
+    main_sheet = report.active
+    info_sheet = report.create_sheet("Output")
+    validations_sheet = report.create_sheet("Validated")
 
-        time_taken = time.time() - t_started
-        time_taken_per_user = time_taken / len(predictions)
-        print "{0} prediction took: {1}sec ({2}sec/user)".format(c_type, time_taken, time_taken_per_user)
-        validation_file = abs_path(os.path.join(company, "validation", "validation.csv"))
+    main_sheet.append(["uuid", "chance to by"])
+    for p in xrange(len(predictions)):
+        prediction = predictions[p]
+        uuid = userData[p]['uuid']
+        pval = predictions[1]
+        print uuid
+        print pval
+        main_sheet.append([uuid, pval])
+    time_taken = time.time() - t_started
+    info_sheet.append([
+        "{0} Duration of prediction: {1} ({2}u/s)".format(c_type, time_taken, time_taken / len(predictions)),
 
+    ])
+    
     cutoff_value = model_cutoffs[c_type]
-    check = check_prediction_ex(validation_file, next_week, cutoff_value, company, c_type)
+    check = check_prediction_ex(next_week, {
+        'users' : userData, 'predictions': predictions
+    }, cutoff_value, company, c_type)
+    for match in check['matches']:
+        uuid = match['uuid']
+        chance = float(match['chance'])
+        validations_sheet.append([uuid, chance, chance >= cutoff_value])
 
-    matches_filename = abs_path(os.path.join(company, "validation_matches_{0}_{1}.csv".format(c_type, next_week_f)))
-    with open(matches_filename, 'wb') as validation_file:
-        validation_writer = csv.writer(validation_file, delimiter=',',  quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        validation_writer.writerow(["uuid", "chance", "valid (cutoff " + str(cutoff_value) + ")"])
-        for match in check['matches']:
-            uuid = match['uuid']
-            chance = float(match['chance'])
-            validation_writer.writerow([uuid, chance, chance >= cutoff_value])
-
-            # print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
-    print c_type + " Matches {0:0.4f}%: {1}, pos{2} c{3}({4:0.4f})".format(check['positive_perc'], len(check['matches']), check['positive_matches'], cutoff_value, real_cutoff)
-    print c_type + " False positives: {0:0.4f}%, count {1} of {2} with ({3:0.4f}-{4:0.4f})% chance".format(check['false_positives']['perc'],
-                                                              check['false_positives']['count'],
-                                                              check['false_positives']['out_of'],
-                                                              check['false_positives']['chance']['median'],
-                                                              check['false_positives']['chance']['high'])
-
-
+    #rf Matches 90.1961%: 51, pos46 c0.2(0.6974)rf False positives: 14.0023%, count 3084 of 22025 with (0.0685-0.3187)% chance
+    # print "Users paid in {0}, but not in the previous week: {1} ({2} filtered)".format(next_week, len(check['payers']), check['filtered'])
+    str_matches = "Matches {0:0.4f}% ({1} of {2})".format(check['positive_perc'], len(check['matches']), check['positive_matches'])
+    str_cutoff = "Cutoff {0:0.4f}(highest {1:0.4f})".format(cutoff_value, real_cutoff)
+    str_fp = "FP {0:0.4f}% ({1} of {2} / med {3:0.4f} - {4:0.4f})".format(
+        check['false_positives']['perc'],
+        check['false_positives']['count'],
+        check['false_positives']['out_of'],
+        check['false_positives']['chance']['median'],
+        check['false_positives']['chance']['high'])
+    info_sheet.append([str_matches])
+    info_sheet.append([str_cutoff])
+    info_sheet.append([str_fp])
+    info_sheet.append(["Precision: {0:0.4f}".format(check['precision'])])
+    info_sheet.append(["Recall: {0:0.4f}".format(check['recall'])])
+    report.save(fileName)
+    print "{0}\n{1}\n{2}\n".format(str_matches, str_cutoff, str_fp)
+    nowVal = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+    output_file = open("final_result_{0}_{1}_{2}.txt".format(c_type, next_week_f, nowVal), "w")
+    output_file.write(outputVal)
+    output_file.close()

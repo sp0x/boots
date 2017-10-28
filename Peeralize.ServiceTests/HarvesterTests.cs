@@ -24,7 +24,7 @@ namespace Peeralize.ServiceTests
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
             var userId = "123123123";
-            var harvester = new Service.Harvester(threadCount);
+            var harvester = new Service.Harvester<IntegratedDocument>(threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
             var outBlock = new IntegrationActionBlock(userId, (action, x) => { });
@@ -47,7 +47,7 @@ namespace Peeralize.ServiceTests
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var userId = "123123123";
-            var harvester = new Service.Harvester(threadCount);
+            var harvester = new Service.Harvester<IntegratedDocument>(threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
             var outBlock = new IntegrationActionBlock(userId, (action, x) => { });
@@ -70,7 +70,7 @@ namespace Peeralize.ServiceTests
             
             Assert.NotNull(type);
             var userId = "123123123"; 
-            var harvester = new Service.Harvester(threadCount);
+            var harvester = new Service.Harvester<IntegratedDocument>(threadCount);
             harvester.LimitEntries(3);
 
             Assert.Equal(harvester.ThreadCount, threadCount);

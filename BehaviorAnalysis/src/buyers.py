@@ -1,6 +1,5 @@
 import time
 from constants import *
-from pymongo import MongoClient
 import urllib
 import csv
 from datetime import datetime, timedelta
@@ -10,15 +9,13 @@ import timestring
 from utils import save,load,abs_path, latest_file
 import numpy as np
 import sys
+import settings
 
 ##host is local
-password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
-host = "mongo.peeralize.com"
 filterFile = "Netinfo/filters/paying_users.csv"
 
-client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-db = client.netvoid
-collection = db.IntegratedDocument_copy_AllData_BadFeatures
+db = settings.get_db()
+collection = db.IntegratedDocument
 
 userTypeId = "59cbc103003e730508e87c2c"
 appId = "123123123"
@@ -49,11 +46,14 @@ appId = "123123123"
 
 
 
-def check_prediction_ex(validate_with, prediction_week_start, cutoff=0.5, company="Netinfo", model="rf"):
+def check_prediction_ex(prediction_week_start, users_and_predictions, cutoff=0.5, company="Netinfo", model="rf"):
     target_week = prediction_week_start
     target_week_end = target_week + timedelta(days=7)
     prev_week = target_week - timedelta(days=7)
     prev_week_end = target_week
+    users_data = users_and_predictions['users']
+    predictions_data = users_and_predictions['predictions']
+     
     print "Checking for sales between {0} - {1}".format(target_week, target_week_end)
     users_purchased = collection.find({
             "TypeId": userTypeId,
@@ -62,40 +62,49 @@ def check_prediction_ex(validate_with, prediction_week_start, cutoff=0.5, compan
             "Document.noticed_date": {'$gte': target_week, '$lte': target_week_end}
         }).distinct("Document.uuid")
 
-    predictions_file = latest_file(os.path.join(company, "prediction_{0}_".format(model)))
+    # predictions_file = latest_file(os.path.join(company, "prediction_{0}_".format(model)))
     prediction_matches = []
     negative_chances = []
     negative_changes_overall = []
     positive_matches = 0 
     cnt_predictions = 0
     cnt_above_cutoff = 0
-    print "Validating {0}".format(predictions_file)
-    with open(predictions_file, 'rb') as prediction_csv:
-        predicted_reader = csv.reader(prediction_csv, delimiter=',', quotechar='|')
-        row_c = 0
-        for row in predicted_reader:
-            if row_c == 0:
-                row_c += 1
-                continue
-            cnt_predictions += 1
-            uuid = row[0].replace('"', '')
-            perc_will_buy = float(row[1])
+    print "Validating predictions"
+    false_negatives = 0
+
+    for p in xrange(len(predictions_data)):
+        prediction = predictions_data[p]
+        uuid = users_data[p]['uuid']
+        prediction = predictions_data[p]
+        cnt_predictions += 1
+        uuid = row[0].replace('"', '')
+        perc_will_buy = float(row[1])
+        if perc_will_buy >= cutoff:
+            cnt_above_cutoff += 1
+        # if he really did make a purchase
+        if uuid in users_purchased:
+            match = {'uuid': uuid, 'chance': perc_will_buy}
             if perc_will_buy >= cutoff:
-                cnt_above_cutoff += 1
-            # if he really did make a purchase
-            if uuid in users_purchased:
-                match = {'uuid': uuid, 'chance': perc_will_buy}
-                if perc_will_buy >= cutoff:
-                    positive_matches += 1
-                    match['positive'] = True
-                prediction_matches.append(match)
+                positive_matches += 1
+                match['positive'] = True
             else:
-                # check if our cutoff includes him
-                negative_changes_overall.append(perc_will_buy)  
-                if perc_will_buy >= cutoff: 
-                    negative_chances.append(perc_will_buy)  
+                #user made a purchase, but we predicted that he won`t
+                false_negatives += 1
+            prediction_matches.append(match)
+        else:
+            # check if our cutoff includes him
+            negative_changes_overall.append(perc_will_buy)  
+            if perc_will_buy >= cutoff: 
+                negative_chances.append(perc_will_buy) 
+                    
+
+
     positive_perc = (float(positive_matches)/float(max(1, len(prediction_matches)))) * 100
+    precision = positive_matches / (positive_matches + negative_chances)
+    recall = positive_matches / (positive_matches + false_negatives)
     return {
+        'precision' : precision,
+        'recall' : recall,
         'false_positives': {
             'perc': (float(len(negative_chances)) / float(max(1,cnt_predictions))) * 100,
             'count': len(negative_chances),
@@ -148,6 +157,7 @@ def check_prediction(prediction_week_start, cutoff=0.5, company="Netinfo", model
     predictions_file = os.path.join(company, "prediction_{0}.csv".format(model))
     prediction_matches = 0
     positive_matches = 0
+    false_negatives = 0
     with open(predictions_file, 'rb') as prediction_csv:
         predicted_reader = csv.reader(prediction_csv, delimiter=',', quotechar='|')
         row_c = 0
@@ -162,6 +172,8 @@ def check_prediction(prediction_week_start, cutoff=0.5, company="Netinfo", model
                 prediction_matches += 1
                 if perc_will_buy > cutoff:
                     positive_matches += 1
+                else:
+                    false_negatives += 1
     return {
         'payers': users_purchased,
         'filtered': cnt_filtered,

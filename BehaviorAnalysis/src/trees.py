@@ -48,13 +48,11 @@ class BuildWorker(Thread):
 
 class MassTreeBuilder:
     def __init__(self, batch_size, store, filter, user_id_key):
+        import settings
         self.userSessionTypeId = "598f20d002d2516dd0dbcee2"
         appId = "123123123"
         # sessionsPath = "testData/Netinfo/payingBrowsingSessionsDaySorted.csv"
-        password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
-        host = "10.10.1.5"
-        client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-        db = client.netvoid
+        db = settings.get_db()
         self.documents_col = db.IntegratedDocument
         self.work_queue = Queue()
         self.lock = Lock()

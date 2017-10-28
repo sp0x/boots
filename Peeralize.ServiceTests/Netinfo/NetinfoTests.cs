@@ -17,6 +17,7 @@ using nvoid.db.DB.MongoDB;
 using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
 using nvoid.extensions;
+using nvoid.Helpers;
 using Peeralize.Service;
 using Peeralize.Service.Analytics;
 using Peeralize.Service.Format;
@@ -61,7 +62,7 @@ namespace Peeralize.ServiceTests.Netinfo
                 inputDirectory = Path.Combine(currentDir, inputDirectory);
                 Console.WriteLine($"Parsing data in: {inputDirectory}");
                 var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
-                var harvester = new Harvester(10);
+                var harvester = new Harvester<ExpandoObject>(10);
                 var type = harvester.AddPersistentType(fileSource, _appId, null, true);
                 var importCollectionId = Guid.NewGuid().ToString();
                 var mlist = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
@@ -107,58 +108,38 @@ namespace Peeralize.ServiceTests.Netinfo
             inputDirectory = Path.Combine(currentDir, inputDirectory);
             Console.WriteLine($"Parsing data in: {inputDirectory}");
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
-            var harvester = new Harvester(10);
+            var harvester = new Harvester<ExpandoObject>(10);
             var type = harvester.AddPersistentType(fileSource, _appId, "NetInfoUserFeatures_7_8", true);
 
             var importCollectionId = Guid.NewGuid().ToString();
             var rawEventsCollection = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
             var reducedEventsCollection = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId+"_reduced");
+
             rawEventsCollection.Truncate();
             Debug.WriteLine($"Created temp collections: {rawEventsCollection.GetCollectionName()} & {reducedEventsCollection.GetCollectionName()}");
 
             var batchesInserted = 0;
             var batchSize = 30000;
             var executionOptions = new ExecutionDataflowBlockOptions {  BoundedCapacity = 1,  };
-            var locked = false;
-            var insert = new ActionBlock<BsonDocument[]>(x =>
+            
+            var inserterBlock = new ActionBlock<IEnumerable<BsonDocument>>(x =>
             {
-                Debug.WriteLine($"Inserting batch {batchesInserted+1} [{x.Length}]");
+                Debug.WriteLine($"Inserting batch {batchesInserted+1} [{x.Count()}]");
                 rawEventsCollection.Records.InsertMany(x);
                 Interlocked.Increment(ref batchesInserted);
-                Debug.WriteLine($"Inserted batch {batchesInserted}");
-                locked = false;
+                Debug.WriteLine($"Inserted batch {batchesInserted}"); 
             }, executionOptions);
-            var transformerBlock = new TransformBlock<ExpandoObject[], BsonDocument[]>(values =>
-            {
-                var output = new BsonDocument[values.Length];
-                for (int i = 0; i < values.Length; i++)
-                {
-                    var val = values[i];
-                    var doc = new BsonDocument();
-                    foreach (var pair in val)
-                    {
-                        if (pair.Key == "ondate")
-                        {
-                            doc.Set(pair.Key, BsonValue.Create(DateTime.Parse(pair.Value.ToString())));
-                        }
-                        else
-                        {
-                            doc.Set(pair.Key, BsonValue.Create(pair.Value));
-                        }
-                    }
-                    output[i] = doc;
-                }
-                return output;
-            }, new ExecutionDataflowBlockOptions{ BoundedCapacity = 1 });
+            var transformerBlock = BsonConverter.Create(new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
+
             var batcher = BatchedBlockingBlock<ExpandoObject>.CreateBlock(batchSize); 
             batcher.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
             //insertBat.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            transformerBlock.LinkTo(insert, new DataflowLinkOptions { PropagateCompletion = true });
+            transformerBlock.LinkTo(inserterBlock, new DataflowLinkOptions { PropagateCompletion = true });
              
             var result = await harvester.ReadAll(batcher);
             harvester = null;
             //Reduce
-            await Task.WhenAll(insert.Completion, transformerBlock.Completion);
+            await Task.WhenAll(inserterBlock.Completion, transformerBlock.Completion);
             rawEventsCollection.EnsureIndex("ondate");
             var map = @"
 function () {    
@@ -210,7 +191,7 @@ function (key, values) {
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
-            var harvester = new Peeralize.Service.Harvester(10);
+            var harvester = new Peeralize.Service.Harvester<IntegratedDocument>(10);
             //harvester.AddPersistentType(fileSource, _appId, true);
 
             var grouper = new GroupingBlock(_appId,
@@ -262,7 +243,7 @@ function (key, values) {
                 if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
                 return x["value"] as BsonDocument;
             });
-            var harvester = new Peeralize.Service.Harvester(10);
+            var harvester = new Peeralize.Service.Harvester<IntegratedDocument>(10);
             var type = harvester.AddPersistentType("NetInfoUserFeatures_7_8_1", appId, source); 
 
             var dictEval = new EvalDictionaryBlock(
@@ -331,7 +312,7 @@ function (key, values) {
             });
 
             var appId = "123123123";
-            var harvester = new Peeralize.Service.Harvester(20); 
+            var harvester = new Peeralize.Service.Harvester<IntegratedDocument>(20); 
             harvester.AddPersistentType("NetInfoUserFeatures_7_8", appId, source);
             var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", appId);
             typeDef.AddField("is_paying", typeof(int));
@@ -386,7 +367,7 @@ function (key, values) {
         {
             MongoSource source = MongoSource.CreateFromCollection(reducedSource, new BsonFormatter());
             var appId = "123123123";
-            var harvester = new Peeralize.Service.Harvester(20);
+            var harvester = new Peeralize.Service.Harvester<IntegratedDocument>(20);
             var type = harvester.AddPersistentType("NetInfoUserSessions_7_8", appId, source);
             var batchSize = 10000;
             var updateBatchSize = 10000;
@@ -520,20 +501,26 @@ function (key, values) {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter(){ Delimiter = ';' });
 
-            var userId = "123123123"; 
-            var harvester = new Peeralize.Service.Harvester(10);
+            var userId = "123123123";
+            int threadCount = 12;
+            var harvester = new Peeralize.Service.Harvester<ExpandoObject>(10);
             var type = harvester.AddPersistentType(fileSource, userId, null, true);
             
-            var grouper = new GroupingBlock(_appId,
-                (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.DaysTotal()}",
-                (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
-                (acc, newDoc) => AccumulateUserDocument(acc,newDoc, true));
+            var cachedReducer = new ReduceCacheBlock(_appId,
+                (document) => $"{document.GetString("uuid")}:{document.GetDate("ondate")?.DaysTotal()}",
+                (document) => document.Define("noticed_date", document.GetDate("ondate"))
+                    .RemoveAll("event_id", "ondate", "value", "type"));
+            var featureAccumulator = new FeatureGenerator<ExpandoObject>(threadCount);
+            var featureAccBlock = featureAccumulator.CreateFeaturesBlock();
+            //cachedReducer.LinkTo(featureAccBlock);
+            cachedReducer.LinkTo(DataflowBlock.NullTarget<ExpandoObject>());
 
-            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary);
+
+            var helper = new CrossSiteAnalyticsHelper();//grouper.GetBuffer());
             var featureHelper = new FeatureGeneratorHelper() { Helper = helper, TargetDomain = "ebag.bg" };
-            var featureGenerator = new FeatureGenerator<IntegratedDocument>(featureHelper.GetFeatures, 12);
-            featureGenerator.AddGenerator(featureHelper.GetAvgTimeBetweenSessionFeatures);
-            var featureGeneratorBlock = featureGenerator.CreateFeaturesBlock();
+//            var featureGenerator = new FeatureGenerator<ExpandoObject>(featureHelper.GetFeatures, 12);
+//            featureGenerator.AddGenerator(featureHelper.GetAvgTimeBetweenSessionFeatures);
+            //var featureGeneratorBlock = featureGenerator.CreateFeaturesBlock();
 
             var demographyImporter = new EntityDataImporter(
                 demographySheet, true);
@@ -543,28 +530,29 @@ function (key, values) {
             demographyImporter.JoinOn(JoinDemography);
             demographyImporter.ReadData();
 
-            var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, IntegratedDocument>((x) =>
+            var insertCreator = new TransformBlock<FeaturesWrapper<ExpandoObject>, ExpandoObject>((x) =>
             { 
                 var doc = x.Document;
                 //Todo: Fill doc with features 
                 return doc;
             });
-            var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 3000);
+            //var insertBatcher = new MongoInsertBatch<ExpandoObject>(_documentStore, 3000);
             
             demographyImporter.Helper = helper;
-            grouper.Helper = helper;
-             
-            demographyImporter.LinkTo(featureGeneratorBlock);
-            featureGeneratorBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
-            insertCreator.LinkTo(insertBatcher.BatchBlock);
+            //grouper.Helper = helper;
+            //cachedReducer.LinkTo(featureGeneratorBlock);
+            //demographyImporter.LinkTo(featureGeneratorBlock);
+            //featureGeneratorBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
+            //insertCreator.LinkTo(insertBatcher.BatchBlock);
 
-            grouper.LinkOnComplete(demographyImporter);
-            grouper.AddFlowCompletionTask(insertBatcher.Completion);
+            //grouper.LinkOnComplete(demographyImporter);
+            //cachedReducer.AddFlowCompletionTask(insertBatcher.Completion);
 
-            harvester.SetDestination(grouper);
             harvester.AddType(type, fileSource);
+            harvester.SetDestination(cachedReducer);
+            //var res1 = await harvester.ReadAll(grouper.GetBuffer());
             var result = await harvester.Synchronize();
-            Console.ReadLine();
+//            Console.ReadLine();
         }
 
 
@@ -575,7 +563,7 @@ function (key, values) {
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
-            var harvester = new Peeralize.Service.Harvester(10);
+            var harvester = new Peeralize.Service.Harvester<IntegratedDocument>(10);
             harvester.AddPersistentType(fileSource, _appId, null, true);
 
             var grouper = new GroupingBlock(_appId,
@@ -674,6 +662,13 @@ function (key, values) {
             }
             return newEntry;
         }
+
+        private object AccumulateEntry(IntegratedDocument accumulator, BsonDocument newEntry,
+            bool appendEvent = true)
+        {
+            return accumulator;
+        }
+
 
         private object AccumulateUserDocument(IntegratedDocument accumulator, BsonDocument newEntry, bool appendEvent = true)
         {

@@ -1,42 +1,37 @@
 import time
 from constants import *
 from classifiers import conduct_experiment, create_balancer, Experiment
-from pymongo import MongoClient
 import urllib
 import sys
 import pymongo
-
+import settings
 from datetime import datetime, timedelta
 
-##host is local
-password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
-host = "10.10.1.5"
 
-client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-db = client.netvoid
+db = settings.get_db()
 collection = db.IntegratedDocument
 # userTypeId = "598da0a2bff3d758b4025d21"
 userTypeId = "59cbc103003e730508e87c2c"
 appId = "123123123"
 
-weeksAvailable = collection.find({
+weeks_training = collection.find({
     "UserId": appId,
     "TypeId": userTypeId
 }).distinct("Document.g_timestamp")
-weeksAvailable.sort()
-print weeksAvailable
+weeks_training.sort()
+print weeks_training
 #our test week
 weekLimit = 0
 # weeksAvailable = weeksAvailable[(-1) * weekLimit:] if weekLimit > 0 else weeksAvailable  # last n weeks
-weeksAvailable = [weeksAvailable[6], weeksAvailable[7], weeksAvailable[8], weeksAvailable[9]]
+weeks_training = [weeks_training[3], weeks_training[4], weeks_training[5], weeks_training[6]]
 targetData = []
 inputData = []
 # limit = 2 * 100 * 1000
 # userlimit = 15 * 1000
 
-for index, week in enumerate(weeksAvailable):
+for index, week in enumerate(weeks_training):
     next_week = week + timedelta(days=7)
-    print "Preparing week: " + str(week) + "    " + str(index+1) + "/" + str(len(weeksAvailable))
+    print "Preparing week: " + str(week) + "    " + str(index+1) + "/" + str(len(weeks_training))
     pipeline = [
         {"$match": {
             "TypeId": userTypeId,
@@ -164,4 +159,6 @@ for index, week in enumerate(weeksAvailable):
         targetData.append(targetVar)
 
 print "Prepared " + str(len(inputData)) + " items"
-conduct_experiment(inputData, targetData, 'Netinfo')
+conduct_experiment(inputData, targetData, 'Netinfo', {
+    'weeks_training': weeks_training
+})

@@ -1,12 +1,11 @@
-import threading
-from pymongo import MongoClient
+import threading 
 from sklearn import preprocessing
-
+import settings
 
 class MongoDataStream(object):
-    def __init__(self, host, password, db, collection, start_date, end_date, chunk_size=10000, max_items=None):
-        self.client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-        self.source = self.client[db][collection]
+    def __init__(self, collection, start_date, end_date, chunk_size=10000, max_items=None):
+        self.db = settings.get_db()
+        self.source = self.db[collection]
         # total number of batches of data in the db/collection
         if not max_items:
             self.len  = self.source.find({'Document.g_timestamp': {'$gte': start_date, '$lt': end_date}}).count()

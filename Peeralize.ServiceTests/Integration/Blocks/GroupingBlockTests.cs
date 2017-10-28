@@ -45,7 +45,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                 .CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var userId = "123123123"; 
-            var harvester = new Peeralize.Service.Harvester(20);
+            var harvester = new Peeralize.Service.Harvester<IntegratedDocument>(20);
             var grouper = GetGrouper(userId);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper); 
@@ -64,7 +64,7 @@ namespace Peeralize.ServiceTests.Integration.Blocks
                 .CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
             var userId = "123123123";
-            var harvester = new Peeralize.Service.Harvester(20);
+            var harvester = new Peeralize.Service.Harvester<IntegratedDocument>(20);
 
             var grouper = GetGrouper(userId);
             var statsCounter = 0;

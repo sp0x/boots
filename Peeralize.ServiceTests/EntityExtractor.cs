@@ -16,8 +16,7 @@ using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Models;
 using Peeralize.Service.Time;
 using Peeralize.ServiceTests.IntegrationSource;
-using Xunit;
-using Harvester = Peeralize.Service.Harvester;
+using Xunit; 
 
 namespace Peeralize.ServiceTests
 {
@@ -82,7 +81,7 @@ namespace Peeralize.ServiceTests
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());  
             var userId = "123123123"; 
-            var harvester = new Peeralize.Service.Harvester();
+            var harvester = new Peeralize.Service.Harvester<IntegratedDocument>();
             var type = harvester.AddPersistentType(fileSource, userId, null, true); 
 
             var grouper = new GroupingBlock(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);

@@ -30,7 +30,7 @@ namespace Peeralize.Service
     /// Data integration handler.
     /// Handles type, sourse and destination piping, to control the integration data flow with multiple block scenarios.
     /// </summary>
-    public class Harvester : Entity
+    public class Harvester<TDocument> : Entity
     {
         private Stopwatch _stopwatch;
         private int _shardLimit;
@@ -40,8 +40,8 @@ namespace Peeralize.Service
         /// <summary>
         /// The destination to which documents will be dispatched
         /// </summary>
-        public IIntegrationBlock<IntegratedDocument> Destination { get; private set; }
-        public ITargetBlock<dynamic> DestinationBlock { get; private set; }
+        public IIntegrationBlock<TDocument> Destination { get; private set; }
+        public ITargetBlock<TDocument> DestinationBlock { get; private set; }
 
         protected int ShardLimit => _shardLimit;
         protected int TotalEntryLimit => _totalEntryLimit;
@@ -59,7 +59,7 @@ namespace Peeralize.Service
         /// </summary>
         /// <param name="input">Details about the type</param>
         /// <param name="source">The source from which to pull the input</param>
-        public Harvester AddType(IIntegrationTypeDefinition input, InputSource source)
+        public Harvester<TDocument> AddType(IIntegrationTypeDefinition input, InputSource source)
         {
             if (input == null) throw new ArgumentException(nameof(input));
             var newSet = new IntegrationSet(input, source);
@@ -110,13 +110,13 @@ namespace Peeralize.Service
         /// </summary>
         /// <param name="dest">A destination/block in your integration flow</param>
         /// <returns></returns>
-        public Harvester SetDestination(IIntegrationBlock<IntegratedDocument> dest)
+        public Harvester<TDocument> SetDestination(IIntegrationBlock<TDocument> dest)
         {
             Destination = dest;
             return this;
         }
 
-        public Harvester SetDestination(ITargetBlock<dynamic> dest)
+        public Harvester<TDocument> SetDestination(ITargetBlock<TDocument> dest)
         {
             DestinationBlock = dest;
             return this;
@@ -154,7 +154,15 @@ namespace Peeralize.Service
             }, cancellationToken: cToken);
         }
 
-        public Task<HarvesterResult> ReadAll(ITargetBlock<ExpandoObject> target, CancellationToken? cancellationToken = null)
+        /// <summary>
+        /// Reads all values from the source, in raw means without any preprocessing.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public Task<HarvesterResult> ReadAll(
+            ITargetBlock<ExpandoObject> target,
+            CancellationToken? cancellationToken = null)
         {
             var cToken = cancellationToken ?? CancellationToken.None;
             var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = ThreadCount };
@@ -261,6 +269,13 @@ namespace Peeralize.Service
             return totalItemsUsed;
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="parallelOptions"></param>
+        /// <param name="totalShardsUsed"></param>
+        /// <returns></returns>
         private int ProcessInputShards(ParallelOptions parallelOptions, out int totalShardsUsed)
         {
             var totalItemsUsed = 0;
@@ -337,17 +352,25 @@ namespace Peeralize.Service
                                 while ((entry = sourceShard.GetNext()) != null)
                                 {
                                     if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit) break;
-                                    IntegratedDocument document = itemSet.Wrap(entry);
-                                    Task sendTask = null;
-                                    if (Destination == null)
+                                    TDocument valueToSend;
+                                    if (typeof(TDocument) == typeof(IntegratedDocument))
                                     {
-                                        sendTask = DestinationBlock.SendAsync<dynamic>(document);
+                                        valueToSend = itemSet.Wrap(entry);
                                     }
                                     else
                                     {
-                                        sendTask = Destination.SendAsync(document);
+                                        valueToSend = entry;
+                                    } 
+                                    Task<bool> sendTask = null;
+                                    if (Destination == null)
+                                    {
+                                        sendTask = DataflowBlock.SendAsync<TDocument>(DestinationBlock, valueToSend);
                                     }
-                                    var resultingTask = Task.WhenAny(Task.Delay(10000), sendTask).Result;
+                                    else
+                                    {
+                                        sendTask = Destination.SendAsync(valueToSend);
+                                    }
+                                    var resultingTask = Task.WhenAny(Task.Delay(1000000000), sendTask).Result;
                                     if (sendTask != resultingTask)
                                     {
                                         throw new Exception($"Block timeout while emitting {totalItemsUsed}-th item!");

@@ -1,6 +1,5 @@
 import time
 from features import BNode, BTree, lin
-from pymongo import MongoClient
 import urllib
 from utils import parse_timespan, chunks
 from time import sleep
@@ -8,18 +7,15 @@ import sys
 from pymongo import UpdateMany
 from trees import MassTreeBuilder
 from datetime import datetime, timedelta
-
+import settings
  
 #type used for web sessions
 userSessionTypeId = "598f20d002d2516dd0dbcee2"
 userTypeId = "59cbc103003e730508e87c2c"
  
 appId = "123123123"
-password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
-host = "10.10.1.5"
 
-client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-db = client.netvoid
+db = settings.get_db()
 documents_col = db.IntegratedDocument
 
 

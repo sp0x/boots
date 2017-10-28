@@ -9,13 +9,9 @@ import os
 from buyers import check_prediction, check_prediction_ex
 from utils import save, load, abs_path
 import numpy as np
+import settings
 
-##host is local
-password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
-host = "10.10.1.5"
-
-client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-db = client.netvoid
+db = settings.get_db()
 collection = db.IntegratedDocument
 
 userTypeId = "59cbc103003e730508e87c2c"

@@ -55,7 +55,7 @@ class Server(threading.Thread):
                         else:
                             self.experimental_data[company] = dict(data=[data],targets=[msg['result']],created=time.time())
                     elif op == MAKE_PREDICTION:
-                        models = Experiment.load_models(company)
+                        models = Experiment.load_models_file(company)
                         resp = {'results':[{'value':m['model'].predict(data),'model':m['type']} for m in models]}
                     resp.update({'seq':seq})
                     self.out_stream.send_json(resp)

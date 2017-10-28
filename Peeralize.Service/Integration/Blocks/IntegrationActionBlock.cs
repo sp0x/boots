@@ -13,7 +13,7 @@ namespace Peeralize.Service.Integration.Blocks
             :base(capacity: 100000, procType: ProcessingType.Action, threadCount: threadCount)
         {
             this.UserId = userId;
-            _action = new Func<IntegrationActionBlock, IntegratedDocument, IntegratedDocument>((act, x)=>
+            _action = ((act, x)=>
             {
                 action(act, x);
                 return x;
@@ -23,7 +23,7 @@ namespace Peeralize.Service.Integration.Blocks
         public IntegrationActionBlock(Action<IntegrationActionBlock, IntegratedDocument> action, int threadCount = 4)
             : base(capacity: 100000, procType: ProcessingType.Action, threadCount: threadCount)
         {
-            _action = new Func<IntegrationActionBlock, IntegratedDocument, IntegratedDocument>((act, x) =>
+            _action = ((act, x) =>
             {
                 action(act, x);
                 return x;
@@ -41,7 +41,7 @@ namespace Peeralize.Service.Integration.Blocks
             : base(capacity: 100000, procType: ProcessingType.Action, threadCount : 4)
         {
             UserId = userId;
-            _action = new Func<IntegrationActionBlock, IntegratedDocument, IntegratedDocument>((act, x) =>
+            _action = ((act, x) =>
             {
                 action(act, x);
                 return x;

@@ -1,19 +1,13 @@
 import time
 from constants import *
 from classifiers import conduct_experiment, graph_experiment, Experiment
-from pymongo import MongoClient
 import urllib
 import sys
 import pymongo
-
+import settings
 from datetime import datetime, timedelta
 
-##host is local
-password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
-host = "10.10.1.5"
-
-client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-db = client.netvoid
+db = settings.get_db()
 collection = db.IntegratedDocument
 userTypeId = "59cbc103003e730508e87c2c"
 appId = "123123123"

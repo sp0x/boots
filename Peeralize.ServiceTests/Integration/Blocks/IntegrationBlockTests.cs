@@ -26,12 +26,12 @@ namespace Peeralize.ServiceTests.Integration.Blocks
     public class IntegrationBlockTests
     {
         private static string AppId = "123123123";
-        private Harvester GetHarvester(int threadCount = 20, int limit = 10)
+        private Harvester<IntegratedDocument> GetHarvester(int threadCount = 20, int limit = 10)
         {
             var inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, "TestData\\Ebag\\1156");
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
-            var harvester = new Peeralize.Service.Harvester(threadCount);
+            var harvester = new Peeralize.Service.Harvester<IntegratedDocument>(threadCount);
             harvester.LimitEntries(limit); 
             harvester.AddPersistentType(fileSource, AppId, null, false);
             return harvester;

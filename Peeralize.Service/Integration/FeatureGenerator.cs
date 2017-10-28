@@ -10,7 +10,7 @@ using Peeralize.Service.Models;
 namespace Peeralize.Service.Integration
 {
     /// <summary>
-    /// A tpl block which
+    /// A tpl block which deals with generating multiple functions
     /// </summary>
     public class FeatureGenerator<TIn>
     {
@@ -45,18 +45,26 @@ namespace Peeralize.Service.Integration
             }
         }
 
-        public FeatureGenerator<TIn>
-            AddGenerator(
+        public FeatureGenerator<TIn> AddGenerator(
             Func<TIn, IEnumerable<KeyValuePair<string, object>>> generator)
         {
             _generators.Add(generator);
             return this;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public IPropagatorBlock<TIn, FeaturesWrapper<TIn>> CreateFeaturesBlock()
         {
             return CreateFeaturesBlock<FeaturesWrapper<TIn>>();
         }
+        /// <summary>
+        /// Creates a new transformer block that creates features 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         public IPropagatorBlock<TIn, T> CreateFeaturesBlock<T>()
             where T : FeaturesWrapper<TIn>
         {

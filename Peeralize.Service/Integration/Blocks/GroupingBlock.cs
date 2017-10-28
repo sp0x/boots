@@ -28,7 +28,7 @@ namespace Peeralize.Service.Integration.Blocks
         #endregion
 
         #region "Props"
-        public event EventHandler<EventArgs> GroupingComplete;
+//        public event EventHandler<EventArgs> GroupingComplete;
 
         public ConcurrentDictionary<object, IntegratedDocument> EntityDictionary { get; private set; } 
 
@@ -52,43 +52,21 @@ namespace Peeralize.Service.Integration.Blocks
             _groupBySelector = selector;
             this._accumulator = accumulator;
             this._inputProjection = inputProjection;
-            base.Completed += OnReadingCompleted;
+            //base.Completed += OnReadingCompleted;
             EntityDictionary = new ConcurrentDictionary<object, IntegratedDocument>();
             //PageStats = new CrossPageStats();
         } 
-
-        private void OnReadingCompleted()
-        {
-            //We have red all the available records, our grouping should be complete
-            GroupingComplete?.Invoke(this, EventArgs.Empty);
-        }
+         
 
         protected override IEnumerable<IntegratedDocument> GetCollectedItems()
         {
             return EntityDictionary.Values;
-        }
-
-        public override void Complete()
-        {
-//            foreach (var group in EntityDictionary)
-//            {
-//                BsonArray bsonValue = (BsonArray)EntityDictionary[@group.Key].Document["events"];
-//                EntityDictionary[group.Key].Document["events"] = new BsonArray(
-//                    bsonValue.OrderBy(x=>DateTime.Parse(x["ondate"].ToString())));
-//            }
-            base.Complete();
-        }
-
+        } 
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
         {
             //Get key
             var key = _groupBySelector==null ? null : _groupBySelector(intDoc);
-            var intDocDocument = intDoc.GetDocument();
-//            var page = intDocDocument["value"];
-//            if (page.ToString().IsNumeric())
-//            {
-//                return intDoc;
-//            }
+            var intDocDocument = intDoc.GetDocument(); 
             var isNewUser = false;
             if (key != null)
             {
@@ -146,23 +124,7 @@ namespace Peeralize.Service.Integration.Blocks
             }
             Helper.Stats[pageSelector].PageVisitsTotal++;
         }
-        
-
-//        public static TimeSpan GetPageChangeTimespan(DateTime startingTime, BsonArray events, Func<string, bool> toPageFilter, int offset = 0)
-//        {
-//            for (var i = offset; i < events.Count; i++)
-//            {
-//                var eventData = events[i];
-//                var eventPage = eventData["value"].ToString();
-//
-//                if (toPageFilter(eventPage))
-//                {
-//                    var pageVisitTime = DateTime.Parse(eventData["ondate"].ToString());
-//                    return pageVisitTime - startingTime;
-//                }
-//            }
-//            return TimeSpan.Zero;
-//        }
+         
 
         /// <summary>
         /// 

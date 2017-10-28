@@ -1,8 +1,7 @@
 import time
 from constants import *
 from classifiers import conduct_experiment,Experiment
-from features import BNode, BTree, lin
-from pymongo import MongoClient
+from features import BNode, BTree, lin 
 from pymongo import UpdateMany
 import urllib
 from os import walk
@@ -18,7 +17,7 @@ from threading import Thread, Lock, Condition
 from time import sleep
 import sys
 from trees import BuildWorker, MassTreeBuilder
-
+import settings
  
 #type used for web sessions
 userSessionTypeId = "598f20d002d2516dd0dbcee2"
@@ -26,12 +25,8 @@ userTypeId = "59cbc103003e730508e87c2c"
 
 week4Start = datetime(2017, 7, 17, 0, 0, 0)
 appId = "123123123"
-#sessionsPath = "testData/Netinfo/payingBrowsingSessionsDaySorted.csv"
-password = urllib.quote_plus('Y8Iwb6lI4gRdA+tbsaBtVj0sIRVuUedCOJfNyD4hymuRqG4WVNlY9BfQzZixm763')
-host = "10.10.1.5"
 
-client = MongoClient('mongodb://vasko:' + password + '@' + host + ':27017/netvoid?authSource=admin')
-db = client.netvoid
+db = settings.get_db()
 documents_col = db.IntegratedDocument
 
 weeksAvailable = documents_col.find({
