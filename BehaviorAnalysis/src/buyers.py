@@ -77,8 +77,7 @@ def check_prediction_ex(prediction_week_start, users_and_predictions, cutoff=0.5
         uuid = users_data[p]['uuid']
         prediction = predictions_data[p]
         cnt_predictions += 1
-        uuid = row[0].replace('"', '')
-        perc_will_buy = float(row[1])
+        perc_will_buy = float(prediction[1])
         if perc_will_buy >= cutoff:
             cnt_above_cutoff += 1
         # if he really did make a purchase
@@ -100,8 +99,8 @@ def check_prediction_ex(prediction_week_start, users_and_predictions, cutoff=0.5
 
 
     positive_perc = (float(positive_matches)/float(max(1, len(prediction_matches)))) * 100
-    precision = positive_matches / (positive_matches + negative_chances)
-    recall = positive_matches / (positive_matches + false_negatives)
+    precision = float(positive_matches) / (positive_matches + len(negative_chances))
+    recall = float(positive_matches) / (positive_matches + false_negatives)
     return {
         'precision' : precision,
         'recall' : recall,

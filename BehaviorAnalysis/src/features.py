@@ -1,6 +1,34 @@
 import math
 from scipy.stats import entropy
 
+class FeaturesWrapper:
+    def __init__(self, app_key):
+        import settings
+        collection = settings.get_db().Features
+        document = collection.find_one({ "AppId" : app_key })
+        if document is None:
+            self.features = []
+        else:
+            self.features = document['Fields']
+ 
+    def get_feature_avg_aggregates(self, selector_prefix):
+        output = dict()
+        for feature in self.features:
+            if feature['type']!=0: continue
+            output[feature['name']] = { "$avg" : "{0}{1}".format(selector_prefix, feature['name'])}
+        return output
+
+    def get_values(self, dict_values):
+        """Gets feature values"""
+        outp = []
+        for f in self.features:
+            val = dict_values.get(f['name'])
+            if val is None: val = 0
+            outp.append(val)
+        return outp
+
+    def get_names(self):
+        return [f['name'] for f in self.features]
 
 class BNode:
     def __init__(self, label, time, parent, depth):

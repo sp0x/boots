@@ -205,11 +205,11 @@ class Experiment:
 
             plt.subplot(1, 2, 2)
             plt.title("Feature importances")
-            plt.xlabel('Relative Importance')
+            plt.xlabel('Importance')
             plt.bar(range(data.shape[1]), feature_importances[indices],
                 color="r", yerr=std[indices], align="center")
             plt.xticks(range(data.shape[1]), indices)
-            plt.yticks(pos, labels[indices])
+            # plt.yticks(pos, labels[indices])
             plt.xlim([-1, data.shape[1]])
             plt.show()
  
@@ -260,15 +260,21 @@ class Experiment:
         plt.ylabel('Buyers %')
         plt.xlabel('User Population %')
         base_path = abs_path(company)
-        plt.savefig(os.path.join(base_path, "{0}{1}_gain.png".format(prefix, model)))
+        gain_path = os.path.join(base_path, "{0}{1}_gain.png".format(prefix, model))
+        lift_path = os.path.join(base_path, '{0}{1}_lift.png'.format(prefix, model))
+        plt.savefig(gain_path)
         plt.clf()
         df = df.loc[1:]
         df['lift'] = df['cumulativeActual'] / (df['userPopulation'])
         df.plot('userPopulation', 'lift', ylim=[0, 3], figsize=(8, 6))
         plt.xlabel('User Population %')
-        plt.hlines(1, 0, 100)
-        plt.savefig(os.path.join(base_path, '{0}{1}_lift.png'.format(prefix, model)))
+        plt.hlines(1, 0, 100) 
+        plt.savefig(lift_path)
         plt.clf()
+        return {
+            'lift': lift_path,
+            'gain': gain_path
+        }
     
     @staticmethod
     def plot_confusion_matrix(cm, classes,
@@ -314,32 +320,35 @@ class Experiment:
             filepath = abs_path(filename)
         plt.savefig(filepath)
         plt.clf()
+        return {
+            'confusion': filepath
+        }
 
     @staticmethod
-    def predict_explain_non_tree2(clf, for_client, data, labels, name):
+    def predict_explain_non_tree2(clf, for_client, labels):
         c_type = clf['type']
         clf = clf['model']
         # Plot feature importance
         if not hasattr(clf, 'feature_importances_'):
             return
-        feature_importances = clf.feature_importances_
-        plt.clf()
-        std = np.std([tree.feature_importances_ for tree in clf.estimators_],
-         axis=0)
-        indices = np.argsort(feature_importances)[::-1]
-
+        feature_importance = clf.feature_importances_
+        # make importances relative to max importance
+        feature_importance = 100.0 * (feature_importance / feature_importance.max())
+        sorted_idx = np.argsort(feature_importance)
+        pos = np.arange(sorted_idx.shape[0]) + .5
         plt.subplot(1, 2, 2)
-        plt.title("Feature importances")
+        plt.barh(pos, feature_importance[sorted_idx], align='center')
+        yticks = []
+        for index in sorted_idx:
+            yticks.append(labels[index])
+        plt.yticks(pos, yticks)  # labels[sorted_idx])
         plt.xlabel('Relative Importance')
-        plt.bar(range(data.shape[1]), feature_importances[indices],
-         color="r", yerr=std[indices], align="center")
-        plt.xticks(range(data.shape[1]), indices)
-        plt.yticks(pos, labels[indices])
-        plt.xlim([-1, data.shape[1]]) 
+        plt.title('Variable Importance')
         now = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
-        path = os.path.join(for_client, "importance_{0}_{1}_{2}.png".format(c_type, name, now))
+        path = os.path.join(for_client, "importance_{0}_{1}.png".format(c_type, now))
         plt.savefig(abs_path(path))
-        plt.clf() 
+        plt.clf()
+        return path
 
     @staticmethod
     def t_test(y_pred, y_true, x_train=None, y_train=None, x_test=None, confidence=0.95):
@@ -423,7 +432,7 @@ class Experiment:
             save(y_pred, os.path.join(dump_dir, "y_pred_{0}.dmp".format(log_data['model'])))
             save(y_pred_proba, os.path.join(dump_dir, "y_pred_proba_{0}.dmp".format(log_data['model'])))
             save(y_true, os.path.join(dump_dir, "y_true_{0}.dmp".format(log_data['model'])))
-            Experiment.make_graphs(y_pred_proba, y_true, m['type'], self._for)
+            graphs = Experiment.make_graphs(y_pred_proba, y_true, m['type'], self._for)
 
         self.best_models = best_models
 
@@ -509,17 +518,20 @@ def graph_experiment(data, targets, client='cashlend', model=None, modelsFile=No
         models = [model]
     else:
          models = exp.load_models_file(modelsFile)  # load_model_files(['gba'])
-
+    output_files = dict()
     for m in models:
         #print "training " + m['type']
         model = m['model']
         model_type = m['type']
+        model_output_files = dict()
         y_true, y_pred = y_test, model.predict(X_test)
         y_pred_proba = model.predict_proba(X_test)
         cm = confusion_matrix(y_true, y_pred)
-        Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], False, model=model_type, company=client, prefix='pred_')
-        Experiment.make_graphs(y_pred_proba, y_true, model_type, client, 'pred_')
-
+        matrix_output = Experiment.plot_confusion_matrix(cm, ['Non-Buyers', 'Buyers'], False, model=model_type, company=client, prefix='pred_')
+        exp_graphs = Experiment.make_graphs(y_pred_proba, y_true, model_type, client, 'pred_')
+        model_output_files.update(matrix_output)
+        output_files[model_type] = model_output_files
+    return output_files
 
 def conduct_experiment(data, targets, client='cashlend', extras=None):
     tmp = np.unique(targets)
