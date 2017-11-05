@@ -27,8 +27,8 @@ case_filter ={
 weeksAvailable = collection.find(case_filter).distinct("Document.g_timestamp")
 weeksAvailable.sort() 
 print weeksAvailable
-current_week = weeksAvailable[7]
-weeks_count = 4
+current_week = weeksAvailable[8]
+weeks_count = 2
 exp = Experiment(None, None, None, company)
 models = exp.load_model_files(['rf'])
 model_cutoffs = {'gba': 0.1, 'rf': 0.2 }
@@ -36,7 +36,7 @@ print "Loaded prediction models"
     # models = [
     #   Experiment.load_model("/experiments/Netinfo/model_gba_2017-10-04_12:44:31.pickle",company),
     #   Experiment.load_model("/experiments/Netinfo/model_rf_2017-10-04_14:57:34.pickle", company)
-    #]
+    #] 
 for week_ix in xrange(weeks_count):
     target_week = current_week
     target_week_end = target_week + timedelta(days=7)
@@ -89,7 +89,6 @@ for week_ix in xrange(weeks_count):
 
     print "Loaded " + str(len(userFeatures)) + " test user items" 
     payingDict = dict() 
-
     filtered = 0
     for m in models:
         t_started = time.time()
@@ -99,7 +98,7 @@ for week_ix in xrange(weeks_count):
         y_true = Experiment.load_dump(company, 'y_true_{0}.dmp'.format(c_type))
         real_cutoff = plot_cutoff(m, x_test, y_true, client=company)
         prediction_graphics = graph_experiment(userFeatures, targets, company, m)
-        prediction_graphics[c_type]['importance'] = ex.predict_explain_non_tree2(m, company, features_wrapper.get_names())
+        prediction_graphics[c_type]['importance'] = Experiment.predict_explain_non_tree2(m, company, features_wrapper.get_names())
         
         fileName = os.path.join(company, 'prediction_{0}_{1}.xlsx'.format(c_type, next_week_f))
         print "Writing predictions in: " + fileName

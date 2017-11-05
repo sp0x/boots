@@ -73,12 +73,12 @@ namespace Peeralize.Controllers
             var userApiId = HttpContext.Session.GetUserApiId();
             var memSource = InMemorySource.Create(Request.Body, new JsonFormatter());
             var type = (IntegrationTypeDefinition)memSource.GetTypeDefinition();
-            IntegrationTypeDefinition oldTypeDef;
             type.UserId = userApiId;
             type.SaveType(userApiId);
             //Check if the entity type exists
-            var harvester = new Harvester();
-            var destination = (new MongoSink(userApiId)).LinkTo(_behaviourContext.GetActionBlock());
+            var harvester = new Harvester<IntegratedDocument>();
+            var destination = (new MongoSink(userApiId));
+            destination.LinkTo(_behaviourContext.GetActionBlock());
             harvester.SetDestination(destination);
             harvester.AddType(type, memSource);
             harvester.Synchronize();
