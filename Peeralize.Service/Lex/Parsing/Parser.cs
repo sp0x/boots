@@ -4,185 +4,439 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using Peeralize.Service.Lex.Data;
+using Peeralize.Service.Lex.Expressions;
 using Peeralize.Service.Lex.Parsing.Tokens;
 
 namespace Peeralize.Service.Lex.Parsing
 {
     public class Parser
-    {
-        private Stack<DslToken> _tokenSequence;
-        private DslToken _lookaheadFirst;
-        private DslToken _lookaheadSecond;
-
+    { 
         private DslFeatureModel _featureModel;
         private MatchCondition _currentMatchCondition;
 
         private const string ExpectedObjectErrorText = "Expected =, !=, IN or NOT IN but found: ";
+        private OrderByExpression OrderBy { get; set; }
+
+        private DslFeatureModel FeatureModel{
+            get { return _featureModel; }
+            set { _featureModel = value; }
+        }
+        private TokenReader Reader { get; set; }
+
+        /// <summary>
+        /// Loads tokens for parsing
+        /// </summary>
+        /// <param name="tokens"></param>
+        public void Load(List<DslToken> tokens)
+        {
+            Reader = new TokenReader(tokens); 
+        }
 
         public DslFeatureModel Parse(List<DslToken> tokens)
         {
-            LoadSequenceStack(tokens);
-            PrepareLookaheads();
-            _featureModel = new DslFeatureModel();
-
-            Define();
-
-            //DiscardToken(TokenType.SequenceTerminator);
-
+            Load(tokens);
+            FeatureModel = new DslFeatureModel();
+            Define(); 
+            //DiscardToken(TokenType.SequenceTerminator); 
             return _featureModel;
         }
 
-        private void LoadSequenceStack(List<DslToken> tokens)
+
+        /// <summary>
+        /// Reads the next available expression
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        private IExpression ReadExpression(Predicate<TokenCursor> predicate = null)
         {
-            _tokenSequence = new Stack<DslToken>();
-            int count = tokens.Count;
-            for (int i = count - 1; i >= 0; i--)
+            IExpression rootExpression = null;
+            while (!Reader.IsComplete)
             {
-                _tokenSequence.Push(tokens[i]);
+                if (predicate(Reader.Cursor)) break;
+                var nextToken = Reader.Current;
+                IExpression subTree = null;
+                switch (nextToken.TokenType)
+                {
+                    case TokenType.OrderBy:
+                        rootExpression = ReadOrderBy();
+                        break;
+                    case TokenType.Set:
+                        rootExpression = ReadVariableSet();
+                        break;
+                    case TokenType.Symbol:
+                        if (IsFunctionCall(Reader.Current, Reader.NextToken))
+                        {
+                            var func = rootExpression = ReadFunction();
+                            subTree = func;
+                        }
+                        else if (IsVariableExpression(Reader.Current, Reader.NextToken))
+                        {
+                            var variable = rootExpression = ReadVariable();
+                            variable = variable;
+                        }
+                        else
+                        {
+                            var member = ReadMemberChainExpression();
+                            subTree = member;
+                        }
+                        break;
+                    default:
+                        throw new Exception($"Unexpected token at {nextToken.Line}:{nextToken.Position}!");
+                }
+                nextToken = nextToken;
+            } 
+            return rootExpression;
+        }
+        
+        private ExpressionNode ReadExpressionData()
+        {
+            var tree = new ExpressionNode(null);
+            short openParenthesis = 0;
+            short closingParenthesis = 0;
+            short expDepth = 0;
+            ExpressionNode currentNode = null;
+            while (true)
+            {
+                var isNewExp = false;
+                //
+                if (IsKeyword(Reader.Current) && expDepth == 0)
+                {
+                    break;
+                }
+                var token = Reader.DiscardToken();
+                var nextToken = Reader.Current;
+                var tokenNode = new ExpressionNode(token);
+                tokenNode.SetDepth(expDepth);
+                var isParenthesis = token.TokenType == TokenType.OpenParenthesis
+                                    || token.TokenType == TokenType.CloseParenthesis;
+
+                if (token.TokenType == TokenType.OpenParenthesis)
+                {
+                    currentNode = tokenNode;
+                    expDepth++;
+                }
+                else if (token.TokenType == TokenType.CloseParenthesis)
+                {
+                    tree.AddChild(currentNode);
+                    expDepth--;
+                }
+                else if (IsFunctionCall(token, nextToken))
+                {
+                    currentNode = tokenNode;
+                    expDepth++;
+                    var functionArgs = ReadParenthesisContent();
+                    //Create a node of the function name -> function arguments
+                }
+                else if (expDepth == 0 && !isParenthesis)
+                {
+                    currentNode = tokenNode;
+                }
+                else
+                {
+                    currentNode.AddChild(token);
+                }
             }
+            if (Reader.Current.TokenType == TokenType.OpenParenthesis)
+            {
+                Reader.DiscardToken(TokenType.OpenParenthesis);
+                //Read all untill closing parenthesis
+            }
+            return tree;
         }
 
-        private void PrepareLookaheads()
-        {
-            _lookaheadFirst = _tokenSequence.Pop();
-            _lookaheadSecond = _tokenSequence.Pop();
-        }
-
-        private DslToken ReadToken(TokenType tokenType)
-        {
-            if (_lookaheadFirst.TokenType != tokenType)
-                throw new DslParserException(string.Format("Expected {0} but found: {1}", tokenType.ToString().ToUpper(), _lookaheadFirst.Value));
-
-            return _lookaheadFirst;
-        }
-
-        private void DiscardToken()
-        {
-            _lookaheadFirst = _lookaheadSecond.Clone();
-
-            if (_tokenSequence.Any())
-                _lookaheadSecond = _tokenSequence.Pop();
-            else
-                _lookaheadSecond = new DslToken(TokenType.SequenceTerminator, string.Empty);
-        }
-
-        private void DiscardToken(TokenType tokenType)
-        {
-            if (_lookaheadFirst.TokenType != tokenType)
-                throw new DslParserException(string.Format("Expected {0} but found: {1}",
-                    tokenType.ToString().ToUpper(), _lookaheadFirst.Value));
-
-            DiscardToken();
-        }
 
         private void Define()
         {
-            DiscardToken(TokenType.Define);
-            var newSymbolName = ReadToken(TokenType.Symbol); 
+            Reader.DiscardToken(TokenType.Define);
+            var newSymbolName = Reader.ReadToken(TokenType.Symbol);
             _featureModel.Type = new FeatureTypeModel()
             {
                 Name = newSymbolName.Value
             };
-            DiscardToken(TokenType.Symbol);
+            Reader.DiscardToken(TokenType.Symbol);
             ReadFrom();
+            ReadExpression();
 //            _featureModel.DateRange = new DateRange();
 //            _featureModel.DateRange.From = DateTime.ParseExact(ReadToken(TokenType.DateTimeValue).Value, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
         }
 
-        private void ReadFrom()
+        public VariableExpression ReadVariable()
         {
-            DiscardToken(TokenType.From);
-            var fromCollections = new List<string>();
-            do
+            VariableExpression exp = null;
+            string postfix = "";
+            //Read the variable
+            var token = Reader.DiscardToken(TokenType.Symbol);
+            if (Reader.Current.TokenType == TokenType.MemberAccess)
             {
-                var symbol = ReadToken(TokenType.Symbol);
-                DiscardToken(TokenType.Symbol);
-                fromCollections.Add(symbol.Value);
-                if (_lookaheadFirst.TokenType != TokenType.Comma) break;
-            } while (true);
-
-            ReadToken(TokenType.Symbol);
-
+                var memberChain = ReadMemberChainExpression();
+                postfix = "." + memberChain.ToString();
+            }
+            exp = new VariableExpression(token.Value + postfix);
+            return exp;
         }
 
-        private void ReadType()
+        public bool IsVariableExpression(DslToken tkA, DslToken tkB)
         {
-            DiscardToken(TokenType.Type); 
+            return tkA.TokenType == TokenType.Symbol 
+                && (tkB.TokenType != TokenType.OpenParenthesis);
         }
 
-        private void MatchCondition()
+        private MemberExpression ReadMemberChainExpression()
         {
-            CreateNewMatchCondition();
-
-            if (IsObject(_lookaheadFirst))
+            if (Reader.Current.TokenType != TokenType.MemberAccess) return null;
+            MemberExpression rootMember = null;
+            MemberExpression previousMember = null;
+            while (true)
             {
-                if (IsEqualityOperator(_lookaheadSecond))
+                if (Reader.Current.TokenType != TokenType.MemberAccess) break;
+                var member = ReadMemberExpression();
+                if (rootMember == null)
                 {
-                    EqualityMatchCondition();
-                }
-                else if (_lookaheadSecond.TokenType == TokenType.In)
-                {
-                    InCondition();
-                }
-                else if (_lookaheadSecond.TokenType == TokenType.NotIn)
-                {
-                    NotInCondition();
+                    rootMember = member; 
                 }
                 else
                 {
-                    throw new DslParserException(ExpectedObjectErrorText + " " + _lookaheadSecond.Value);
+                    previousMember.SubElement = member;
                 }
-
-                MatchConditionNext();
+                previousMember = member;
             }
-            else
-            {
-                throw new DslParserException(ExpectedObjectErrorText + _lookaheadFirst.Value);
-            }
+            return rootMember;
         }
+
+        private MemberExpression ReadMemberExpression()
+        {
+            Reader.DiscardToken(TokenType.MemberAccess);
+            var memberSymbol = Reader.DiscardToken(TokenType.Symbol);
+            MemberExpression member = new MemberExpression(memberSymbol.Value);
+            return member;
+
+            //ExpressionNode currentNode = null;
+            //            while (true)
+            //            {
+            //                //if a dont is here, go a level deeper..
+            //                var token = Reader.Current;
+            //                
+            //                if ((token.TokenType != TokenType.Symbol && token.TokenType != TokenType.MemberAccess)
+            //                    || (cursorPredicate!=null && cursorPredicate(Reader.Cursor)))
+            //                {
+            //                    break;
+            //                }
+            //                switch (token.TokenType)
+            //                {
+            //                    case TokenType.MemberAccess:
+            //                        Reader.DiscardToken();
+            //                        break;
+            //                    case TokenType.Symbol:
+            //                        var newNode = new ExpressionNode(Reader.DiscardToken());
+            //                        if (currentNode != null) currentNode.AddChild(newNode);
+            //                        else
+            //                        {
+            //                            currentNode = newNode;
+            //                        }
+            //                        break;
+            //                } 
+            //                //read symbol
+            //
+            //
+            //            }
+            //            return tree;
+        }
+
+        private AssignmentExpression ReadVariableSet()
+        {
+            Reader.DiscardToken(TokenType.Set);
+            var typeNameToken = Reader.ReadToken(TokenType.Symbol);
+            typeNameToken.Value = typeNameToken.Value.Trim();
+            if (FeatureModel.Type.Name != typeNameToken.Value)
+            {
+                throw new Exception($"Unexpected Feature object at {typeNameToken.Line}:{typeNameToken.Position}!");
+            }
+            Reader.DiscardToken(TokenType.Symbol);
+            Reader.DiscardToken(TokenType.MemberAccess);
+            var memberAccessTree = ReadMemberExpression();
+            //if (memberAccessTree.GetChildrenCount() > 1) throw new Exception("Invalid member assignment");
+            ExpressionNode typedTree = null;
+            var rootNode = new ExpressionNode(typeNameToken);
+            var expression = memberAccessTree.GetChildren().First();
+            rootNode.AddChild(expression);
+            typedTree.AddChild(rootNode);
+
+            Reader.DiscardToken(TokenType.Assign);
+            var variableValueExpression = ReadExpression(); 
+            var setExp = new AssignmentExpression(typedTree, variableValueExpression);
+            FeatureModel.Features.Add(setExp);
+            return setExp;
+        }
+
+        private OrderByExpression ReadOrderBy()
+        {
+            Reader.DiscardToken(TokenType.OrderBy);
+            var tree = ReadExpression();
+            var expt = new List<IExpression>();
+            expt.Add(tree);
+            var orderBy = this.OrderBy = new OrderByExpression(expt);
+            return orderBy;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public FunctionExpression ReadFunction()
+        {
+            var f = new FunctionExpression();
+            var tknFunctionName = Reader.DiscardToken(TokenType.Symbol);
+            Reader.DiscardToken(TokenType.OpenParenthesis);
+            f.Name = tknFunctionName.Value;
+            var cursor = Reader.Cursor.Clone();
+            //Create a predicate untill the closing of the function
+            var fnEndPredicate = Parser.FunctionCallEnd(cursor);
+            while (!Reader.IsComplete && !fnEndPredicate(Reader.Cursor))
+            {
+                ParameterExpression fnParameter = ReadFunctionParameter();
+                f.AddParameter(fnParameter);
+                if (Reader.Current.TokenType == TokenType.Comma)
+                {
+                    Reader.DiscardToken();
+                }
+            }
+            Reader.DiscardToken(TokenType.CloseParenthesis);
+            return f;
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public ParameterExpression ReadFunctionParameter()
+        {
+            var currentCursor = Reader.Cursor.Clone();
+            //Look for a comma on the same level
+            var data = ReadExpression(Parser.FunctionParameterEnd(currentCursor));
+            var param = new ParameterExpression(data); 
+            return param;
+        }
+        
+
+        public ExpressionNode ReadParenthesisContent()
+        {
+            ExpressionNode tree = null;
+            Reader.DiscardToken(TokenType.OpenParenthesis);
+            short expDepth = 0;
+            ExpressionNode currentNode = null;
+            while (true)
+            {
+                var token = Reader.DiscardToken();
+                var nextToken = Reader.Current;
+                var tokenNode = new ExpressionNode(token);
+                tokenNode.SetDepth(expDepth);
+
+                var isParenthesis = token.TokenType == TokenType.OpenParenthesis
+                                    || token.TokenType == TokenType.CloseParenthesis;
+                if (token.TokenType == TokenType.OpenParenthesis)
+                {
+                    currentNode = tokenNode;
+                    expDepth++;
+                }
+                else if (token.TokenType == TokenType.CloseParenthesis)
+                {
+                    tree.AddChild(currentNode);
+                    expDepth--;
+                }
+            }
+            return tree;
+        }
+
+        /// <summary>
+        /// Wether the two tokens form a function call
+        /// </summary>
+        /// <param name="tokenA"></param>
+        /// <param name="tokenB"></param>
+        /// <returns></returns>
+        private bool IsFunctionCall(DslToken tokenA, DslToken tokenB)
+        {
+            return tokenA.TokenType == TokenType.Symbol && tokenB.TokenType == TokenType.OpenParenthesis;
+        }
+
+
+
+        private void ReadSymbolMemberAccess()
+        {
+            var symbol = Reader.ReadToken(TokenType.Symbol);
+            Reader.DiscardToken(TokenType.Symbol);
+            Reader.DiscardToken(TokenType.MemberAccess);
+            var memberTokenStack = new Stack<DslToken>();
+            while (true)
+            {
+                var memberToken = Reader.ReadToken(TokenType.Symbol);
+                Reader.DiscardToken(TokenType.Symbol);
+                memberTokenStack.Push(memberToken);
+                if (Reader.Current.TokenType != TokenType.MemberAccess)
+                {
+                    break;
+                }
+            }
+            memberTokenStack = memberTokenStack;
+        } 
+
+        /// <summary>
+        /// Reads from tokens
+        /// </summary>
+        private void ReadFrom()
+        {
+            Reader.DiscardToken(TokenType.From);
+            var fromCollections = new List<string>();
+            do
+            {
+                var symbol = Reader.ReadToken(TokenType.Symbol);
+                Reader.DiscardToken(TokenType.Symbol);
+                fromCollections.Add(symbol.Value);
+                if (Reader.Current.TokenType != TokenType.Comma) break;
+            } while (true);
+        }
+
+//        private void MatchCondition()
+//        {
+//            CreateNewMatchCondition();
+//
+//            if (IsObject(Reader.Current))
+//            {
+//                if (IsEqualityOperator(_lookaheadSecond))
+//                {
+//                    EqualityMatchCondition();
+//                }
+//                else if (_lookaheadSecond.TokenType == TokenType.In)
+//                {
+//                    InCondition();
+//                }
+//                else if (_lookaheadSecond.TokenType == TokenType.NotIn)
+//                {
+//                    NotInCondition();
+//                }
+//                else
+//                {
+//                    throw new DslParserException(ExpectedObjectErrorText + " " + _lookaheadSecond.Value);
+//                }
+//
+//                MatchConditionNext();
+//            }
+//            else
+//            {
+//                throw new DslParserException(ExpectedObjectErrorText + _lookaheadFirst.Value);
+//            }
+//        }
 
         private void EqualityMatchCondition()
         {
-            _currentMatchCondition.Object = GetObject(_lookaheadFirst);
-            DiscardToken();
-            _currentMatchCondition.Operator = GetOperator(_lookaheadFirst);
-            DiscardToken();
-            _currentMatchCondition.Value = _lookaheadFirst.Value;
-            DiscardToken();
+            _currentMatchCondition.Object = Reader.GetObject();
+            Reader.DiscardToken();
+            _currentMatchCondition.Operator = Reader.GetOperator();
+            Reader.DiscardToken();
+            _currentMatchCondition.Value = Reader.Current.Value;
+            Reader.DiscardToken();
         }
 
-        private DslObject GetObject(DslToken token)
-        {
-            switch (token.TokenType)
-            {
-                case TokenType.Collection:
-                    return DslObject.Collection;
-                case TokenType.Type:
-                    return DslObject.Type;
-                case TokenType.Feature:
-                    return DslObject.Feature; 
-                default:
-                    throw new DslParserException(ExpectedObjectErrorText + token.Value);
-            }
-        }
-
-        private DslOperator GetOperator(DslToken token)
-        {
-            switch (token.TokenType)
-            {
-                case TokenType.Equals:
-                    return DslOperator.Equals;
-                case TokenType.NotEquals:
-                    return DslOperator.NotEquals; 
-                case TokenType.In:
-                    return DslOperator.In;
-                case TokenType.NotIn:
-                    return DslOperator.NotIn;
-                default:
-                    throw new DslParserException("Expected =, !=, LIKE, NOT LIKE, IN, NOT IN but found: " + token.Value);
-            }
-        }
-
+        
         private void NotInCondition()
         {
             ParseInCondition(DslOperator.NotIn);
@@ -197,33 +451,33 @@ namespace Peeralize.Service.Lex.Parsing
         {
             _currentMatchCondition.Operator = inOperator;
             _currentMatchCondition.Values = new List<string>();
-            _currentMatchCondition.Object = GetObject(_lookaheadFirst);
-            DiscardToken();
+            _currentMatchCondition.Object = Reader.GetObject();
+            Reader.DiscardToken();
 
             if (inOperator == DslOperator.In)
-                DiscardToken(TokenType.In);
+                Reader.DiscardToken(TokenType.In);
             else if (inOperator == DslOperator.NotIn)
-                DiscardToken(TokenType.NotIn);
+                Reader.DiscardToken(TokenType.NotIn);
 
-            DiscardToken(TokenType.OpenParenthesis);
+            Reader.DiscardToken(TokenType.OpenParenthesis);
             StringLiteralList();
-            DiscardToken(TokenType.CloseParenthesis);
+            Reader.DiscardToken(TokenType.CloseParenthesis);
         }
 
         private void StringLiteralList()
         {
-            _currentMatchCondition.Values.Add(ReadToken(TokenType.StringValue).Value);
-            DiscardToken(TokenType.StringValue);
+            _currentMatchCondition.Values.Add(Reader.ReadToken(TokenType.StringValue).Value);
+            Reader.DiscardToken(TokenType.StringValue);
             StringLiteralListNext();
         }
 
         private void StringLiteralListNext()
         {
-            if (_lookaheadFirst.TokenType == TokenType.Comma)
+            if (Reader.Current.TokenType == TokenType.Comma)
             {
-                DiscardToken(TokenType.Comma);
-                _currentMatchCondition.Values.Add(ReadToken(TokenType.StringValue).Value);
-                DiscardToken(TokenType.StringValue);
+                Reader.DiscardToken(TokenType.Comma);
+                _currentMatchCondition.Values.Add(Reader.ReadToken(TokenType.StringValue).Value);
+                Reader.DiscardToken(TokenType.StringValue);
                 StringLiteralListNext();
             }
             else
@@ -231,73 +485,30 @@ namespace Peeralize.Service.Lex.Parsing
                 // nothing
             }
         }
+         
 
-        private void MatchConditionNext()
+        private bool IsNewExpressionStart(DslToken token)
         {
-            if (_lookaheadFirst.TokenType == TokenType.And)
+            switch (token.TokenType)
             {
-                AndMatchCondition();
-            }
-            else if (_lookaheadFirst.TokenType == TokenType.Or)
-            {
-                OrMatchCondition();
-            }
-            else if (_lookaheadFirst.TokenType == TokenType.Between)
-            {
-                DateCondition();
-            }
-            else
-            {
-                throw new DslParserException("Expected AND, OR or BETWEEN but found: " + _lookaheadFirst.Value);
+                case TokenType.OpenParenthesis:
+                    return true;
+                default:
+                    return false;
             }
         }
-
-        private void AndMatchCondition()
-        {
-            _currentMatchCondition.LogOpToNextCondition = DslLogicalOperator.And;
-            DiscardToken(TokenType.And);
-            MatchCondition();
-        }
-
-        private void OrMatchCondition()
-        {
-            _currentMatchCondition.LogOpToNextCondition = DslLogicalOperator.Or;
-            DiscardToken(TokenType.Or);
-            MatchCondition();
-        }
-
-        private void DateCondition()
-        {
-            DiscardToken(TokenType.Between);
-
-//            _featureModel.DateRange = new DateRange();
-//            _featureModel.DateRange.From = DateTime.ParseExact(ReadToken(TokenType.DateTimeValue).Value, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-//            DiscardToken(TokenType.DateTimeValue);
-//            DiscardToken(TokenType.And);
-//            _featureModel.DateRange.To = DateTime.ParseExact(ReadToken(TokenType.DateTimeValue).Value, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-//            DiscardToken(TokenType.DateTimeValue);
-//            DateConditionNext();
-        }
-
-        private void DateConditionNext()
-        {
-            if (_lookaheadFirst.TokenType == TokenType.SequenceTerminator)
-            {
-                // nothing
-            }
-            else
-            {
-                throw new DslParserException("Expected LIMIT or the end of the query but found: " + _lookaheadFirst.Value);
-            }
-
-        }
- 
 
         private bool IsObject(DslToken token)
         {
             return token.TokenType == TokenType.Collection
                    || token.TokenType == TokenType.Feature
                    || token.TokenType == TokenType.Type;
+        }
+
+        private bool IsKeyword(DslToken token)
+        {
+            return token.TokenType == TokenType.OrderBy
+                   || token.TokenType == TokenType.Set;
         }
 
         private bool IsEqualityOperator(DslToken token)
@@ -312,6 +523,25 @@ namespace Peeralize.Service.Lex.Parsing
         {
             _currentMatchCondition = new MatchCondition();
             _featureModel.Filters.Add(_currentMatchCondition);
+        }
+
+        public static Predicate<TokenCursor> FunctionCallEnd(TokenCursor currentCursor)
+        {
+            return x =>
+            {
+                return (x.Depth) == currentCursor.Depth
+                       && (x.Token.TokenType == TokenType.CloseParenthesis);
+            };
+        }
+
+        public static Predicate<TokenCursor> FunctionParameterEnd(TokenCursor currentCursor)
+        {
+            return x =>
+            {
+                return x.Depth == currentCursor.Depth
+                       && (x.Token.TokenType == TokenType.Comma || x.Token.TokenType == TokenType.CloseParenthesis);
+
+            };
         }
     }
 }

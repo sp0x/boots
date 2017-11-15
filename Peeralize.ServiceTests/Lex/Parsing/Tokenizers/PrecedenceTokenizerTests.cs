@@ -7,7 +7,7 @@ using Peeralize.Service.Lex.Parsing.Tokens;
 using Xunit;
 
 namespace Peeralize.ServiceTests.Lex.Parsing.Tokenizers
-{
+{ 
     public class PrecedenceTokenizerTests
     {
 
@@ -16,12 +16,12 @@ namespace Peeralize.ServiceTests.Lex.Parsing.Tokenizers
         /// </summary>
         /// <param name="inputDirectory"></param>
         [Theory]
-        [InlineData(new object[] { @"
+        [InlineData(@"
             define User
             from events
             order by(uuid,time)
             User.id=unique(events.uuid)
-            User.visit_count=count(events.value)" })]
+            User.visit_count=count(events.value)")]
         public void Tokenize(string txt)
         {
             var tokenizer = new PrecedenceTokenizer(); 
@@ -38,8 +38,8 @@ namespace Peeralize.ServiceTests.Lex.Parsing.Tokenizers
             define User
             from events
             order by(uuid,time)
-            User.id=unique(events.uuid)
-            User.visit_count=count(events.value)" })]
+            set User.id=unique(events.uuid)
+            set User.visit_count=count(events.value)" })]
         public void GenerateQuery(string txt)
         {
             var tokenizer = new PrecedenceTokenizer();

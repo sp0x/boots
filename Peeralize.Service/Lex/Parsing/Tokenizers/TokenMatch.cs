@@ -7,6 +7,7 @@ namespace Peeralize.Service.Lex.Parsing.Tokenizers
         public TokenType TokenType { get; set; }
         public string Value { get; set; }
         public int StartIndex { get; set; }
+        public uint Line { get; set; }
         public int EndIndex { get; set; }
         public int Precedence { get; set; }
     }

@@ -17,9 +17,10 @@
         DateTimeValue,
         Between,
         Invalid,
-        SequenceTerminator,
+        EOF,
         From,
         OrderBy,
+        Set,
         Symbol
     }
 }

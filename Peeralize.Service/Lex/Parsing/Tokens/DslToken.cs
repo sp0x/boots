@@ -2,24 +2,33 @@
 {
     public class DslToken
     {
+
+        public uint Line { get; private set; }
+        public uint Position { get; private set; }
+        public TokenType TokenType { get; set; }
+        public string Value { get; set; }
+
         public DslToken(TokenType tokenType)
         {
             TokenType = tokenType;
             Value = string.Empty;
         }
 
-        public DslToken(TokenType tokenType, string value)
+        public DslToken(TokenType tokenType, string value, uint line)
         {
             TokenType = tokenType;
             Value = value;
+            Line = line;
         }
-
-        public TokenType TokenType { get; set; }
-        public string Value { get; set; }
 
         public DslToken Clone()
         {
-            return new DslToken(TokenType, Value);
+            return new DslToken(TokenType, Value, Line);
+        }
+
+        public override string ToString()
+        {
+            return $"[{TokenType}]{Value}";
         }
     }
 }
