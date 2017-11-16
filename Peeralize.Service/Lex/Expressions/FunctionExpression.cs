@@ -23,5 +23,25 @@ namespace Peeralize.Service.Lex.Expressions
         {
             Parameters.Add(fnParameter);
         }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(Name);
+            sb.Append("(");
+            var iParam = 0;
+            foreach (var param in Parameters)
+            {
+                var paramStr = param.ToString();
+                sb.Append(paramStr);
+                iParam++;
+                if (iParam < Parameters.Count)
+                {
+                    sb.Append(", ");
+                }
+            }
+            sb.Append(")");
+            return sb.ToString();
+        }
     }
 }

@@ -41,53 +41,124 @@ namespace Peeralize.Service.Lex.Parsing
             return _featureModel;
         }
 
-
         /// <summary>
-        /// Reads the next available expression
+        /// Reads the next available expression.
+        /// </summary>
+        /// <returns></returns>
+        public IExpression ReadExpression()
+        {
+            return ReadExpressions(null, 1).FirstOrDefault();
+        }
+        /// <summary>
+        /// Reads the next available expressions
         /// </summary>
         /// <param name="predicate"></param>
         /// <returns></returns>
-        private IExpression ReadExpression(Predicate<TokenCursor> predicate = null)
+        public IEnumerable<IExpression> ReadExpressions(Predicate<TokenCursor> predicate = null, int limit = 0)
         {
-            IExpression rootExpression = null;
+            Stack<IExpression> previousExpressions = new Stack<IExpression>();
+            Queue<IExpression> outputExpressions = new Queue<IExpression>();
+            uint ix = 0;
             while (!Reader.IsComplete)
             {
-                if (predicate(Reader.Cursor)) break;
+                if (predicate!=null && predicate(Reader.Cursor)) break;
+                if (limit != 0 && ix >= limit) break;
+
                 var nextToken = Reader.Current;
-                IExpression subTree = null;
+                IExpression crExpression = null;
                 switch (nextToken.TokenType)
                 {
                     case TokenType.OrderBy:
-                        rootExpression = ReadOrderBy();
+                        crExpression = ReadOrderBy();
                         break;
                     case TokenType.Set:
-                        rootExpression = ReadVariableSet();
+                        crExpression = ReadVariableSet();
                         break;
                     case TokenType.Symbol:
                         if (IsFunctionCall(Reader.Current, Reader.NextToken))
                         {
-                            var func = rootExpression = ReadFunction();
-                            subTree = func;
+                            var func = ReadFunction();
+                            crExpression = func;
                         }
                         else if (IsVariableExpression(Reader.Current, Reader.NextToken))
                         {
-                            var variable = rootExpression = ReadVariable();
-                            variable = variable;
+                            var variable = ReadVariable();
+                            crExpression = variable;
                         }
                         else
                         {
                             var member = ReadMemberChainExpression();
-                            subTree = member;
+                            crExpression = member;
                         }
                         break;
+                    case TokenType.NumberValue:
+                        crExpression = ReadConstant();
+                        break;
+                    case TokenType.StringValue:
+                        crExpression = ReadConstant();
+                        break;
+                    case TokenType.FloatValue:
+                        crExpression = ReadConstant();
+                        break;
                     default:
-                        throw new Exception($"Unexpected token at {nextToken.Line}:{nextToken.Position}!");
+                        if (IsOperator(nextToken))
+                        {
+                            var op = new BinaryExpression(nextToken);
+                            Reader.DiscardToken();
+                            var left = previousExpressions.Pop();
+                            outputExpressions.Dequeue();
+                            op.Left = left;
+                            op.Right = ReadExpression();
+                            crExpression = op;
+                        }
+                        else
+                        {
+                            throw new Exception($"Unexpected token at {nextToken.Line}:{nextToken.Position}!");
+                        }
+                        break;
                 }
-                nextToken = nextToken;
-            } 
-            return rootExpression;
+                outputExpressions.Enqueue(crExpression);
+                previousExpressions.Push(crExpression);
+                ix++;
+                //yield return crExpression; 
+            }
+            return outputExpressions;
         }
-        
+
+        private IExpression ReadConstant()
+        {
+            var token = Reader.DiscardToken();
+            IExpression output = null;
+            switch (token.TokenType)
+            {
+                case TokenType.NumberValue:
+                    output = new NumberExpression() { Value = int.Parse(token.Value)};
+                    break;
+                case TokenType.StringValue:
+                    output = new StringExpression() {Value = token.Value};
+                    break;
+                case TokenType.FloatValue:
+                    output = new FloatExpression() {Value = float.Parse(token.Value)};
+                    break;
+                default:
+                    throw new Exception("Unexpected token for constant!");
+                    break;
+            }
+            return output;
+        }
+
+        private bool IsOperator(DslToken token)
+        {
+            var tt = token.TokenType;
+            return tt == TokenType.Add
+                   || tt == TokenType.Subtract
+                   || tt == TokenType.Multiply
+                   || tt == TokenType.Divide
+                   || tt == TokenType.Equals
+                   || tt == TokenType.NotEquals
+                   || tt == TokenType.In
+                   || tt == TokenType.NotIn;
+        }
         private ExpressionNode ReadExpressionData()
         {
             var tree = new ExpressionNode(null);
@@ -155,7 +226,7 @@ namespace Peeralize.Service.Lex.Parsing
             };
             Reader.DiscardToken(TokenType.Symbol);
             ReadFrom();
-            ReadExpression();
+            ReadExpressions();
 //            _featureModel.DateRange = new DateRange();
 //            _featureModel.DateRange.From = DateTime.ParseExact(ReadToken(TokenType.DateTimeValue).Value, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
         }
@@ -262,7 +333,8 @@ namespace Peeralize.Service.Lex.Parsing
             typedTree.AddChild(rootNode);
 
             Reader.DiscardToken(TokenType.Assign);
-            var variableValueExpression = ReadExpression(); 
+            var variableValueExpression = ReadExpressions().FirstOrDefault();
+
             var setExp = new AssignmentExpression(typedTree, variableValueExpression);
             FeatureModel.Features.Add(setExp);
             return setExp;
@@ -271,9 +343,9 @@ namespace Peeralize.Service.Lex.Parsing
         private OrderByExpression ReadOrderBy()
         {
             Reader.DiscardToken(TokenType.OrderBy);
-            var tree = ReadExpression();
+            var tree = ReadExpressions();
             var expt = new List<IExpression>();
-            expt.Add(tree);
+            expt.AddRange(tree);
             var orderBy = this.OrderBy = new OrderByExpression(expt);
             return orderBy;
         }
@@ -312,8 +384,9 @@ namespace Peeralize.Service.Lex.Parsing
         {
             var currentCursor = Reader.Cursor.Clone();
             //Look for a comma on the same level
-            var data = ReadExpression(Parser.FunctionParameterEnd(currentCursor));
-            var param = new ParameterExpression(data); 
+            var paramValue = ReadExpressions(Parser.FunctionParameterEnd(currentCursor)).FirstOrDefault();
+            if (paramValue == null) return null;
+            var param = new ParameterExpression(paramValue); 
             return param;
         }
         

@@ -22,6 +22,10 @@ namespace Peeralize.Service.Lex.Parsing.Tokenizers
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Assign, "=", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Equals, "==", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.NotEquals, "!=", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Add, "\\+", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Subtract, "-", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Multiply, "\\*", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Divide, "/", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Define, "define", 1)); //(?<=define\\s)([\\w\\d_]+)
             _tokenDefinitions.Add(new TokenDefinition(TokenType.NotIn, "not\\sin", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.In, "(^|\\W)in(?=[\\s\\t])", 1));
@@ -34,8 +38,9 @@ namespace Peeralize.Service.Lex.Parsing.Tokenizers
             _tokenDefinitions.Add(new TokenDefinition(TokenType.OpenParenthesis, "\\(", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Or, "or", 1)); 
             _tokenDefinitions.Add(new TokenDefinition(TokenType.DateTimeValue, "\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.StringValue, "'([^']*)'", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.NumberValue, "\\d+", 2));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.StringValue, "('|\")([^']*)('|\")", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.NumberValue, "(-?)\\d+", 2));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.FloatValue, "(-?)\\d+\\.\\d+", 2));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Set, "(^|\\s)(set)(?=[\\s\t])", 2));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Symbol, "[\\w\\d_]+", 3));
         }
@@ -65,8 +70,11 @@ namespace Peeralize.Service.Lex.Parsing.Tokenizers
                 {
                     continue;
                 }
-
-                yield return new DslToken(bestMatch.TokenType, bestMatch.Value, bestMatch.Line);
+                var token = new DslToken(bestMatch.TokenType, bestMatch.Value, bestMatch.Line)
+                {
+                    Position = (uint)bestMatch.StartIndex
+                };
+                yield return token;
 
                 lastMatch = bestMatch;
             } 

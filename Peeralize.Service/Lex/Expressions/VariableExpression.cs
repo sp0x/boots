@@ -18,5 +18,10 @@ namespace Peeralize.Service.Lex.Expressions
         {
             return new List<ExpressionNode>();
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

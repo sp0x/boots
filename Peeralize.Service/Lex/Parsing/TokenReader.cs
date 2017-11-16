@@ -19,7 +19,7 @@ namespace Peeralize.Service.Lex.Parsing
         {
             get
             {
-                return _tokenSequence.Count == 0 && _lookaheadSecond.TokenType == TokenType.EOF;
+                return _tokenSequence.Count == 0 && _lookaheadFirst.TokenType == TokenType.EOF;
             }
         }
 
@@ -71,19 +71,35 @@ namespace Peeralize.Service.Lex.Parsing
             var token = Current;
             switch (token.TokenType)
             {
-                case TokenType.Equals:
-                    return DslOperator.Equals;
-                case TokenType.NotEquals:
-                    return DslOperator.NotEquals;
-                case TokenType.In:
-                    return DslOperator.In;
-                case TokenType.NotIn:
-                    return DslOperator.NotIn;
+                case TokenType.Equals: return DslOperator.Equals;
+                case TokenType.NotEquals: return DslOperator.NotEquals;
+                case TokenType.In: return DslOperator.In;
+                case TokenType.NotIn: return DslOperator.NotIn;
+                case TokenType.Add: return DslOperator.Add;
+                case TokenType.Subtract: return DslOperator.Subtract;
+                case TokenType.Multiply: return DslOperator.Multiply;
+                case TokenType.Divide: return DslOperator.Divide;
                 default:
-                    throw new DslParserException("Expected =, !=, LIKE, NOT LIKE, IN, NOT IN but found: " + token.Value);
+                    throw new DslParserException("Expected =, !=, LIKE, NOT LIKE, IN, NOT IN, /, +, -, * but found: " + token.Value);
             }
         }
 
+        /// <summary>
+        /// Seeks untill a predicate matches.
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public TokenCursor SeekTo(Predicate<TokenCursor> filter)
+        {
+            if (filter(Cursor)) return Cursor.Clone();
+            TokenCursor matchingCursor = null;
+            DslToken previousToken = _lookaheadFirst;
+            foreach (var item in _tokenSequence)
+            {
+                
+            }
+            return matchingCursor;
+        }
 
         public DslToken ReadToken(TokenType tokenType)
         {
@@ -105,7 +121,10 @@ namespace Peeralize.Service.Lex.Parsing
             if (_tokenSequence.Any())
                 _lookaheadSecond = _tokenSequence.Pop();
             else
-                _lookaheadSecond = new DslToken(TokenType.EOF, string.Empty, 0);
+                _lookaheadSecond = new DslToken(TokenType.EOF, string.Empty, _lookaheadFirst.Line)
+                {
+                    Position = 0
+                };
             Cursor.SetToken(_lookaheadFirst);
             if (token.TokenType == TokenType.OpenParenthesis)
             {

@@ -1,4 +1,4 @@
-﻿namespace Peeralize.Service.Lex
+﻿namespace Peeralize.Service.Lex.Data
 {
     public enum DslOperator
     {
@@ -7,6 +7,10 @@
         NotEquals,
         Like,
         NotLike,
+        Add,
+        Divide,
+        Multiply,
+        Subtract,
         In,
         NotIn
     }

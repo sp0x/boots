@@ -15,5 +15,10 @@ namespace Peeralize.Service.Lex.Expressions
         {
             return new List<IExpression>() {Value};
         }
+
+        public override string ToString()
+        {
+            return Value?.ToString();
+        }
     }
 }

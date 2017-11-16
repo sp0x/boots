@@ -4,7 +4,7 @@
     {
 
         public uint Line { get; private set; }
-        public uint Position { get; private set; }
+        public uint Position { get; set; }
         public TokenType TokenType { get; set; }
         public string Value { get; set; }
 
@@ -23,7 +23,10 @@
 
         public DslToken Clone()
         {
-            return new DslToken(TokenType, Value, Line);
+            return new DslToken(TokenType, Value, Line)
+            {
+                Position = this.Position
+            };
         }
 
         public override string ToString()
