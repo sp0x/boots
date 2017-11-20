@@ -27,6 +27,7 @@ using Peeralize.Service.Integration.Blocks;
 using Peeralize.Service.IntegrationSource;
 using Peeralize.Service.Source;
 using Peeralize.Services;
+using Peeralize.Data;
 
 namespace Peeralize.Controllers
 {
@@ -34,7 +35,7 @@ namespace Peeralize.Controllers
     /// TODO: Create a service for the actions performed in this controller.
     /// </summary>
     [Produces("application/json")]
-    [Authorize(ActiveAuthenticationSchemes = "Hmac")]
+    [Authorize(ActiveAuthenticationSchemes = AuthenticationSchemes.DataSchemes)]
     [Route("data")]
     public class DataIntegrationController : Controller
     { 

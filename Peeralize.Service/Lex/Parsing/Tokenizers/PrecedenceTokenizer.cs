@@ -15,6 +15,8 @@ namespace Peeralize.Service.Lex.Parsing.Tokenizers
             _tokenDefinitions = new List<TokenDefinition>();
 
             _tokenDefinitions.Add(new TokenDefinition(TokenType.And, "(^|\\W)and(?=[\\s\\t])", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Or, "(^|\\W)or(?=[\\s\\t])", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Not, "(^|\\W)not(?=[\\s\\t])", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Between, "between", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.CloseParenthesis, "\\)", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Comma, ",", 1));
@@ -36,7 +38,6 @@ namespace Peeralize.Service.Lex.Parsing.Tokenizers
             //_tokenDefinitions.Add(new TokenDefinition(TokenType.Message, "msg|message", 1));
             //_tokenDefinitions.Add(new TokenDefinition(TokenType.NotLike, "not like", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.OpenParenthesis, "\\(", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Or, "or", 1)); 
             _tokenDefinitions.Add(new TokenDefinition(TokenType.DateTimeValue, "\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.StringValue, "('|\")([^']*)('|\")", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.NumberValue, "(-?)\\d+", 2));

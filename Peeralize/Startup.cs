@@ -133,7 +133,6 @@ namespace Peeralize
                     //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
                     //it should be True
                 }); 
-
 //                builder.Run(async (context) =>
 //                {
 //                    //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);

@@ -14,7 +14,7 @@ namespace Peeralize
             Configuration = root.GetSection("routing");
         }
         /// <summary>
-        /// Wether a context matches a given route role.
+        /// Whether a context matches a given route role.
         /// </summary>
         /// <param name="role">The role to check for</param>
         /// <param name="ctx">The context to compare</param>

@@ -100,6 +100,13 @@ namespace Peeralize.Service.Lex.Parsing
                     case TokenType.FloatValue:
                         crExpression = ReadConstant();
                         break;
+                    case TokenType.Not:
+                        var unaryOp = new UnaryExpression(nextToken);
+                        Reader.DiscardToken();
+                        unaryOp.Operand = ReadExpression();
+                        crExpression = unaryOp;
+
+                        break;
                     default:
                         if (IsOperator(nextToken))
                         {
@@ -113,7 +120,8 @@ namespace Peeralize.Service.Lex.Parsing
                         }
                         else
                         {
-                            throw new Exception($"Unexpected token at {nextToken.Line}:{nextToken.Position}!");
+                            throw new Exception($"Unexpected token at {nextToken.Line}:{nextToken.Position}:\n " +
+                                                $"{nextToken}");
                         }
                         break;
                 }
@@ -124,7 +132,7 @@ namespace Peeralize.Service.Lex.Parsing
             }
             return outputExpressions;
         }
-
+         
         private IExpression ReadConstant()
         {
             var token = Reader.DiscardToken();
@@ -455,7 +463,7 @@ namespace Peeralize.Service.Lex.Parsing
         /// <summary>
         /// Reads from tokens
         /// </summary>
-        private void ReadFrom()
+        private List<string> ReadFrom()
         {
             Reader.DiscardToken(TokenType.From);
             var fromCollections = new List<string>();
@@ -466,6 +474,7 @@ namespace Peeralize.Service.Lex.Parsing
                 fromCollections.Add(symbol.Value);
                 if (Reader.Current.TokenType != TokenType.Comma) break;
             } while (true);
+            return fromCollections;
         }
 
 //        private void MatchCondition()

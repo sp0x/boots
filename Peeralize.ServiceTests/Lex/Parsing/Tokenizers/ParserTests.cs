@@ -113,5 +113,48 @@ namespace Peeralize.ServiceTests.Lex.Parsing
             Assert.Equal("max(c, 1 + a.b)", fn1.ToString());
             Assert.Equal("b", ((VariableExpression)divisionLeft.Right).Name); 
         }
+
+
+
+        /// <summary>
+        /// Test basic parsing
+        /// </summary>
+        /// <param name="inputDirectory"></param>
+        [Theory]
+        [InlineData(@"
+            define User
+            from events
+            order by(uuid,time)
+            User.id=unique(events.uuid)
+            User.visit_count=count(events.value)")]
+        public void Tokenize(string txt)
+        {
+            var tokenizer = new PrecedenceTokenizer();
+            var tokens = tokenizer.Tokenize(txt).ToList();
+            Assert.True(tokens.Any());
+            Assert.True(tokens.Count == 16);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="inputDirectory"></param>
+        [Theory]
+        [InlineData(new object[] { @"
+            define User
+            from events
+            order by(uuid,time)
+            set User.id=unique(events.uuid)
+            set User.visit_count=count(events.value)" })]
+        public void ParseFeatureDefinition(string txt)
+        {
+            var tokenizer = new PrecedenceTokenizer();
+            var parser = new Peeralize.Service.Lex.Parsing.Parser();
+            var items = tokenizer.Tokenize(txt);
+            var tokens = items.ToList();
+            foreach (var token in tokens)
+                Console.WriteLine(string.Format("TokenType: {0}, Value: {1}", token.TokenType, token.Value));
+            var x = parser.Parse(tokens);
+            x = x;
+        }
     }
 }
