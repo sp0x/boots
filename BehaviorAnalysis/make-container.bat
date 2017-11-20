@@ -1,2 +1,2 @@
 @echo off
-docker build -t peeralize/behavior .
+docker build -t netlyt/behavior .

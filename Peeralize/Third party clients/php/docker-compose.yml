@@ -1,7 +1,0 @@
----
-version: '2'
-
-
-services:
-  peeralytics_php:
-    container_name: peerpl 

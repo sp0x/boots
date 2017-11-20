@@ -10,25 +10,16 @@ Backup/
 obj/
 storage.ide
 /env
-/Peeralize/Third party clients/php/vendor/
+/Netlyt/Third party clients/php/vendor/
 **/workspace.xml
 **/.idea/*
 **/vendor
 **.suo
 **cookie.tmp
 */out/*
-/Peeralize/published/
-/Peeralize/Third party clients/php-full
+/Netlyt/published/
+/Netlyt/Third party clients/php-full
 **/composer.lock
 **/published.tar.gz
 **/.idea/workspace.xml
-<<<<<<< HEAD
-=======
-**storage.ide
-**.pyc
-/.vs/Peeralize/v15/sqlite3/storage.ide
-/.vs/Peeralize/v15/sqlite3/storage.ide
-/Peeralize/Third party clients/php/.idea/php.xml
-/Peeralize/Third party clients/php/.idea/php.xml
->>>>>>> master
 **.csv

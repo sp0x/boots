@@ -6,4 +6,4 @@ docker run -it --rm ^
 -v d:/dev/asp.net/Peeralize/BehaviorAnalysis/src:/app ^
 --mount type=volume,source=experiments,target=/experiments ^
 --entrypoint=bash ^
- peeralize/behavior
+ netlyt/behavior

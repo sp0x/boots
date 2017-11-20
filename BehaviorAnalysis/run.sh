@@ -3,4 +3,4 @@ docker run -it --rm \
 --mount type=bind,source="$(pwd)"/src,target=/app \
 --mount type=volume,source=experiments,target=/experiments \
 --entrypoint=bash \
- peeralize/behavior
+ netlyt/behavior

@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  peeralize:
+  netlyt:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     ports:

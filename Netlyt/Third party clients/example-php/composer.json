@@ -1,0 +1,13 @@
+{
+    "name": "peeralytics/example",
+    "authors": [
+        {
+            "name": "vasko",
+            "email": "vasil.vasilev94@yahoo.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "peeralytics/client": "dev-master"
+    }
+}

@@ -6,14 +6,14 @@ volumes:
   redis:
 
 services:
-  peeralize:
-    image: peeralize
+  netlyt:
+    image: netlyt
     build:
-      context: ./Peeralize
+      context: ./Netlyt
       dockerfile: Dockerfile
     depends_on:
       - redis
-      - mongo.peeralize.com 
+      - mongo.netlyt.com 
     ports:
       - "5000:5000"
       - "80:80"
@@ -36,17 +36,17 @@ services:
     build:
       context: ./docker/redis
       dockerfile: Dockerfile
-    container_name: redis.peeralize.com
-    hostname: redis.peeralize.com
+    container_name: redis.netlyt.com
+    hostname: redis.netlyt.com
     ports:
       - 6399:6399
     volumes:
       - redis:/data
 
-  mongo.peeralize.com :
+  mongo.netlyt.com :
     image: library/mongo:3.4
-    hostname: mongo.peeralize.com 
-    container_name: mongo.peeralize.com 
+    hostname: mongo.netlyt.com 
+    container_name: mongo.netlyt.com 
     volumes:
       - mongodb:/data/db
     ports:
@@ -56,8 +56,8 @@ services:
     command: mongod --auth
 
   behaviour:
-    container_name: behaviour.peeralize.com
-    hostname: behaviour.peeralize.com
+    container_name: behaviour.netlyt.com
+    hostname: behaviour.netlyt.com
     build:
       context: ./BehaviorAnalysis
       dockerfile: Dockerfile
