@@ -7,7 +7,7 @@ using System.Runtime.Serialization.Json;
 using nvoid.extensions;
 
 namespace Netlyt.Service.Analytics
-{
+{  
     [DataContract]
     public class BehaviourTree
     {
@@ -58,8 +58,7 @@ namespace Netlyt.Service.Analytics
                     return Math.Log(f);
 
                 return f;
-            }
-
+            } 
             public BehaviourTree.BNode GetDeepestPath()
             {
                 if (this.Children.Count == 0) return null;
