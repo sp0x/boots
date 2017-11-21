@@ -1,0 +1,8 @@
+{
+    "name": "username/projectname",
+    "type": "project",
+    "minimum-stability" : "dev",
+    "require": { 
+	    "peeralytics/client": "dev-master"
+    }
+}
