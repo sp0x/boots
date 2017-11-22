@@ -46,3 +46,5 @@ storage.ide
 /BehaviorAnalysis/.vscode/.ropeproject/objectdb
 /UpgradeLog.htm
 /Generation/UiHarvester/lib/webrec/
+/registry/
+/SiteProxy/

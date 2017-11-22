@@ -55,6 +55,28 @@ services:
     #to setup a user, follow this https://stackoverflow.com/questions/22638258/create-superuser-in-mongo
     command: mongod --auth
 
+  registry:
+    image: registry:2
+    container_name: registry
+    restart: always
+    ports:
+      - "10.10.1.5:443:5000"
+    volumes:
+      - ./registry:/var/lib/registry
+      - ./auth:/auth
+      - ./auth:/certs
+    environment:
+      REGISTRY_AUTH: "htpasswd"
+      REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
+      REGISTRY_AUTH_HTPASSWD_PATH: "/auth/registry.vaskovasilev.eu"
+      REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/registry_auth.crt"
+      REGISTRY_HTTP_TLS_KEY: "/certs/registry_auth.key"
+
+      #-e VIRTUAL_HOST=registry.vaskovasilev.eu 
+#-e LETSENCRYPT_HOST=registry.vaskovasilev.eu 
+#-e LETSENCRYPT_EMAIL=vaskovasilev94@yahoo.com 
+#--network=webproxy --name my_app httpd:alpine
+
   behaviour:
     container_name: behaviour.netlyt.com
     hostname: behaviour.netlyt.com
@@ -67,3 +89,8 @@ services:
     ports:
       - "5556:5556"
       - "5557:5557"
+
+networks:
+  default:
+    external:
+      name: webproxy
