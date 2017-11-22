@@ -9,13 +9,15 @@ node {
     stage('Build the project'){
         /* Compile the project */
         app.inside {
+            slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: '#439FE0', message: 'Build Started: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)', teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
             try{
                 sh 'dotnet restore'
                 sh 'dotnet build Netlyt/Netlyt.csproj'
+                slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: '#439FE0', message: 'Success ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)', teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
             } catch (err){
-                slackSend channel: '#builds', color: 'bad', message: 'Netlyt build failed', teamDomain: 'peeralytics', token: 'K5cgFQydAQSlIDeWS9ITziLG'
+                slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: '#439FE0', message: 'Build Failed: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)', teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
             }
-            slackSend channel: '#builds', color: 'good', message: 'Netlyt built successfully', teamDomain: 'peeralytics', token: 'K5cgFQydAQSlIDeWS9ITziLG'
+
         }
     }
 
