@@ -16,8 +16,7 @@ node {
                 slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: '#439FE0', message: 'Build Failed: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)', teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
             }*/
         
-    }
-
+    } 
     stage('Build container') {
        /* This builds the docker image*/ 
        app = docker.build("netlyt/netlyt")
