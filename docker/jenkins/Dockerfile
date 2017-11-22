@@ -1,6 +1,15 @@
 FROM openjdk:8-jdk
 
-RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    git curl apt-transport-https ca-certificates wget software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+RUN wget https://download.docker.com/linux/debian/gpg \
+    && apt-key add gpg \
+    && rm gpg \
+    && echo "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee -a /etc/apt/sources.list.d/docker.list \
+    && apt-get update \    
+    && apt-get install -y docker-ce
+
 
 ARG user=jenkins
 ARG group=jenkins
