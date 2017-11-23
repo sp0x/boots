@@ -19,6 +19,7 @@ services:
       - "80:80"
   
   jenkins:
+    privileged: true
     build:
       context: ./docker/jenkins
       dockerfile: Dockerfile

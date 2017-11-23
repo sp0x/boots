@@ -18,10 +18,16 @@ node {
     } 
     stage('Build image') {
        /* This builds the docker image*/ 
-       sh '''
-        cd Netlyt
-        docker build -t netlyt/netlyt .
-       '''
+        try {
+            sh '''
+            cd Netlyt
+            docker build -t netlyt/netlyt .
+            '''
+        } catch (Exception e) {
+            slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: 'bad', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} failed: ${e.message}", teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
+            throw e // rethrow so the build is considered failed                        
+        } 
+      
     }
 
     stage('Test image'){

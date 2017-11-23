@@ -11,7 +11,7 @@ else
 	then
 		sudo dockerd $DOCKER_DAEMON_ARGS &>/var/log/docker.log &
 	else
-		sudo dockerd $DOCKER_DAEMON_ARGS &>/var/log/docker.log
+		sudo dockerd $DOCKER_DAEMON_ARGS &>/var/log/docker.log &
 	fi
 	(( timeout = 60 + SECONDS ))
 	until docker info >/dev/null 2>&1
