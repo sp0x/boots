@@ -3,13 +3,16 @@ FROM openjdk:8-jdk
 RUN apt-get update && apt-get install -y \
     git curl apt-transport-https ca-certificates wget software-properties-common \
     && rm -rf /var/lib/apt/lists/*
-RUN wget https://download.docker.com/linux/debian/gpg \
-    && apt-key add gpg \
-    && rm gpg \
-    && echo "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee -a /etc/apt/sources.list.d/docker.list \
-    && apt-get update \    
-    && apt-get install -y docker-ce
+RUN apt-get update -qq && apt-get install -qqy \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    lxc \
+    iptables
 
+    # Install Docker from Docker Inc. repositories.
+RUN curl -sSL https://get.docker.com/ | sh
+# Install the magic wrapper. 
 
 ARG user=jenkins
 ARG group=jenkins
@@ -19,7 +22,7 @@ ARG http_port=8080
 ARG agent_port=50000
 
 ENV JENKINS_HOME /var/jenkins_home
-ENV JENKINS_SLAVE_AGENT_PORT ${agent_port}
+ENV JENKINS_SLAVE_AGENT_PORT ${agent_port} 
 
 # Jenkins is run with user `jenkins`, uid = 1000
 # If you bind mount a volume from the host or a data container, 
@@ -30,6 +33,7 @@ RUN groupadd -g ${gid} ${group} \
 # Jenkins home directory is a volume, so configuration and build history 
 # can be persisted and survive image upgrades
 VOLUME /var/jenkins_home
+VOLUME /var/lib/docker
 
 # `/usr/share/jenkins/ref/` contains all reference configuration we want 
 # to set on a fresh new installation. Use it to bundle additional plugins 
@@ -79,6 +83,7 @@ RUN apt-get update \
         libunwind8 \
         libuuid1 \
         zlib1g \
+        sudo \
     && rm -rf /var/lib/apt/lists/*
 
 # Install .NET Core SDK
@@ -102,6 +107,10 @@ RUN mkdir warmup \
     && rm -rf warmup \
     && rm -rf /tmp/NuGetScratch
 
+RUN echo "jenkins ALL=NOPASSWD: ALL" >> /etc/sudoers \
+    && touch /var/log/docker.log \
+    && chmod 777 /var/log/docker.log \
+    && usermod -aG docker ${user}
 
 
 # for main web interface:

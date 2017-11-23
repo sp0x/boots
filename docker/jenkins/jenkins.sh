@@ -1,5 +1,30 @@
 #! /bin/bash -e
 
+# If we were given a PORT environment variable, start as a simple daemon;
+# otherwise, spawn a shell as well
+if [ "$PORT" ]
+then
+	sudo exec dockerd -H 0.0.0.0:$PORT -H unix:///var/run/docker.sock \
+		$DOCKER_DAEMON_ARGS &
+else
+	if [ "$LOG" == "file" ]
+	then
+		sudo dockerd $DOCKER_DAEMON_ARGS &>/var/log/docker.log &
+	else
+		sudo dockerd $DOCKER_DAEMON_ARGS &>/var/log/docker.log
+	fi
+	(( timeout = 60 + SECONDS ))
+	until docker info >/dev/null 2>&1
+	do
+		if (( SECONDS >= timeout )); then
+			echo 'Timed out trying to connect to internal docker host.' >&2
+			break
+		fi
+		sleep 1
+	done
+fi
+
+
 : "${JENKINS_HOME:="/var/jenkins_home"}"
 touch "${COPY_REFERENCE_FILE_LOG}" || { echo "Can not write to ${COPY_REFERENCE_FILE_LOG}. Wrong volume permissions?"; exit 1; }
 echo "--- Copying files at $(date)" >> "$COPY_REFERENCE_FILE_LOG"
@@ -21,6 +46,7 @@ if [[ $# -lt 1 ]] || [[ "$1" == "--"* ]]; then
 
   exec java -Duser.home="$JENKINS_HOME" "${java_opts_array[@]}" -jar /usr/share/jenkins/jenkins.war "${jenkins_opts_array[@]}" "$@"
 fi
+sudo chown jenkins:jenkins /var/run/docker.sock
 
 # As argument is not jenkins, assume user want to run his own process, for example a `bash` shell to explore this image
 exec "$@"
