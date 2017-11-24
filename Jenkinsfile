@@ -29,7 +29,6 @@ node {
                 newImage = docker.build("netlyt/netlyt")                
                 sh ' echo "Tests PASSED"' /* Volkswagen style for now*/     
                 docker.withRegistry("https://registry.netlyt.com", 'offsite-docker-registry'){
-                     newImage.push("${env.BUILD_NUMBER}")
                      newImage.push("latest")
                 }
             } 
