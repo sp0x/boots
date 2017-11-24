@@ -68,6 +68,27 @@ ENV JENKINS_UC https://updates.jenkins.io
 ENV JENKINS_UC_EXPERIMENTAL=https://updates.jenkins.io/experimental
 RUN chown -R ${user} "$JENKINS_HOME" /usr/share/jenkins/ref
 
+#Setup nodejs and npm
+RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - \
+    && apt-get install -y --no-install-recommends \
+        nodejs \
+        build-essential \
+        libssl-dev \
+    && npm install -g bower 
+    
+RUN LIBUV_VERSION=1.11.0 \
+	&& apt-get update \
+	&& apt-get -y install vim-tiny curl wget autoconf automake build-essential libtool \
+	&& curl -sSL https://github.com/libuv/libuv/archive/v${LIBUV_VERSION}.tar.gz | tar zxfv - -C /usr/local/src \
+	&& cd /usr/local/src/libuv-$LIBUV_VERSION \
+	&& sh autogen.sh && ./configure && make && make install \
+	&& rm -rf /usr/local/src/libuv-$LIBUV_VERSION \
+	&& ldconfig \
+	&& apt-get -y purge autoconf automake build-essential libtool \
+	&& apt-get -y autoremove \
+	&& apt-get -y clean \
+	&& rm -rf /var/lib/apt/lists/*
+    
 #Setup dotnet
 # Install .NET CLI dependencies
 RUN apt-get update \

@@ -11,6 +11,7 @@ node {
         slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: 'good', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} started by changes from ", teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
         sh 'dotnet restore'
         sh 'dotnet build Netlyt/Netlyt.csproj'
+        sh 'dotnet publish Netlyt/Netlyt.csproj -c Debug -o published/netlyt'
             /*} catch (err){
                 slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: '#439FE0', message: 'Build Failed: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)', teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
             }*/
@@ -21,7 +22,7 @@ node {
         try {
             sh 'docker build -t netlyt/netlyt Netlyt'
         } catch (Exception e) {
-            slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: 'red', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} docker image failed: ${e.message}", teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
+            slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: 'bad', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} docker image failed: ${e.message}", teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
             throw e // rethrow so the build is considered failed                        
         } 
       

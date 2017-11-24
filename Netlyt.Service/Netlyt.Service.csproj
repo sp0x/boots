@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Bogus\Source\Bogus\Bogus.csproj" />
+    <ProjectReference Include="..\libnvoid\aspnet-identity-mongo\src\Microsoft.AspNetCore.Identity.MongoDB\Microsoft.AspNetCore.Identity.MongoDB.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid.extensions\nvoid.extensions.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid\nvoid.csproj" />
@@ -15,7 +16,6 @@
   <ItemGroup>
     <PackageReference Include="Dynamitey" Version="1.0.2" />
     <PackageReference Include="LumenWorks.Framework.IO.Core" Version="1.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.MongoDB" Version="1.0.2" />
     <PackageReference Include="MongoDB.Driver" Version="2.4.4" />
     <PackageReference Include="NetMQ" Version="4.0.0.1" />
     <PackageReference Include="StackExchange.Redis" Version="1.2.6" />

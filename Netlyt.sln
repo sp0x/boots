@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27004.2009
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Netlyt", "Netlyt\Netlyt.csproj", "{D25315C7-40FD-4C80-A4CC-F9E149040D83}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libnvoid", "libnvoid", "{0813BA05-4BDD-4FAA-9BB9-7A990779FA1D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Abot", "libnvoid\abot-dotnet-core\Abot\src\Abot\Abot.csproj", "{43A2E13E-B181-4A32-AB94-F619643F9BFD}"
@@ -37,16 +35,16 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "BehaviorAnalysis", "Behavio
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Runner", "Runner\Runner.csproj", "{61D6CF99-CF53-4EB3-8317-F81C602B066A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Netlyt.Web", "Netlyt.Web\Netlyt.Web.csproj", "{2AC95F6D-FD3A-4181-923C-9440C0D62C00}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.AspNetCore.Identity.MongoDB", "libnvoid\aspnet-identity-mongo\src\Microsoft.AspNetCore.Identity.MongoDB\Microsoft.AspNetCore.Identity.MongoDB.csproj", "{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D25315C7-40FD-4C80-A4CC-F9E149040D83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D25315C7-40FD-4C80-A4CC-F9E149040D83}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D25315C7-40FD-4C80-A4CC-F9E149040D83}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D25315C7-40FD-4C80-A4CC-F9E149040D83}.Release|Any CPU.Build.0 = Release|Any CPU
 		{43A2E13E-B181-4A32-AB94-F619643F9BFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{43A2E13E-B181-4A32-AB94-F619643F9BFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{43A2E13E-B181-4A32-AB94-F619643F9BFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -101,6 +99,14 @@ Global
 		{61D6CF99-CF53-4EB3-8317-F81C602B066A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61D6CF99-CF53-4EB3-8317-F81C602B066A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61D6CF99-CF53-4EB3-8317-F81C602B066A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AC95F6D-FD3A-4181-923C-9440C0D62C00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AC95F6D-FD3A-4181-923C-9440C0D62C00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AC95F6D-FD3A-4181-923C-9440C0D62C00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AC95F6D-FD3A-4181-923C-9440C0D62C00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -115,6 +121,7 @@ Global
 		{38735859-0C42-4457-A0FA-1CCEEFF31648} = {6E763F49-007D-45FB-962A-AF96BB6715D6}
 		{DB403379-26CC-4B0D-8992-FC153B64C5A5} = {6E763F49-007D-45FB-962A-AF96BB6715D6}
 		{61D6CF99-CF53-4EB3-8317-F81C602B066A} = {6E763F49-007D-45FB-962A-AF96BB6715D6}
+		{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37} = {0813BA05-4BDD-4FAA-9BB9-7A990779FA1D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {24AF7987-62A9-402B-AFDA-5FAC6B7D2162}
