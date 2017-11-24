@@ -38,7 +38,8 @@ node {
     } 
 
     stage('Notify') {
-        slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: 'good', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Failed (<${env.BUILD_URL}|Open>)", teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
+        slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'builds', color: 'good',
+         message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Successfull (<${env.BUILD_URL}|Open>)", teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
     }
  
 }

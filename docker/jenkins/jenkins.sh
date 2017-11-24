@@ -4,14 +4,14 @@
 # otherwise, spawn a shell as well
 if [ "$PORT" ]
 then
-	sudo exec dockerd -H 0.0.0.0:$PORT -H unix:///var/run/docker.sock \
+	sudo exec dockerd --insecure-registry registry.vaskovasilev.eu -H 0.0.0.0:$PORT -H unix:///var/run/docker.sock \
 		$DOCKER_DAEMON_ARGS &
 else
 	if [ "$LOG" == "file" ]
 	then
-		sudo dockerd $DOCKER_DAEMON_ARGS &>/var/log/docker.log &
+		sudo dockerd --insecure-registry registry.vaskovasilev.eu $DOCKER_DAEMON_ARGS &>/var/log/docker.log &
 	else
-		sudo dockerd $DOCKER_DAEMON_ARGS &>/var/log/docker.log &
+		sudo dockerd --insecure-registry registry.vaskovasilev.eu $DOCKER_DAEMON_ARGS &>/var/log/docker.log &
 	fi
 	(( timeout = 60 + SECONDS ))
 	until docker info >/dev/null 2>&1
