@@ -5,7 +5,7 @@ using System.Text;
 namespace Netlyt.Service.Lex.Expressions
 {
     public class NumberExpression
-        : IExpression
+        : Expression
     {
         public int Value { get; set; }
         public IEnumerable<IExpression> GetChildren()
@@ -19,7 +19,7 @@ namespace Netlyt.Service.Lex.Expressions
         }
     }
     public class StringExpression
-        : IExpression
+        : Expression
     {
         public string Value { get; set; }
         public IEnumerable<IExpression> GetChildren()
@@ -32,13 +32,9 @@ namespace Netlyt.Service.Lex.Expressions
         }
     }
     public class FloatExpression
-        : IExpression
+        : Expression
     {
-        public float Value { get; set; }
-        public IEnumerable<IExpression> GetChildren()
-        {
-            return new List<IExpression>();
-        }
+        public float Value { get; set; } 
         public override string ToString()
         {
             return Value.ToString();

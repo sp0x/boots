@@ -98,12 +98,13 @@ namespace Netlyt.Service.Integration.Blocks
             {
                 visits = userDocDocument.Contains("events") ? (BsonArray) userDocDocument.GetElement("events").Value : new BsonArray();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 try
                 {
                     userDocDocument = userDocDocument.Clone() as BsonDocument;
-                    visits = userDocDocument.Contains("events") ? (BsonArray)userDocDocument.GetElement("events").Value : new BsonArray();
+                    visits = (userDocDocument!=null && userDocDocument.Contains("events")) ?
+                        (BsonArray)userDocDocument.GetElement("events").Value : new BsonArray();
                 }
                 catch (Exception e2)
                 {

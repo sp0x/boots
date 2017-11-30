@@ -5,23 +5,31 @@ using System.Text;
 namespace Netlyt.Service.Lex.Expressions
 {
     public class VariableExpression
-        : IExpression
+        : Expression
     {
+
         public string Name { get; private set; }
+        public MemberExpression Member { get; set; }
 
         public VariableExpression(string name)
         {
             this.Name = name;
         }
 
-        public IEnumerable<IExpression> GetChildren()
+        public override IEnumerable<IExpression> GetChildren()
         {
-            return new List<ExpressionNode>();
+            return new List<IExpression>() { Member };
         }
 
         public override string ToString()
         {
-            return Name;
+            var buff = new StringBuilder(Name);
+            if (Member != null)
+            {
+                string postfix = Member.FullPath();
+                buff.Append(".").Append(postfix);
+            }
+            return buff.ToString();
         }
     }
 }

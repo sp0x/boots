@@ -120,17 +120,14 @@ namespace Netlyt.Service.IntegrationSource
                         _cursorSource = _collection.Find(_query);
                         Size = ((IFindFluent<BsonDocument, BsonDocument>) _cursorSource).Count();
                     }
-                }
-
+                } 
                 if (resetNeeded)
                 { 
                     _cachedInstance = null;
                 }
-                var item = (Formatter as BsonFormatter).GetNext(_cursorSource, resetNeeded);
-                if (item == null) return item;
-                if (_project != null && item!=null) item = _project(item);
-                else if (item == null){ item = item;
-                }
+                var item = (Formatter as BsonFormatter)?.GetNext(_cursorSource, resetNeeded);
+                if (item == null) return null;
+                if (_project != null) item = _project(item); 
                 lastInstance = BsonSerializer.Deserialize<ExpandoObject>(item);
 #if DEBUG 
                 var crProgress = Progress;

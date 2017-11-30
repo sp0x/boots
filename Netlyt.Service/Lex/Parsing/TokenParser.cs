@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -9,36 +10,58 @@ using Netlyt.Service.Lex.Parsing.Tokens;
 
 namespace Netlyt.Service.Lex.Parsing
 {
-    public class Parser
+    public class TokenParser
     { 
-        private DslFeatureModel _featureModel;
+        private List<string> _sourceCollections;
         private MatchCondition _currentMatchCondition;
 
         private const string ExpectedObjectErrorText = "Expected =, !=, IN or NOT IN but found: ";
         private OrderByExpression OrderBy { get; set; }
-
-        private DslFeatureModel FeatureModel{
-            get { return _featureModel; }
-            set { _featureModel = value; }
-        }
+         
         private TokenReader Reader { get; set; }
+
+        public TokenParser()
+        {
+            _sourceCollections = new List<string>();
+        }
+
+        public TokenParser(IEnumerable<DslToken> tokens)
+            : this()
+        {
+            Load(tokens);
+        }
 
         /// <summary>
         /// Loads tokens for parsing
         /// </summary>
         /// <param name="tokens"></param>
-        public void Load(List<DslToken> tokens)
+        public void Load(IEnumerable<DslToken> tokens)
         {
             Reader = new TokenReader(tokens); 
         }
 
-        public DslFeatureModel Parse(List<DslToken> tokens)
-        {
-            Load(tokens);
-            FeatureModel = new DslFeatureModel();
-            Define(); 
-            //DiscardToken(TokenType.SequenceTerminator); 
-            return _featureModel;
+        public DslFeatureModel ParseModel()
+        { 
+            DslFeatureModel model  = new DslFeatureModel();
+            Reader.DiscardToken(TokenType.Define);
+            var newSymbolName = Reader.ReadToken(TokenType.Symbol);
+            model.Type = new FeatureTypeModel()
+            {
+                Name = newSymbolName.Value
+            };
+            Reader.DiscardToken(TokenType.Symbol);
+            _sourceCollections = ReadFrom();
+            var orderBy = ReadOrderBy(); 
+            var expressions = ReadExpressions();
+            model.StartingOrderBy = orderBy ;
+            foreach (var expression in expressions)
+            {
+                if (expression.GetType() == typeof(AssignmentExpression))
+                {
+                    model.Features.Add(expression as AssignmentExpression);
+                }
+            }
+            return model;
         }
 
         /// <summary>
@@ -52,60 +75,68 @@ namespace Netlyt.Service.Lex.Parsing
         /// <summary>
         /// Reads the next available expressions
         /// </summary>
-        /// <param name="predicate"></param>
+        /// <param name="terminatingPredicate"></param>
         /// <returns></returns>
-        public IEnumerable<IExpression> ReadExpressions(Predicate<TokenCursor> predicate = null, int limit = 0)
+        public IEnumerable<IExpression> ReadExpressions(Predicate<TokenCursor> terminatingPredicate = null, int limit = 0)
         {
             Stack<IExpression> previousExpressions = new Stack<IExpression>();
             Queue<IExpression> outputExpressions = new Queue<IExpression>();
             uint ix = 0;
             while (!Reader.IsComplete)
             {
-                if (predicate!=null && predicate(Reader.Cursor)) break;
+                if (terminatingPredicate!=null && terminatingPredicate(Reader.Cursor)) break;
                 if (limit != 0 && ix >= limit) break;
 
                 var nextToken = Reader.Current;
-                IExpression crExpression = null;
+                //IExpression crExpression = null;
+                var lvlExpressions = new List<IExpression>();
                 switch (nextToken.TokenType)
                 {
+                    case TokenType.Comma:                       //Skip commas
+                        Reader.DiscardToken();
+                        continue;
                     case TokenType.OrderBy:
-                        crExpression = ReadOrderBy();
+                        lvlExpressions.Add(ReadOrderBy());
                         break;
                     case TokenType.Set:
-                        crExpression = ReadVariableSet();
+                        var typeFeatureSet = ReadVariableSet();
+                        lvlExpressions.Add(typeFeatureSet);
                         break;
                     case TokenType.Symbol:
                         if (IsFunctionCall(Reader.Current, Reader.NextToken))
                         {
                             var func = ReadFunction();
-                            crExpression = func;
+                            lvlExpressions.Add(func);
                         }
                         else if (IsVariableExpression(Reader.Current, Reader.NextToken))
                         {
                             var variable = ReadVariable();
-                            crExpression = variable;
+                            lvlExpressions.Add(variable);
                         }
                         else
                         {
                             var member = ReadMemberChainExpression();
-                            crExpression = member;
+                            lvlExpressions.Add(member);
                         }
                         break;
                     case TokenType.NumberValue:
-                        crExpression = ReadConstant();
+                        lvlExpressions.Add(ReadConstant());
                         break;
                     case TokenType.StringValue:
-                        crExpression = ReadConstant();
+                        lvlExpressions.Add(ReadConstant());
                         break;
                     case TokenType.FloatValue:
-                        crExpression = ReadConstant();
+                        lvlExpressions.Add(ReadConstant());
                         break;
                     case TokenType.Not:
                         var unaryOp = new UnaryExpression(nextToken);
                         Reader.DiscardToken();
                         unaryOp.Operand = ReadExpression();
-                        crExpression = unaryOp;
-
+                        lvlExpressions.Add(unaryOp);
+                        break;
+                    case TokenType.OpenParenthesis: 
+                        var subExps = ReadParenthesisContent();
+                        lvlExpressions.AddRange(subExps);
                         break;
                     default:
                         if (IsOperator(nextToken))
@@ -116,7 +147,7 @@ namespace Netlyt.Service.Lex.Parsing
                             outputExpressions.Dequeue();
                             op.Left = left;
                             op.Right = ReadExpression();
-                            crExpression = op;
+                            lvlExpressions.Add(op);
                         }
                         else
                         {
@@ -125,9 +156,14 @@ namespace Netlyt.Service.Lex.Parsing
                         }
                         break;
                 }
-                outputExpressions.Enqueue(crExpression);
-                previousExpressions.Push(crExpression);
-                ix++;
+
+                foreach (var lvlExpression in lvlExpressions)
+                {
+                    outputExpressions.Enqueue(lvlExpression);
+                    previousExpressions.Push(lvlExpression);
+                    Debug.WriteLine($"Read expression: {lvlExpression}");
+                    ix++;
+                } 
                 //yield return crExpression; 
             }
             return outputExpressions;
@@ -149,8 +185,7 @@ namespace Netlyt.Service.Lex.Parsing
                     output = new FloatExpression() {Value = float.Parse(token.Value)};
                     break;
                 default:
-                    throw new Exception("Unexpected token for constant!");
-                    break;
+                    throw new Exception("Unexpected token for constant!"); 
             }
             return output;
         }
@@ -162,105 +197,32 @@ namespace Netlyt.Service.Lex.Parsing
                    || tt == TokenType.Subtract
                    || tt == TokenType.Multiply
                    || tt == TokenType.Divide
-                   || tt == TokenType.Equals
+                   || tt == TokenType.Equals 
                    || tt == TokenType.NotEquals
                    || tt == TokenType.In
                    || tt == TokenType.NotIn;
-        }
-        private ExpressionNode ReadExpressionData()
-        {
-            var tree = new ExpressionNode(null);
-            short openParenthesis = 0;
-            short closingParenthesis = 0;
-            short expDepth = 0;
-            ExpressionNode currentNode = null;
-            while (true)
-            {
-                var isNewExp = false;
-                //
-                if (IsKeyword(Reader.Current) && expDepth == 0)
-                {
-                    break;
-                }
-                var token = Reader.DiscardToken();
-                var nextToken = Reader.Current;
-                var tokenNode = new ExpressionNode(token);
-                tokenNode.SetDepth(expDepth);
-                var isParenthesis = token.TokenType == TokenType.OpenParenthesis
-                                    || token.TokenType == TokenType.CloseParenthesis;
-
-                if (token.TokenType == TokenType.OpenParenthesis)
-                {
-                    currentNode = tokenNode;
-                    expDepth++;
-                }
-                else if (token.TokenType == TokenType.CloseParenthesis)
-                {
-                    tree.AddChild(currentNode);
-                    expDepth--;
-                }
-                else if (IsFunctionCall(token, nextToken))
-                {
-                    currentNode = tokenNode;
-                    expDepth++;
-                    var functionArgs = ReadParenthesisContent();
-                    //Create a node of the function name -> function arguments
-                }
-                else if (expDepth == 0 && !isParenthesis)
-                {
-                    currentNode = tokenNode;
-                }
-                else
-                {
-                    currentNode.AddChild(token);
-                }
-            }
-            if (Reader.Current.TokenType == TokenType.OpenParenthesis)
-            {
-                Reader.DiscardToken(TokenType.OpenParenthesis);
-                //Read all untill closing parenthesis
-            }
-            return tree;
-        }
-
-
-        private void Define()
-        {
-            Reader.DiscardToken(TokenType.Define);
-            var newSymbolName = Reader.ReadToken(TokenType.Symbol);
-            _featureModel.Type = new FeatureTypeModel()
-            {
-                Name = newSymbolName.Value
-            };
-            Reader.DiscardToken(TokenType.Symbol);
-            ReadFrom();
-            ReadExpressions();
-//            _featureModel.DateRange = new DateRange();
-//            _featureModel.DateRange.From = DateTime.ParseExact(ReadToken(TokenType.DateTimeValue).Value, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-        }
+        }  
 
         public VariableExpression ReadVariable()
         {
             VariableExpression exp = null;
             string postfix = "";
-            //Read the variable
+            //Read the symbol
             var token = Reader.DiscardToken(TokenType.Symbol);
+            exp = new VariableExpression(token.Value);
             if (Reader.Current.TokenType == TokenType.MemberAccess)
             {
                 var memberChain = ReadMemberChainExpression();
-                postfix = "." + memberChain.ToString();
+                exp.Member = memberChain;
             }
-            exp = new VariableExpression(token.Value + postfix);
             return exp;
         }
 
-        public bool IsVariableExpression(DslToken tkA, DslToken tkB)
-        {
-            return tkA.TokenType == TokenType.Symbol 
-                && (tkB.TokenType != TokenType.OpenParenthesis);
-        }
-
-        private MemberExpression ReadMemberChainExpression()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public MemberExpression ReadMemberChainExpression()
         {
             if (Reader.Current.TokenType != TokenType.MemberAccess) return null;
             MemberExpression rootMember = null;
@@ -275,14 +237,14 @@ namespace Netlyt.Service.Lex.Parsing
                 }
                 else
                 {
-                    previousMember.SubElement = member;
+                    previousMember.ChildMember = member;
                 }
                 previousMember = member;
             }
             return rootMember;
         }
 
-        private MemberExpression ReadMemberExpression()
+        public MemberExpression ReadMemberExpression()
         {
             Reader.DiscardToken(TokenType.MemberAccess);
             var memberSymbol = Reader.DiscardToken(TokenType.Symbol);
@@ -315,47 +277,39 @@ namespace Netlyt.Service.Lex.Parsing
             //                        break;
             //                } 
             //                //read symbol
-            //
+            // 
             //
             //            }
             //            return tree;
         }
+          
+        
 
         private AssignmentExpression ReadVariableSet()
         {
             Reader.DiscardToken(TokenType.Set);
-            var typeNameToken = Reader.ReadToken(TokenType.Symbol);
-            typeNameToken.Value = typeNameToken.Value.Trim();
-            if (FeatureModel.Type.Name != typeNameToken.Value)
-            {
-                throw new Exception($"Unexpected Feature object at {typeNameToken.Line}:{typeNameToken.Position}!");
-            }
-            Reader.DiscardToken(TokenType.Symbol);
-            Reader.DiscardToken(TokenType.MemberAccess);
-            var memberAccessTree = ReadMemberExpression();
-            //if (memberAccessTree.GetChildrenCount() > 1) throw new Exception("Invalid member assignment");
-            ExpressionNode typedTree = null;
-            var rootNode = new ExpressionNode(typeNameToken);
-            var expression = memberAccessTree.GetChildren().First();
-            rootNode.AddChild(expression);
-            typedTree.AddChild(rootNode);
-
+            var featureVariable = ReadVariable();
+//            if (FeatureModel.Type.Name != featureVariable.Name)
+//            {
+//                throw new Exception("Cannot assign feature to given type. The type is not defined.");
+//            }
             Reader.DiscardToken(TokenType.Assign);
-            var variableValueExpression = ReadExpressions().FirstOrDefault();
+            var variableValueExpression = ReadExpression();
 
-            var setExp = new AssignmentExpression(typedTree, variableValueExpression);
-            FeatureModel.Features.Add(setExp);
+            var setExp = new AssignmentExpression(featureVariable, variableValueExpression);
+            //FeatureModel.Features.Add(setExp);
             return setExp;
         }
 
-        private OrderByExpression ReadOrderBy()
+        public OrderByExpression ReadOrderBy()
         {
+            if (Reader.Current.TokenType != TokenType.OrderBy) return null;
             Reader.DiscardToken(TokenType.OrderBy);
-            var tree = ReadExpressions();
-            var expt = new List<IExpression>();
-            expt.AddRange(tree);
-            var orderBy = this.OrderBy = new OrderByExpression(expt);
-            return orderBy;
+            var currentCursor = Reader.Cursor.Clone();
+            var nextExpressions = ReadExpressions(Filters.Keyword(currentCursor));
+            var orderBy = nextExpressions;
+            var expression = this.OrderBy = new OrderByExpression(orderBy);
+            return expression;
         }
 
         /// <summary>
@@ -370,7 +324,7 @@ namespace Netlyt.Service.Lex.Parsing
             f.Name = tknFunctionName.Value;
             var cursor = Reader.Cursor.Clone();
             //Create a predicate untill the closing of the function
-            var fnEndPredicate = Parser.FunctionCallEnd(cursor);
+            var fnEndPredicate = TokenParser.Filters.FunctionCallEnd(cursor);
             while (!Reader.IsComplete && !fnEndPredicate(Reader.Cursor))
             {
                 ParameterExpression fnParameter = ReadFunctionParameter();
@@ -392,53 +346,64 @@ namespace Netlyt.Service.Lex.Parsing
         {
             var currentCursor = Reader.Cursor.Clone();
             //Look for a comma on the same level
-            var paramValue = ReadExpressions(Parser.FunctionParameterEnd(currentCursor)).FirstOrDefault();
+            var paramValue = ReadExpressions(TokenParser.Filters.FunctionParameterEnd(currentCursor)).FirstOrDefault();
             if (paramValue == null) return null;
             var param = new ParameterExpression(paramValue); 
             return param;
         }
         
 
-        public ExpressionNode ReadParenthesisContent()
-        {
-            ExpressionNode tree = null;
-            Reader.DiscardToken(TokenType.OpenParenthesis);
-            short expDepth = 0;
-            ExpressionNode currentNode = null;
-            while (true)
+        public IEnumerable<IExpression> ReadParenthesisContent()
+        { 
+            Reader.DiscardToken(TokenType.OpenParenthesis); 
+            var startingCursor = Reader.Cursor.Clone();
+            //ExpressionNode currentNode = null;
+            //Read untill closing parenthesis
+            var subExpressions = ReadExpressions((c) =>
             {
-                var token = Reader.DiscardToken();
-                var nextToken = Reader.Current;
-                var tokenNode = new ExpressionNode(token);
-                tokenNode.SetDepth(expDepth);
-
-                var isParenthesis = token.TokenType == TokenType.OpenParenthesis
-                                    || token.TokenType == TokenType.CloseParenthesis;
-                if (token.TokenType == TokenType.OpenParenthesis)
-                {
-                    currentNode = tokenNode;
-                    expDepth++;
-                }
-                else if (token.TokenType == TokenType.CloseParenthesis)
-                {
-                    tree.AddChild(currentNode);
-                    expDepth--;
-                }
-            }
-            return tree;
+                return c.Depth == startingCursor.Depth && c.Token.TokenType == TokenType.CloseParenthesis;
+            })?.ToList();
+            Reader.DiscardToken(TokenType.CloseParenthesis);
+//            while (!(Reader.Current.TokenType==TokenType.CloseParenthesis && startingCursor.Depth == Reader.Cursor.Depth))
+//            {
+//                var token = Reader.DiscardToken();
+//                var nextToken = Reader.Current;
+//                var tokenNode = new ExpressionNode(token);
+//                tokenNode.SetDepth(expDepth);
+//
+//                var isParenthesis = token.TokenType == TokenType.OpenParenthesis
+//                                    || token.TokenType == TokenType.CloseParenthesis;
+//                if (token.TokenType == TokenType.OpenParenthesis)
+//                {
+//                    currentNode = tokenNode;
+//                    expDepth++;
+//                }
+//                else if (token.TokenType == TokenType.CloseParenthesis)
+//                {
+//                    tree.AddChild(currentNode);
+//                    expDepth--;
+//                }
+//            }
+            return subExpressions;
         }
 
         /// <summary>
         /// Wether the two tokens form a function call
         /// </summary>
-        /// <param name="tokenA"></param>
-        /// <param name="tokenB"></param>
+        /// <param name="tka"></param>
+        /// <param name="tkb"></param>
         /// <returns></returns>
-        private bool IsFunctionCall(DslToken tokenA, DslToken tokenB)
+        private bool IsFunctionCall(DslToken tka, DslToken tkb)
         {
-            return tokenA.TokenType == TokenType.Symbol && tokenB.TokenType == TokenType.OpenParenthesis;
+            return tka.TokenType == TokenType.Symbol 
+                && tkb.TokenType == TokenType.OpenParenthesis;
         }
 
+        public bool IsVariableExpression(DslToken tkA, DslToken tkB)
+        {
+            return tkA.TokenType == TokenType.Symbol
+                   && (tkB.TokenType != TokenType.OpenParenthesis);
+        }
 
 
         private void ReadSymbolMemberAccess()
@@ -585,13 +550,7 @@ namespace Netlyt.Service.Lex.Parsing
             return token.TokenType == TokenType.Collection
                    || token.TokenType == TokenType.Feature
                    || token.TokenType == TokenType.Type;
-        }
-
-        private bool IsKeyword(DslToken token)
-        {
-            return token.TokenType == TokenType.OrderBy
-                   || token.TokenType == TokenType.Set;
-        }
+        } 
 
         private bool IsEqualityOperator(DslToken token)
         {
@@ -599,31 +558,51 @@ namespace Netlyt.Service.Lex.Parsing
                    || token.TokenType == TokenType.NotEquals;
         }
 
-    
+//    
+//
+//        private void CreateNewMatchCondition()
+//        {
+//            _currentMatchCondition = new MatchCondition();
+//            _featureModel.Filters.Add(_currentMatchCondition);
+//        }
 
-        private void CreateNewMatchCondition()
-        {
-            _currentMatchCondition = new MatchCondition();
-            _featureModel.Filters.Add(_currentMatchCondition);
-        }
 
-        public static Predicate<TokenCursor> FunctionCallEnd(TokenCursor currentCursor)
+#region Helper predicates
+
+        public static class Filters
         {
-            return x =>
+            public static bool IsKeyword(DslToken token)
             {
-                return (x.Depth) == currentCursor.Depth
-                       && (x.Token.TokenType == TokenType.CloseParenthesis);
-            };
-        }
-
-        public static Predicate<TokenCursor> FunctionParameterEnd(TokenCursor currentCursor)
-        {
-            return x =>
+                return token.TokenType == TokenType.OrderBy
+                       || token.TokenType == TokenType.Set;
+            }
+            public static Predicate<TokenCursor> Keyword(TokenCursor currentCursor)
             {
-                return x.Depth == currentCursor.Depth
-                       && (x.Token.TokenType == TokenType.Comma || x.Token.TokenType == TokenType.CloseParenthesis);
+                return x =>
+                {
+                    return IsKeyword(x.Token);
+                };
+            }
+            public static Predicate<TokenCursor> FunctionCallEnd(TokenCursor currentCursor)
+            {
+                return x =>
+                {
+                    return (x.Depth) == currentCursor.Depth
+                           && (x.Token.TokenType == TokenType.CloseParenthesis);
+                };
+            }
 
-            };
+            public static Predicate<TokenCursor> FunctionParameterEnd(TokenCursor currentCursor)
+            {
+                return x =>
+                {
+                    return x.Depth == currentCursor.Depth
+                           && (x.Token.TokenType == TokenType.Comma || x.Token.TokenType == TokenType.CloseParenthesis);
+
+                };
+            }
         }
+        
+#endregion
     }
 }

@@ -146,11 +146,9 @@ namespace Netlyt.Service.Integration.Blocks
             switch (this.ProcType)
             {
                 case ProcessingType.Transform:
-                    return _transformer;
-                    break;
+                    return _transformer; 
                 case ProcessingType.Action:
-                    return _actionBlock;
-                    break;
+                    return _actionBlock; 
                 default:
                     throw new Exception("No task for this type of processing block.");
             }

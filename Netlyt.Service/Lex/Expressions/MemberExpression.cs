@@ -5,27 +5,40 @@ using System.Text;
 namespace Netlyt.Service.Lex.Expressions
 {
     public class MemberExpression
-        : IExpression
+        : Expression
     {
         public string Name { get; private set; }
-        public IExpression SubElement { get; set; }
+        public MemberExpression ChildMember { get; set; }
         //public TypeExpression Type { get; private set; }
 
         public MemberExpression(string name)
         {
             this.Name = name;
         }
-        public IEnumerable<IExpression> GetChildren()
+        public override IEnumerable<IExpression> GetChildren()
         {
-            return new List<IExpression>() { SubElement };
+            return new List<IExpression>() { ChildMember };
         }
 
         public override string ToString()
         {
-            var postfix = SubElement==null ? "" : SubElement.ToString();
+            var postfix = ChildMember==null ? "" : ChildMember.ToString();
             if (!string.IsNullOrEmpty(postfix)) postfix = $".{postfix}";
             else postfix = "";
             return $"{Name}{postfix}";
+        }
+
+        public string FullPath()
+        {
+            var buff = new StringBuilder();
+            buff.Append(Name);
+            var element = ChildMember;
+            while (element != null)
+            {
+                buff.Append(".").Append(element.Name);
+                element = element.ChildMember;
+            }
+            return buff.ToString();
         }
     }
 }

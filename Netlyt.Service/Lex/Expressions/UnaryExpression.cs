@@ -6,7 +6,7 @@ using Netlyt.Service.Lex.Parsing.Tokens;
 namespace Netlyt.Service.Lex.Expressions
 {
     public class UnaryExpression 
-        : IExpression
+        : Expression
     {
         public IExpression Operand { get; set; }
         public DslToken Token { get; set; }
@@ -16,7 +16,7 @@ namespace Netlyt.Service.Lex.Expressions
             this.Token = token;
         }
 
-        public IEnumerable<IExpression> GetChildren()
+        public override IEnumerable<IExpression> GetChildren()
         {
             return new List<IExpression> {Operand};
         }

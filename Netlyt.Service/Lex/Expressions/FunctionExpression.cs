@@ -7,7 +7,7 @@ using Netlyt.Service.Lex.Parsing;
 namespace Netlyt.Service.Lex.Expressions
 {
     public class FunctionExpression
-        : IExpression
+        : Expression
     {
         public string Name { get; set; }
         public List<ParameterExpression> Parameters { get; private set; }
@@ -17,7 +17,7 @@ namespace Netlyt.Service.Lex.Expressions
             Parameters = new List<ParameterExpression>();
         }
 
-        public IEnumerable<IExpression> GetChildren() => Parameters;
+        public override IEnumerable<IExpression> GetChildren() => Parameters;
 
         public void AddParameter(ParameterExpression fnParameter)
         {

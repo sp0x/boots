@@ -4,8 +4,7 @@ namespace Netlyt.Service.Lex.Parsing
 {
     public class TokenCursor
     {
-        public short Depth { get; set; }
-        public short StartingDepth { get; private set; }
+        public short Depth { get; set; } 
         public DslToken Token { get; private set; }
 
         public void SetToken(DslToken tok)
@@ -16,8 +15,7 @@ namespace Netlyt.Service.Lex.Parsing
         public TokenCursor Clone()
         {
             var c = new TokenCursor();
-            c.Depth = Depth;
-            c.StartingDepth = c.StartingDepth;
+            c.Depth = Depth; 
             c.Token = Token;
             return c;
         }

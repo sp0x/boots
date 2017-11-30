@@ -23,25 +23,26 @@ namespace Netlyt.Service.Lex.Parsing
             }
         }
 
-        public TokenReader(List<DslToken> tokens)
+        public TokenReader(IEnumerable<DslToken> tokens)
         {
             Cursor = new TokenCursor();
             Load(tokens);
         }
 
-        private void Load(List<DslToken> tokens)
+        private void Load(IEnumerable<DslToken> tokens)
         {
             LoadSequenceStack(tokens);
             PrepareLookaheads();
         }
 
-        private void LoadSequenceStack(List<DslToken> tokens)
+        private void LoadSequenceStack(IEnumerable<DslToken> tokens)
         {
+            if (tokens == null) return;
             _tokenSequence = new Stack<DslToken>();
-            int count = tokens.Count;
-            for (int i = count - 1; i >= 0; i--)
+            //int count = tokens.Count;
+            foreach (var token in tokens.Reverse())
             {
-                _tokenSequence.Push(tokens[i]);
+                _tokenSequence.Push(token);
             }
         } 
         private void PrepareLookaheads()

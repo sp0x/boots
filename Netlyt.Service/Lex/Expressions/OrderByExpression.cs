@@ -4,19 +4,19 @@ using Netlyt.Service.Lex.Parsing;
 namespace Netlyt.Service.Lex.Expressions
 {
     public class OrderByExpression
-        : IExpression
+        : Expression
     {
-        private List<IExpression> Values { get; set; }
+        public IEnumerable<IExpression> ByClause { get; set; }
 
-        public OrderByExpression(List<IExpression> tree)
+        public OrderByExpression(IEnumerable<IExpression> tree)
         {
-            this.Values = tree;
+            this.ByClause = tree;
         }
 
 
-        public IEnumerable<IExpression> GetChildren()
+        public override IEnumerable<IExpression> GetChildren()
         {
-            return Values;
+            return ByClause;
         }
     }
 }

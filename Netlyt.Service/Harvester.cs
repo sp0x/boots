@@ -241,11 +241,7 @@ namespace Netlyt.Service
                                         return;
                                     }
                                     var sendTask = targetBlock.SendAsync(entry as ExpandoObject);
-                                    sendTask.Wait();
-                                    if (!sendTask.IsCompleted || !sendTask.Result)
-                                    {
-                                        sendTask = sendTask;
-                                    }
+                                    sendTask.Wait(); 
                                     Interlocked.Increment(ref totalItemsUsed);
                                 });
                             }

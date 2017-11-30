@@ -16,7 +16,7 @@ services:
       - mongo.netlyt.com 
     ports:
       - "5000:5000"
-      - "80:80"
+      - "81:80"
   
   jenkins:
     privileged: true
@@ -61,7 +61,7 @@ services:
     container_name: registry
     restart: always
     ports:
-      - "10.10.1.5:443:5000"
+      - "10.10.1.7:443:5000"
     volumes:
       - ./registry:/var/lib/registry
       - ./auth:/auth
