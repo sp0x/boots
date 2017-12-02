@@ -7,7 +7,7 @@ using Netlyt.Service.Integration;
 
 namespace Netlyt.Web.Models
 {
-    [EntityMapping(Name = "Peeralize generic mapping")]
+    [EntityMapping(Name = "Netlyt generic mapping")]
     public class Mapping : AssemblyEntityMap
     {
         public override IEnumerable<Type> Types()

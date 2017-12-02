@@ -203,7 +203,11 @@ namespace Netlyt.ServiceTests.Lex.Parsing
 
         /// <summary>
         /// </summary>
-        /// <param name="inputDirectory"></param>
+        /// <param name="txt"></param>
+        /// <param name="expectedFeatureTypeName"></param>
+        /// <param name="expectedSource"></param>
+        /// <param name="expectedPreSort"></param>
+        /// <param name="expectedFeatureKVP"></param>
         [Theory]
         [InlineData(new object[] { @"
             define User
@@ -223,6 +227,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing
             string expectedPreSort,
             string[] expectedFeatureKVP)
         {
+
             var tokenizer = new PrecedenceTokenizer();
             var parser = new TokenParser(tokenizer.Tokenize(txt));
             var model = parser.ParseModel();

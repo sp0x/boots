@@ -107,6 +107,7 @@ namespace Netlyt.Web.Controllers
 
             //Todo: do this without relying on mongo, using the document store
             var mongoCollection = _documentStore.MongoDb();
+            _documentStore.Remove()
             var apiQuery = Builders<IntegratedDocument>.Filter.Where(x => x.UserId == userApiId);
             var userDocumentFilter = BsonSerializer.Deserialize<BsonDocument>(userFilter.ToString());
             //var entityQuery = Builders<IntegratedDocument>.Filter.(userDocumentFilter);
