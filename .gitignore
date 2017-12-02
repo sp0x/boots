@@ -5,6 +5,8 @@ BehaviorAnalysis/.idea
 .vs/
 *.txt
 *.pyc
+*.png
+*.jpg
 */obj/*
 Backup/
 obj/
