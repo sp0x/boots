@@ -100,7 +100,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing
             var param2 = x.Parameters.Skip(1).First();
             Assert.IsType<VariableExpression>(param1.Value);
             Assert.IsType<VariableExpression>(param2.Value);
-            Assert.Equal(((VariableExpression)param1.Value).Name, "a.one"); 
+            Assert.Equal(((VariableExpression)param1.Value).ToString(), "a.one"); 
             Assert.Equal(((VariableExpression)param2.Value).Name, "b"); 
         }
 
@@ -120,7 +120,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing
             Assert.True(((FunctionExpression) param1.Value).Parameters.Count == 2);
             VariableExpression fnp1Param1= (VariableExpression)((FunctionExpression)param1.Value).Parameters.First().Value;
             VariableExpression fnp1Param2 = (VariableExpression)((FunctionExpression)param1.Value).Parameters.Skip(1).First().Value;
-            Assert.Equal("a.one", fnp1Param1.Name);
+            Assert.Equal("a.one", fnp1Param1.ToString());
             Assert.Equal("c", fnp1Param2.Name);
             Assert.Equal("b", ((VariableExpression)param2.Value).Name);
         }
@@ -167,7 +167,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing
         [Theory]
         [InlineData(new object[] { "a.b", "b" })]
         [InlineData(new object[] { "a.b.c", "c" })]
-        [InlineData(new object[] { "a.b.c.d", "c" })]
+        [InlineData(new object[] { "a.b.c.d", "d" })]
         public void TokenizeLastMemberAccess(string content, string expected)
         {
             var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(content));
