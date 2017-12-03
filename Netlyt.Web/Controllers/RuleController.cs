@@ -58,8 +58,9 @@ namespace Netlyt.Web.Controllers
                 return NotFound();
             }
 
-            //TODO: add logic to check what we're updating
-
+            rule.IsActive = item.IsActive;
+            rule.Models = item.Models;
+            
             _ruleContext.Update(rule);
             _ruleContext.Save();
             return new NoContentResult();
