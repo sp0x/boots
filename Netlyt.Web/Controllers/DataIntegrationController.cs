@@ -11,7 +11,8 @@ using Microsoft.AspNetCore.Identity.MongoDB;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
-using MongoDB.Driver; 
+using MongoDB.Driver;
+using nvoid.db.Batching;
 using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
 using nvoid.Integration;
@@ -27,7 +28,7 @@ using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.IntegrationSource;
 using Netlyt.Service.Source;
 using Netlyt.Web.Services;
-using Netlyt.Data;
+using static Netlyt.Data.AuthenticationSchemes;
 
 namespace Netlyt.Web.Controllers
 {
@@ -35,7 +36,7 @@ namespace Netlyt.Web.Controllers
     /// TODO: Create a service for the actions performed in this controller.
     /// </summary>
     [Produces("application/json")]
-    [Authorize(ActiveAuthenticationSchemes = AuthenticationSchemes.DataSchemes)]
+    [Authorize(AuthenticationSchemes = DataSchemes)]
     [Route("data")]
     public class DataIntegrationController : Controller
     { 
@@ -78,7 +79,7 @@ namespace Netlyt.Web.Controllers
             type.SaveType(userApiId);
             //Check if the entity type exists
             var harvester = new Harvester<IntegratedDocument>();
-            var destination = (new MongoSink(userApiId));
+            var destination = (new MongoSink<IntegratedDocument>(userApiId));
             destination.LinkTo(_behaviourContext.GetActionBlock());
             harvester.SetDestination(destination);
             harvester.AddType(type, memSource);
@@ -103,11 +104,10 @@ namespace Netlyt.Web.Controllers
             var socialNetwork = bodyJson["type"];
             JToken socialNetworkDetails = bodyJson["details"];
             //Set the session social network tokens
-
+            
 
             //Todo: do this without relying on mongo, using the document store
-            var mongoCollection = _documentStore.MongoDb();
-            _documentStore.Remove()
+            var mongoCollection = _documentStore.AsMongoDbQueryable(); 
             var apiQuery = Builders<IntegratedDocument>.Filter.Where(x => x.UserId == userApiId);
             var userDocumentFilter = BsonSerializer.Deserialize<BsonDocument>(userFilter.ToString());
             //var entityQuery = Builders<IntegratedDocument>.Filter.(userDocumentFilter);

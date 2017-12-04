@@ -11,11 +11,13 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow; 
 using MongoDB.Bson;
 using MongoDB.Driver;
+using nvoid.db.Batching;
 using nvoid.db.DB;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
+using nvoid.exec.Blocks;
 using nvoid.extensions;
 //using nvoid.Helpers;
 using Netlyt.Service;
@@ -46,7 +48,7 @@ namespace Netlyt.ServiceTests.Netinfo
         {
             _config = fixture;
             _helper = new CrossSiteAnalyticsHelper();
-            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().MongoDb();
+            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().AsMongoDbQueryable();
             _appId = "123123123";
             _dateHelper = new DateHelper();
         }

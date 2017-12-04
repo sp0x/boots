@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using MongoDB.Bson;
+using nvoid.exec.Blocks;
 
 namespace Netlyt.Service.Integration.Blocks
 {
@@ -20,7 +21,7 @@ namespace Netlyt.Service.Integration.Blocks
             Func<IntegratedDocument, object> keyResolver,
             Action<IntegratedDocument, BsonDocument> action,
             Func<IntegratedDocument, BsonArray> childSelector,
-            int threadCount = 4) : base(capacity: 1000 * 30, procType: ProcessingType.Action, threadCount: threadCount)
+            int threadCount = 4) : base(capacity: 1000 * 30, procType: BlockType.Action, threadCount: threadCount)
         {
             _keyResolver = keyResolver;
             _action = action;

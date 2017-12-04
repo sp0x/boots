@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using nvoid.db.DB;
+using nvoid.exec.Blocks;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.IntegrationSource;
@@ -40,7 +41,7 @@ namespace Netlyt.Service
         /// <summary>
         /// The destination to which documents will be dispatched
         /// </summary>
-        public IIntegrationBlock<TDocument> Destination { get; private set; }
+        public IFlowBlock<TDocument> Destination { get; private set; }
         public ITargetBlock<TDocument> DestinationBlock { get; private set; }
 
         protected int ShardLimit => _shardLimit;
@@ -110,7 +111,7 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="dest">A destination/block in your integration flow</param>
         /// <returns></returns>
-        public Harvester<TDocument> SetDestination(IIntegrationBlock<TDocument> dest)
+        public Harvester<TDocument> SetDestination(IFlowBlock<TDocument> dest)
         {
             Destination = dest;
             return this;
@@ -332,7 +333,7 @@ namespace Netlyt.Service
                                     var document = itemSet.Wrap(entry);
                                     if (Destination == null)
                                     {
-                                        Integration.Extensions.SendChecked(DestinationBlock, document, null);
+                                        nvoid.exec.Blocks.Extensions.SendChecked(DestinationBlock, document, null);
                                     }
                                     else
                                     {

@@ -1,31 +1,21 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
-using Microsoft.AspNetCore.Authorization;
+﻿using System; 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.MongoDB;
+using Microsoft.AspNetCore.Identity; 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
-using MongoDB.Bson.Serialization.Conventions;
-using MongoDB.Bson.Serialization.Options;
-using nvoid.db.DB.Configuration;
-using nvoid.db.Extensions;
-using nvoid.Integration;
-using Netlyt.Web.Controllers;
+using Microsoft.Extensions.Logging; 
+using nvoid.db.DB.Configuration; 
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Middleware;
 using Netlyt.Service;
 using Netlyt.Service.Auth;
 using Netlyt.Web.Services;
 using AuthMessageSender = Netlyt.Web.Services.AuthMessageSender;
+using IdentityRole = Microsoft.AspNetCore.Identity.MongoDB.IdentityRole;
 using IEmailSender = Netlyt.Web.Services.IEmailSender;
 using ISmsSender = Netlyt.Web.Services.ISmsSender;
-using IdentityRole = Microsoft.AspNetCore.Identity.MongoDB.IdentityRole;
 
 namespace Netlyt.Web
 {

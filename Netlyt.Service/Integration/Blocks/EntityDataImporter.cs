@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using LumenWorks.Framework.IO.Csv;
+using nvoid.exec.Blocks;
 
 namespace Netlyt.Service.Integration.Blocks
 {
@@ -24,7 +25,7 @@ namespace Netlyt.Service.Integration.Blocks
         public Dictionary<string, string[]> MappedItems { get; private set; }
 
         public EntityDataImporter(string inputFile, bool relative = false, bool map = false) 
-            : base(procType: ProcessingType.Transform)
+            : base(procType: BlockType.Transform)
         {
             Delimiter = ',';
             if (relative)
@@ -87,7 +88,7 @@ namespace Netlyt.Service.Integration.Blocks
             return intDoc;
         }
 
-        public IIntegrationBlock ContinueWith(Action<EntityDataImporter> action)
+        public IFlowBlock ContinueWith(Action<EntityDataImporter> action)
         {
             var completion = GetProcessingBlock().Completion;
             completion.ContinueWith(xTask =>

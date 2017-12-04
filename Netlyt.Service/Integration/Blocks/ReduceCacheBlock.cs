@@ -11,6 +11,7 @@ using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core;
 using StackExchange.Redis.Extensions.Jil;
 using Jil;
+using nvoid.exec.Blocks;
 
 namespace Netlyt.Service.Integration.Blocks
 {
@@ -38,7 +39,7 @@ namespace Netlyt.Service.Integration.Blocks
             string userId, 
             Func<ExpandoObject, string> selector,
             Func<ExpandoObject, ExpandoObject> inputProjection)
-            : base(capacity: 100000, procType: ProcessingType.Transform)
+            : base(capacity: 100000, procType: BlockType.Transform)
         {
             _keyBase = $"reduce_cache:{userId}";
             var connection = DBConfig.GetCachingConnection();

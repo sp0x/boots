@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using nvoid.exec.Blocks;
 
 namespace Netlyt.Service.Integration.Blocks
 {
@@ -15,7 +16,7 @@ namespace Netlyt.Service.Integration.Blocks
         private object _lock;
 
         public StatsBlock(Action<IntegratedDocument> action)
-            : base(procType: ProcessingType.Action, threadCount: 4)
+            : base(procType: BlockType.Action, threadCount: 4)
         {
             _action = action;
             _items = new BlockingCollection<IntegratedDocument>();
