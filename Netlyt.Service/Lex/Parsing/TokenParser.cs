@@ -68,10 +68,11 @@ namespace Netlyt.Service.Lex.Parsing
         /// Reads the next available expression.
         /// </summary>
         /// <returns></returns>
-        public IExpression ReadExpression()
+        public IExpression ReadExpression(Predicate<TokenCursor> terminatingPredicate = null)
         {
-            return ReadExpressions(null, 1).FirstOrDefault();
-        }
+            return ReadExpressions(terminatingPredicate, 1).FirstOrDefault();
+        } 
+
         /// <summary>
         /// Reads the next available expressions
         /// </summary>
@@ -80,7 +81,7 @@ namespace Netlyt.Service.Lex.Parsing
         public IEnumerable<IExpression> ReadExpressions(Predicate<TokenCursor> terminatingPredicate = null, int limit = 0)
         {
             Stack<IExpression> previousExpressions = new Stack<IExpression>();
-            Queue<IExpression> outputExpressions = new Queue<IExpression>();
+            //Queue<IExpression> outputExpressions = new Queue<IExpression>();
             uint ix = 0;
             while (!Reader.IsComplete)
             {
@@ -95,11 +96,14 @@ namespace Netlyt.Service.Lex.Parsing
                     case TokenType.Comma:                       //Skip commas
                         Reader.DiscardToken();
                         continue;
+                    case TokenType.Reduce:
+                        lvlExpressions.Add(ReadMapReduce());
+                        break;
                     case TokenType.OrderBy:
                         lvlExpressions.Add(ReadOrderBy());
                         break;
                     case TokenType.Set:
-                        var typeFeatureSet = ReadVariableSet();
+                        var typeFeatureSet = ReadFeatureAssign();
                         lvlExpressions.Add(typeFeatureSet);
                         break;
                     case TokenType.Symbol:
@@ -138,16 +142,11 @@ namespace Netlyt.Service.Lex.Parsing
                         var subExps = ReadParenthesisContent();
                         lvlExpressions.AddRange(subExps);
                         break;
-                    default:
+                    default: 
                         if (IsOperator(nextToken))
                         {
-                            var op = new BinaryExpression(nextToken);
-                            Reader.DiscardToken();
-                            var left = previousExpressions.Pop();
-                            outputExpressions.Dequeue();
-                            op.Left = left;
-                            op.Right = ReadExpression();
-                            lvlExpressions.Add(op);
+                            var opExpression = ReadOperator(terminatingPredicate, nextToken, previousExpressions);//, outputExpressions);
+                            lvlExpressions.Add(opExpression);
                         }
                         else
                         {
@@ -158,17 +157,41 @@ namespace Netlyt.Service.Lex.Parsing
                 }
 
                 foreach (var lvlExpression in lvlExpressions)
-                {
-                    outputExpressions.Enqueue(lvlExpression);
+                { 
                     previousExpressions.Push(lvlExpression);
                     Debug.WriteLine($"Read expression: {lvlExpression}");
                     ix++;
                 } 
                 //yield return crExpression; 
             }
-            return outputExpressions;
+            return previousExpressions.Reverse();
         }
-         
+
+        private IExpression ReadOperator(
+            Predicate<TokenCursor> terminatingPredicate,
+            DslToken token,
+            Stack<IExpression> previousExpressions)
+        {
+            IExpression op = null;
+            Reader.DiscardToken();
+            var left = previousExpressions.Pop();  
+            switch (token.TokenType)
+            {
+                case TokenType.Assign:
+                    var right = ReadValueExpression();
+                    var aop = new AssignmentExpression(left as VariableExpression, right);
+                    op = aop;
+                    break;
+                default:
+                    var bop = new BinaryExpression(token);
+                    bop.Left = left;
+                    bop.Right = ReadExpression(terminatingPredicate);
+                    op = bop;
+                    break;
+            } 
+            return op; 
+        }
+
         private IExpression ReadConstant()
         {
             var token = Reader.DiscardToken();
@@ -200,7 +223,8 @@ namespace Netlyt.Service.Lex.Parsing
                    || tt == TokenType.Equals 
                    || tt == TokenType.NotEquals
                    || tt == TokenType.In
-                   || tt == TokenType.NotIn;
+                   || tt == TokenType.NotIn
+                   || tt == TokenType.Assign;
         }  
 
         public VariableExpression ReadVariable()
@@ -282,23 +306,77 @@ namespace Netlyt.Service.Lex.Parsing
             //            }
             //            return tree;
         }
-          
-        
 
-        private AssignmentExpression ReadVariableSet()
+
+
+        public AssignmentExpression ReadFeatureAssign()
         {
             Reader.DiscardToken(TokenType.Set);
+            return ReadAssign();
+        }
+
+        public AssignmentExpression ReadAssign()
+        {
             var featureVariable = ReadVariable();
 //            if (FeatureModel.Type.Name != featureVariable.Name)
 //            {
 //                throw new Exception("Cannot assign feature to given type. The type is not defined.");
 //            }
-            Reader.DiscardToken(TokenType.Assign);
-            var variableValueExpression = ReadExpression();
-
-            var setExp = new AssignmentExpression(featureVariable, variableValueExpression);
+            Reader.DiscardToken(TokenType.Assign); 
+            var value = ReadValueExpression();
+            var setExp = new AssignmentExpression(featureVariable, value); 
             //FeatureModel.Features.Add(setExp);
             return setExp;
+        }
+
+        /// <summary>   Reads a value expression. </summary>
+        ///
+        /// <remarks>   Cyb R, 05-Dec-17. </remarks>
+        ///
+        /// <exception cref="InvalidAssignedValue"> Thrown when an invalid assigned value error condition
+        ///                                         occurs. </exception>
+        ///
+        /// <returns>   The value expression. </returns>
+
+        public IExpression ReadValueExpression()
+        {
+            var currentCursor = Reader.Cursor.Clone();
+            var isKeyword = Filters.Keyword(currentCursor);
+            var isSameLevelComma = Filters.SameLevel(currentCursor, TokenType.Comma);
+            var valueExpressions = ReadExpressions((c) =>
+            {
+                return isKeyword(c) || isSameLevelComma(c);
+            });
+            var value = valueExpressions.FirstOrDefault();
+            if (valueExpressions.Count() > 1)
+            {
+                throw new InvalidAssignedValue(valueExpressions.ConcatExpressions());
+            }
+            return value;
+        }
+
+        /// <summary>   Reads a map reduce delcaration </summary>
+        ///
+        /// <remarks>   Vasko, 06-Dec-17. </remarks>
+        ///
+        /// <returns>   The map reduce expression. </returns>
+
+        public MapReduceExpression ReadMapReduce()
+        {
+            if (Reader.Current.TokenType != TokenType.Reduce) return null;
+            Reader.DiscardToken(TokenType.Reduce);
+            var currentCursor = Reader.Cursor.Clone();
+            var reduceKeyExpressions = ReadExpressions(Filters.Keyword(currentCursor)); 
+            Reader.DiscardToken(TokenType.ReduceMap);
+            currentCursor = Reader.Cursor.Clone();
+            var valueExpressions = ReadExpressions(Filters.Keyword(currentCursor));
+
+            var mapReduce = new MapReduceExpression()
+            {
+                Keys = reduceKeyExpressions.Cast<AssignmentExpression>(),
+                ValueMembers = valueExpressions.Cast<AssignmentExpression>()
+            };
+            return mapReduce;
         }
 
         public OrderByExpression ReadOrderBy()
@@ -574,13 +652,33 @@ namespace Netlyt.Service.Lex.Parsing
             public static bool IsKeyword(DslToken token)
             {
                 return token.TokenType == TokenType.OrderBy
-                       || token.TokenType == TokenType.Set;
+                       || token.TokenType == TokenType.Set
+                       || token.TokenType == TokenType.Reduce
+                       || token.TokenType == TokenType.ReduceMap;
             }
             public static Predicate<TokenCursor> Keyword(TokenCursor currentCursor)
             {
                 return x =>
                 {
                     return IsKeyword(x.Token);
+                };
+            }
+
+            /// <summary>   Returns a predicate for a cursor with a token on the same level as the given one. </summary>
+            ///
+            /// <remarks>   Vasko, 05-Dec-17. </remarks>
+            ///
+            /// <param name="currentCursor">    The current cursor. </param>
+            /// <param name="tokenType">        Type of the token. </param>
+            ///
+            /// <returns>   A Predicate&lt;TokenCursor&gt; </returns>
+
+            public static Predicate<TokenCursor> SameLevel(TokenCursor currentCursor, TokenType tokenType)
+            {
+                return x =>
+                {
+                    return x.Depth == currentCursor.Depth
+                           && x.Token.TokenType == tokenType;
                 };
             }
             public static Predicate<TokenCursor> FunctionCallEnd(TokenCursor currentCursor)

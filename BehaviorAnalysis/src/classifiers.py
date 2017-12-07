@@ -150,7 +150,7 @@ class Experiment:
             models = glob.glob(os.path.join(models_path, "models_*"))
             last_model = max(models, key=os.path.getctime)
 
-        print "Loading model: {0}".format(last_model)
+        print("Loading model: {0}".format(last_model))
         return load(last_model)
 
     def load_model_files(self, model_names):
@@ -162,7 +162,7 @@ class Experiment:
         models = []
         for m_name in model_names:
             model_path = latest_file(os.path.join(exp_dir, "model_{0}_".format(m_name)))
-            print "Loading " + model_path
+            print("Loading " + model_path)
             if 'hdf5' in m_name:
                 model = load_model(abs_path(model_path))
             else:
@@ -589,7 +589,7 @@ def create_balancer(input_data, target, classifier_types, client='netinfo'):
     for model in model_files:
         m_type = model['type']
         model_obj = model['model']
-        print "Predicting with {0} - {1}".format(m_type, len(input_data))
+        print("Predicting with {0} - {1}".format(m_type, len(input_data)))
         prediction = model_obj.predict_proba(input_data)
         predictions.append(prediction)
     arguments = predictions

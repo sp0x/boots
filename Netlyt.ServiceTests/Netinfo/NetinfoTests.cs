@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
+using System.Linq; 
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow; 
@@ -14,12 +13,11 @@ using MongoDB.Driver;
 using nvoid.db.Batching;
 using nvoid.db.DB;
 using nvoid.db.DB.Configuration;
-using nvoid.db.DB.MongoDB;
-using nvoid.db.DB.RDS;
+using nvoid.db.DB.MongoDB; 
 using nvoid.db.Extensions;
+using nvoid.db;
 using nvoid.exec.Blocks;
-using nvoid.extensions;
-//using nvoid.Helpers;
+using nvoid.extensions; 
 using Netlyt.Service;
 using Netlyt.Service.Analytics;
 using Netlyt.Service.Format;
@@ -63,11 +61,14 @@ namespace Netlyt.ServiceTests.Netinfo
 
                 inputDirectory = Path.Combine(currentDir, inputDirectory);
                 Console.WriteLine($"Parsing data in: {inputDirectory}");
+                var importCollectionId = Guid.NewGuid().ToString();
+                var mlist = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
+                //var altList = RemoteDataSource.GetMongoDb<BsonDocument>(importCollectionId);
+
                 var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
                 var harvester = new Harvester<ExpandoObject>(10);
                 var type = harvester.AddPersistentType(fileSource, _appId, null, true);
-                var importCollectionId = Guid.NewGuid().ToString();
-                var mlist = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
+
                 mlist.Truncate();
                 //harvester -> documentCreator -> inserter
                 var batchSize = 30000;
@@ -113,7 +114,7 @@ namespace Netlyt.ServiceTests.Netinfo
             var harvester = new Harvester<ExpandoObject>(10);
             var type = harvester.AddPersistentType(fileSource, _appId, "NetInfoUserFeatures_7_8", true);
 
-            var importCollectionId = Guid.NewGuid().ToString();
+            var importCollectionId = Guid.NewGuid().ToString(); 
             var rawEventsCollection = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
             var reducedEventsCollection = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId+"_reduced");
 
@@ -124,21 +125,20 @@ namespace Netlyt.ServiceTests.Netinfo
             var batchSize = 30000;
             var executionOptions = new ExecutionDataflowBlockOptions {  BoundedCapacity = 1,  };
             
+            var transformerBlock = BsonConverter.Create(new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
+            var batchAllocator = BatchedBlockingBlock<ExpandoObject>.CreateBlock(batchSize); 
+            batchAllocator.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
+            //insertBat.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
             var inserterBlock = new ActionBlock<IEnumerable<BsonDocument>>(x =>
             {
-                Debug.WriteLine($"Inserting batch {batchesInserted+1} [{x.Count()}]");
+                Debug.WriteLine($"Inserting batch {batchesInserted + 1} [{x.Count()}]");
                 rawEventsCollection.Records.InsertMany(x);
                 Interlocked.Increment(ref batchesInserted);
-                Debug.WriteLine($"Inserted batch {batchesInserted}"); 
+                Debug.WriteLine($"Inserted batch {batchesInserted}");
             }, executionOptions);
-            var transformerBlock = BsonConverter.Create(new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
-
-            var batcher = BatchedBlockingBlock<ExpandoObject>.CreateBlock(batchSize); 
-            batcher.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            //insertBat.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
             transformerBlock.LinkTo(inserterBlock, new DataflowLinkOptions { PropagateCompletion = true });
              
-            var result = await harvester.ReadAll(batcher);
+            var result = await harvester.ReadAll(batchAllocator);
             harvester = null;
             //Reduce
             await Task.WhenAll(inserterBlock.Completion, transformerBlock.Completion);

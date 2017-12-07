@@ -1,32 +1,24 @@
 using System;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
+using System.IO; 
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting.Internal;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.MongoDB;
+using Microsoft.AspNetCore.Authorization; 
+using Microsoft.AspNetCore.Identity; 
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using nvoid.db;
 using nvoid.db.Batching;
-using nvoid.db.DB.RDS;
+using nvoid.db.DB;
 using nvoid.db.Extensions;
-using nvoid.Integration;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Service;
 using Netlyt.Service.Auth;
 using Netlyt.Service.Format;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Blocks;
-using Netlyt.Service.IntegrationSource;
-using Netlyt.Service.Source;
+using Netlyt.Service.Integration; 
+using Netlyt.Service.IntegrationSource; 
 using Netlyt.Web.Services;
 using static Netlyt.Data.AuthenticationSchemes;
 
@@ -126,7 +118,7 @@ namespace Netlyt.Web.Controllers
                 var socToken = Services.ReservedDocumentTokens.GetUserSocialNetworkTokenName(socialNetwork.ToString());
                 matchingDocument.Reserved.Set(socToken, socialNetworkDetails["userToken"].ToString() );
                 //Save the modified entity
-                matchingDocument.SaveOrUpdate<IntegratedDocument>(x=> x.Id == matchingDocument.Id); 
+                matchingDocument.SaveOrUpdate(x=> x.Id == matchingDocument.Id); 
                 return Json(new { success = true });
             }
         }

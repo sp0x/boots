@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Parsing;
 using Netlyt.Service.Lex.Parsing.Tokenizers;
 using Netlyt.Service.Lex.Parsing.Tokens;
 using Xunit;
 
-namespace Netlyt.ServiceTests.Lex.Parsing
+namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
 {
     public class TokenParserTests
     {
@@ -55,7 +53,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing
         public void ReadOrderByTest(string content, string expected)
         { 
             var expression = new TokenParser(new PrecedenceTokenizer().Tokenize(content)).ReadOrderBy();
-            Assert.Equal(expected, expression.ByClause.ConcatTokens());
+            Assert.Equal(expected, expression.ByClause.ConcatExpressions());
         }
 
         [Theory]
@@ -182,6 +180,17 @@ namespace Netlyt.ServiceTests.Lex.Parsing
             Assert.Equal(expected, currentElement.Name);
         }
 
+        [Theory]
+        [InlineData(new object[] { "a = time(now()) / 1000", "time(now()) / 1000" })]
+        [InlineData(new object[] { "a = time(now()) / 1000 - 10", "time(now()) / 1000 - 10" })]
+        [InlineData(new object[] { "a = time(now()) / 1000, 10", "time(now()) / 1000" })]
+        public void TokenizeAssignment(string content, string expectedValue)
+        {
+            var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(content));
+            var expression = parser.ReadAssign();
+            Assert.Equal(expectedValue, expression.Value.ToString()); 
+        }
+
         /// <summary>
         /// Test basic parsing
         /// </summary>
@@ -199,6 +208,41 @@ namespace Netlyt.ServiceTests.Lex.Parsing
             var tokens = new PrecedenceTokenizer().Tokenize(txt).ToList();
             Assert.True(tokens.Any(), "No tokens found");
             Assert.True(tokens.Count == count, $"Incorrect token count, they must be {count}");
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="txt"></param>
+        /// <param name="expectedFeatureTypeName"></param>
+        /// <param name="expectedSource"></param>
+        /// <param name="expectedPreSort"></param>
+        /// <param name="expectedFeatureKVP"></param>
+        [Theory]
+        [InlineData(new object[]
+        {
+            @" 
+            reduce day = time_s(input.ondate) / (60*60*24), 
+                   uuid = input.uuid
+            reduce_map  ondate = input.ondate,
+                        value = input.value,
+                        type = input.type
+                    ",
+            "day = time_s(input.ondate) / 60 * 60 * 24, uuid = input.uuid",
+            "ondate = input.ondate, value = input.value, type = input.type"
+        })]
+        public void ParseMapReduce(
+            string txt,
+            string expectedKeys,
+            string expectedValues)
+        {
+
+            var tokenizer = new PrecedenceTokenizer();
+            var parser = new TokenParser(tokenizer.Tokenize(txt));
+            var mapReduce = parser.ReadMapReduce();
+            var values = mapReduce.ValueMembers.ConcatExpressions();
+            var keys = mapReduce.Keys.ConcatExpressions();
+            Assert.Equal(expectedKeys, keys);
+            Assert.Equal(expectedValues, values);
         }
 
         /// <summary>
@@ -235,7 +279,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing
             Assert.NotNull(model.Features);
             Assert.NotNull(model.Type);
             Assert.Equal(expectedFeatureTypeName, model.Type.Name);
-            var sortClauses = model.StartingOrderBy.ByClause.ConcatTokens(); 
+            var sortClauses = model.StartingOrderBy.ByClause.ConcatExpressions(); 
             Assert.Equal(expectedPreSort, sortClauses);
             for (var i = 0; i < expectedFeatureKVP.Length; i += 2)
             {

@@ -59,7 +59,7 @@ class Server(threading.Thread):
                         resp = {'results':[{'value':m['model'].predict(data),'model':m['type']} for m in models]}
                     resp.update({'seq':seq})
                     self.out_stream.send_json(resp)
-                except Exception, e:
+                except e as Exception:
                     resp = {'status' : 'err', 'message' : str(e)}
                     self.out_stream.send_json(resp)
                     print("Error: %s" % str(e)) 

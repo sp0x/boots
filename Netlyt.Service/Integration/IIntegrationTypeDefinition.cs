@@ -24,8 +24,7 @@ namespace Netlyt.Service.Integration
         string OriginType { get; }
         Dictionary<string, FieldDefinition> Fields { get; }
 
-        IntegrationTypeExtras Extras { get; }
-        bool Save();
+        IntegrationTypeExtras Extras { get; } 
         IIntegrationTypeDefinition SaveType(string userApiId);
 
         [BsonSerializer(typeof(LazyStringSerializer))]

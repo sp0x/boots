@@ -1,6 +1,5 @@
 using System;
-using System.IO;
-using System.Linq;
+using System.IO; 
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -8,21 +7,14 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Authentication;
-using Microsoft.AspNetCore.Http.Features.Authentication;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication; 
+using Microsoft.AspNetCore.Http; 
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
-using nvoid.Integration;
-using nvoid.Security.Ciphers;
-using Netlyt.Web.Controllers;
-using Netlyt.Service.Auth;
+using nvoid.db;
+using nvoid.Integration; 
 using AuthenticationProperties = Microsoft.AspNetCore.Authentication.AuthenticationProperties;
 
 namespace Netlyt.Web.Middleware.Hmac

@@ -6,7 +6,7 @@ namespace Netlyt.Service.Lex.Expressions
 {
     public static class ExpressionExtensions
     {
-        public static string ConcatTokens(this IEnumerable<IExpression> expressions)
+        public static string ConcatExpressions(this IEnumerable<IExpression> expressions)
         {
             return string.Join(", ", expressions);
         }

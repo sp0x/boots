@@ -3,6 +3,10 @@ using Netlyt.Service.Lex.Parsing;
 
 namespace Netlyt.Service.Lex.Expressions
 {
+    /// <summary>   An order by expression. </summary>
+    ///
+    /// <remarks>   Vasko, 05-Dec-17. </remarks>
+
     public class OrderByExpression
         : Expression
     {
