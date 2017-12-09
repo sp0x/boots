@@ -125,9 +125,9 @@ namespace Netlyt.ServiceTests.Netinfo
             var batchSize = 30000;
             var executionOptions = new ExecutionDataflowBlockOptions {  BoundedCapacity = 1,  };
             
-            var transformerBlock = BsonConverter.Create(new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
-            var batchAllocator = BatchedBlockingBlock<ExpandoObject>.CreateBlock(batchSize); 
-            batchAllocator.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
+            var transformerBlock = BsonConverter.CreateBlock(new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
+            var readBatcher = BatchedBlockingBlock<ExpandoObject>.CreateBlock(batchSize); 
+            readBatcher.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
             //insertBat.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
             var inserterBlock = new ActionBlock<IEnumerable<BsonDocument>>(x =>
             {
@@ -138,7 +138,7 @@ namespace Netlyt.ServiceTests.Netinfo
             }, executionOptions);
             transformerBlock.LinkTo(inserterBlock, new DataflowLinkOptions { PropagateCompletion = true });
              
-            var result = await harvester.ReadAll(batchAllocator);
+            var result = await harvester.ReadAll(readBatcher);
             harvester = null;
             //Reduce
             await Task.WhenAll(inserterBlock.Completion, transformerBlock.Completion);

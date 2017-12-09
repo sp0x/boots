@@ -155,9 +155,9 @@ namespace Netlyt.Service
         }
 
         /// <summary>
-        /// Reads all values from the source, in raw means without any preprocessing.
+        /// Reads all values from the source, in raw means without any pre-processing.
         /// </summary>
-        /// <param name="target"></param>
+        /// <param name="target">A target block to which to post all input.</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         public Task<HarvesterResult> ReadAll(

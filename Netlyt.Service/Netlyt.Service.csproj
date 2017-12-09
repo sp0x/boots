@@ -20,6 +20,7 @@
     <PackageReference Include="NetMQ" Version="4.0.0.1" />
     <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
     <PackageReference Include="StackExchange.Redis.Extensions.JilCore" Version="1.0.0" />
+    <PackageReference Include="System.CodeDom" Version="4.4.0" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib">
@@ -33,28 +34,28 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <None Update="Lex\Templates\MapReduceDefinition.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>MapReduceDefinition.cs</LastGenOutput>
-    </None>
-    <None Update="Lex\Templates\MapReduceTemplate.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>MapReduceTemplate.cs</LastGenOutput>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="Lex\Templates\MapReduceDefinition.cs">
+    <Compile Update="Lex\Templates\Donutfile.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>MapReduceDefinition.tt</DependentUpon>
+      <DependentUpon>Donutfile.tt</DependentUpon>
     </Compile>
     <Compile Update="Lex\Templates\MapReduceTemplate.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>MapReduceTemplate.tt</DependentUpon>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Lex\Templates\Donutfile.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>Donutfile.cs</LastGenOutput>
+    </None>
+    <None Update="Lex\Templates\MapReduceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>MapReduceTemplate.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 </Project>
