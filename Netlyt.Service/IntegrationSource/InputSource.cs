@@ -8,6 +8,10 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.IntegrationSource
 {
+    /// <summary>   An input source. </summary>
+    ///
+    /// <remarks>   Vasko, 13-Dec-17. </remarks>
+
     public abstract class InputSource : IInputSource
     {
         

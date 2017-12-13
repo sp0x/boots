@@ -23,6 +23,7 @@ namespace Netlyt.Service.Integration
         public int CodePage { get; set; }
         public string OriginType { get; set; } 
         public string UserId { get; set; }
+        public string Collection { get; set; }
         /// <summary>
         /// 
         /// </summary>

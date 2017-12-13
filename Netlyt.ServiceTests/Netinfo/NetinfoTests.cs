@@ -28,6 +28,7 @@ using Netlyt.Service.Models;
 using Netlyt.Service.Time;
 using Netlyt.ServiceTests.IntegrationSource;
 using Xunit;
+using Netlyt.Service.Integration.Import;
 
 namespace Netlyt.ServiceTests.Netinfo
 {
@@ -103,52 +104,30 @@ namespace Netlyt.ServiceTests.Netinfo
 
         }
         [Theory]
-        [InlineData(new object[] { "TestData\\Ebag\\NewJoin" })]
-        public async void CustomInsertExample(string inputDirectory)
+        [InlineData(new object[]
+        {
+            "TestData\\Ebag\\NewJoin", "NetInfoUserFeatures_7_8"
+        })]
+        public async void CustomInsertExample(string inputDirectory, string typeName)
         {
             var currentDir = Environment.CurrentDirectory;
-
             inputDirectory = Path.Combine(currentDir, inputDirectory);
-            Console.WriteLine($"Parsing data in: {inputDirectory}");
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
-            var harvester = new Harvester<ExpandoObject>(10);
-            var type = harvester.AddPersistentType(fileSource, _appId, "NetInfoUserFeatures_7_8", true);
-
-            var importCollectionId = Guid.NewGuid().ToString(); 
-            var rawEventsCollection = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
-            var reducedEventsCollection = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId+"_reduced");
-
-            rawEventsCollection.Truncate();
-            Debug.WriteLine($"Created temp collections: {rawEventsCollection.GetCollectionName()} & {reducedEventsCollection.GetCollectionName()}");
-
-            var batchesInserted = 0;
-            var batchSize = 30000;
-            var executionOptions = new ExecutionDataflowBlockOptions {  BoundedCapacity = 1,  };
-            
-            var transformerBlock = BsonConverter.CreateBlock(new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
-            var readBatcher = BatchedBlockingBlock<ExpandoObject>.CreateBlock(batchSize); 
-            readBatcher.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            //insertBat.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            var inserterBlock = new ActionBlock<IEnumerable<BsonDocument>>(x =>
+            Console.WriteLine($"Parsing data in: {inputDirectory}"); 
+            var importTask = new DataImportTask<ExpandoObject>(new DataImportTaskOptions
             {
-                Debug.WriteLine($"Inserting batch {batchesInserted + 1} [{x.Count()}]");
-                rawEventsCollection.Records.InsertMany(x);
-                Interlocked.Increment(ref batchesInserted);
-                Debug.WriteLine($"Inserted batch {batchesInserted}");
-            }, executionOptions);
-            transformerBlock.LinkTo(inserterBlock, new DataflowLinkOptions { PropagateCompletion = true });
-             
-            var result = await harvester.ReadAll(readBatcher);
-            harvester = null;
-            //Reduce
-            await Task.WhenAll(inserterBlock.Completion, transformerBlock.Completion);
-            rawEventsCollection.EnsureIndex("ondate");
+                Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' }),
+                ApiKey = _appId,
+                TypeName = typeName,
+                ThreadCount = 10
+            }.AddIndex("ondate"));
+            var importResult = await importTask.Import();
             var map = @"
 function () {    
   var time = parseInt((this.ondate.getTime() / 1000) / (60 * 60 * 24));
   var eventData = [{ ondate : this.ondate, value : this.value, type : this.type }];
   emit({ uuid : this.uuid, day : time }, { 
     uuid : this.uuid,
+    day : time,
     noticed_date : this.ondate,
     events : eventData
   });
@@ -161,24 +140,19 @@ function (key, values) {
 	for(var i=0; i<a.events.length;i++) elements.push(a.events[i]);    
   });  
   if(startTime==null && elements.length>0) startTime = elements[0].ondate;
-  return {uuid : key.uuid, day : key.day, noticed_date : startTime, events : elements };
+  return {
+uuid : key.uuid,
+day : key.day,
+noticed_date : startTime,
+events : elements };
 }";
-            var reduceCursor = rawEventsCollection.Records.MapReduce<BsonDocument>(map, reduce, new MapReduceOptions<BsonDocument,BsonDocument>
+            var mapReduceOptions = new MapReduceOptions<BsonDocument,BsonDocument>
             {
-                Sort = Builders<BsonDocument>.Sort.Ascending("ondate")
-            });
-            var reduceBatcher = BatchedBlockingBlock<BsonDocument>.CreateBlock(30000);
-            var reducedInserter = new ActionBlock<BsonDocument[]>(reducedElements =>
-            {
-                reducedEventsCollection.Records.InsertMany(reducedElements);
-            });
-            reduceBatcher.LinkTo(reducedInserter, new DataflowLinkOptions {PropagateCompletion = true});
-            foreach (var element in reduceCursor.ToEnumerable())
-            {
-                reduceBatcher.SendChecked(element);
-            }
-            await Task.WhenAll(reduceBatcher.Completion, reducedInserter.Completion);
-            Debug.WriteLine(importCollectionId);
+                Sort = Builders<BsonDocument>.Sort.Ascending("ondate"),
+                JavaScriptMode = true,
+                OutputOptions = MapReduceOutputOptions.Replace(importTask.OutputCollection.ReducedOutputCollection)
+            };
+            var reduceCursor = await importResult.Collection.Records.MapReduceAsync<BsonDocument>(map, reduce, mapReduceOptions);
         }
 
 
@@ -225,8 +199,7 @@ function (key, values) {
             {
                 featuresBlock.Post(doc);
                 return doc;
-            }));
-
+            })); 
             harvester.SetDestination(grouper);
             var completion = await harvester.Synchronize();
             var syncDuration = harvester.ElapsedTime();

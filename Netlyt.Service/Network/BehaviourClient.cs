@@ -59,10 +59,22 @@ namespace Netlyt.Service.Network
             });
         }
 
+        /// <summary>   Sends a message as a raw string. </summary>
+        ///
+        /// <remarks>   Vasko, 13-Dec-17. </remarks>
+        ///
+        /// <param name="message">  The message. </param>
+
         public void SendMessage(string message)
         {
             _writer.Send(message);
         }
+
+        /// <summary>   Sends a bson document as a JSON string. </summary>
+        ///
+        /// <remarks>   Vasko, 13-Dec-17. </remarks>
+        ///
+        /// <param name="doc">  The document. </param>
 
         public void SendDocument(IntegratedDocument doc)
         {
@@ -70,6 +82,12 @@ namespace Netlyt.Service.Network
             var data = doc.Document.ToJson().ToString();
             SendMessage(data); 
         }
+
+        /// <summary>   Sends a JToken as a JSON string. </summary>
+        ///
+        /// <remarks>   Vasko, 13-Dec-17. </remarks>
+        ///
+        /// <param name="message">  The message. </param>
 
         public void SendMessage(JToken message)
         {

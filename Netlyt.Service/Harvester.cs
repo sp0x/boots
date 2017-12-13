@@ -45,9 +45,9 @@ namespace Netlyt.Service
 
         protected int ShardLimit => _shardLimit;
         protected int TotalEntryLimit => _totalEntryLimit;
-        public int ThreadCount { get; private set; }
+        public uint ThreadCount { get; private set; }
 
-        public Harvester(int threadCount = 4) : base()
+        public Harvester(uint threadCount = 4) : base()
         {
             Sets = new HashSet<IntegrationSet>();
             this.ThreadCount = threadCount;
@@ -83,15 +83,17 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="inputSource"></param>
         /// <param name="userId"></param>
+        /// <param name="name">The name of the type that will be created</param>
+        /// <param name="persist">Whether the type should be saved</param>
         /// <returns></returns>
-        public IntegrationTypeDefinition AddPersistentType(InputSource inputSource, string userId, string name, bool persist = true)
+        public IntegrationTypeDefinition AddPersistentType(InputSource inputSource, string userId, string name, bool persist = true, string outputCollection = null)
         {
-            var type = inputSource.GetTypeDefinition() as IntegrationTypeDefinition;
-            if (type == null)
+            if (!(inputSource.GetTypeDefinition() is IntegrationTypeDefinition type))
             {
                 throw new Exception("Could not resolve type!");
             }
             type.UserId = userId;
+            type.Collection = outputCollection;
             if (!string.IsNullOrEmpty(name))
             {
                 type.Name = name;
@@ -136,7 +138,7 @@ namespace Netlyt.Service
         {
             var cToken = cancellationToken ?? CancellationToken.None;
             //Destination.ConsumeAsync(cToken);
-            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = ThreadCount };
+            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = (int)ThreadCount };
             parallelOptions.CancellationToken = cToken;
             ResetStopwatch();
             _stopwatch.Start();
@@ -165,7 +167,7 @@ namespace Netlyt.Service
             CancellationToken? cancellationToken = null)
         {
             var cToken = cancellationToken ?? CancellationToken.None;
-            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = ThreadCount };
+            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = (int)ThreadCount };
             parallelOptions.CancellationToken = cToken;
             ResetStopwatch();
             _stopwatch.Start();
