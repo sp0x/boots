@@ -1,8 +1,9 @@
 using System.Collections.Generic;
+using nvoid.db.DB;
 
 namespace Netlyt.Web.Models.DataModels
 {
-    public class Rule
+    public class Rule: Entity
     {
         public long ID { get; set; }
         public string RuleName { get; set; }

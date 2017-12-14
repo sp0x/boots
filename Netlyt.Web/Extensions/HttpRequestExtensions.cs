@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Netlyt.Web.Extensions
 {
-    public class HttpRequestExtensions
+    public static class HttpRequestExtensions
     {
         /// <summary>
         /// Retrieve the raw body as a string from the Request.Body stream
