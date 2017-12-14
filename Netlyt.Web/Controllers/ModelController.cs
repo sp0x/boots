@@ -4,6 +4,8 @@ using System.Linq;
 using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
 using nvoid.Integration;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Netlyt.Web.Models.DataModels;
 
 namespace Netlyt.Web.Controllers
@@ -20,6 +22,13 @@ namespace Netlyt.Web.Controllers
         public IEnumerable<Model> GetAll()
         {
             return _modelContext.ToList();
+        }
+        
+        [HttpGet("/paramlist")]
+        public JsonResult  GetParamsList()
+        {
+            var param = null;
+            return Json(param);
         }
 
         [HttpGet("{id}", Name = "GetModel")]
@@ -66,7 +75,6 @@ namespace Netlyt.Web.Controllers
             return new NoContentResult();
         }
 
-
         [HttpDelete("{id}")]
         public IActionResult Delete(long id)
         {
@@ -79,6 +87,18 @@ namespace Netlyt.Web.Controllers
             _modelContext.Remove(item);
             _modelContext.Save();
             return new NoContentResult();
+        }
+
+        [HttpPost("{id}/[action]")]
+        public IActionResult Train(long id)
+        {
+            var json = Request.Body;
+            JObject o = JObject.Parse(json);
+            //kick off background async task to train
+            // return 202 with wait at endpoint
+            //async task
+            // do training
+            // set current model to the id of whatever came back
         }
 
     }

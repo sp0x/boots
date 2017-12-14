@@ -57,6 +57,8 @@ class Server(threading.Thread):
                     elif op == MAKE_PREDICTION:
                         models = Experiment.load_models_file(company)
                         resp = {'results':[{'value':m['model'].predict(data),'model':m['type']} for m in models]}
+                    elif op == TRAIN:
+                        pass
                     resp.update({'seq':seq})
                     self.out_stream.send_json(resp)
                 except Exception, e:

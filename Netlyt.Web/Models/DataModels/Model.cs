@@ -9,6 +9,7 @@ namespace Netlyt.Web.Models.DataModels
         public List<Integration> Integrations { get; set; }
         public List<Rule> Rules { get; set; }
         public string ClassifierType { get; set; }
+        public int CurrentModel { get; set; }
         
     }
 }
