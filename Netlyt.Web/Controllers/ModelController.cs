@@ -7,6 +7,8 @@ using nvoid.Integration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Netlyt.Web.Models.DataModels;
+using Netlyt.Web.Services;
+using Netlyt.Services;
 
 namespace Netlyt.Web.Controllers
 {
@@ -14,9 +16,11 @@ namespace Netlyt.Web.Controllers
     public class ModelController : Controller
     {
         private RemoteDataSource<Model> _modelContext;
-        public ModelController()
+        private BehaviourContext _orionContext;
+        public ModelController(BehaviourContext behaviourCtx)
         {
             _modelContext = typeof(Model).GetDataSource<Model>();
+            _orionContext = behaviourCtx;
         }
         [HttpGet]
         public IEnumerable<Model> GetAll()
@@ -92,13 +96,17 @@ namespace Netlyt.Web.Controllers
         [HttpPost("{id}/[action]")]
         public IActionResult Train(long id)
         {
-            var json = Request.Body;
+            var json = Request.GetRawBodyString();
             JObject o = JObject.Parse(json);
             //kick off background async task to train
             // return 202 with wait at endpoint
             //async task
             // do training
             // set current model to the id of whatever came back
+            var m_id = 1;
+            return Accepted(Json(new {
+                model_id = m_id
+            }));
         }
 
     }
