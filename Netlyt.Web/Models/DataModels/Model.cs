@@ -1,8 +1,9 @@
 using System.Collections.Generic;
+using nvoid.db.DB;
 
 namespace Netlyt.Web.Models.DataModels
 {
-    public class Model
+    public class Model: Entity
     {
         public long ID { get; set; }
         public User User { get; set; }

@@ -8,7 +8,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Netlyt.Web.Models.DataModels;
 using Netlyt.Web.Services;
-using Netlyt.Services;
+using Netlyt.Service;
+using Netlyt.Web.Extensions;
 
 namespace Netlyt.Web.Controllers
 {
@@ -38,7 +39,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("{id}", Name = "GetModel")]
         public IActionResult GetById(long id)
         {
-            var item = _modelContext.FirstOrDefault(t => t.Id == id);
+            var item = _modelContext.FirstOrDefault(t => t.ID == id);
             if (item == null)
             {
                 return NotFound();
@@ -54,7 +55,7 @@ namespace Netlyt.Web.Controllers
             }
 
             _modelContext.Add(item);
-            _modelContext.Save();
+            _modelContext.Save(item);
 
             return CreatedAtRoute("GetModel", new { id = item.ID }, item);
         }
@@ -66,7 +67,7 @@ namespace Netlyt.Web.Controllers
                 return BadRequest();
             }
 
-            var model = _modelContext.FirstOrDefault(t => t.Id == id);
+            var model = _modelContext.FirstOrDefault(t => t.ID == id);
             if (model == null)
             {
                 return NotFound();
@@ -75,21 +76,21 @@ namespace Netlyt.Web.Controllers
             //TODO: add logic to check if we're updating integrations or what
 
             _modelContext.Update(model);
-            _modelContext.Save();
+           // _modelContext.Save();
             return new NoContentResult();
         }
 
         [HttpDelete("{id}")]
         public IActionResult Delete(long id)
         {
-            var item = _modelContext.FirstOrDefault(t => t.Id == id);
+            var item = _modelContext.FirstOrDefault(t => t.ID == id);
             if (item == null)
             {
                 return NotFound();
             }
 
             _modelContext.Remove(item);
-            _modelContext.Save();
+            _modelContext.Save(item);
             return new NoContentResult();
         }
 
@@ -97,16 +98,14 @@ namespace Netlyt.Web.Controllers
         public IActionResult Train(long id)
         {
             var json = Request.GetRawBodyString();
-            JObject o = JObject.Parse(json);
+            JObject query = JObject.Parse(json.Result);
             //kick off background async task to train
             // return 202 with wait at endpoint
             //async task
             // do training
             // set current model to the id of whatever came back
-            var m_id = 1;
-            return Accepted(Json(new {
-                model_id = m_id
-            }));
+            var m_id = _orionContext.Query(query).Result;
+            return Accepted(m_id);
         }
 
     }

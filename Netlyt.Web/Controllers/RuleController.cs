@@ -18,13 +18,13 @@ namespace Netlyt.Web.Controllers
         [HttpGet]
         public IEnumerable<Model> GetAll()
         {
-            return _ruleContext.ToList();
+            return (IEnumerable<Model>)_ruleContext.ToList();
         }
 
         [HttpGet("{id}", Name = "GetRule")]
         public IActionResult GetById(long id)
         {
-            var item = _ruleContext.FirstOrDefault(t => t.Id == id);
+            var item = _ruleContext.FirstOrDefault(t => t.ID == id);
             if (item == null)
             {
                 return NotFound();
@@ -40,7 +40,7 @@ namespace Netlyt.Web.Controllers
             }
 
             _ruleContext.Add(item);
-            _ruleContext.Save();
+           _ruleContext.Save(item);
 
             return CreatedAtRoute("GetRule", new { id = item.ID }, item);
         }
@@ -52,7 +52,7 @@ namespace Netlyt.Web.Controllers
                 return BadRequest();
             }
 
-            var rule = _ruleContext.FirstOrDefault(t => t.Id == id);
+            var rule = _ruleContext.FirstOrDefault(t => t.ID == id);
             if (rule == null)
             {
                 return NotFound();
@@ -62,7 +62,7 @@ namespace Netlyt.Web.Controllers
             rule.Models = item.Models;
             
             _ruleContext.Update(rule);
-            _ruleContext.Save();
+            //_ruleContext.Save();
             return new NoContentResult();
         }
 
@@ -70,14 +70,14 @@ namespace Netlyt.Web.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(long id)
         {
-            var item = _ruleContext.FirstOrDefault(t => t.Id == id);
+            var item = _ruleContext.FirstOrDefault(t => t.ID == id);
             if (item == null)
             {
                 return NotFound();
             }
 
             _ruleContext.Remove(item);
-            _ruleContext.Save();
+            //_ruleContext.Save();
             return new NoContentResult();
         }
         
