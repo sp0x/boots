@@ -18,10 +18,15 @@ namespace Netlyt.Web.Controllers
     {
         private RemoteDataSource<Model> _modelContext;
         private BehaviourContext _orionContext;
-        public ModelController(BehaviourContext behaviourCtx)
+        private IHttpContextAccessor _contextAccessor;
+        private HttpContext _context { get { return _contextAccessor.HttpContext; } }
+        public ModelController(BehaviourContext behaviourCtx,
+                               IHttpContextAccessor httpContextAccessor)
         {
             _modelContext = typeof(Model).GetDataSource<Model>();
             _orionContext = behaviourCtx;
+            //https://long2know.com/2016/07/accessing-httpcontext-in-asp-net-core/
+            _contextAccessor = httpContextAccessor;
         }
         [HttpGet]
         public IEnumerable<Model> GetAll()
@@ -90,7 +95,6 @@ namespace Netlyt.Web.Controllers
             }
 
             _modelContext.Remove(item);
-            _modelContext.Save(item);
             return new NoContentResult();
         }
 

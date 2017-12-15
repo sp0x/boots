@@ -2,8 +2,10 @@ import zmq
 import threading
 import time
 from constants import *
-from classifiers import conduct_experiment,Experiment,build_and_train
-
+from classifiers import conduct_experiment,Experiment,build, train
+from psutil import virtual_memory
+import os
+import multiprocessing
 
 class Server(threading.Thread):
     def __init__(self):
@@ -14,17 +16,17 @@ class Server(threading.Thread):
         self.in_stream.bind("tcp://%s:%d" % (LISTEN_ADDR, INPUT_PORT))
         self.out_stream.bind("tcp://%s:%d" % (LISTEN_ADDR, OUTPUT_PORT))
         self.is_running = True
-        self.experimental_data = dict()
         self.cond = threading.Lock()
-        self.experiments = []
+        self.pool = multiprocessing.Pool()
+        cache_size = os.environ.get('MCACHE_SIZE',5)
+        self.cache = ModelCache(cache_size)
 
     def shutdown(self):
         with self.cond:
             self.is_running = False
-            if any(map(lambda x: x.is_alive,self.experiments)):
-                print("Waiting for all running experiments to finish executing")
-                for e in self.experiments:
-                    e.join()
+            print("Waiting for all running experiments to finish executing")
+            self.pool.close()
+            self.pool.join()
 
     def reply(self, msg):
         try:
@@ -47,7 +49,7 @@ class Server(threading.Thread):
                         # make this load and keep a model in memory at all times once we can afford to do that
                         m_id = msg.get('model_id')
                         p_type = msg.get('p_type', 'proba')
-                        model = Experiment.load_model(company, m_id)
+                        model = self.cache.fetch(m_id)
                         if p_type == 'proba':
                             resp = {'results':{'value':model['model'].predict_proba(data), 'model':model['type']}}
                         elif p_type == 'log_proba':
@@ -55,7 +57,8 @@ class Server(threading.Thread):
                         else:
                             resp = {'results':{'value':model['model'].predict(data), 'model':model['type']}}
                     elif op == TRAIN:
-                        exp = build(msg['params'])                        
+                        exp = build(msg['params']) 
+                        self.pool.map_async(train,(exp,))   
                         resp = {'ids': exp.get_model_ids()}
                     resp.update({'seq':seq})                    
                 except Exception as e:
