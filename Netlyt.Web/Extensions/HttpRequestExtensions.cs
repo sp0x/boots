@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Netlyt.Web.Extensions
 {
-    public class HttpRequestExtensions
+    public static class HttpRequestExtensions
     {
         /// <summary>
         /// Retrieve the raw body as a string from the Request.Body stream
@@ -18,7 +18,6 @@ namespace Netlyt.Web.Extensions
         {
             if (encoding == null)
                 encoding = Encoding.UTF8;
-
             using (StreamReader reader = new StreamReader(request.Body, encoding))
                 return await reader.ReadToEndAsync();
         }

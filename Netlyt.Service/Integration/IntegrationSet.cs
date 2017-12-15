@@ -56,7 +56,7 @@ namespace Netlyt.Service.Integration
             if (entry == null) return null;
             var doc = new IntegratedDocument();
             doc.SetDocument(entry);
-            doc.TypeId = Definition.Id.Value;
+            doc.TypeId = Definition.Id;
             return doc;
         }
         /// <summary>

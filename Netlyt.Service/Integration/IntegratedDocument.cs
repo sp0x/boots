@@ -7,8 +7,9 @@ using Netlyt.Service.Integration.Blocks;
 
 namespace Netlyt.Service.Integration
 {
-    public class IntegratedDocument : Entity<int>
+    public class IntegratedDocument : Entity
     {
+        public int Id { get; set; }
         public Lazy<BsonDocument> Document { get; set; }
         public BsonDocument Reserved { get; set; }
         public string UserId { get; set; }
@@ -114,7 +115,7 @@ namespace Netlyt.Service.Integration
         { 
             var document = new IntegratedDocument();
             document.Document = new Lazy<BsonDocument>(()=> visitSession.ToBsonDocument());
-            document.TypeId = typedef.Id.Value;
+            document.TypeId = typedef.Id;
             document.UserId = appId;
             return document;
         }

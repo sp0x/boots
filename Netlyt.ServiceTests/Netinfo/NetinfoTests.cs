@@ -72,10 +72,10 @@ namespace Netlyt.ServiceTests.Netinfo
 
                 mlist.Truncate();
                 //harvester -> documentCreator -> inserter
-                var batchSize = 30000;
+                var batchSize = (uint)30000;
                 var executionOptions = new ExecutionDataflowBlockOptions
                 {
-                    BoundedCapacity = batchSize,
+                    BoundedCapacity = (int)batchSize,
                 };
                 var inputTarget = new BufferBlock<ExpandoObject>(executionOptions);
                 var inserter = new MongoInsertBatch<BsonDocument>(mlist.Records, batchSize);
@@ -256,7 +256,7 @@ events : elements };
                     doc.Document.Value.Set(name, BsonValue.Create(featureval));
                 }
                 //Cleanup
-                doc.TypeId = type.Id.Value; doc.UserId = appId;
+                doc.TypeId = type.Id ; doc.UserId = appId;
                 x.Features = null; 
                 return doc;
             });
@@ -345,7 +345,7 @@ events : elements };
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(20);
             var type = harvester.AddPersistentType("NetInfoUserSessions_7_8", appId, source);
             var batchSize = 10000;
-            var updateBatchSize = 10000;
+            var updateBatchSize = (uint)10000;
             var recordLimit = 1000;
             source.Aggregate(source.CreateAggregate()
                 .Match(new BsonDocument
@@ -455,7 +455,7 @@ events : elements };
                         var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAppId);
                         var documentBson = document.GetDocument();
                         documentBson["is_paying"] = userIsPaying ? 1 : 0;
-                        document.TypeId = typeDef.Id.Value;
+                        document.TypeId = typeDef.Id;
                         //document.Save();
                     }
                     catch (Exception ex2)

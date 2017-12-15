@@ -61,10 +61,10 @@ namespace Netlyt.Web.Middleware.Hmac
                 var appApiId = Context.Session.GetString("APP_API_ID");
                 if (appApiId == null)
                 {
-                    Context.Session.SetString("APP_API_ID", apiAuth.Id.Value); 
+                    Context.Session.SetString("APP_API_ID", apiAuth.Id); 
                     user.AddIdentity(claimsIdentity); 
                 }
-                Response.Headers.Add("APP_API_ID", apiAuth.Id.Value);
+                Response.Headers.Add("APP_API_ID", apiAuth.Id);
                 var authProps = new AuthenticationProperties();
                 var ticket = new AuthenticationTicket(principal, authProps, Options.AuthenticationScheme);
                 return AuthenticateResult.Success(ticket);

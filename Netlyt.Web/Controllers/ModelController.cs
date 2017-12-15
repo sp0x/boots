@@ -1,14 +1,15 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using nvoid.db.DB.RDS;
+using System.Threading.Tasks;
+using nvoid.db;
 using nvoid.db.Extensions;
 using nvoid.Integration;
+using Netlyt.Service;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Netlyt.Web.Models.DataModels;
-using Netlyt.Web.Services;
-using Netlyt.Services;
+using Netlyt.Web.Models.DataModels; 
+using Netlyt.Web.Extensions;
 
 namespace Netlyt.Web.Controllers
 {
@@ -31,7 +32,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/paramlist")]
         public JsonResult  GetParamsList()
         {
-            var param = null;
+            object param = null;
             return Json(param);
         }
 
@@ -52,19 +53,13 @@ namespace Netlyt.Web.Controllers
             {
                 return BadRequest();
             }
-
-            _modelContext.Add(item);
-            _modelContext.Save();
-
-            return CreatedAtRoute("GetModel", new { id = item.ID }, item);
+            item.Save();
+            return CreatedAtRoute("GetModel", new { id = item.Id }, item);
         }
         [HttpPut("{id}")]
         public IActionResult Update(long id, [FromBody] Model item)
         {
-            if (item == null || item.ID != id)
-            {
-                return BadRequest();
-            }
+            if (item == null || item.Id != id) return BadRequest();
 
             var model = _modelContext.FirstOrDefault(t => t.Id == id);
             if (model == null)
@@ -73,9 +68,7 @@ namespace Netlyt.Web.Controllers
             }
 
             //TODO: add logic to check if we're updating integrations or what
-
-            _modelContext.Update(model);
-            _modelContext.Save();
+            model.Save();
             return new NoContentResult();
         }
 
@@ -87,16 +80,14 @@ namespace Netlyt.Web.Controllers
             {
                 return NotFound();
             }
-
-            _modelContext.Remove(item);
-            _modelContext.Save();
+            item.Save();
             return new NoContentResult();
         }
 
         [HttpPost("{id}/[action]")]
-        public IActionResult Train(long id)
+        public async Task<IActionResult> Train(long id)
         {
-            var json = Request.GetRawBodyString();
+            var json = await Request.GetRawBodyString();
             JObject o = JObject.Parse(json);
             //kick off background async task to train
             // return 202 with wait at endpoint

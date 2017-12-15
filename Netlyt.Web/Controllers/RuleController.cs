@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using nvoid.db.DB.RDS;
+using nvoid.db;
 using nvoid.db.Extensions;
 using nvoid.Integration;
 using Netlyt.Web.Models.DataModels;
@@ -14,11 +14,12 @@ namespace Netlyt.Web.Controllers
         private RemoteDataSource<Rule> _ruleContext;
         public RuleController() {
              _ruleContext = typeof(Rule).GetDataSource<Rule>();
+            
         }
         [HttpGet]
-        public IEnumerable<Model> GetAll()
+        public IEnumerable<Rule> GetAll()
         {
-            return _ruleContext.ToList();
+            return _ruleContext.Where(r => true);
         }
 
         [HttpGet("{id}", Name = "GetRule")]
@@ -38,16 +39,15 @@ namespace Netlyt.Web.Controllers
             {
                 return BadRequest();
             }
-
-            _ruleContext.Add(item);
-            _ruleContext.Save();
-
-            return CreatedAtRoute("GetRule", new { id = item.ID }, item);
+            item.Save();
+//            _ruleContext.Add(item);
+//            _ruleContext.Save();
+            return CreatedAtRoute("GetRule", new { id = item.Id }, item);
         }
         [HttpPut("{id}")]
         public IActionResult Update(long id, [FromBody] Rule item)
         {
-            if (item == null || item.ID != id)
+            if (item == null || item.Id != id)
             {
                 return BadRequest();
             }
@@ -59,9 +59,9 @@ namespace Netlyt.Web.Controllers
             }
 
             //TODO: add logic to check what we're updating
-
-            _ruleContext.Update(rule);
-            _ruleContext.Save();
+            rule.Save();
+//            _ruleContext.Update(rule);
+//            _ruleContext.Save();
             return new NoContentResult();
         }
 
@@ -74,9 +74,9 @@ namespace Netlyt.Web.Controllers
             {
                 return NotFound();
             }
-
-            _ruleContext.Remove(item);
-            _ruleContext.Save();
+            item.Save();
+//            _ruleContext.Remove(item);
+//            _ruleContext.Save();
             return new NoContentResult();
         }
         

@@ -19,6 +19,7 @@ namespace Netlyt.Service.Integration
     public class IntegrationTypeDefinition 
         : Entity, IIntegrationTypeDefinition
     {
+        public string Id { get; set; }
         public string Name { get; set; }
         public int CodePage { get; set; }
         public string OriginType { get; set; } 
@@ -180,7 +181,7 @@ namespace Netlyt.Service.Integration
         {
             var doc = new IntegratedDocument();
             doc.SetDocument(data);
-            doc.TypeId = Id.Value;
+            doc.TypeId = Id;
             return doc;
         }
 

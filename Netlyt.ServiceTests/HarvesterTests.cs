@@ -20,7 +20,7 @@ namespace Netlyt.ServiceTests
         [InlineData(new object[] { "TestData\\Ebag\\1156" })]
         public async void TestPipelineCompletion(string inputDirectory)
         {
-            var threadCount = 8;
+            var threadCount = (uint)8;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
             var userId = "123123123";
@@ -43,7 +43,7 @@ namespace Netlyt.ServiceTests
         [InlineData(new object[] { "TestData\\Ebag\\1156" })]
         public async void LimitedEntries(string inputDirectory)
         {
-            var threadCount = 8;
+            var threadCount = (uint)8;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var userId = "123123123";
@@ -63,7 +63,7 @@ namespace Netlyt.ServiceTests
         [InlineData(new object[] { "TestData\\Ebag\\1156" })]
         public async void MultipleSourceInput(string inputDirectory)
         {
-            var threadCount = 20;
+            var threadCount = (uint)20;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
             var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
