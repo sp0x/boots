@@ -127,13 +127,13 @@ class Experiment:
 
     @staticmethod
     def store_model(model, for_client):
-        now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        m_id = model['id']
         exp_dir = Experiment.get_experiments_dir_for(for_client)
         if model['type'] == 'rnn':
             hdf5_file = abs_path(os.path.join(exp_dir, 'model_rnn_{0}.hdf5'.format(now)))
             save_model(model['model'], hdf5_file)
             return
-        path = abs_path(os.path.join(exp_dir, "model_{0}_{1}.pickle".format(model['type'], now)))
+        path = abs_path(os.path.join(exp_dir, "{0}.pickle".format(m_id)))
         save(model, path)
 
     def load_models_file(self, modelsFile=None):
@@ -173,14 +173,15 @@ class Experiment:
 
 
     @staticmethod
-    def load_model(model_name, for_client):
+    def load_model(for_client, model_name):
+        model_name = model_name + '.pickle' if 'hdf5' not in model_name else model_name
         mod_path = os.path.join(for_client, model_name)
         if 'hdf5' in model_name:
             return load_model(abs_path(mod_path))
         path = abs_path(mod_path)
         return load(path)
 
-    def get_model_ids():
+    def get_model_ids(self):
         return [m['id'] for m in self.models]
 
     @staticmethod
@@ -632,24 +633,29 @@ def train_balancer(predict1, predict2, targets, client='netinfo'):
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()), client))
     e.store_models()
 
-def build_and_train(params):
+def build(params):
     models = params.get('models') #models:{model_name:params}
-    data_options = params.get('options') #options:{set_size:0,test_size:0,from_date:0,scoring:''}
+    data_options = params.get('options') #options:{set_size:0,test_size:0,from_date:0,scoring:'',db:collection}
     client = params.get('client')
     classifiers = []
     data = []
     targets = []
     for m in models:
-        klass = __import__(model_table[m], fromlist=[m])
+        module = __import__(model_table[m], fromlist=[m])
+        klass = getattr(module, m)
         classifiers.append(dict(model=klass(),
                                 params=models[m],
                                 scoring=options['scoring'],
                                 type=m,
                                 id=str(uuid4())[-12:]))
+    e = Experiment(data, targets, classifiers)
+    return e      
+
+
+def train(e):   
     fl = "system/{0}.log".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logging.basicConfig(filename=abs_path(fl), level=logging.DEBUG)
-    logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()), client))
-    e = Experiment(data, targets, classifiers)
-    e.create_and_train(extras)
+    logging.info("experiments for {1} started at {0}".format(unicode(datetime.datetime.now()), client))   
+    e.create_and_train(None)
     logging.info("experiments for {1} ended at {0}".format(unicode(datetime.datetime.now()), client))
-    return e.get_model_ids()
+    return 

@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using nvoid.db.DB;
+using nvoid.db.DB;
 
 namespace Netlyt.Web.Models.DataModels
 {
+    public class Model: Entity
     public class Model
         : Entity
     { 

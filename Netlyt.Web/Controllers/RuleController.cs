@@ -25,7 +25,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("{id}", Name = "GetRule")]
         public IActionResult GetById(long id)
         {
-            var item = _ruleContext.FirstOrDefault(t => t.Id == id);
+            var item = _ruleContext.FirstOrDefault(t => t.ID == id);
             if (item == null)
             {
                 return NotFound();
@@ -52,13 +52,13 @@ namespace Netlyt.Web.Controllers
                 return BadRequest();
             }
 
-            var rule = _ruleContext.FirstOrDefault(t => t.Id == id);
+            var rule = _ruleContext.FirstOrDefault(t => t.ID == id);
             if (rule == null)
             {
                 return NotFound();
             }
 
-            //TODO: add logic to check what we're updating
+            rule.IsActive = item.IsActive;
             rule.Save();
 //            _ruleContext.Update(rule);
 //            _ruleContext.Save();
@@ -69,14 +69,14 @@ namespace Netlyt.Web.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(long id)
         {
-            var item = _ruleContext.FirstOrDefault(t => t.Id == id);
+            var item = _ruleContext.FirstOrDefault(t => t.ID == id);
             if (item == null)
             {
                 return NotFound();
             }
             item.Save();
 //            _ruleContext.Remove(item);
-//            _ruleContext.Save();
+            //_ruleContext.Save();
             return new NoContentResult();
         }
         
