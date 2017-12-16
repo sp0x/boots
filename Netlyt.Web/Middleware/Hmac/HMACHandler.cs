@@ -1,4 +1,4 @@
-using System;
+﻿using System; 
 using System.IO; 
 using System.Net;
 using System.Net.Http.Headers;
@@ -7,15 +7,14 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication; 
-using Microsoft.AspNetCore.Http; 
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using nvoid.db.Extensions;
 using nvoid.db;
-using nvoid.Integration; 
-using AuthenticationProperties = Microsoft.AspNetCore.Authentication.AuthenticationProperties;
+using nvoid.db.Extensions;
+using nvoid.Integration;
 
 namespace Netlyt.Web.Middleware.Hmac
 {
@@ -42,7 +41,7 @@ namespace Netlyt.Web.Middleware.Hmac
             _iterations = 200;
             _salt = new byte[] { }; //243, 133, 64, 76, 111, 136, 1, 78};
         }
-         
+
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             var authorization = Request.Headers["Authorization"];
@@ -61,8 +60,8 @@ namespace Netlyt.Web.Middleware.Hmac
                 var appApiId = Context.Session.GetString("APP_API_ID");
                 if (appApiId == null)
                 {
-                    Context.Session.SetString("APP_API_ID", apiAuth.Id); 
-                    user.AddIdentity(claimsIdentity); 
+                    Context.Session.SetString("APP_API_ID", apiAuth.Id);
+                    user.AddIdentity(claimsIdentity);
                 }
                 Response.Headers.Add("APP_API_ID", apiAuth.Id);
                 var authProps = new AuthenticationProperties();
@@ -74,10 +73,10 @@ namespace Netlyt.Web.Middleware.Hmac
 
         }
 
-//        protected Task<bool> HandleUnauthorizedAsync(ChallengeContext context)
-//        {
-//            return base.HandleUnauthorizedAsync(context);
-//        }
+        //        protected Task<bool> HandleUnauthorizedAsync(ChallengeContext context)
+        //        {
+        //            return base.HandleUnauthorizedAsync(context);
+        //        }
 
         private bool Validate(HttpRequest request, out ApiAuth apiAuth)
         {
@@ -106,7 +105,7 @@ namespace Netlyt.Web.Middleware.Hmac
                             var iv = this._iv;
                             body = Decrypt(body, apiAuth.AppSecret);
                             byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
-                            Request.Body = new MemoryStream(bodyBytes); 
+                            Request.Body = new MemoryStream(bodyBytes);
                         }
                     }
                     return isValidRequest;
@@ -140,8 +139,8 @@ namespace Netlyt.Web.Middleware.Hmac
             body = null;
 
             //App filter
-            matchingApiAuth = _authSource.FindFirst(x=> x.AppId == appId);
-            if (matchingApiAuth==null)//Options.AppId != AppId)
+            matchingApiAuth = _authSource.FindFirst(x => x.AppId == appId);
+            if (matchingApiAuth == null)//Options.AppId != AppId)
             {
                 return false;
             }
@@ -169,7 +168,7 @@ namespace Netlyt.Web.Middleware.Hmac
                 var validHmacSignitureString = Convert.ToBase64String(validHmacSigniture);
                 //Check if the signiture that we received was the same as the one we generated
                 var isValidRequest = (incomingBase64Signature.Equals(validHmacSignitureString, StringComparison.Ordinal));
-                
+
                 return isValidRequest;
             }
 
@@ -242,7 +241,7 @@ namespace Netlyt.Web.Middleware.Hmac
         public String Decrypt(String text, String key)
         {
             try
-            { 
+            {
                 MD5 md5 = System.Security.Cryptography.MD5.Create();
                 byte[] keyBytes = System.Text.Encoding.ASCII.GetBytes(key);
                 byte[] keyBytesHash = md5.ComputeHash(keyBytes);
@@ -446,4 +445,4 @@ namespace Netlyt.Web.Middleware.Hmac
         //
         //        }
     }
-} 
+}

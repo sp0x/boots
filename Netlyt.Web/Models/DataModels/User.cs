@@ -1,10 +1,12 @@
-using System;
+
 using nvoid.db.DB;
 
-namespace Netlyt.Web.Models.DataModels{
-    public class User: Entity
+namespace Netlyt.Web.Models.DataModels
+{
+    public class User 
+        : Entity
     {
-        public long ID {get; set;}
+        public long Id { get; set; }
         public string FirstName { get; set; }
 
         public string LastName { get; set; }

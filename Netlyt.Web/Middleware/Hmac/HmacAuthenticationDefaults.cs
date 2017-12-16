@@ -1,7 +1,7 @@
-﻿namespace Netlyt.Web.Middleware.Hmac
+namespace Netlyt.Web.Middleware.Hmac
 {
     public static class HmacAuthenticationDefaults
-    {        
+    {
         /// <summary>
         /// The default value used for HmacAuthenticationOptions.AuthenticationScheme
         /// </summary>

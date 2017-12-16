@@ -1,17 +1,13 @@
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using nvoid.db;
 using nvoid.db.Extensions;
-using nvoid.Integration;
 using Netlyt.Service;
-using Newtonsoft.Json;
+using Netlyt.Web;
+using Netlyt.Web.Models.DataModels;
 using Newtonsoft.Json.Linq;
-using Netlyt.Web.Models.DataModels; 
-using Netlyt.Web.Extensions;
-using Netlyt.Service;
-using Netlyt.Web.Extensions;
 
 namespace Netlyt.Web.Controllers
 {
@@ -28,11 +24,11 @@ namespace Netlyt.Web.Controllers
         [HttpGet]
         public IEnumerable<Model> GetAll()
         {
-            return _modelContext.ToList();
+            return Enumerable.ToList(_modelContext);
         }
-        
+
         [HttpGet("/paramlist")]
-        public JsonResult  GetParamsList()
+        public JsonResult GetParamsList()
         {
             object param = null;
             return Json(param);
@@ -41,7 +37,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("{id}", Name = "GetModel")]
         public IActionResult GetById(long id)
         {
-            var item = _modelContext.FirstOrDefault(t => t.ID == id);
+            var item = _modelContext.FirstOrDefault(t => t.Id == id);
             if (item == null)
             {
                 return NotFound();
@@ -63,7 +59,7 @@ namespace Netlyt.Web.Controllers
         {
             if (item == null || item.Id != id) return BadRequest();
 
-            var model = _modelContext.FirstOrDefault(t => t.ID == id);
+            var model = _modelContext.FirstOrDefault(t => t.Id == id);
             if (model == null)
             {
                 return NotFound();
@@ -77,7 +73,7 @@ namespace Netlyt.Web.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(long id)
         {
-            var item = _modelContext.FirstOrDefault(t => t.ID == id);
+            var item = _modelContext.FirstOrDefault(t => t.Id == id);
             if (item == null)
             {
                 return NotFound();
@@ -89,8 +85,8 @@ namespace Netlyt.Web.Controllers
         [HttpPost("{id}/[action]")]
         public async Task<IActionResult> Train(long id)
         {
-            var json = await Request.GetRawBodyString();
-            JObject query = JObject.Parse(json.Result);
+            var json = await HttpRequestExtensions.GetRawBodyString(Request);
+            JObject query = JObject.Parse(json);
             //kick off background async task to train
             // return 202 with wait at endpoint
             //async task

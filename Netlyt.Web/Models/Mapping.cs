@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using nvoid.DB;
 using Netlyt.Service.Integration;
-using Netlyt.Web.Models.DataModels;
+using Netlyt.Web.Models.DataModels; 
 
 namespace Netlyt.Web.Models
 {

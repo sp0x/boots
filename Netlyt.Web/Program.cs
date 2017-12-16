@@ -1,5 +1,12 @@
-﻿using System.IO; 
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Netlyt.Web
 {
@@ -7,17 +14,22 @@ namespace Netlyt.Web
     {
         public static void Main(string[] args)
         {
-            var host = new WebHostBuilder()
+            BuildWebHost(args).Run();
+        }
+
+        public static IWebHost BuildWebHost(string[] args)
+        {
+            var host = WebHost.CreateDefaultBuilder(args)
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseSetting("detailedErrors", "true")
                 .UseIISIntegration()
-                .UseStartup<Startup>()
-                .UseUrls("http://0.0.0.0/") //was 0.0.0.0
+                .UseUrls("http://0.0.0.0:81/") //was 0.0.0.0
                 .CaptureStartupErrors(true)
+                .UseStartup<Startup>()
                 .Build();
-
-            host.Run();
+            return host;
         }
+            
     }
 }

@@ -9,7 +9,7 @@ namespace Netlyt.Web
     public class RoutingConfiguration
     {
         public IConfigurationSection Configuration { get; private set; }
-        public RoutingConfiguration(IConfigurationRoot root)
+        public RoutingConfiguration(IConfiguration root)
         {
             Configuration = root.GetSection("routing");
         }

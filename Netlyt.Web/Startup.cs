@@ -2,65 +2,44 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity; 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging; 
-using nvoid.db.DB.Configuration; 
-using Netlyt.Web.Middleware.Hmac;
-using Netlyt.Web.Middleware;
+using Microsoft.Extensions.Logging;
+using nvoid.db.DB.Configuration;
 using Netlyt.Service;
 using Netlyt.Service.Auth;
+using Netlyt.Web.Middleware;
+using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
-using AuthMessageSender = Netlyt.Web.Services.AuthMessageSender;
 using IdentityRole = Microsoft.AspNetCore.Identity.MongoDB.IdentityRole;
-using IEmailSender = Netlyt.Web.Services.IEmailSender;
-using ISmsSender = Netlyt.Web.Services.ISmsSender;
 
 namespace Netlyt.Web
 {
     public class Startup
     {
-        public IConfigurationRoot Configuration { get; }
+
+        public IConfiguration Configuration { get; private set; }
         private BehaviourContext BehaviourContext { get; }
-        
 
-        public Startup(IApplicationBuilder app, IHostingEnvironment env)
+        public Startup(IConfiguration configuration)
         {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
-
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseBrowserLink();
-                app.UseDatabaseErrorPage();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Home/Error");
-            }
-
-            builder.AddEnvironmentVariables();
-            Configuration = builder.Build(); 
-
+            Configuration = configuration;
             DBConfig.Initialize(Configuration);
             BehaviourContext = new BehaviourContext();
             BehaviourContext.Configure(Configuration.GetSection("behaviour"));
-            BehaviourContext.Run(); 
+            BehaviourContext.Run();
         }
-
+         
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-	        // Register identity framework services and also Mongo storage. 
+            // Register identity framework services and also Mongo storage. 
             var mongoConnectionString = DBConfig.GetGeneralDatabase().Value;
 
             services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
-                .AddDefaultTokenProviders(); 
+                .AddDefaultTokenProviders();
 
             services.AddAuthentication();
             services.AddMemoryCache();
@@ -70,6 +49,7 @@ namespace Netlyt.Web
                 options.IdleTimeout = TimeSpan.FromDays(7);
                 options.CookieHttpOnly = true;
             });
+
             services.AddMvc();
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
 
@@ -92,18 +72,17 @@ namespace Netlyt.Web
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                //app.UseBrowserLink();
+                app.UseBrowserLink();
             }
             else
             {
                 app.UseExceptionHandler("/Home/Error");
             }
+
             app.UseSession();
             app.UseStaticFiles();
-            app.UseIdentity();
             var routeHelper = app.ApplicationServices.GetService<RoutingConfiguration>();
-            // Add external authentication middleware below. To configure them please see http://go.microsoft.com/fwlink/?LinkID=532715
-            //Map api.domain.... to api
+
             app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), builder =>
             {
                 app.UseEnableRequestRewind();
@@ -129,20 +108,26 @@ namespace Netlyt.Web
                     }
                     //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
                     //it should be True
-                }); 
-//                builder.Run(async (context) =>
-//                {
-//                    //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
-//                    //it should be True
-//                    await context.Response.WriteAsync(context.User.Identity.IsAuthenticated.ToString());
-//                });
+                });
+                //                builder.Run(async (context) =>
+                //                {
+                //                    //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
+                //                    //it should be True
+                //                    await context.Response.WriteAsync(context.User.Identity.IsAuthenticated.ToString());
+                //                });
             });
             app.UseMvc(routes =>
-            { 
+            {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
+            //            app.UseMvc(routes =>
+            //            {
+            //                routes.MapRoute(
+            //                    name: "default",
+            //                    template: "{controller=Home}/{action=Index}/{id?}");
+            //            });
         }
     }
 }

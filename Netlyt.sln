@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2009
+VisualStudioVersion = 15.0.27004.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libnvoid", "libnvoid", "{0813BA05-4BDD-4FAA-9BB9-7A990779FA1D}"
 EndProject
@@ -31,13 +31,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Netlyt.ServiceTests", "Netl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Netlyt.Data", "Netlyt.Data\Netlyt.Data.csproj", "{BE1E64AD-2255-458F-ADBA-79C24727426F}"
 EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "BehaviorAnalysis", "BehaviorAnalysis\src\BehaviorAnalysis.pyproj", "{3C370C84-E790-4658-8D5D-8AE6E13D76A9}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Runner", "Runner\Runner.csproj", "{61D6CF99-CF53-4EB3-8317-F81C602B066A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Netlyt.Web", "Netlyt.Web\Netlyt.Web.csproj", "{2AC95F6D-FD3A-4181-923C-9440C0D62C00}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.AspNetCore.Identity.MongoDB", "libnvoid\aspnet-identity-mongo\src\Microsoft.AspNetCore.Identity.MongoDB\Microsoft.AspNetCore.Identity.MongoDB.csproj", "{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Netlyt.Web", "Netlyt.Web\Netlyt.Web.csproj", "{D6D049F7-A2B6-431E-87C7-138A718E0A58}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -93,20 +91,18 @@ Global
 		{BE1E64AD-2255-458F-ADBA-79C24727426F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE1E64AD-2255-458F-ADBA-79C24727426F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE1E64AD-2255-458F-ADBA-79C24727426F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3C370C84-E790-4658-8D5D-8AE6E13D76A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3C370C84-E790-4658-8D5D-8AE6E13D76A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61D6CF99-CF53-4EB3-8317-F81C602B066A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{61D6CF99-CF53-4EB3-8317-F81C602B066A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61D6CF99-CF53-4EB3-8317-F81C602B066A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61D6CF99-CF53-4EB3-8317-F81C602B066A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2AC95F6D-FD3A-4181-923C-9440C0D62C00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2AC95F6D-FD3A-4181-923C-9440C0D62C00}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2AC95F6D-FD3A-4181-923C-9440C0D62C00}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2AC95F6D-FD3A-4181-923C-9440C0D62C00}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AADB3B4F-0A9E-44EA-ACA5-22562BFC4B37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6D049F7-A2B6-431E-87C7-138A718E0A58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6D049F7-A2B6-431E-87C7-138A718E0A58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6D049F7-A2B6-431E-87C7-138A718E0A58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6D049F7-A2B6-431E-87C7-138A718E0A58}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
