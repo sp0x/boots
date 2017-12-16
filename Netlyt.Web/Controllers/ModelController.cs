@@ -1,9 +1,13 @@
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using nvoid.db;
+using System.Linq;
+using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
+using nvoid.Integration;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Netlyt.Web.Models.DataModels;
+using Netlyt.Web.Services;
 using Netlyt.Service;
 using Netlyt.Web;
 using Netlyt.Web.Models.DataModels;
@@ -16,28 +20,34 @@ namespace Netlyt.Web.Controllers
     {
         private RemoteDataSource<Model> _modelContext;
         private BehaviourContext _orionContext;
-        public ModelController(BehaviourContext behaviourCtx)
+        private IHttpContextAccessor _contextAccessor;
+        private HttpContext _context { get { return _contextAccessor.HttpContext; } }
+        public ModelController(BehaviourContext behaviourCtx,
+                               IHttpContextAccessor httpContextAccessor)
         {
             _modelContext = typeof(Model).GetDataSource<Model>();
             _orionContext = behaviourCtx;
+            //https://long2know.com/2016/07/accessing-httpcontext-in-asp-net-core/
+            _contextAccessor = httpContextAccessor;
         }
         [HttpGet]
         public IEnumerable<Model> GetAll()
         {
             return Enumerable.ToList(_modelContext);
+            return _modelContext.ToList();
         }
 
         [HttpGet("/paramlist")]
-        public JsonResult GetParamsList()
+        public JsonResult  GetParamsList()
         {
-            object param = null;
+            var param = null;
             return Json(param);
         }
 
         [HttpGet("{id}", Name = "GetModel")]
         public IActionResult GetById(long id)
         {
-            var item = _modelContext.FirstOrDefault(t => t.Id == id);
+            var item = _modelContext.FirstOrDefault(t => t.ID == id);
             if (item == null)
             {
                 return NotFound();
@@ -87,6 +97,8 @@ namespace Netlyt.Web.Controllers
         {
             var json = await HttpRequestExtensions.GetRawBodyString(Request);
             JObject query = JObject.Parse(json);
+            var json = Request.GetRawBodyString();
+            JObject query = JObject.Parse(json.Result);
             //kick off background async task to train
             // return 202 with wait at endpoint
             //async task

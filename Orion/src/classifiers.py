@@ -182,7 +182,7 @@ class Experiment:
         return load(path)
 
     def get_model_ids(self):
-        return [m['id'] for m in self.models]
+        return [{m['type']: m['id']} for m in self.models]
 
     @staticmethod
     def predict_explain(tree, data, labels, print_proba=False):
