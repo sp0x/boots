@@ -9,7 +9,8 @@ using Newtonsoft.Json.Linq;
 using Netlyt.Web.Models.DataModels;
 using Netlyt.Web.Services;
 using Netlyt.Service;
-using Netlyt.Web.Extensions;
+using Netlyt.Web;
+using Microsoft.AspNetCore.Identity;
 
 namespace Netlyt.Web.Controllers
 {
@@ -18,20 +19,20 @@ namespace Netlyt.Web.Controllers
     {
         private RemoteDataSource<Model> _modelContext;
         private BehaviourContext _orionContext;
-        private IHttpContextAccessor _contextAccessor;
-        private HttpContext _context { get { return _contextAccessor.HttpContext; } }
+        private readonly UserManager<User> _userManager;
         public ModelController(BehaviourContext behaviourCtx,
-                               IHttpContextAccessor httpContextAccessor)
+                               UserManager<User> userManager)
         {
             _modelContext = typeof(Model).GetDataSource<Model>();
+            _userManager = userManager;
             _orionContext = behaviourCtx;
-            //https://long2know.com/2016/07/accessing-httpcontext-in-asp-net-core/
-            _contextAccessor = httpContextAccessor;
         }
-        [HttpGet]
-        public IEnumerable<Model> GetAll()
+        [HttpGet("/models")]
+        public IEnumerable<Model> GetAll([FromQuery] int page)
         {
-            return _modelContext.ToList();
+            var user = _userManager.GetUserAsync(User).Result;
+            int pageSize = 25;
+            return _modelContext.Where(x => x.User==user).Skip(page * pageSize).Take(pageSize).ToList();
         }
         
         [HttpGet("/paramlist")]
@@ -55,7 +56,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("{id}", Name = "GetModel")]
         public IActionResult GetById(long id)
         {
-            var item = _modelContext.FirstOrDefault(t => t.ID == id);
+            var item = _modelContext.FirstOrDefault(t => t.Id == id);
             if (item == null)
             {
                 return NotFound();
@@ -73,17 +74,17 @@ namespace Netlyt.Web.Controllers
             _modelContext.Add(item);
             _modelContext.Save(item);
 
-            return CreatedAtRoute("GetModel", new { id = item.ID }, item);
+            return CreatedAtRoute("GetModel", new { id = item.Id }, item);
         }
         [HttpPut("{id}")]
         public IActionResult Update(long id, [FromBody] Model item)
         {
-            if (item == null || item.ID != id)
+            if (item == null || item.Id != id)
             {
                 return BadRequest();
             }
 
-            var model = _modelContext.FirstOrDefault(t => t.ID == id);
+            var model = _modelContext.FirstOrDefault(t => t.Id == id);
             if (model == null)
             {
                 return NotFound();
@@ -99,7 +100,7 @@ namespace Netlyt.Web.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(long id)
         {
-            var item = _modelContext.FirstOrDefault(t => t.ID == id);
+            var item = _modelContext.FirstOrDefault(t => t.Id == id);
             if (item == null)
             {
                 return NotFound();
