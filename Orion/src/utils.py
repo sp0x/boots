@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 import pickle
 import glob
 
@@ -11,6 +11,11 @@ def abs_path(fl=None):
     abs_file_path = os.path.join(curr_dir, fl)
     return abs_file_path
 
+
+def par_path(fl=None):
+    path = abs_path()
+    path = os.path.abspath(os.path.join(path, os.pardir))
+    return os.path.join(path, fl)
 
 def proportion(data, item):
     return list(data).count(item) / float(len(data))
