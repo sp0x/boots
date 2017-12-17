@@ -1,4 +1,5 @@
-﻿using System; 
+﻿using System;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -41,7 +42,9 @@ namespace Netlyt.Web
             services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
                 .AddDefaultTokenProviders();
 
-            services.AddAuthentication();
+            services.AddHmacAuthentication();
+
+            services.AddAuthentication(Netlyt.Data.AuthenticationSchemes.DataSchemes);
             services.AddMemoryCache();
             services.AddSession(options =>
             {
@@ -49,7 +52,7 @@ namespace Netlyt.Web
                 options.IdleTimeout = TimeSpan.FromDays(7);
                 options.CookieHttpOnly = true;
             });
-
+            //330
             services.AddMvc();
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
 
@@ -61,7 +64,7 @@ namespace Netlyt.Web
             services.AddTransient<UserManager<ApplicationUser>>();
             services.AddTransient<SignInManager<ApplicationUser>>();
             services.AddTransient<IEmailSender, AuthMessageSender>();
-            services.AddTransient<ISmsSender, AuthMessageSender>();
+            services.AddTransient<ISmsSender, AuthMessageSender>(); 
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -69,6 +72,7 @@ namespace Netlyt.Web
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
+            app.UseAuthentication();
 
             if (env.IsDevelopment())
             {
@@ -79,19 +83,18 @@ namespace Netlyt.Web
             {
                 app.UseExceptionHandler("/Home/Error");
             }
-
             app.UseSession();
             app.UseStaticFiles();
-            var routeHelper = app.ApplicationServices.GetService<RoutingConfiguration>();
-
+            var routeHelper = app.ApplicationServices.GetService<RoutingConfiguration>(); 
             app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), builder =>
             {
                 app.UseEnableRequestRewind();
-                builder.UseHmacAuthentication(new HmacOptions()
-                {
-                    MaxRequestAgeInSeconds = 300,
-                    AutomaticAuthenticate = true
-                });
+                builder.UseAuthentication(); 
+//                builder.UseHmacAuthentication(new HmacOptions()
+//                {
+//                    MaxRequestAgeInSeconds = 300,
+//                    AutomaticAuthenticate = true
+//                });
                 builder.UseMvc(routes =>
                 {
                     routes.MapRoute(

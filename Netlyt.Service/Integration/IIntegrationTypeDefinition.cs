@@ -26,8 +26,7 @@ namespace Netlyt.Service.Integration
 
         IntegrationTypeExtras Extras { get; } 
         IIntegrationTypeDefinition SaveType(string userApiId);
-
-        [BsonSerializer(typeof(LazyStringSerializer))]
+         
         string Id { get; set; }
 
         IntegratedDocument Wrap<T>(T data); 

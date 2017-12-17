@@ -101,9 +101,7 @@ namespace Netlyt.Web.Middleware.Hmac
                     {
                         if (!string.IsNullOrEmpty(body))
                         {
-                            var encoding = System.Text.Encoding.ASCII;
-                            var iv = this._iv;
-                            body = Decrypt(body, apiAuth.AppSecret);
+                            body = XorString(body, apiAuth.AppSecret); 
                             byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
                             Request.Body = new MemoryStream(bodyBytes);
                         }
@@ -173,20 +171,18 @@ namespace Netlyt.Web.Middleware.Hmac
             }
 
         }
-        //private string XorString(string text, string key) { 
-        //    var result = new StringBuilder();
-        //    for (int c = 0; c < text.Length; c++)
-        //        result.Append((char)((uint)text[c] ^ (uint)key[c % key.Length]));
+        private string XorString(string text, string key) { 
+            var result = new StringBuilder();
+            for (int c = 0; c < text.Length; c++)
+                result.Append((char)((uint)text[c] ^ (uint)key[c % key.Length]));
 
-        //    return result.ToString();
-        //}
+            return result.ToString();
+        }
 
         private string DecodeMessage(string text, string key)
         {
-            var bytes = Convert.FromBase64String(text);
-            var encoding = System.Text.Encoding.ASCII;
-            var iv = this._iv;
-            return Decrypt(text, key);
+            var clearMessage = XorString(text, key);
+            return clearMessage;
         }
 
         public byte[] Decode(string str)

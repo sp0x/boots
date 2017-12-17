@@ -24,7 +24,7 @@ namespace Netlyt.Web
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseSetting("detailedErrors", "true")
                 .UseIISIntegration()
-                .UseUrls("http://0.0.0.0:81/") //was 0.0.0.0
+                .UseUrls("http://0.0.0.0/") //was 0.0.0.0
                 .CaptureStartupErrors(true)
                 .UseStartup<Startup>()
                 .Build();

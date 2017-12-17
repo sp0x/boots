@@ -1,17 +1,13 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using nvoid.db.DB.RDS;
-using nvoid.db.Extensions;
-using nvoid.Integration;
-using Newtonsoft.Json;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using nvoid.db; 
+using nvoid.db.Extensions; 
 using Newtonsoft.Json.Linq;
-using Netlyt.Web.Models.DataModels;
-using Netlyt.Web.Services;
-using Netlyt.Service;
-using Netlyt.Web;
-using Netlyt.Web.Models.DataModels;
-using Newtonsoft.Json.Linq;
+using Netlyt.Web.Models.DataModels; 
+using Netlyt.Service; 
 
 namespace Netlyt.Web.Controllers
 {
@@ -40,14 +36,14 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/paramlist")]
         public JsonResult  GetParamsList()
         {
-            var param = null;
+            object param = null;
             return Json(param);
         }
 
         [HttpGet("{id}", Name = "GetModel")]
         public IActionResult GetById(long id)
         {
-            var item = _modelContext.FirstOrDefault(t => t.ID == id);
+            var item = _modelContext.FirstOrDefault(t => t.Id == id);
             if (item == null)
             {
                 return NotFound();
@@ -96,9 +92,7 @@ namespace Netlyt.Web.Controllers
         public async Task<IActionResult> Train(long id)
         {
             var json = await HttpRequestExtensions.GetRawBodyString(Request);
-            JObject query = JObject.Parse(json);
-            var json = Request.GetRawBodyString();
-            JObject query = JObject.Parse(json.Result);
+            JObject query = JObject.Parse(json); 
             //kick off background async task to train
             // return 202 with wait at endpoint
             //async task
