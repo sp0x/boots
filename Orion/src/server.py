@@ -41,15 +41,15 @@ class Server(threading.Thread):
                 resp = {}
                 try:
                     msg = self.in_stream.recv_json()
-                    data = msg['data']
-                    op = msg['op']
-                    company = msg['company']
+                    data = msg.get('data')
+                    op = msg.get('op')
+                    company = msg.get('company')
                     seq = msg.get('seq')
                     if op == MAKE_PREDICTION:
                         # make this load and keep a model in memory at all times once we can afford to do that
                         m_id = msg.get('model_id')
                         p_type = msg.get('p_type', 'proba')
-                        model = self.cache.fetch(m_id)
+                        model = self.cache.fetch(m_id, company)
                         if p_type == 'proba':
                             resp = {'results':{'value':model['model'].predict_proba(data), 'model':model['type']}}
                         elif p_type == 'log_proba':
@@ -60,6 +60,8 @@ class Server(threading.Thread):
                         exp = build(msg['params']) 
                         self.pool.map_async(train,(exp,))   
                         resp = {'ids': exp.get_model_ids()}
+                    elif op ==  GET_PARAM_LIST:
+                        resp = {"paramlist": []}
                     resp.update({'seq':seq})                    
                 except Exception as e:
                     resp = {'status' : 'err', 'message' : str(e)}

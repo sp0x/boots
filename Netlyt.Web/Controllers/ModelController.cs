@@ -37,7 +37,9 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/paramlist")]
         public JsonResult  GetParamsList()
         {
-            var param = null;
+            JObject query = new JObject();
+            query.Add("op", 104);
+            var param = _orionContext.Query(query).Result;
             return Json(param);
         }
 
