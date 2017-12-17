@@ -4,6 +4,7 @@ volumes:
   mongodb: 
   experiments:
   redis:
+  pgdata:
 
 services:
   netlyt:
@@ -14,6 +15,7 @@ services:
     depends_on:
       - redis
       - mongo.netlyt.com 
+      - postgre
     ports:
       - "5000:5000"
       - "81:80"
@@ -55,6 +57,19 @@ services:
     #So that we actually have auth enabled..
     #to setup a user, follow this https://stackoverflow.com/questions/22638258/create-superuser-in-mongo
     command: mongod --auth
+
+  postgre:
+    image: postgres
+    container_name: postgre.netlyt.com
+    hostname: postgre.netlyt.com 
+    restart: always
+    env_file:
+      - postgre_auth.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
 
   registry:
     image: registry:2

@@ -1,17 +1,19 @@
 ﻿using System;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using nvoid.db.DB.Configuration;
+using Netlyt.Data;
 using Netlyt.Service;
 using Netlyt.Service.Auth;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
+using Netlyt.Web.Models.DataModels;
 using Netlyt.Web.Services;
 using IdentityRole = Microsoft.AspNetCore.Identity.MongoDB.IdentityRole;
 
@@ -38,13 +40,18 @@ namespace Netlyt.Web
         {
             // Register identity framework services and also Mongo storage. 
             var mongoConnectionString = DBConfig.GetGeneralDatabase().Value;
-
-            services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
+            services.AddDbContext<ManagementDbContext>(options =>
+            {
+                options.UseSqlServer(Configuration.GetConnectionString("PostgreSQLConnection"));
+            });
+            services.AddIdentity<User, UserRole>()
+                .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();
 
-            services.AddHmacAuthentication();
+//            services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
+//                .AddDefaultTokenProviders();
 
-            services.AddAuthentication(Netlyt.Data.AuthenticationSchemes.DataSchemes);
+            services.AddHmacAuthentication(); 
             services.AddMemoryCache();
             services.AddSession(options =>
             {
@@ -66,6 +73,8 @@ namespace Netlyt.Web
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>(); 
         }
+
+
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
