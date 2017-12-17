@@ -43,6 +43,15 @@ namespace Netlyt.Web.Controllers
             return Json(param);
         }
 
+        [HttpGet("/classlist")]
+        public JsonResult GetClassList()
+        {
+            JObject query = new JObject();
+            query.Add("op", 105);
+            var param = _orionContext.Query(query).Result;
+            return Json(param);
+        }
+
         [HttpGet("{id}", Name = "GetModel")]
         public IActionResult GetById(long id)
         {
