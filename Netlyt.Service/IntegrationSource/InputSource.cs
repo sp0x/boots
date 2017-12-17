@@ -8,6 +8,10 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.IntegrationSource
 {
+    /// <summary>   An input source. </summary>
+    ///
+    /// <remarks>   Vasko, 13-Dec-17. </remarks>
+
     public abstract class InputSource : IInputSource
     {
         
@@ -86,27 +90,20 @@ namespace Netlyt.Service.IntegrationSource
         /// <returns>Each part of the input segments if this source has multiple inputs.</returns>
         public virtual IEnumerable<InputSource> Shards()
         {
-            while (false)
-            {
-                yield return null;
-            }
+            return new List<InputSource>();
         }
         /// <summary>
         /// 
         /// </summary>
         /// <returns>Each input of the input segment, if this source has multiple inputs.</returns>
-        public virtual IEnumerable<dynamic> ShardKeys(){
-            while(false){
-                yield return null;
-            }
+        public virtual IEnumerable<dynamic> ShardKeys()
+        {
+            return new List<dynamic>();
         }
 
         public static TransformBlock<InputSource, IEnumerable<dynamic>> GetBlock()
         {
-            var actionBlock = new TransformBlock<InputSource, IEnumerable<dynamic>>((f) =>
-            {
-                return f.AsEnumerable();
-            });
+            var actionBlock = new TransformBlock<InputSource, IEnumerable<dynamic>>((f) => f.AsEnumerable());
             return actionBlock;
         }
 

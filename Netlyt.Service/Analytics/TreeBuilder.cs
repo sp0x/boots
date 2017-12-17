@@ -8,6 +8,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using nvoid.exec.Blocks;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.Models;
@@ -19,7 +20,7 @@ namespace Netlyt.Service.Analytics
     {
         private readonly string _userIdKey; 
         public TreeBuilder(int batchSize, string userIdKey , int threadCount = 8)
-            : base(capacity: batchSize, procType: ProcessingType.Transform, threadCount: threadCount)
+            : base(capacity: batchSize, procType: BlockType.Transform, threadCount: threadCount)
         {
             _userIdKey = userIdKey;
 //            var flowOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = batchSize };

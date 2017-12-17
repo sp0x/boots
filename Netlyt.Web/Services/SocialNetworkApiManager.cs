@@ -2,13 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using CsQuery.Utility;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.Memory;
-using nvoid.db.Extensions;
 using nvoid.Integration;
 using Newtonsoft.Json.Linq;
-using Netlyt.Service.Integration;
 
 namespace Netlyt.Web.Services
 {
@@ -16,7 +12,7 @@ namespace Netlyt.Web.Services
     // when you turn on two-factor authentication in ASP.NET Identity.
     // For more details see this link http://go.microsoft.com/fwlink/?LinkID=532713
     public class SocialNetworkApiManager
-    { 
+    {
         public SocialNetworkApiManager()
         {
         }

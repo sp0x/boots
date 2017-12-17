@@ -8,6 +8,6 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "peeralytics/client": "dev-master"
+        "netlyt/client": "dev-master"
     }
 }

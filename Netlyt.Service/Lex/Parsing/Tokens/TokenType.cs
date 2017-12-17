@@ -23,6 +23,8 @@
         From,
         OrderBy,
         Set,
-        Symbol
+        Symbol,
+        Reduce,
+        ReduceMap
     }
 }

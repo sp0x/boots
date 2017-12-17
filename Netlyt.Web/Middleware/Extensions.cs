@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -42,13 +39,13 @@ namespace Netlyt.Web.Middleware
             JArray arr = content as JArray;
             if (arr != null)
             {
-                var cont = arr.Select(el => PrefixKeys(el, prefix));
+                var cont = arr.Select<JToken, JToken>(el => PrefixKeys(el, prefix));
                 return new JArray(cont);
             }
             JObject o = content as JObject;
             if (o != null)
             {
-                var cont = o.Properties().Select(el => PrefixKeys(el, prefix));
+                var cont = o.Properties().Select<JProperty, JToken>(el => PrefixKeys(el, prefix));
                 return new JObject(cont);
             }
             return content;

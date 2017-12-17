@@ -1,7 +1,6 @@
 FROM microsoft/aspnetcore:2.0
 ARG source
-WORKDIR /app
-COPY published .
+WORKDIR /app 
 
 RUN LIBUV_VERSION=1.11.0 \
 	&& apt-get update \
@@ -18,5 +17,6 @@ RUN LIBUV_VERSION=1.11.0 \
 
 EXPOSE 5000
 EXPOSE 80
-
+COPY published .
 ENTRYPOINT ["dotnet", "Netlyt.dll"]
+

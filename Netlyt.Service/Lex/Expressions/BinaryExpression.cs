@@ -6,7 +6,7 @@ using Netlyt.Service.Lex.Parsing.Tokens;
 namespace Netlyt.Service.Lex.Expressions
 {
     public class BinaryExpression
-        : IExpression
+        : Expression
     {
         public IExpression Left { get; set; }
         public IExpression Right { get; set; }
@@ -16,7 +16,7 @@ namespace Netlyt.Service.Lex.Expressions
         {
             this.Token = token;
         }
-        public IEnumerable<IExpression> GetChildren()
+        public override IEnumerable<IExpression> GetChildren()
         {
             yield return Left;
             yield return Right;

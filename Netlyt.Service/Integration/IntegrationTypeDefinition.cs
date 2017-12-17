@@ -2,27 +2,29 @@
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
+using System.Linq.Expressions; 
 using Dynamitey;
 using MongoDB.Bson;
 using nvoid.db.DB;
 using nvoid.db.Extensions;
 using Netlyt.Service.IntegrationSource;
 using Netlyt.Service.Source;
+using nvoid.db.Extensions;
 
 namespace Netlyt.Service.Integration
 {
     /// <summary>
     /// Definition of a type which is used in an integeration.
     /// </summary>
-    public class IntegrationTypeDefinition : Entity, IIntegrationTypeDefinition
+    public class IntegrationTypeDefinition 
+        : Entity, IIntegrationTypeDefinition
     {
+        public string Id { get; set; }
         public string Name { get; set; }
         public int CodePage { get; set; }
         public string OriginType { get; set; } 
         public string UserId { get; set; }
+        public string Collection { get; set; }
         /// <summary>
         /// 
         /// </summary>
@@ -147,13 +149,13 @@ namespace Netlyt.Service.Integration
             existingDefinition = integrationTypeDefinitions.First();
             return existingDefinition != null;
         }
-
-        public override void PrepareForSaving()
-        {
-            base.PrepareForSaving();
-            if (string.IsNullOrEmpty(UserId))
-                throw new InvalidOperationException("Only user owned type definitions can be saved!");
-        }
+//
+//        public override void PrepareForSaving()
+//        {
+//            base.PrepareForSaving();
+//            if (string.IsNullOrEmpty(UserId))
+//                throw new InvalidOperationException("Only user owned type definitions can be saved!");
+//        }
 
         /// <summary>
         /// Checks if this type already exists, and updates it's id if it does.
@@ -179,7 +181,7 @@ namespace Netlyt.Service.Integration
         {
             var doc = new IntegratedDocument();
             doc.SetDocument(data);
-            doc.TypeId = Id.Value;
+            doc.TypeId = Id;
             return doc;
         }
 

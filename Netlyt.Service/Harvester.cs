@@ -7,10 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using nvoid.db.DB;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Blocks;
-using Netlyt.Service.IntegrationSource;
-using Netlyt.Service.Source;
+using nvoid.db.Extensions;
+using nvoid.exec.Blocks;
+using Netlyt.Service.Integration; 
+using Netlyt.Service.IntegrationSource; 
 
 namespace Netlyt.Service
 {
@@ -40,14 +40,14 @@ namespace Netlyt.Service
         /// <summary>
         /// The destination to which documents will be dispatched
         /// </summary>
-        public IIntegrationBlock<TDocument> Destination { get; private set; }
+        public IFlowBlock<TDocument> Destination { get; private set; }
         public ITargetBlock<TDocument> DestinationBlock { get; private set; }
 
         protected int ShardLimit => _shardLimit;
         protected int TotalEntryLimit => _totalEntryLimit;
-        public int ThreadCount { get; private set; }
+        public uint ThreadCount { get; private set; }
 
-        public Harvester(int threadCount = 4) : base()
+        public Harvester(uint threadCount = 4) : base()
         {
             Sets = new HashSet<IntegrationSet>();
             this.ThreadCount = threadCount;
@@ -83,15 +83,17 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="inputSource"></param>
         /// <param name="userId"></param>
+        /// <param name="name">The name of the type that will be created</param>
+        /// <param name="persist">Whether the type should be saved</param>
         /// <returns></returns>
-        public IntegrationTypeDefinition AddPersistentType(InputSource inputSource, string userId, string name, bool persist = true)
+        public IntegrationTypeDefinition AddPersistentType(InputSource inputSource, string userId, string name, bool persist = true, string outputCollection = null)
         {
-            var type = inputSource.GetTypeDefinition() as IntegrationTypeDefinition;
-            if (type == null)
+            if (!(inputSource.GetTypeDefinition() is IntegrationTypeDefinition type))
             {
                 throw new Exception("Could not resolve type!");
             }
             type.UserId = userId;
+            type.Collection = outputCollection;
             if (!string.IsNullOrEmpty(name))
             {
                 type.Name = name;
@@ -110,7 +112,7 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="dest">A destination/block in your integration flow</param>
         /// <returns></returns>
-        public Harvester<TDocument> SetDestination(IIntegrationBlock<TDocument> dest)
+        public Harvester<TDocument> SetDestination(IFlowBlock<TDocument> dest)
         {
             Destination = dest;
             return this;
@@ -136,7 +138,7 @@ namespace Netlyt.Service
         {
             var cToken = cancellationToken ?? CancellationToken.None;
             //Destination.ConsumeAsync(cToken);
-            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = ThreadCount };
+            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = (int)ThreadCount };
             parallelOptions.CancellationToken = cToken;
             ResetStopwatch();
             _stopwatch.Start();
@@ -155,9 +157,9 @@ namespace Netlyt.Service
         }
 
         /// <summary>
-        /// Reads all values from the source, in raw means without any preprocessing.
+        /// Reads all values from the source, in raw means without any pre-processing.
         /// </summary>
-        /// <param name="target"></param>
+        /// <param name="target">A target block to which to post all input.</param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         public Task<HarvesterResult> ReadAll(
@@ -165,7 +167,7 @@ namespace Netlyt.Service
             CancellationToken? cancellationToken = null)
         {
             var cToken = cancellationToken ?? CancellationToken.None;
-            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = ThreadCount };
+            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = (int)ThreadCount };
             parallelOptions.CancellationToken = cToken;
             ResetStopwatch();
             _stopwatch.Start();
@@ -241,11 +243,7 @@ namespace Netlyt.Service
                                         return;
                                     }
                                     var sendTask = targetBlock.SendAsync(entry as ExpandoObject);
-                                    sendTask.Wait();
-                                    if (!sendTask.IsCompleted || !sendTask.Result)
-                                    {
-                                        sendTask = sendTask;
-                                    }
+                                    sendTask.Wait(); 
                                     Interlocked.Increment(ref totalItemsUsed);
                                 });
                             }
@@ -336,7 +334,7 @@ namespace Netlyt.Service
                                     var document = itemSet.Wrap(entry);
                                     if (Destination == null)
                                     {
-                                        Integration.Extensions.SendChecked(DestinationBlock, document, null);
+                                        nvoid.exec.Blocks.Extensions.SendChecked(DestinationBlock, document, null);
                                     }
                                     else
                                     {

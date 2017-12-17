@@ -3,7 +3,7 @@
 namespace Netlyt.Service.Lex.Expressions
 {
     public class BlockExpression
-        : IExpression
+        : Expression
     {
         public List<IExpression> Children { get; set; }
 
@@ -12,7 +12,7 @@ namespace Netlyt.Service.Lex.Expressions
             Children = new List<IExpression>();
         }
 
-        public IEnumerable<IExpression> GetChildren()
+        public override IEnumerable<IExpression> GetChildren()
         {
             return Children;
         }

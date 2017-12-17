@@ -4,6 +4,7 @@ volumes:
   mongodb: 
   experiments:
   redis:
+  pgdata:
 
 services:
   netlyt:
@@ -14,9 +15,10 @@ services:
     depends_on:
       - redis
       - mongo.netlyt.com 
+      - postgre
     ports:
       - "5000:5000"
-      - "80:80"
+      - "81:80"
   
   jenkins:
     privileged: true
@@ -56,12 +58,25 @@ services:
     #to setup a user, follow this https://stackoverflow.com/questions/22638258/create-superuser-in-mongo
     command: mongod --auth
 
+  postgre:
+    image: postgres
+    container_name: postgre.netlyt.com
+    hostname: postgre.netlyt.com 
+    restart: always
+    env_file:
+      - postgre_auth.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
+
   registry:
     image: registry:2
     container_name: registry
     restart: always
     ports:
-      - "10.10.1.5:443:5000"
+      - "10.10.1.7:443:5000"
     volumes:
       - ./registry:/var/lib/registry
       - ./auth:/auth
@@ -69,12 +84,12 @@ services:
     environment:
       REGISTRY_AUTH: "htpasswd"
       REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
-      REGISTRY_AUTH_HTPASSWD_PATH: "/auth/registry.vaskovasilev.eu"
+      REGISTRY_AUTH_HTPASSWD_PATH: "/auth/registry.netlyt.com"
       REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/registry_auth.crt"
       REGISTRY_HTTP_TLS_KEY: "/certs/registry_auth.key"
 
-      #-e VIRTUAL_HOST=registry.vaskovasilev.eu 
-#-e LETSENCRYPT_HOST=registry.vaskovasilev.eu 
+      #-e VIRTUAL_HOST=registry.netlyt.com 
+#-e LETSENCRYPT_HOST=registry.netlyt.com 
 #-e LETSENCRYPT_EMAIL=vaskovasilev94@yahoo.com 
 #--network=webproxy --name my_app httpd:alpine
 

@@ -1,21 +1,17 @@
-using System;
-using System.IO;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using nvoid.db.DB.RDS;
+using nvoid.db;
 using nvoid.db.Extensions;
 using nvoid.Integration;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
+using Newtonsoft.Json.Linq;
 
 namespace Netlyt.Web.Controllers
 {
-    
     [Produces("application/json")]
     [Route("api")]
     public class ApiController : Controller
@@ -42,7 +38,7 @@ namespace Netlyt.Web.Controllers
             string appSecret = appDetails["secret"]?.ToString();
 
             _socialApiMan.RegisterNetwork(HttpContext.Session, socnetType, appId, appSecret);
-            return Json(new {success = true});
+            return Json(new { success = true });
         }
 
         /// <summary>
@@ -53,8 +49,8 @@ namespace Netlyt.Web.Controllers
         [HttpGet]
         public async Task<ActionResult> SocialPermissions(string type = "Local")
         {
-            var apiId = HttpContext.Session.GetUserApiId(); 
-            var api = _apiStore.First(x => x.Id.Value == apiId);
+            var apiId = HttpContext.Session.GetUserApiId();
+            var api = _apiStore.First(x => x.Id == apiId);
             ActionResult result = null;
             if (api == null)
             {

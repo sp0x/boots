@@ -3,7 +3,7 @@
 namespace Netlyt.Service.Lex.Expressions
 {
     public class ParameterExpression
-        : IExpression
+        : Expression
     {
         public IExpression Value { get; private set; }
 
@@ -11,7 +11,7 @@ namespace Netlyt.Service.Lex.Expressions
         {
             this.Value = value;
         }
-        public IEnumerable<IExpression> GetChildren()
+        public override IEnumerable<IExpression> GetChildren()
         {
             return new List<IExpression>() {Value};
         }

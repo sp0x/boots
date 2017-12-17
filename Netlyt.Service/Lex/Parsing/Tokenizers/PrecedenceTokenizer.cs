@@ -29,6 +29,8 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Multiply, "\\*", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Divide, "/", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Define, "define", 1)); //(?<=define\\s)([\\w\\d_]+)
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Reduce, "(^|\\W)reduce(?=[\\s\\t])", 1)); 
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.ReduceMap, "(^|\\W)reduce_map(?=[\\s\\t])", 1));  
             _tokenDefinitions.Add(new TokenDefinition(TokenType.NotIn, "not\\sin", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.In, "(^|\\W)in(?=[\\s\\t])", 1));
             //_tokenDefinitions.Add(new TokenDefinition(TokenType.Like, "like", 1));

@@ -7,20 +7,22 @@ namespace Netlyt.Service.Lex.Expressions
     /// Represents a [symbol] = [value] expression.
     /// </summary>
     public class AssignmentExpression
-        : IExpression
+        : Expression
     {
-        public IExpression Member { get; private set; }
+        public VariableExpression Member { get; private set; }
         public IExpression Value { get; private set; }
 
-        public AssignmentExpression(IExpression memberExpression, IExpression valueExpression)
+        public AssignmentExpression(VariableExpression memberExpression, IExpression valueExpression)
+            : base()
         {
             this.Member = memberExpression;
             this.Value = valueExpression;
-        }
-
-        public IEnumerable<IExpression> GetChildren()
+        } 
+        public override string ToString()
         {
-            return new List<IExpression>();
+            var left = Member.ToString();
+            var right = Value.ToString();
+            return $"{left} = {right}";
         }
     }
 }

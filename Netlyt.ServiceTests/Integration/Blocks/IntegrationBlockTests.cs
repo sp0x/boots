@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Driver;
 using nvoid.db.DB.MongoDB;
+using nvoid.exec.Blocks;
 using Netlyt.Service;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
@@ -26,7 +27,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
     public class IntegrationBlockTests
     {
         private static string AppId = "123123123";
-        private Harvester<IntegratedDocument> GetHarvester(int threadCount = 20, int limit = 10)
+        private Harvester<IntegratedDocument> GetHarvester(uint threadCount = 20, int limit = 10)
         {
             var inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, "TestData\\Ebag\\1156");
@@ -122,9 +123,9 @@ namespace Netlyt.ServiceTests.Integration.Blocks
                 var action = new IntegrationActionBlock("1234", (act, x) =>
                 {
                     x["r"] = false;
-                    //Debug.WriteLine($"Proc from block {act.Id}[{act.ThreadId}]: {x.Id.Value}");
+                    //Debug.WriteLine($"Proc from block {act.Id}[{act.ThreadId}]: {x.Id}");
                     setx[act.ThreadId.ToString()] = "";
-                    docset[x.Id.Value.ToString()] = "";
+                    docset[x.Id.ToString()] = "";
                     Interlocked.Increment(ref lCount);
                 }, 4);
                 block.LinkTo(action, null);
@@ -177,9 +178,9 @@ namespace Netlyt.ServiceTests.Integration.Blocks
                 var action = new IntegrationActionBlock("1234", (act, x) =>
                 {
                     x["r"] = false;
-                    Debug.WriteLine($"Proc from block {act.Id}[{act.ThreadId}]: {x.Id.Value}");
+                    Debug.WriteLine($"Proc from block {act.Id}[{act.ThreadId}]: {x.Id}");
                     setx[act.ThreadId.ToString()] = "";
-                    docset[x.Id.Value.ToString()] = "";
+                    docset[x.Id.ToString()] = "";
                     Interlocked.Increment(ref lCount);
                 });
                 block.LinkTo(action, null);
@@ -212,7 +213,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var harvester = GetHarvester(20);
             harvester.LimitEntries(1000);
             int cntFeatures=0, cntUpdates=0, cntBatchesApplied=0;
-            int batchSize = 3000;
+            var batchSize = (uint)3000;
             var featureSize = 1;
 
             var grouper = new GroupingBlock(AppId,

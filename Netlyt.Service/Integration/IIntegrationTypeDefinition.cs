@@ -24,12 +24,10 @@ namespace Netlyt.Service.Integration
         string OriginType { get; }
         Dictionary<string, FieldDefinition> Fields { get; }
 
-        IntegrationTypeExtras Extras { get; }
-        bool Save();
+        IntegrationTypeExtras Extras { get; } 
         IIntegrationTypeDefinition SaveType(string userApiId);
-
-        [BsonSerializer(typeof(LazyStringSerializer))]
-        Lazy<string> Id { get; set; }
+         
+        string Id { get; set; }
 
         IntegratedDocument Wrap<T>(T data); 
     }

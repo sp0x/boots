@@ -3,6 +3,13 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Lex\Templates\Donutfile.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Lex\Templates\Donutfile.txt" />
+    <EmbeddedResource Include="Lex\Templates\MapReduceTemplate.txt" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Bogus\Source\Bogus\Bogus.csproj" />
     <ProjectReference Include="..\libnvoid\aspnet-identity-mongo\src\Microsoft.AspNetCore.Identity.MongoDB\Microsoft.AspNetCore.Identity.MongoDB.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
@@ -16,9 +23,25 @@
   <ItemGroup>
     <PackageReference Include="Dynamitey" Version="1.0.2" />
     <PackageReference Include="LumenWorks.Framework.IO.Core" Version="1.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.6.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.4.4" />
     <PackageReference Include="NetMQ" Version="4.0.0.1" />
     <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
     <PackageReference Include="StackExchange.Redis.Extensions.JilCore" Version="1.0.0" />
+    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib">
+      <HintPath>mscorlib</HintPath>
+    </Reference>
+    <Reference Include="System">
+      <HintPath>System</HintPath>
+    </Reference>
+    <Reference Include="System.Core">
+      <HintPath>System.Core</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 </Project>

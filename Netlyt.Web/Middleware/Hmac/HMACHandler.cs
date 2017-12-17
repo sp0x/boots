@@ -1,6 +1,5 @@
-using System;
-using System.IO;
-using System.Linq;
+﻿using System; 
+using System.IO; 
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -9,21 +8,13 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Authentication;
-using Microsoft.AspNetCore.Http.Features.Authentication;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using nvoid.db.DB.RDS;
+using nvoid.db;
 using nvoid.db.Extensions;
 using nvoid.Integration;
-using nvoid.Security.Ciphers;
-using Netlyt.Web.Controllers;
-using Netlyt.Service.Auth;
-using AuthenticationProperties = Microsoft.AspNetCore.Authentication.AuthenticationProperties;
 
 namespace Netlyt.Web.Middleware.Hmac
 {
@@ -50,7 +41,7 @@ namespace Netlyt.Web.Middleware.Hmac
             _iterations = 200;
             _salt = new byte[] { }; //243, 133, 64, 76, 111, 136, 1, 78};
         }
-         
+
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             var authorization = Request.Headers["Authorization"];
@@ -69,10 +60,10 @@ namespace Netlyt.Web.Middleware.Hmac
                 var appApiId = Context.Session.GetString("APP_API_ID");
                 if (appApiId == null)
                 {
-                    Context.Session.SetString("APP_API_ID", apiAuth.Id.Value); 
-                    user.AddIdentity(claimsIdentity); 
+                    Context.Session.SetString("APP_API_ID", apiAuth.Id);
+                    user.AddIdentity(claimsIdentity);
                 }
-                Response.Headers.Add("APP_API_ID", apiAuth.Id.Value);
+                Response.Headers.Add("APP_API_ID", apiAuth.Id);
                 var authProps = new AuthenticationProperties();
                 var ticket = new AuthenticationTicket(principal, authProps, Options.AuthenticationScheme);
                 return AuthenticateResult.Success(ticket);
@@ -82,10 +73,10 @@ namespace Netlyt.Web.Middleware.Hmac
 
         }
 
-//        protected Task<bool> HandleUnauthorizedAsync(ChallengeContext context)
-//        {
-//            return base.HandleUnauthorizedAsync(context);
-//        }
+        //        protected Task<bool> HandleUnauthorizedAsync(ChallengeContext context)
+        //        {
+        //            return base.HandleUnauthorizedAsync(context);
+        //        }
 
         private bool Validate(HttpRequest request, out ApiAuth apiAuth)
         {
@@ -110,11 +101,9 @@ namespace Netlyt.Web.Middleware.Hmac
                     {
                         if (!string.IsNullOrEmpty(body))
                         {
-                            var encoding = System.Text.Encoding.ASCII;
-                            var iv = this._iv;
-                            body = Decrypt(body, apiAuth.AppSecret);
+                            body = XorString(body, apiAuth.AppSecret); 
                             byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
-                            Request.Body = new MemoryStream(bodyBytes); 
+                            Request.Body = new MemoryStream(bodyBytes);
                         }
                     }
                     return isValidRequest;
@@ -148,8 +137,8 @@ namespace Netlyt.Web.Middleware.Hmac
             body = null;
 
             //App filter
-            matchingApiAuth = _authSource.FindFirst(x=> x.AppId == appId);
-            if (matchingApiAuth==null)//Options.AppId != AppId)
+            matchingApiAuth = _authSource.FindFirst(x => x.AppId == appId);
+            if (matchingApiAuth == null)//Options.AppId != AppId)
             {
                 return false;
             }
@@ -177,25 +166,23 @@ namespace Netlyt.Web.Middleware.Hmac
                 var validHmacSignitureString = Convert.ToBase64String(validHmacSigniture);
                 //Check if the signiture that we received was the same as the one we generated
                 var isValidRequest = (incomingBase64Signature.Equals(validHmacSignitureString, StringComparison.Ordinal));
-                
+
                 return isValidRequest;
             }
 
         }
-        //private string XorString(string text, string key) { 
-        //    var result = new StringBuilder();
-        //    for (int c = 0; c < text.Length; c++)
-        //        result.Append((char)((uint)text[c] ^ (uint)key[c % key.Length]));
+        private string XorString(string text, string key) { 
+            var result = new StringBuilder();
+            for (int c = 0; c < text.Length; c++)
+                result.Append((char)((uint)text[c] ^ (uint)key[c % key.Length]));
 
-        //    return result.ToString();
-        //}
+            return result.ToString();
+        }
 
         private string DecodeMessage(string text, string key)
         {
-            var bytes = Convert.FromBase64String(text);
-            var encoding = System.Text.Encoding.ASCII;
-            var iv = this._iv;
-            return Decrypt(text, key);
+            var clearMessage = XorString(text, key);
+            return clearMessage;
         }
 
         public byte[] Decode(string str)
@@ -250,7 +237,7 @@ namespace Netlyt.Web.Middleware.Hmac
         public String Decrypt(String text, String key)
         {
             try
-            { 
+            {
                 MD5 md5 = System.Security.Cryptography.MD5.Create();
                 byte[] keyBytes = System.Text.Encoding.ASCII.GetBytes(key);
                 byte[] keyBytesHash = md5.ComputeHash(keyBytes);
@@ -454,4 +441,4 @@ namespace Netlyt.Web.Middleware.Hmac
         //
         //        }
     }
-} 
+}

@@ -5,8 +5,10 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
+using nvoid.db.Batching;
 using nvoid.db.DB;
 using nvoid.db.Extensions;
+using nvoid.exec.Blocks;
 using nvoid.extensions;
 using Netlyt.Service;
 using Netlyt.Service.Format;
@@ -85,7 +87,7 @@ namespace Netlyt.ServiceTests
             var type = harvester.AddPersistentType(fileSource, userId, null, true); 
 
             var grouper = new GroupingBlock(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
-            var saver = new MongoSink(userId);
+            var saver = new MongoSink<IntegratedDocument>(userId);
             var demographyImporter = new EntityDataImporter(demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
             demographyImporter.UseInputKey((input) => input[0] );
@@ -211,7 +213,7 @@ namespace Netlyt.ServiceTests
         /// </summary>
         /// <param name="dataImporter"></param>
         /// <param name="fromBlock"></param>
-        private void OnUsersGrouped(EntityDataImporter dataImporter, IIntegrationBlock fromBlock)
+        private void OnUsersGrouped(EntityDataImporter dataImporter, IFlowBlock fromBlock)
         {
             var grouper = fromBlock as GroupingBlock;
             var userValues = grouper.EntityDictionary.Values; 

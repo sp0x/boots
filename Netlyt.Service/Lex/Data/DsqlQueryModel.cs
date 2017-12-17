@@ -16,5 +16,6 @@ namespace Netlyt.Service.Lex.Data
         public FeatureTypeModel Type { get; set; }
         public IList<MatchCondition> Filters { get; set; }
         public List<AssignmentExpression> Features { get; set; }
+        public OrderByExpression StartingOrderBy { get; set; }
     }
 }

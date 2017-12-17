@@ -164,7 +164,7 @@ class Experiment:
         models = []
         for m_name in model_names:
             model_path = latest_file(os.path.join(exp_dir, "model_{0}_".format(m_name)))
-            print "Loading " + model_path
+            print("Loading " + model_path)
             if 'hdf5' in m_name:
                 model = load_model(abs_path(model_path))
             else:

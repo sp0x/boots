@@ -14,13 +14,15 @@ namespace Netlyt.Service.Analytics
     }
     public class UserGenerator
     {
-        private List<string> _firstNames;
-        private List<string> _lastNames; 
-        private Bogus.DataSets.Imdb _wordset; 
+        //private List<string> _firstNames;
+        //private List<string> _lastNames; 
+        private readonly Bogus.DataSets.Imdb _wordset;
 
-        public UserGenerator()
-        {  
-            _wordset = new Bogus.DataSets.Imdb(); 
+        public UserGenerator() 
+        {
+            //_lastNames = lastNames ?? new List<string>();
+            //_firstNames = firstNames ?? new List<string>();
+            _wordset = new Bogus.DataSets.Imdb();
         } 
 
         private String[] GenerateLikes()

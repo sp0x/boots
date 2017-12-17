@@ -3,20 +3,24 @@ using Netlyt.Service.Lex.Parsing;
 
 namespace Netlyt.Service.Lex.Expressions
 {
-    public class OrderByExpression
-        : IExpression
-    {
-        private List<IExpression> Values { get; set; }
+    /// <summary>   An order by expression. </summary>
+    ///
+    /// <remarks>   Vasko, 05-Dec-17. </remarks>
 
-        public OrderByExpression(List<IExpression> tree)
+    public class OrderByExpression
+        : Expression
+    {
+        public IEnumerable<IExpression> ByClause { get; set; }
+
+        public OrderByExpression(IEnumerable<IExpression> tree)
         {
-            this.Values = tree;
+            this.ByClause = tree;
         }
 
 
-        public IEnumerable<IExpression> GetChildren()
+        public override IEnumerable<IExpression> GetChildren()
         {
-            return Values;
+            return ByClause;
         }
     }
 }

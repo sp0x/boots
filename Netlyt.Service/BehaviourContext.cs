@@ -63,6 +63,12 @@ namespace Netlyt.Service
             _client.ConnectAsync(_destinationIp, _inputPort, _outputPort);
         }
 
+        /// <summary>   Sends a raw string message. </summary>
+        ///
+        /// <remarks>   Vasko, 13-Dec-17. </remarks>
+        ///
+        /// <param name="message">  The message. </param>
+
         public void SendMessage(string message)
         {
             _client.SendMessage(message);

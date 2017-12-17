@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using nvoid.extensions;
 using System.Linq;
+using nvoid.exec.Blocks;
 using Netlyt.Service.Models;
 
 namespace Netlyt.Service.Integration.Blocks
@@ -46,7 +47,7 @@ namespace Netlyt.Service.Integration.Blocks
         public GroupingBlock(string userId, Func<IntegratedDocument, object> selector,
             Action<IntegratedDocument> inputProjection,
             Func<IntegratedDocument, BsonDocument, object> accumulator)
-            : base(capacity: 1000, procType: ProcessingType.Action)
+            : base(capacity: 1000, procType: BlockType.Action)
         {
             base.UserId = userId;
             _groupBySelector = selector;
