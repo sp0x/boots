@@ -10,5 +10,6 @@ namespace Netlyt.Web.Models.DataModels
         public List<Model> Models { get; set; }
         public User Owner { get; set; }
         public string FeatureScript { get; set; }
+        public string Name { get; set; }        
     }
 }
