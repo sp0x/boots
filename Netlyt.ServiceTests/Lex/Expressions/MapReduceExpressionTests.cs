@@ -22,19 +22,32 @@ namespace Netlyt.ServiceTests.Lex.Expressions
         [InlineData(new object[]
         {
             @" 
-            reduce day = time_s(input.ondate) / (60*60*24), 
-                   uuid = input.uuid
-            reduce_map  ondate = input.ondate,
-                        value = input.value,
-                        type = input.type
+            reduce day = time(this.ondate) / (60*60*24), 
+                   uuid = this.uuid
+            reduce_map  ondate = this.ondate,
+                        value = this.value,
+                        type = this.type
                     ",
-            "day = time_s(input.ondate) / 60 * 60 * 24, uuid = input.uuid",
-            "ondate = input.ondate, value = input.value, type = input.type"
+            "day = time(this.ondate) / 60 * 60 * 24, uuid = this.uuid",
+            "ondate = this.ondate, value = this.value, type = this.type",
+            @"function(){
+	var day=(function(timeElem){ return timeElem.getTime() })(this.ondate) / 60 * 60 * 24;
+var uuid=this.uuid;var __key = {  'day' : day,'uuid' : uuid
+};
+
+	var ondate=this.ondate;
+var value=this.value;
+var type=this.type;var __value = { 'ondate' : ondate,'value' : value,'type' : type
+};
+
+	emit(__key, __value);
+}"
         })]
-        public void ParseMapReduce(
+        public void ParseMapReduceMap(
             string txt,
             string expectedKeys,
-            string expectedValues)
+            string expectedValues,
+            string expectedJs)
         {
 
             var tokenizer = new PrecedenceTokenizer();
@@ -45,9 +58,8 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             Assert.Equal(expectedKeys, keys);
             Assert.Equal(expectedValues, values);
             var codeGen = new CodeGenerator();
-            var emittedBlob = codeGen.GenerateFromExpression(mapReduce);
-            emittedBlob = emittedBlob;
-            //Generate the code for a map reduce with mongo
+            var emittedBlob = codeGen.GenerateFromExpression(mapReduce); 
+            Assert.Equal(expectedJs, emittedBlob);//Generate the code for a map reduce with mongo
 
         }
 

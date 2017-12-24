@@ -112,12 +112,12 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             Assert.True(x.Parameters.Count >= 2);
             var param1 = x.Parameters.First();
             var param2 = x.Parameters.Skip(1).First();
-            Assert.IsType<FunctionExpression>(param1.Value);
+            Assert.IsType<CallExpression>(param1.Value);
             Assert.IsType<VariableExpression>(param2.Value);
-            Assert.Equal(((FunctionExpression)param1.Value).Name, "g");
-            Assert.True(((FunctionExpression) param1.Value).Parameters.Count == 2);
-            VariableExpression fnp1Param1= (VariableExpression)((FunctionExpression)param1.Value).Parameters.First().Value;
-            VariableExpression fnp1Param2 = (VariableExpression)((FunctionExpression)param1.Value).Parameters.Skip(1).First().Value;
+            Assert.Equal(((CallExpression)param1.Value).Name, "g");
+            Assert.True(((CallExpression) param1.Value).Parameters.Count == 2);
+            VariableExpression fnp1Param1= (VariableExpression)((CallExpression)param1.Value).Parameters.First().Value;
+            VariableExpression fnp1Param2 = (VariableExpression)((CallExpression)param1.Value).Parameters.Skip(1).First().Value;
             Assert.Equal("a.one", fnp1Param1.ToString());
             Assert.Equal("c", fnp1Param2.Name);
             Assert.Equal("b", ((VariableExpression)param2.Value).Name);
@@ -136,7 +136,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             Assert.IsType<VariableExpression>(firstExp.Right);
             BinaryExpression divisionLeft = firstExp.Left as BinaryExpression;
             Assert.IsType<VariableExpression>(divisionLeft.Right);
-            var fn1 = ((FunctionExpression)divisionLeft.Left);
+            var fn1 = ((CallExpression)divisionLeft.Left);
             Assert.Equal("max", fn1.Name);
             Assert.Equal("max(c, 1 + a.b)", fn1.ToString());
             Assert.Equal("b", ((VariableExpression)divisionLeft.Right).Name); 

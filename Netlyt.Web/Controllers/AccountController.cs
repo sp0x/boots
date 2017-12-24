@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Netlyt.Service;
 using Netlyt.Service.Auth;
+using Netlyt.Web.Models.AccountViewModels;
+using Netlyt.Web.Services;
 
 namespace Netlyt.Web.Controllers
 {

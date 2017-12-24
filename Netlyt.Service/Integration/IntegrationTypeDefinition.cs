@@ -23,6 +23,12 @@ namespace Netlyt.Service.Integration
         public string Name { get; set; }
         public int CodePage { get; set; }
         public string OriginType { get; set; } 
+
+        /// <summary>   Gets or sets the source for the integration. </summary>
+        ///
+        /// <value> The source. </value>
+
+        public string Source { get; set; }
         public string UserId { get; set; }
         public string Collection { get; set; }
         /// <summary>

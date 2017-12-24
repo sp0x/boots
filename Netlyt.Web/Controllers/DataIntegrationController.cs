@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -59,6 +60,12 @@ namespace Netlyt.Web.Controllers
             });
         }
 
+        /// <summary>   (An Action that handles HTTP POST requests) Posts entity data record(s). </summary>
+        ///
+        /// <remarks>   Vasko, 18-Dec-17. </remarks>
+        ///
+        /// <returns>   An asynchronous result that yields an ActionResult. </returns>
+
         [Route("[action]")]
         [HttpPost]
         public async Task<ActionResult> Entity()
@@ -67,6 +74,8 @@ namespace Netlyt.Web.Controllers
             var userApiId = HttpContext.Session.GetUserApiId();
             var memSource = InMemorySource.Create(Request.Body, new JsonFormatter());
             var type = (IntegrationTypeDefinition)memSource.GetTypeDefinition();
+            StringValues tmpSource;
+            if (Request.Headers.TryGetValue("DataSource", out tmpSource)) type.Source = tmpSource.ToString();
             type.UserId = userApiId;
             type.SaveType(userApiId);
             //Check if the entity type exists
@@ -76,7 +85,6 @@ namespace Netlyt.Web.Controllers
             harvester.SetDestination(destination);
             harvester.AddType(type, memSource);
             harvester.Synchronize();
-
             return Json(new
             {
                 success = true,

@@ -15,7 +15,6 @@ using Netlyt.Web.Models;
 using Netlyt.Web.Models.DataModels;
 using Netlyt.Web.Models.ManageViewModels;
 using Netlyt.Web.Services;
-using TmpAuth.Services;
 
 namespace Netlyt.Web.Controllers
 {

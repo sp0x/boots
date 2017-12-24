@@ -6,13 +6,13 @@ using Netlyt.Service.Lex.Parsing;
 
 namespace Netlyt.Service.Lex.Expressions
 {
-    public class FunctionExpression
+    public class CallExpression
         : Expression
     {
         public string Name { get; set; }
         public List<ParameterExpression> Parameters { get; private set; }
 
-        public FunctionExpression()
+        public CallExpression()
         {
             Parameters = new List<ParameterExpression>();
         }

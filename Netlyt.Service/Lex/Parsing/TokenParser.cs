@@ -394,9 +394,9 @@ namespace Netlyt.Service.Lex.Parsing
         /// 
         /// </summary>
         /// <returns></returns>
-        public FunctionExpression ReadFunction()
+        public CallExpression ReadFunction()
         {
-            var f = new FunctionExpression();
+            var f = new CallExpression();
             var tknFunctionName = Reader.DiscardToken(TokenType.Symbol);
             Reader.DiscardToken(TokenType.OpenParenthesis);
             f.Name = tknFunctionName.Value;
