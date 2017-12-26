@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Parsing;
@@ -19,12 +20,41 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             var tokens = tokenizer.Tokenize(fc).ToList();
             var parser = new Netlyt.Service.Lex.Parsing.TokenParser();
             parser.Load(tokens);
-            var x = parser.ReadFunction();
+            var x = parser.ReadFunctionCall();
             Assert.Equal("f", x.Name);
             Assert.True(x.Parameters.Count > 0);
             var parameterExpression = x.Parameters.First();
             Assert.IsType<VariableExpression>(parameterExpression.Value);
             Assert.Equal(((VariableExpression) parameterExpression.Value).Name, "a");
+        }
+
+        [Theory]
+        [InlineData(new object[]
+        {
+            "() => 1+1","() => 1 + 1"
+        })]
+        public void TokenizeLambda(string fc, string expectedLambda)
+        {
+            var tokenizer = new PrecedenceTokenizer();
+            var tokens = tokenizer.Tokenize(fc).ToList();
+            var parser = new Netlyt.Service.Lex.Parsing.TokenParser();
+            parser.Load(tokens);
+            var parsedLambda = parser.ReadExpression();
+            Assert.Equal(expectedLambda, parsedLambda.ToString());
+        }
+
+        [Theory]
+        [InlineData(new object[]{"(a) => a+1", "(a) => a + 1"})]
+        [InlineData(new object[]{"(a, b) => a+1", "(a, b) => a + 1"})]
+        [InlineData(new object[]{"(a, b, c, d) => max(a+1, b, c, d)", "(a, b, c, d) => max(a + 1, b, c, d)"})]
+        public void TokenizeLambda2(string fc, string expectedLambda)
+        { 
+            var tokenizer = new PrecedenceTokenizer();
+            var tokens = tokenizer.Tokenize(fc).ToList();
+            var parser = new Netlyt.Service.Lex.Parsing.TokenParser();
+            parser.Load(tokens);
+            var parsedLambda = parser.ReadExpression();
+            Assert.Equal(expectedLambda, parsedLambda.ToString());
         }
 
         /// <summary>
@@ -75,7 +105,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         public void TokenizeFunction2(string fc)
         {
             var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(fc));   
-            var x = parser.ReadFunction();
+            var x = parser.ReadFunctionCall();
             Assert.Equal("f", x.Name);
             Assert.True(x.Parameters.Count >= 2);
             var param1 = x.Parameters.First();
@@ -91,7 +121,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         public void TokenizeFunction3(string fc)
         {
             var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(fc));
-            var x = parser.ReadFunction();
+            var x = parser.ReadFunctionCall();
             Assert.Equal("f", x.Name);
             Assert.True(x.Parameters.Count >= 2);
             var param1 = x.Parameters.First();
@@ -107,7 +137,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         public void TokenizeFunction4(string fc)
         {
             var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(fc));
-            var x = parser.ReadFunction();
+            var x = parser.ReadFunctionCall();
             Assert.Equal("f", x.Name);
             Assert.True(x.Parameters.Count >= 2);
             var param1 = x.Parameters.First();

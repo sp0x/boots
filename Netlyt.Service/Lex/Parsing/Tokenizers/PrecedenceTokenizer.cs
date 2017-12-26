@@ -21,7 +21,8 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
             _tokenDefinitions.Add(new TokenDefinition(TokenType.CloseParenthesis, "\\)", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Comma, ",", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.MemberAccess, "\\.", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Assign, "=", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Lambda, "=>", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Assign, "=", 2));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Equals, "==", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.NotEquals, "!=", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Add, "\\+", 1));
@@ -29,8 +30,10 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Multiply, "\\*", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Divide, "/", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Define, "define", 1)); //(?<=define\\s)([\\w\\d_]+)
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Reduce, "(^|\\W)reduce(?=[\\s\\t])", 1)); 
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.ReduceAggregate, "(^|\\W)reduce aggregate(?=[\\s\\t])", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Reduce, "(^|\\W)reduce(?=[\\s\\t])", 2)); 
             _tokenDefinitions.Add(new TokenDefinition(TokenType.ReduceMap, "(^|\\W)reduce_map(?=[\\s\\t])", 1));  
+            
             _tokenDefinitions.Add(new TokenDefinition(TokenType.NotIn, "not\\sin", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.In, "(^|\\W)in(?=[\\s\\t])", 1));
             //_tokenDefinitions.Add(new TokenDefinition(TokenType.Like, "like", 1));

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Netlyt.Service.Lex.Data;
@@ -6,9 +7,13 @@ using Netlyt.Service.Lex.Parsing.Tokens;
 
 namespace Netlyt.Service.Lex.Parsing
 {
+    /// <summary>   A token sequence reader helper. </summary>
+    ///
+    /// <remarks>   Vasko, 25-Dec-17. </remarks>
+
     public class TokenReader
     {
-        public TokenCursor Cursor { get; private set; }
+        public TokenMarker Marker { get; private set; }
         private Stack<DslToken> _tokenSequence;
         private DslToken _lookaheadFirst;
         private DslToken _lookaheadSecond;
@@ -25,7 +30,7 @@ namespace Netlyt.Service.Lex.Parsing
 
         public TokenReader(IEnumerable<DslToken> tokens)
         {
-            Cursor = new TokenCursor();
+            Marker = new TokenMarker();
             Load(tokens);
         }
 
@@ -44,7 +49,22 @@ namespace Netlyt.Service.Lex.Parsing
             {
                 _tokenSequence.Push(token);
             }
-        } 
+        }
+
+        /// <summary>   Gets a copy of this token reader the branch. </summary>
+        ///
+        /// <remarks>   Vasko, 25-Dec-17. </remarks>
+        ///
+        /// <returns>   A TokenReader. </returns>
+
+        public TokenReader Branch()
+        {
+            var treader = new TokenReader(_tokenSequence);
+            treader.Marker = Marker.Clone();
+            return treader;
+        }
+
+
         private void PrepareLookaheads()
         {
             _lookaheadFirst = _tokenSequence.Pop();
@@ -90,16 +110,48 @@ namespace Netlyt.Service.Lex.Parsing
         /// </summary>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public TokenCursor SeekTo(Predicate<TokenCursor> filter)
+        public TokenMarker SeekTo(Predicate<TokenMarker> filter)
         {
-            if (filter(Cursor)) return Cursor.Clone();
-            TokenCursor matchingCursor = null;
-            DslToken previousToken = _lookaheadFirst;
-            foreach (var item in _tokenSequence)
+            if (Marker.Token!=null && filter(Marker))
             {
-                
+                return Marker.Clone();
             }
-            return matchingCursor;
+            TokenMarker matchingMarker = null; 
+            foreach (var item in this.AsEnumerable())
+            {
+                if (filter(item))
+                {
+                    return item;
+                }
+            }
+            return matchingMarker;
+        }
+
+        private IEnumerable<TokenMarker> AsEnumerable()
+        {  
+            var currentMarker = this.Marker.Clone();
+            var prefix = new List<DslToken>() { _lookaheadFirst, _lookaheadSecond };
+            var tokenList = new List<DslToken>(prefix.Concat(_tokenSequence).ToArray());
+            tokenList.Add(new DslToken(TokenType.EOF, string.Empty, _lookaheadFirst.Line)
+            {
+                Position = 0
+            });
+            for (var i=0; i < tokenList.Count(); i++)
+            {
+                var nextTokens = tokenList.Skip(i + 1);
+                var element = tokenList[i];
+                currentMarker.SetToken(element);
+                currentMarker.SetNextTokens(nextTokens);
+                if (element.TokenType == TokenType.OpenParenthesis)
+                {
+                    currentMarker.Depth++;
+                }
+                else if (element.TokenType == TokenType.CloseParenthesis)
+                {
+                    currentMarker.Depth--;
+                }
+                yield return currentMarker;
+            }
         }
 
         public DslToken ReadToken(TokenType tokenType)
@@ -126,14 +178,14 @@ namespace Netlyt.Service.Lex.Parsing
                 {
                     Position = 0
                 };
-            Cursor.SetToken(_lookaheadFirst);
+            Marker.SetToken(_lookaheadFirst);
             if (token.TokenType == TokenType.OpenParenthesis)
             {
-                Cursor.Depth++;
+                Marker.Depth++;
             }
             else if (token.TokenType == TokenType.CloseParenthesis)
             {
-                Cursor.Depth--;
+                Marker.Depth--;
             }
             return token;
         }
@@ -145,9 +197,7 @@ namespace Netlyt.Service.Lex.Parsing
                     tokenType.ToString().ToUpper(), _lookaheadFirst.Value));
 
             return DiscardToken();
-        } 
-
-
-
+        }
+         
     }
 }

@@ -9,6 +9,7 @@
         Assign,
         MemberAccess,
         Equals, NotEquals,
+        Lambda,
         Add, Subtract, Multiply, Divide,
         Comma,
         CloseParenthesis, OpenParenthesis,
@@ -25,6 +26,7 @@
         Set,
         Symbol,
         Reduce,
-        ReduceMap
+        ReduceMap,
+        ReduceAggregate
     }
 }

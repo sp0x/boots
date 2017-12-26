@@ -9,7 +9,9 @@ using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Parsing.Tokens;
 
 namespace Netlyt.Service.Lex.Parsing
-{
+{ 
+
+
     public class TokenParser
     { 
         private List<string> _sourceCollections;
@@ -44,12 +46,11 @@ namespace Netlyt.Service.Lex.Parsing
         { 
             DslFeatureModel model  = new DslFeatureModel();
             Reader.DiscardToken(TokenType.Define);
-            var newSymbolName = Reader.ReadToken(TokenType.Symbol);
+            var newSymbolName = Reader.DiscardToken(TokenType.Symbol);
             model.Type = new FeatureTypeModel()
             {
                 Name = newSymbolName.Value
-            };
-            Reader.DiscardToken(TokenType.Symbol);
+            }; 
             _sourceCollections = ReadFrom();
             var orderBy = ReadOrderBy(); 
             var expressions = ReadExpressions();
@@ -68,24 +69,25 @@ namespace Netlyt.Service.Lex.Parsing
         /// Reads the next available expression.
         /// </summary>
         /// <returns></returns>
-        public IExpression ReadExpression(Predicate<TokenCursor> terminatingPredicate = null)
+        public IExpression ReadExpression(Predicate<TokenMarker> terminatingPredicate = null)
         {
             return ReadExpressions(terminatingPredicate, 1).FirstOrDefault();
-        } 
+        }
 
         /// <summary>
         /// Reads the next available expressions
         /// </summary>
-        /// <param name="terminatingPredicate"></param>
+        /// <param name="terminatingPredicate">Reads untill this predicate is true</param>
+        /// <param name="limit">Limit the number of records to read</param>
         /// <returns></returns>
-        public IEnumerable<IExpression> ReadExpressions(Predicate<TokenCursor> terminatingPredicate = null, int limit = 0)
+        public IEnumerable<IExpression> ReadExpressions(Predicate<TokenMarker> terminatingPredicate = null, int limit = 0)
         {
             Stack<IExpression> previousExpressions = new Stack<IExpression>();
             //Queue<IExpression> outputExpressions = new Queue<IExpression>();
             uint ix = 0;
             while (!Reader.IsComplete)
             {
-                if (terminatingPredicate!=null && terminatingPredicate(Reader.Cursor)) break;
+                if (terminatingPredicate!=null && terminatingPredicate(Reader.Marker)) break;
                 if (limit != 0 && ix >= limit) break;
 
                 var nextToken = Reader.Current;
@@ -109,7 +111,7 @@ namespace Netlyt.Service.Lex.Parsing
                     case TokenType.Symbol:
                         if (IsFunctionCall(Reader.Current, Reader.NextToken))
                         {
-                            var func = ReadFunction();
+                            var func = ReadFunctionCall();
                             lvlExpressions.Add(func);
                         }
                         else if (IsVariableExpression(Reader.Current, Reader.NextToken))
@@ -138,9 +140,21 @@ namespace Netlyt.Service.Lex.Parsing
                         unaryOp.Operand = ReadExpression();
                         lvlExpressions.Add(unaryOp);
                         break;
-                    case TokenType.OpenParenthesis: 
-                        var subExps = ReadParenthesisContent();
-                        lvlExpressions.AddRange(subExps);
+                    case TokenType.OpenParenthesis:
+                        if (IsLambdaExpression(Reader))
+                        {
+                            var expLambda = ReadLambda();
+                            lvlExpressions.Add(expLambda);
+                        }
+                        else
+                        {
+                            var subExps = ReadParenthesisContent();
+                            lvlExpressions.AddRange(subExps);
+                        }
+                        break;
+                    case TokenType.Lambda:
+                        var lambda = ReadLambda();
+                        lvlExpressions.Add(lambda);
                         break;
                     default: 
                         if (IsOperator(nextToken))
@@ -168,7 +182,7 @@ namespace Netlyt.Service.Lex.Parsing
         }
 
         private IExpression ReadOperator(
-            Predicate<TokenCursor> terminatingPredicate,
+            Predicate<TokenMarker> terminatingPredicate,
             DslToken token,
             Stack<IExpression> previousExpressions)
         {
@@ -340,7 +354,7 @@ namespace Netlyt.Service.Lex.Parsing
 
         public IExpression ReadValueExpression()
         {
-            var currentCursor = Reader.Cursor.Clone();
+            var currentCursor = Reader.Marker.Clone();
             var isKeyword = Filters.Keyword(currentCursor);
             var isSameLevelComma = Filters.SameLevel(currentCursor, TokenType.Comma);
             var valueExpressions = ReadExpressions((c) =>
@@ -365,11 +379,19 @@ namespace Netlyt.Service.Lex.Parsing
         {
             if (Reader.Current.TokenType != TokenType.Reduce) return null;
             Reader.DiscardToken(TokenType.Reduce);
-            var currentCursor = Reader.Cursor.Clone();
+            var currentCursor = Reader.Marker.Clone();
             var reduceKeyExpressions = ReadExpressions(Filters.Keyword(currentCursor)); 
             Reader.DiscardToken(TokenType.ReduceMap);
-            currentCursor = Reader.Cursor.Clone();
+            currentCursor = Reader.Marker.Clone();
             var valueExpressions = ReadExpressions(Filters.Keyword(currentCursor));
+            if (Reader.Current.TokenType == TokenType.ReduceAggregate)
+            {
+                Reader.DiscardToken(TokenType.ReduceAggregate);
+                currentCursor = Reader.Marker.Clone();
+                var aggregate = ReadExpressions(Filters.Keyword(currentCursor));
+                aggregate = aggregate;
+            }
+            
 
             var mapReduce = new MapReduceExpression()
             {
@@ -383,27 +405,66 @@ namespace Netlyt.Service.Lex.Parsing
         {
             if (Reader.Current.TokenType != TokenType.OrderBy) return null;
             Reader.DiscardToken(TokenType.OrderBy);
-            var currentCursor = Reader.Cursor.Clone();
+            var currentCursor = Reader.Marker.Clone();
             var nextExpressions = ReadExpressions(Filters.Keyword(currentCursor));
             var orderBy = nextExpressions;
             var expression = this.OrderBy = new OrderByExpression(orderBy);
             return expression;
         }
 
+        /// <summary>   Reads the body of a lambda expression. </summary>
+        ///
+        /// <remarks>   Vasko, 25-Dec-17. </remarks>
+        ///
+        /// <returns>   The lambda. </returns>
+
+        public LambdaExpression ReadLambda()
+        {
+            var parameters = new List<ParameterExpression>();
+            var crToken = Reader.Current;
+            TokenMarker marker = null;
+            bool hasParenthesis = false;
+            if (crToken.TokenType == TokenType.OpenParenthesis)
+            {
+                hasParenthesis = true;
+                Reader.DiscardToken(TokenType.OpenParenthesis);
+                marker = Reader.Marker.Clone();
+                var fnEndPredicate = TokenParser.Filters.FunctionCallEnd(marker);
+                while (!Reader.IsComplete && !fnEndPredicate(Reader.Marker))
+                {
+                    ParameterExpression fnParameter = ReadFunctionParameter();
+                    parameters.Add(fnParameter);
+                    if (Reader.Current.TokenType == TokenType.Comma)
+                    {
+                        Reader.DiscardToken();
+                    }
+                }
+            }
+            if (hasParenthesis && Reader.Current.TokenType == TokenType.CloseParenthesis)
+            {
+                Reader.DiscardToken(TokenType.CloseParenthesis);
+            }
+            Reader.DiscardToken(TokenType.Lambda);
+            var fBody = ReadExpressions();
+            var lambda = new LambdaExpression(fBody);
+            lambda.Parameters = parameters;
+            return lambda;
+        }
+
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
-        public CallExpression ReadFunction()
+        public CallExpression ReadFunctionCall()
         {
             var f = new CallExpression();
             var tknFunctionName = Reader.DiscardToken(TokenType.Symbol);
             Reader.DiscardToken(TokenType.OpenParenthesis);
             f.Name = tknFunctionName.Value;
-            var cursor = Reader.Cursor.Clone();
+            var cursor = Reader.Marker.Clone();
             //Create a predicate untill the closing of the function
             var fnEndPredicate = TokenParser.Filters.FunctionCallEnd(cursor);
-            while (!Reader.IsComplete && !fnEndPredicate(Reader.Cursor))
+            while (!Reader.IsComplete && !fnEndPredicate(Reader.Marker))
             {
                 ParameterExpression fnParameter = ReadFunctionParameter();
                 f.AddParameter(fnParameter);
@@ -422,7 +483,7 @@ namespace Netlyt.Service.Lex.Parsing
         /// <returns></returns>
         public ParameterExpression ReadFunctionParameter()
         {
-            var currentCursor = Reader.Cursor.Clone();
+            var currentCursor = Reader.Marker.Clone();
             //Look for a comma on the same level
             var paramValue = ReadExpressions(TokenParser.Filters.FunctionParameterEnd(currentCursor)).FirstOrDefault();
             if (paramValue == null) return null;
@@ -434,7 +495,7 @@ namespace Netlyt.Service.Lex.Parsing
         public IEnumerable<IExpression> ReadParenthesisContent()
         { 
             Reader.DiscardToken(TokenType.OpenParenthesis); 
-            var startingCursor = Reader.Cursor.Clone();
+            var startingCursor = Reader.Marker.Clone();
             //ExpressionNode currentNode = null;
             //Read untill closing parenthesis
             var subExpressions = ReadExpressions((c) =>
@@ -477,6 +538,34 @@ namespace Netlyt.Service.Lex.Parsing
                 && tkb.TokenType == TokenType.OpenParenthesis;
         }
 
+        /// <summary>   Query if 'reader' starts with a lambda expression. </summary>
+        ///
+        /// <remarks>   Vasko, 26-Dec-17. </remarks>
+        ///
+        /// <param name="reader">  . </param>
+        ///
+        /// <returns>   True if reader starts with a lambda expression, false if not. </returns>
+
+        private static bool IsLambdaExpression(TokenReader reader)
+        {
+            if (reader.Current.TokenType != TokenType.OpenParenthesis) return false;
+            var cursor = reader.Marker.Clone();
+            //Create a predicate untill the closing of the function 
+            bool passedClosingParenthesis = false;
+            var lambdaMarker = reader.SeekTo(x =>
+            {
+                if (x.Depth == cursor.Depth && x.Token.TokenType == TokenType.CloseParenthesis)
+                {
+                    passedClosingParenthesis = true;
+                }
+                if (x.Depth == cursor.Depth && passedClosingParenthesis
+                && x.Token.TokenType == TokenType.Lambda) return true;
+                return false;
+            });
+            return lambdaMarker != null;
+        }
+
+        
         public bool IsVariableExpression(DslToken tkA, DslToken tkB)
         {
             return tkA.TokenType == TokenType.Symbol
@@ -651,12 +740,14 @@ namespace Netlyt.Service.Lex.Parsing
         {
             public static bool IsKeyword(DslToken token)
             {
-                return token.TokenType == TokenType.OrderBy
+                return token!=null 
+                    && token.TokenType == TokenType.OrderBy
                        || token.TokenType == TokenType.Set
                        || token.TokenType == TokenType.Reduce
-                       || token.TokenType == TokenType.ReduceMap;
+                       || token.TokenType == TokenType.ReduceMap
+                       || token.TokenType == TokenType.ReduceAggregate;
             }
-            public static Predicate<TokenCursor> Keyword(TokenCursor currentCursor)
+            public static Predicate<TokenMarker> Keyword(TokenMarker currentMarker)
             {
                 return x =>
                 {
@@ -668,33 +759,46 @@ namespace Netlyt.Service.Lex.Parsing
             ///
             /// <remarks>   Vasko, 05-Dec-17. </remarks>
             ///
-            /// <param name="currentCursor">    The current cursor. </param>
+            /// <param name="currentMarker">    The current cursor. </param>
             /// <param name="tokenType">        Type of the token. </param>
             ///
             /// <returns>   A Predicate&lt;TokenCursor&gt; </returns>
 
-            public static Predicate<TokenCursor> SameLevel(TokenCursor currentCursor, TokenType tokenType)
+            public static Predicate<TokenMarker> SameLevel(TokenMarker currentMarker, TokenType tokenType)
             {
                 return x =>
                 {
-                    return x.Depth == currentCursor.Depth
+                    return x.Depth == currentMarker.Depth
+                           && x.Token != null
                            && x.Token.TokenType == tokenType;
                 };
             }
-            public static Predicate<TokenCursor> FunctionCallEnd(TokenCursor currentCursor)
+
+            /// <summary>   Function call end predicate, checking for a closing parenthesis on current depth.. </summary>
+            ///
+            /// <remarks>   Vasko, 25-Dec-17. </remarks>
+            ///
+            /// <param name="currentMarker">    The current cursor. </param>
+            ///
+            /// <returns>   A Predicate&lt;TokenCursor&gt; </returns>
+
+            public static Predicate<TokenMarker> FunctionCallEnd(TokenMarker currentMarker)
             {
                 return x =>
                 {
-                    return (x.Depth) == currentCursor.Depth
+                    return x.Depth == currentMarker.Depth
+                           && x.Token != null 
                            && (x.Token.TokenType == TokenType.CloseParenthesis);
                 };
             }
+             
 
-            public static Predicate<TokenCursor> FunctionParameterEnd(TokenCursor currentCursor)
+            public static Predicate<TokenMarker> FunctionParameterEnd(TokenMarker currentMarker)
             {
                 return x =>
                 {
-                    return x.Depth == currentCursor.Depth
+                    return x.Depth == currentMarker.Depth
+                           && x.Token != null 
                            && (x.Token.TokenType == TokenType.Comma || x.Token.TokenType == TokenType.CloseParenthesis);
 
                 };
