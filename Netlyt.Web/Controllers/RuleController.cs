@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
-using nvoid.Integration;
 using Netlyt.Web.Models.DataModels;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Netlyt.Web.Controllers
 {
@@ -20,7 +20,8 @@ namespace Netlyt.Web.Controllers
              _userManager = userManager;
         }
         [HttpGet("/rules")]
-        public IEnumerable<Model> GetAll([FromQuery] int page)
+        [Authorize]
+        public IEnumerable<Rule> GetAll([FromQuery] int page)
         {
             var user = _userManager.GetUserAsync(User).Result;
             int pageSize = 25;
@@ -28,6 +29,7 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpGet("{id}", Name = "GetRule")]
+        [Authorize]
         public IActionResult GetById(long id)
         {
             var item = _ruleContext.FirstOrDefault(t => t.Id == id);
@@ -38,6 +40,7 @@ namespace Netlyt.Web.Controllers
             return new ObjectResult(item);
         }
         [HttpPost]
+        [Authorize]
         public IActionResult Create([FromBody] Rule item)
         {
             if (item == null)
@@ -51,6 +54,7 @@ namespace Netlyt.Web.Controllers
             return CreatedAtRoute("GetRule", new { id = item.Id }, item);
         }
         [HttpPut("{id}")]
+        [Authorize]
         public IActionResult Update(long id, [FromBody] Rule item)
         {
             if (item == null || item.Id != id)
@@ -72,6 +76,7 @@ namespace Netlyt.Web.Controllers
 
 
         [HttpDelete("{id}")]
+        [Authorize]
         public IActionResult Delete(long id)
         {
             var item = _ruleContext.FirstOrDefault(t => t.Id == id);

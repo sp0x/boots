@@ -6,7 +6,6 @@ namespace Netlyt.Web.Models.DataModels
     public class Integration
         : Entity
     {
-        public long Id { get; set; }
         public List<Model> Models { get; set; }
         public User Owner { get; set; }
         public string FeatureScript { get; set; }

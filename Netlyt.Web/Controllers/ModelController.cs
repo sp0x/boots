@@ -3,14 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using nvoid.db.DB.RDS;
 using nvoid.db.Extensions;
-using nvoid.Integration;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Netlyt.Web.Models.DataModels;
-using Netlyt.Web.Services;
 using Netlyt.Service;
-using Netlyt.Web;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Netlyt.Web.Controllers
 {
@@ -28,6 +25,7 @@ namespace Netlyt.Web.Controllers
             _orionContext = behaviourCtx;
         }
         [HttpGet("/models")]
+        [Authorize]
         public IEnumerable<Model> GetAll([FromQuery] int page)
         {
             var user = _userManager.GetUserAsync(User).Result;
@@ -36,6 +34,7 @@ namespace Netlyt.Web.Controllers
         }
         
         [HttpGet("/paramlist")]
+        [Authorize]
         public JsonResult  GetParamsList()
         {
             JObject query = new JObject();
@@ -45,6 +44,7 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpGet("/classlist")]
+        [Authorize]
         public JsonResult GetClassList()
         {
             JObject query = new JObject();
@@ -54,6 +54,7 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpGet("{id}", Name = "GetModel")]
+        [Authorize]
         public IActionResult GetById(long id)
         {
             var item = _modelContext.FirstOrDefault(t => t.Id == id);
@@ -64,6 +65,7 @@ namespace Netlyt.Web.Controllers
             return new ObjectResult(item);
         }
         [HttpPost]
+        [Authorize]
         public IActionResult Create([FromBody] Model item)
         {
             if (item == null)
@@ -77,6 +79,7 @@ namespace Netlyt.Web.Controllers
             return CreatedAtRoute("GetModel", new { id = item.Id }, item);
         }
         [HttpPut("{id}")]
+        [Authorize]
         public IActionResult Update(long id, [FromBody] Model item)
         {
             if (item == null || item.Id != id)
@@ -98,6 +101,7 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public IActionResult Delete(long id)
         {
             var item = _modelContext.FirstOrDefault(t => t.Id == id);
@@ -111,6 +115,7 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpPost("{id}/[action]")]
+        [Authorize]
         public IActionResult Train(long id)
         {
             var json = Request.GetRawBodyString();
@@ -122,6 +127,19 @@ namespace Netlyt.Web.Controllers
             // set current model to the id of whatever came back
             var m_id = _orionContext.Query(query).Result;
             return Accepted(m_id);
+        }
+
+        [HttpPost("{id}/[action]")]
+        [Authorize]
+        public IActionResult Deploy(long id)
+        {
+            var json = Request.GetRawBodyString();
+            JObject data = JObject.Parse(json.Result);
+            var m = _modelContext.FirstOrDefault(x => x.Id == id);
+            if (m == null) return NotFound();
+            m.CurrentModel = data.GetValue("current_model").ToString();
+            _modelContext.Save(m);
+            return new NoContentResult();
         }
 
     }

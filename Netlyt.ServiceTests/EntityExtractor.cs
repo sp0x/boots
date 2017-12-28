@@ -60,7 +60,7 @@ namespace Netlyt.ServiceTests
 //            var userId = "123123123";
 //            var userApiId = Guid.NewGuid().ToString();
 //            var harvester = new Netlyt.Service.Harvester();
-//            type.UserId = userId;
+//            type.APIKey = userId;
 //            type.SaveType(userApiId);
 //
 //            var saver = new MongoSink(userId);

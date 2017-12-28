@@ -92,7 +92,7 @@ namespace Netlyt.Service
             {
                 throw new Exception("Could not resolve type!");
             }
-            type.UserId = userId;
+            type.APIKey = userId;
             type.Collection = outputCollection;
             if (!string.IsNullOrEmpty(name))
             {

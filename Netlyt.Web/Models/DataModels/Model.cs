@@ -14,6 +14,7 @@ namespace Netlyt.Web.Models.DataModels
         public string ClassifierType { get; set; }
         public string CurrentModel { get; set; }
         public string Callback { get; set; }
+        public string TrainingParams { get; set; }
 
     }
 }
