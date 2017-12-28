@@ -24,7 +24,7 @@ namespace Netlyt.Web.Controllers
             _userManager = userManager;
             _orionContext = behaviourCtx;
         }
-        [HttpGet("/models")]
+        [HttpGet("/")]
         [Authorize]
         public IEnumerable<Model> GetAll([FromQuery] int page)
         {
