@@ -47,6 +47,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[]{"(a) => a+1", "(a) => a + 1"})]
         [InlineData(new object[]{"(a, b) => a+1", "(a, b) => a + 1"})]
         [InlineData(new object[]{"(a, b, c, d) => max(a+1, b, c, d)", "(a, b, c, d) => max(a + 1, b, c, d)"})]
+        [InlineData(new object[]{ "fna((a, b, c, d) => max(a+1, b, c, d))", "fna((a, b, c, d) => max(a + 1, b, c, d))"})]
         public void TokenizeLambda2(string fc, string expectedLambda)
         { 
             var tokenizer = new PrecedenceTokenizer();

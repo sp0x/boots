@@ -143,7 +143,7 @@ namespace Netlyt.Service.Lex.Parsing
                     case TokenType.OpenParenthesis:
                         if (IsLambdaExpression(Reader))
                         {
-                            var expLambda = ReadLambda();
+                            var expLambda = ReadLambda(terminatingPredicate);
                             lvlExpressions.Add(expLambda);
                         }
                         else
@@ -153,7 +153,7 @@ namespace Netlyt.Service.Lex.Parsing
                         }
                         break;
                     case TokenType.Lambda:
-                        var lambda = ReadLambda();
+                        var lambda = ReadLambda(terminatingPredicate);
                         lvlExpressions.Add(lambda);
                         break;
                     default: 
@@ -418,7 +418,7 @@ namespace Netlyt.Service.Lex.Parsing
         ///
         /// <returns>   The lambda. </returns>
 
-        public LambdaExpression ReadLambda()
+        public LambdaExpression ReadLambda(Predicate<TokenMarker> predicate = null)
         {
             var parameters = new List<ParameterExpression>();
             var crToken = Reader.Current;
@@ -445,7 +445,7 @@ namespace Netlyt.Service.Lex.Parsing
                 Reader.DiscardToken(TokenType.CloseParenthesis);
             }
             Reader.DiscardToken(TokenType.Lambda);
-            var fBody = ReadExpressions();
+            var fBody = ReadExpressions(predicate);
             var lambda = new LambdaExpression(fBody);
             lambda.Parameters = parameters;
             return lambda;
