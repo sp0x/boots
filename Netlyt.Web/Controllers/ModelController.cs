@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using nvoid.db; 
-using nvoid.db.Extensions; 
+using nvoid.db.DB.RDS;
+using nvoid.db.Extensions;
 using Newtonsoft.Json.Linq;
-using Netlyt.Web.Models.DataModels; 
-using Netlyt.Service; 
+using Netlyt.Web.Models.DataModels;
+using Netlyt.Service;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Netlyt.Web.Controllers
 {
@@ -16,24 +16,25 @@ namespace Netlyt.Web.Controllers
     {
         private RemoteDataSource<Model> _modelContext;
         private BehaviourContext _orionContext;
-        private IHttpContextAccessor _contextAccessor;
-        private HttpContext _context { get { return _contextAccessor.HttpContext; } }
+        private readonly UserManager<User> _userManager;
         public ModelController(BehaviourContext behaviourCtx,
-                               IHttpContextAccessor httpContextAccessor)
+                               UserManager<User> userManager)
         {
             _modelContext = typeof(Model).GetDataSource<Model>();
+            _userManager = userManager;
             _orionContext = behaviourCtx;
-            //https://long2know.com/2016/07/accessing-httpcontext-in-asp-net-core/
-            _contextAccessor = httpContextAccessor;
         }
-        [HttpGet]
-        public IEnumerable<Model> GetAll()
+        [HttpGet("/")]
+        [Authorize]
+        public IEnumerable<Model> GetAll([FromQuery] int page)
         {
-            return Enumerable.ToList(_modelContext);
-            return _modelContext.ToList();
+            var user = _userManager.GetUserAsync(User).Result;
+            int pageSize = 25;
+            return _modelContext.Where(x => x.User==user).Skip(page * pageSize).Take(pageSize).ToList();
         }
-
+        
         [HttpGet("/paramlist")]
+        [Authorize]
         public JsonResult  GetParamsList()
         {
             JObject query = new JObject();
@@ -42,7 +43,18 @@ namespace Netlyt.Web.Controllers
             return Json(param);
         }
 
+        [HttpGet("/classlist")]
+        [Authorize]
+        public JsonResult GetClassList()
+        {
+            JObject query = new JObject();
+            query.Add("op", 105);
+            var param = _orionContext.Query(query).Result;
+            return Json(param);
+        }
+
         [HttpGet("{id}", Name = "GetModel")]
+        [Authorize]
         public IActionResult GetById(long id)
         {
             var item = _modelContext.FirstOrDefault(t => t.Id == id);
@@ -53,19 +65,27 @@ namespace Netlyt.Web.Controllers
             return new ObjectResult(item);
         }
         [HttpPost]
+        [Authorize]
         public IActionResult Create([FromBody] Model item)
         {
             if (item == null)
             {
                 return BadRequest();
             }
-            item.Save();
+
+            _modelContext.Add(item);
+            _modelContext.Save(item);
+
             return CreatedAtRoute("GetModel", new { id = item.Id }, item);
         }
         [HttpPut("{id}")]
+        [Authorize]
         public IActionResult Update(long id, [FromBody] Model item)
         {
-            if (item == null || item.Id != id) return BadRequest();
+            if (item == null || item.Id != id)
+            {
+                return BadRequest();
+            }
 
             var model = _modelContext.FirstOrDefault(t => t.Id == id);
             if (model == null)
@@ -74,11 +94,14 @@ namespace Netlyt.Web.Controllers
             }
 
             //TODO: add logic to check if we're updating integrations or what
-            model.Save();
+
+            _modelContext.Update(model);
+           // _modelContext.Save();
             return new NoContentResult();
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public IActionResult Delete(long id)
         {
             var item = _modelContext.FirstOrDefault(t => t.Id == id);
@@ -86,15 +109,17 @@ namespace Netlyt.Web.Controllers
             {
                 return NotFound();
             }
-            item.Save();
+
+            _modelContext.Remove(item);
             return new NoContentResult();
         }
 
         [HttpPost("{id}/[action]")]
-        public async Task<IActionResult> Train(long id)
+        [Authorize]
+        public IActionResult Train(long id)
         {
-            var json = await HttpRequestExtensions.GetRawBodyString(Request);
-            JObject query = JObject.Parse(json); 
+            var json = Request.GetRawBodyString();
+            JObject query = JObject.Parse(json.Result);
             //kick off background async task to train
             // return 202 with wait at endpoint
             //async task
@@ -102,6 +127,19 @@ namespace Netlyt.Web.Controllers
             // set current model to the id of whatever came back
             var m_id = _orionContext.Query(query).Result;
             return Accepted(m_id);
+        }
+
+        [HttpPost("{id}/[action]")]
+        [Authorize]
+        public IActionResult Deploy(long id)
+        {
+            var json = Request.GetRawBodyString();
+            JObject data = JObject.Parse(json.Result);
+            var m = _modelContext.FirstOrDefault(x => x.Id == id);
+            if (m == null) return NotFound();
+            m.CurrentModel = data.GetValue("current_model").ToString();
+            _modelContext.Save(m);
+            return new NoContentResult();
         }
 
     }

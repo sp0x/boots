@@ -351,7 +351,7 @@ events : elements };
                 })
                 .Group(new BsonDocument
                 {
-                    {"_id" , "$Document.UserId"},
+                    {"_id" , "$Document.APIKey"},
                     {"day_count" , new BsonDocument{{ "$sum", 1 } }},
                     {"daily_sessions" , new BsonDocument{{"$push", "$Document.Sessions"}}},
                 }).Limit(recordLimit));

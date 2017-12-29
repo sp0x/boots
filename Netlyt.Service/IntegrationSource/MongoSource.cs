@@ -63,7 +63,7 @@ namespace Netlyt.Service.IntegrationSource
                     if (_project != null) firstInstance = _project(firstInstance);
                     typedef = new IntegrationTypeDefinition(_collection.CollectionNamespace.CollectionName);
                     typedef.CodePage = Encoding.CodePage;
-                    typedef.OriginType = Formatter.Name;
+                    typedef.DataFormatType = Formatter.Name;
                     typedef.ResolveFields(firstInstance);
                 }
                 return typedef;

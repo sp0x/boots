@@ -17,11 +17,11 @@ namespace Netlyt.Service.Integration
     {
         string Name { get; } 
         int CodePage { get; }
-        string UserId { get; set; }
+        string APIKey { get; set; }
         /// <summary>
         /// The type of origin of this type
         /// </summary>
-        string OriginType { get; }
+        string DataFormatType { get; }
         Dictionary<string, FieldDefinition> Fields { get; }
 
         IntegrationTypeExtras Extras { get; } 

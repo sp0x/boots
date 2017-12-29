@@ -2,6 +2,7 @@ import os
 from datetime import timedelta
 import pickle
 import glob
+import json
 
 
 def abs_path(fl=None):
@@ -47,4 +48,10 @@ def load(path):
     out = None
     with open(path, 'rb') as f:
         out = pickle.load(f)
+    return out
+
+def load_json(path):
+    out = None
+    with open(path, 'r') as f:
+        out = json.load(f)
     return out

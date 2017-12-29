@@ -56,7 +56,7 @@ namespace Netlyt.Service.IntegrationSource
             {
                 typeDef = new IntegrationTypeDefinition();
                 typeDef.CodePage = Encoding.CodePage;
-                typeDef.OriginType = Formatter.Name;
+                typeDef.DataFormatType = Formatter.Name;
                 typeDef.ResolveFields(firstInstance);
             }
             return typeDef;

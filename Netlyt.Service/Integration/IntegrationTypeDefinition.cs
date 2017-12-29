@@ -22,14 +22,8 @@ namespace Netlyt.Service.Integration
         public string Id { get; set; }
         public string Name { get; set; }
         public int CodePage { get; set; }
-        public string OriginType { get; set; } 
-
-        /// <summary>   Gets or sets the source for the integration. </summary>
-        ///
-        /// <value> The source. </value>
-
-        public string Source { get; set; }
-        public string UserId { get; set; }
+        public string DataFormatType { get; set; } 
+        public string APIKey { get; set; }
         public string Collection { get; set; }
         /// <summary>
         /// 
@@ -66,8 +60,8 @@ namespace Netlyt.Service.Integration
         {
             var type = typeof(T);
             var typedef = new IntegrationTypeDefinition(type.Name);
-            typedef.UserId = appId;
-            typedef.OriginType = "dynamic";
+            typedef.APIKey = appId;
+            typedef.DataFormatType = "dynamic";
             typedef.CodePage = System.Text.Encoding.Default.CodePage;
             var properties = type.GetProperties();
             //var fields = type.GetFields(); 
@@ -146,7 +140,7 @@ namespace Netlyt.Service.Integration
         public static bool TypeExists(IntegrationTypeDefinition type, string apiId, out IntegrationTypeDefinition existingDefinition)
         {
             var _typeStore = typeof(IntegrationTypeDefinition).GetDataSource<IntegrationTypeDefinition>();
-            var integrationTypeDefinitions = _typeStore.Where(x => x.UserId == apiId && (x.Fields == type.Fields || x.Name == type.Name));
+            var integrationTypeDefinitions = _typeStore.Where(x => x.APIKey == apiId && (x.Fields == type.Fields || x.Name == type.Name));
             if (integrationTypeDefinitions == null || integrationTypeDefinitions.Count() == 0)
             {
                 existingDefinition = null; 
@@ -159,7 +153,7 @@ namespace Netlyt.Service.Integration
 //        public override void PrepareForSaving()
 //        {
 //            base.PrepareForSaving();
-//            if (string.IsNullOrEmpty(UserId))
+//            if (string.IsNullOrEmpty(APIKey))
 //                throw new InvalidOperationException("Only user owned type definitions can be saved!");
 //        }
 
@@ -212,7 +206,7 @@ namespace Netlyt.Service.Integration
         public static IntegrationTypeDefinition Named(string appId, string name)
         {
             var typedef = new IntegrationTypeDefinition(name);
-            typedef.UserId = appId;
+            typedef.APIKey = appId;
             return typedef;
         }
     }

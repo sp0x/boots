@@ -24,6 +24,7 @@ import glob
 
 np.random.seed(RANDOM_SEED)
 model_table = {} #{model_name:path}
+param_table = {}
 
 # real time monitoring - gather data and build training set
 # classifiers train and eval

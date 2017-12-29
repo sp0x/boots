@@ -22,6 +22,7 @@ using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
 using Newtonsoft.Json.Linq;
+using nvoid.db.DB.RDS;
 
 namespace Netlyt.Web.Controllers
 {
@@ -74,9 +75,8 @@ namespace Netlyt.Web.Controllers
             var userApiId = HttpContext.Session.GetUserApiId();
             var memSource = InMemorySource.Create(Request.Body, new JsonFormatter());
             var type = (IntegrationTypeDefinition)memSource.GetTypeDefinition();
-            StringValues tmpSource;
+            type.APIKey = userApiId;
             if (Request.Headers.TryGetValue("DataSource", out tmpSource)) type.Source = tmpSource.ToString();
-            type.UserId = userApiId;
             type.SaveType(userApiId);
             //Check if the entity type exists
             var harvester = new Harvester<IntegratedDocument>();

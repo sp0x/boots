@@ -3,6 +3,7 @@ import threading
 import time
 from constants import *
 from classifiers import conduct_experiment,Experiment,build, train
+import classifiers
 from psutil import virtual_memory
 import os
 import multiprocessing
@@ -61,7 +62,9 @@ class Server(threading.Thread):
                         self.pool.map_async(train,(exp,))   
                         resp = {'ids': exp.get_model_ids()}
                     elif op ==  GET_PARAM_LIST:
-                        resp = {"paramlist": []}
+                        resp = {"paramlist": classifiers.param_table}
+                    elif op == GET_MODEL_LIST:
+                        resp = {"classlist": classifiers.model_table.keys()}
                     resp.update({'seq':seq})                    
                 except Exception as e:
                     resp = {'status' : 'err', 'message' : str(e)}

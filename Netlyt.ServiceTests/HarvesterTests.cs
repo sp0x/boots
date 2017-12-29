@@ -74,7 +74,7 @@ namespace Netlyt.ServiceTests
             harvester.LimitEntries(3);
 
             Assert.Equal(harvester.ThreadCount, threadCount);
-            type.UserId = userId; 
+            type.APIKey = userId; 
             var outBlock = new IntegrationActionBlock(userId, (action, x) =>
             { });
             harvester.SetDestination(outBlock);
