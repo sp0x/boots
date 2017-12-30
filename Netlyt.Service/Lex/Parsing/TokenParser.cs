@@ -156,7 +156,19 @@ namespace Netlyt.Service.Lex.Parsing
                         var lambda = ReadLambda(terminatingPredicate);
                         lvlExpressions.Add(lambda);
                         break;
-                    default: 
+                    case TokenType.OpenBracket:
+                        var arrExp = ReadArrayAccess(terminatingPredicate, nextToken, previousExpressions);
+                        lvlExpressions.Add(arrExp);
+                        break;
+                    case TokenType.OpenCurlyBracket:
+                        var blockExp = ReadBlockAccess();
+                        lvlExpressions.Add(blockExp);
+                        break;
+                    case TokenType.NewLine:
+                    case TokenType.Semicolon:
+                        Reader.DiscardToken();
+                        break;
+                    default:
                         if (IsOperator(nextToken))
                         {
                             var opExpression = ReadOperator(terminatingPredicate, nextToken, previousExpressions);//, outputExpressions);
@@ -181,6 +193,39 @@ namespace Netlyt.Service.Lex.Parsing
             return previousExpressions.Reverse();
         }
 
+        private IExpression ReadBlockAccess()
+        {
+            Reader.DiscardToken(TokenType.OpenCurlyBracket);
+            var expBlock = new BlockExpression();
+            var marker = Reader.Marker.Clone();
+            var blockEndPredicate = TokenParser.Filters.BlockEnd(marker);
+            var content = ReadExpressions(blockEndPredicate);
+            Reader.DiscardToken(TokenType.CloseCurlyBracket);
+            expBlock.Expressions = content.ToList();
+            return expBlock;
+        }
+
+        private IExpression ReadArrayAccess(Predicate<TokenMarker> terminatingPredicate, DslToken token, Stack<IExpression> previousExpressions)
+        { 
+            var expArray = new ArrayAccessExpression();
+            Reader.DiscardToken();
+            var left = previousExpressions.Pop();
+            expArray.Object = left; 
+            var marker = Reader.Marker.Clone();
+            var fnEndPredicate = TokenParser.Filters.IndexArgumentsEnd(marker);
+            while (!Reader.IsComplete && !fnEndPredicate(Reader.Marker))
+            {
+                ParameterExpression fnParameter = ReadIndexParameter();
+                expArray.Parameters.Add(fnParameter);
+                if (Reader.Current.TokenType == TokenType.Comma)
+                {
+                    Reader.DiscardToken();
+                }
+            }
+            Reader.DiscardToken(TokenType.CloseBracket); 
+            return expArray;
+        }
+
         private IExpression ReadOperator(
             Predicate<TokenMarker> terminatingPredicate,
             DslToken token,
@@ -192,7 +237,7 @@ namespace Netlyt.Service.Lex.Parsing
             switch (token.TokenType)
             {
                 case TokenType.Assign:
-                    var right = ReadValueExpression();
+                    var right = ReadValueExpression(terminatingPredicate);
                     var aop = new AssignmentExpression(left as VariableExpression, right);
                     op = aop;
                     break;
@@ -239,7 +284,7 @@ namespace Netlyt.Service.Lex.Parsing
                    || tt == TokenType.In
                    || tt == TokenType.NotIn
                    || tt == TokenType.Assign;
-        }  
+        }
 
         public VariableExpression ReadVariable()
         {
@@ -345,21 +390,28 @@ namespace Netlyt.Service.Lex.Parsing
 
         /// <summary>   Reads a value expression. </summary>
         ///
-        /// <remarks>   Cyb R, 05-Dec-17. </remarks>
+        /// <remarks>   Vasko, 05-Dec-17. </remarks>
         ///
         /// <exception cref="InvalidAssignedValue"> Thrown when an invalid assigned value error condition
         ///                                         occurs. </exception>
         ///
         /// <returns>   The value expression. </returns>
 
-        public IExpression ReadValueExpression()
+        public IExpression ReadValueExpression(Predicate<TokenMarker> terminatingPredicate = null)
         {
             var currentCursor = Reader.Marker.Clone();
             var isKeyword = Filters.Keyword(currentCursor);
             var isSameLevelComma = Filters.SameLevel(currentCursor, TokenType.Comma);
+            var semiColonBreak = Filters.SameLevel(currentCursor, TokenType.Semicolon);
+            var newLineBreak = Filters.SameLevel(currentCursor, TokenType.NewLine);
+            var isExpressionBreak = new Predicate<TokenMarker>((x) =>
+            {
+                return semiColonBreak(x) || newLineBreak(x);
+            });
             var valueExpressions = ReadExpressions((c) =>
             {
-                return isKeyword(c) || isSameLevelComma(c);
+                return isKeyword(c) || isExpressionBreak(c) || isSameLevelComma(c) 
+                || (terminatingPredicate != null && terminatingPredicate(c));
             });
             var value = valueExpressions.FirstOrDefault();
             if (valueExpressions.Count() > 1)
@@ -410,7 +462,7 @@ namespace Netlyt.Service.Lex.Parsing
             var orderBy = nextExpressions;
             var expression = this.OrderBy = new OrderByExpression(orderBy);
             return expression;
-        }
+        } 
 
         /// <summary>   Reads the body of a lambda expression. </summary>
         ///
@@ -490,7 +542,17 @@ namespace Netlyt.Service.Lex.Parsing
             var param = new ParameterExpression(paramValue); 
             return param;
         }
-        
+
+        public ParameterExpression ReadIndexParameter()
+        {
+            var currentCursor = Reader.Marker.Clone();
+            //Look for a comma on the same level
+            var paramValue = ReadExpressions(TokenParser.Filters.IndexParameterEnd(currentCursor)).FirstOrDefault();
+            if (paramValue == null) return null;
+            var param = new ParameterExpression(paramValue);
+            return param;
+        }
+
 
         public IEnumerable<IExpression> ReadParenthesisContent()
         { 
@@ -791,7 +853,16 @@ namespace Netlyt.Service.Lex.Parsing
                            && (x.Token.TokenType == TokenType.CloseParenthesis);
                 };
             }
-             
+
+            public static Predicate<TokenMarker> IndexArgumentsEnd(TokenMarker currentMarker)
+            {
+                return x =>
+                {
+                    return x.Depth == currentMarker.Depth
+                           && x.Token != null
+                           && (x.Token.TokenType == TokenType.CloseBracket);
+                };
+            }
 
             public static Predicate<TokenMarker> FunctionParameterEnd(TokenMarker currentMarker)
             {
@@ -801,6 +872,27 @@ namespace Netlyt.Service.Lex.Parsing
                            && x.Token != null 
                            && (x.Token.TokenType == TokenType.Comma || x.Token.TokenType == TokenType.CloseParenthesis);
 
+                };
+            }
+
+            public static Predicate<TokenMarker> IndexParameterEnd(TokenMarker currentMarker)
+            {
+                return x =>
+                {
+                    return x.Depth == currentMarker.Depth
+                           && x.Token != null
+                           && (x.Token.TokenType == TokenType.Comma || x.Token.TokenType == TokenType.CloseBracket);
+
+                };
+            }
+
+            public static Predicate<TokenMarker> BlockEnd(TokenMarker marker)
+            {
+                return x =>
+                {
+                    return x.Depth == marker.Depth
+                           && x.Token != null
+                           && (x.Token.TokenType == TokenType.CloseCurlyBracket);
                 };
             }
         }

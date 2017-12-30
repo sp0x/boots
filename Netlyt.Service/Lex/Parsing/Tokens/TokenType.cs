@@ -13,6 +13,8 @@
         Add, Subtract, Multiply, Divide,
         Comma,
         CloseParenthesis, OpenParenthesis,
+        CloseBracket, OpenBracket,
+        CloseCurlyBracket, OpenCurlyBracket,
         StringValue,
         FloatValue,
         Collection, Feature, Type,
@@ -27,6 +29,8 @@
         Symbol,
         Reduce,
         ReduceMap,
-        ReduceAggregate
+        ReduceAggregate,
+        Semicolon,
+        NewLine
     }
 }

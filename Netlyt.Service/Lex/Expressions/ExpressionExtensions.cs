@@ -6,13 +6,13 @@ namespace Netlyt.Service.Lex.Expressions
 {
     public static class ExpressionExtensions
     {
-        public static string ConcatExpressions(this IEnumerable<IExpression> expressions)
+        public static string ConcatExpressions(this IEnumerable<IExpression> expressions, string glue = ", ")
         {
             if (expressions == null)
             {
                 return "";
             }
-            return string.Join(", ", expressions);
+            return string.Join(glue, expressions);
         }
     }
 }

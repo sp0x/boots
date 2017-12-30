@@ -1,20 +1,30 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 
 namespace Netlyt.Service.Lex.Expressions
 {
     public class BlockExpression
         : Expression
     {
-        public List<IExpression> Children { get; set; }
+        public List<IExpression> Expressions { get; set; }
 
         public BlockExpression()
         {
-            Children = new List<IExpression>();
+            Expressions = new List<IExpression>();
         }
 
         public override IEnumerable<IExpression> GetChildren()
         {
-            return Children;
+            return Expressions;
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append("{\n");
+            sb.Append(Expressions.ConcatExpressions("\n"));
+            sb.Append("\n}");
+            return sb.ToString();
         }
     }
 }

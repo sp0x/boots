@@ -48,6 +48,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[]{"(a, b) => a+1", "(a, b) => a + 1"})]
         [InlineData(new object[]{"(a, b, c, d) => max(a+1, b, c, d)", "(a, b, c, d) => max(a + 1, b, c, d)"})]
         [InlineData(new object[]{ "fna((a, b, c, d) => max(a+1, b, c, d))", "fna((a, b, c, d) => max(a + 1, b, c, d))"})]
+        [InlineData(new object[]{ "fna((a, b, c, d) => max(a+1, b, c, d))", "fna((a, b, c, d) => max(a + 1, b, c, d))"})]
         public void TokenizeLambda2(string fc, string expectedLambda)
         { 
             var tokenizer = new PrecedenceTokenizer();
@@ -56,6 +57,39 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             parser.Load(tokens);
             var parsedLambda = parser.ReadExpression();
             Assert.Equal(expectedLambda, parsedLambda.ToString());
+        }
+
+        [Theory]
+        [InlineData(new object[]{"a[0]", "a[0]"})]
+        [InlineData(new object[]{"a[0,1]", "a[0, 1]"})]
+        [InlineData(new object[]{"a[0,max(1, 2)]", "a[0, max(1, 2)]"})]
+        [InlineData(new object[]{"a[0, c[1]]", "a[0, c[1]]"})]
+        public void TestArrayAccess(string code, string expOutcome)
+        {
+            var tokenizer = new PrecedenceTokenizer();
+            var tokens = tokenizer.Tokenize(code).ToList();
+            var parser = new Netlyt.Service.Lex.Parsing.TokenParser();
+            parser.Load(tokens);
+            var exp = parser.ReadExpressions().FirstOrDefault();
+            Assert.NotNull(exp);
+            Assert.Equal(expOutcome, exp.ToString());
+        }
+
+        [Theory]
+        //[InlineData(new object[]{ "{ a = 3 }", "{\na = 3\n}"})]
+        [InlineData(new object[]{ "{ a = 3;" +
+                                  "abc1 = a[0, c[1]] }", "{\na = 3\nabc1 = a[0, c[1]]\n}"})]
+        public void TestBlock(string code, string expOutcome)
+        {
+            var tokenizer = new PrecedenceTokenizer();
+            var tokens = tokenizer.Tokenize(code).ToList();
+            var parser = new Netlyt.Service.Lex.Parsing.TokenParser();
+            parser.Load(tokens);
+            var exp = parser.ReadExpressions().FirstOrDefault();
+            Assert.NotNull(exp);
+            var enumerable = expOutcome;
+            var replace = exp.ToString();
+            Assert.Equal(enumerable, replace);
         }
 
         /// <summary>
