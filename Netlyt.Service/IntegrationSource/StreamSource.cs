@@ -22,9 +22,9 @@ namespace Netlyt.Service.IntegrationSource
         {
         }
 
-        public override IIntegrationTypeDefinition GetTypeDefinition()
+        public override IIntegration GetTypeDefinition()
         {
-            throw new System.NotImplementedException();
+            return null;
         }
 
         public override dynamic GetNext()

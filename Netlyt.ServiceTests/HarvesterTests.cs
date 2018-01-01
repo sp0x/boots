@@ -66,7 +66,7 @@ namespace Netlyt.ServiceTests
             var threadCount = (uint)20;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
-            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
+            var type = fileSource.GetTypeDefinition() as DataIntegration;
             
             Assert.NotNull(type);
             var userId = "123123123"; 

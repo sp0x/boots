@@ -3,6 +3,10 @@
     <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Integration\IntegrationTypeDefinition.cs" />
+    <Compile Remove="Integration\IntegrationTypeDefinition.Factory.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="Lex\Templates\Donutfile.txt" />
   </ItemGroup>
   <ItemGroup>

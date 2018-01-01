@@ -24,8 +24,8 @@ namespace Netlyt.Service.Integration.Import
     {
         private DataImportTaskOptions _options;
         private Harvester<T> _harvester;
-        private IntegrationTypeDefinition _type;
-        public IntegrationTypeDefinition Type
+        private IIntegration _type;
+        public IIntegration Type
         {
             get
             {

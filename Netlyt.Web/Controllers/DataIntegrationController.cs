@@ -21,8 +21,7 @@ using Netlyt.Service.IntegrationSource;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
-using Newtonsoft.Json.Linq;
-using nvoid.db.DB.RDS;
+using Newtonsoft.Json.Linq; 
 
 namespace Netlyt.Web.Controllers
 {
@@ -74,8 +73,9 @@ namespace Netlyt.Web.Controllers
             //Dont close the body! 
             var userApiId = HttpContext.Session.GetUserApiId();
             var memSource = InMemorySource.Create(Request.Body, new JsonFormatter());
-            var type = (IntegrationTypeDefinition)memSource.GetTypeDefinition();
+            var type = (DataIntegration)memSource.GetTypeDefinition();
             type.APIKey = userApiId;
+            StringValues tmpSource;
             if (Request.Headers.TryGetValue("DataSource", out tmpSource)) type.Source = tmpSource.ToString();
             type.SaveType(userApiId);
             //Check if the entity type exists
@@ -108,7 +108,7 @@ namespace Netlyt.Web.Controllers
 
             //Todo: do this without relying on mongo, using the document store
             var mongoCollection = _documentStore.AsMongoDbQueryable();
-            var apiQuery = Builders<IntegratedDocument>.Filter.Where(x => x.UserId == userApiId);
+            var apiQuery = Builders<IntegratedDocument>.Filter.Where(x => x.APIKey == userApiId);
             var userDocumentFilter = BsonSerializer.Deserialize<BsonDocument>(userFilter.ToString());
             //var entityQuery = Builders<IntegratedDocument>.Filter.(userDocumentFilter);
             var query = Builders<IntegratedDocument>.Filter.And(apiQuery, userDocumentFilter);

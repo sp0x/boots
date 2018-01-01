@@ -252,7 +252,7 @@ events : elements };
                     doc.Document.Value.Set(name, BsonValue.Create(featureval));
                 }
                 //Cleanup
-                doc.TypeId = type.Id ; doc.UserId = appId;
+                doc.IntegrationId = type.Id ; doc.APIKey = appId;
                 x.Features = null; 
                 return doc;
             });
@@ -285,10 +285,10 @@ events : elements };
             var appId = "123123123";
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(20); 
             harvester.AddPersistentType("NetInfoUserFeatures_7_8", appId, source);
-            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", appId);
+            var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", appId);
             typeDef.AddField("is_paying", typeof(int));
-            IntegrationTypeDefinition existingTypeDef;
-            if (!IntegrationTypeDefinition.TypeExists(typeDef, appId, out existingTypeDef)) typeDef.Save();
+            DataIntegration existingTypeDef;
+            if (!DataIntegration.Exists(typeDef, appId, out existingTypeDef)) typeDef.Save();
             else typeDef = existingTypeDef;
             var dictEval = new EvalDictionaryBlock(
                 (document) => $"{document.GetString("uuid")}_{document.GetInt("day")}",
@@ -418,10 +418,10 @@ events : elements };
         private void DumpUsergroupSessionsToMongo(string userAppId, EvalDictionaryBlock usersData)
         {
             var entityBlock = usersData;
-            var typeDef = IntegrationTypeDefinition.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8",userAppId);
+            var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8",userAppId);
             typeDef.AddField("is_paying", typeof(int));
-            IntegrationTypeDefinition existingTypeDef;
-            if (!IntegrationTypeDefinition.TypeExists(typeDef, userAppId, out existingTypeDef)) typeDef.Save();
+            DataIntegration existingTypeDef;
+            if (!DataIntegration.Exists(typeDef, userAppId, out existingTypeDef)) typeDef.Save();
             else typeDef = existingTypeDef;
             var entityPairs = entityBlock.Elements;
             try
@@ -451,7 +451,7 @@ events : elements };
                         var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAppId);
                         var documentBson = document.GetDocument();
                         documentBson["is_paying"] = userIsPaying ? 1 : 0;
-                        document.TypeId = typeDef.Id;
+                        document.IntegrationId = typeDef.Id;
                         //document.Save();
                     }
                     catch (Exception ex2)

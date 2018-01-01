@@ -48,16 +48,16 @@ namespace Netlyt.Service.IntegrationSource
             return src;
         }
 
-        public override IIntegrationTypeDefinition GetTypeDefinition()
+        public override IIntegration GetTypeDefinition()
         {
             var firstInstance = _cachedInstance = Formatter.GetNext(Content, true);
-            IntegrationTypeDefinition typeDef = null;
+            Integration.DataIntegration typeDef = null;
             if (firstInstance != null)
             {
-                typeDef = new IntegrationTypeDefinition();
-                typeDef.CodePage = Encoding.CodePage;
+                typeDef = new Integration.DataIntegration();
+                typeDef.DataEncoding = Encoding.CodePage;
                 typeDef.DataFormatType = Formatter.Name;
-                typeDef.ResolveFields(firstInstance);
+                typeDef.SetFieldsFromType(firstInstance);
             }
             return typeDef;
         }

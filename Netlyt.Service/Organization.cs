@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using nvoid.db.DB;
 
-namespace Netlyt.Web.Models.DataModels
+namespace Netlyt.Service
 {
     public class Organization : Entity
     {

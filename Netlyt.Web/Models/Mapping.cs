@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Collections.Generic; 
 using nvoid.DB;
+using Netlyt.Service;
 using Netlyt.Service.Integration;
-using Netlyt.Web.Models.DataModels; 
+using Netlyt.Service.Ml;
 
 namespace Netlyt.Web.Models
 {

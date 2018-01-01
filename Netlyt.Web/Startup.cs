@@ -12,8 +12,7 @@ using Netlyt.Data;
 using Netlyt.Service;
 using Netlyt.Service.Auth;
 using Netlyt.Web.Middleware;
-using Netlyt.Web.Middleware.Hmac;
-using Netlyt.Web.Models.DataModels;
+using Netlyt.Web.Middleware.Hmac; 
 using Netlyt.Web.Services;
 using IdentityRole = Microsoft.AspNetCore.Identity.MongoDB.IdentityRole;
 

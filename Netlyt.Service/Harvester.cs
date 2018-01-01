@@ -11,6 +11,7 @@ using nvoid.db.Extensions;
 using nvoid.exec.Blocks;
 using Netlyt.Service.Integration; 
 using Netlyt.Service.IntegrationSource; 
+using IntegrationFactory = Netlyt.Service.Integration.DataIntegration.Factory;
 
 namespace Netlyt.Service
 {
@@ -59,7 +60,7 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="input">Details about the type</param>
         /// <param name="source">The source from which to pull the input</param>
-        public Harvester<TDocument> AddType(IIntegrationTypeDefinition input, InputSource source)
+        public Harvester<TDocument> AddType(IIntegration input, InputSource source)
         {
             if (input == null) throw new ArgumentException(nameof(input));
             var newSet = new IntegrationSet(input, source);
@@ -67,12 +68,12 @@ namespace Netlyt.Service
             return this;
         }
 
-        public IntegrationTypeDefinition AddPersistentType(string name, string appId, InputSource source)
+        public IIntegration AddPersistentType(string name, string appId, InputSource source)
         {
 
-            IntegrationTypeDefinition type = IntegrationTypeDefinition.Named(appId, name);
-            IntegrationTypeDefinition existingType = null;
-            if (!IntegrationTypeDefinition.TypeExists(type, appId, out existingType)) type.Save();
+            DataIntegration type = Integration.DataIntegration.Factory.CreateNamed(appId, name);
+            DataIntegration existingType = null;
+            if (!DataIntegration.Exists(type, appId, out existingType)) type.Save();
             else type = existingType;
             this.AddType(type, source); 
             return type;
@@ -86,12 +87,18 @@ namespace Netlyt.Service
         /// <param name="name">The name of the type that will be created</param>
         /// <param name="persist">Whether the type should be saved</param>
         /// <returns></returns>
-        public IntegrationTypeDefinition AddPersistentType(InputSource inputSource, string userId, string name, bool persist = true, string outputCollection = null)
+        public IIntegration AddPersistentType(
+            InputSource inputSource,
+            string userId,
+            string name,
+            bool persist = true,
+            string outputCollection = null)
         {
-            if (!(inputSource.GetTypeDefinition() is IntegrationTypeDefinition type))
+            var type = inputSource.GetTypeDefinition();
+            if (!(type is IIntegration))
             {
                 throw new Exception("Could not resolve type!");
-            }
+            } 
             type.APIKey = userId;
             type.Collection = outputCollection;
             if (!string.IsNullOrEmpty(name))
@@ -100,7 +107,7 @@ namespace Netlyt.Service
             }
             if (persist)
             {
-                if (!IntegrationTypeDefinition.TypeExists(type, userId, out var existingDataType)) type.SaveType(userId);
+                if (!Integration.DataIntegration.Exists(type, userId, out var existingDataType)) type.SaveType(userId);
                 else type = existingDataType;
             }
             AddType(type, inputSource);

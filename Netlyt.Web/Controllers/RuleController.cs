@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
-using nvoid.db.DB.RDS;
-using nvoid.db.Extensions;
-using Netlyt.Web.Models.DataModels;
+using System.Linq; 
+using nvoid.db.Extensions; 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using nvoid.db;
+using Netlyt.Service;
 
 namespace Netlyt.Web.Controllers
 {

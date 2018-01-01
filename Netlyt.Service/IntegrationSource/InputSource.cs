@@ -34,7 +34,7 @@ namespace Netlyt.Service.IntegrationSource
             this.Formatter = formatter;
         }
 
-        public abstract IIntegrationTypeDefinition GetTypeDefinition();
+        public abstract IIntegration GetTypeDefinition();
         public abstract dynamic GetNext();
 
         public dynamic GetNext<T>()

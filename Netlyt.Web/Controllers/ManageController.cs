@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System; 
 using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -8,11 +7,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging; 
 using Netlyt.Service;
-using Netlyt.Web.Models;
-using Netlyt.Web.Models.DataModels;
 using Netlyt.Web.Models.ManageViewModels;
 using Netlyt.Web.Services;
 

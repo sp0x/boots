@@ -3,17 +3,16 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
-using Dynamitey;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Source;
+using Dynamitey; 
 using nvoid.db.DB;
 using nvoid.db.Extensions;
-using Netlyt.Service.IntegrationSource;
+using Netlyt.Service.Ml;
+using Netlyt.Service.Source;
 
-namespace Netlyt.Web.Models.DataModels
+namespace Netlyt.Service.Integration
 {
     
-    public partial class Integration
+    public partial class DataIntegration
         : Entity, IIntegration
     { 
         public long Id { get; set; }
@@ -28,9 +27,13 @@ namespace Netlyt.Web.Models.DataModels
         public string Collection { get; set; }
         public Dictionary<string, FieldDefinition> Fields { get; set; }
         public IntegrationTypeExtras Extras { get; set; }
-        public static IntegrationTypeDefinition Empty { get; set; } = new IntegrationTypeDefinition("Empty");
+        public static DataIntegration Empty { get; set; } = new DataIntegration("Empty");
 
-        public Integration(string name)
+        public DataIntegration()
+        {
+            
+        }
+        public DataIntegration(string name)
         {
             Fields = new Dictionary<string, FieldDefinition>();
             Extras = new IntegrationTypeExtras();
@@ -42,7 +45,7 @@ namespace Netlyt.Web.Models.DataModels
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="instance"></param>
-        public Integration SetFieldsFromType<T>(T instance)
+        public DataIntegration SetFieldsFromType<T>(T instance)
         {
             if (instance == null) throw new ArgumentNullException(nameof(instance));
             Fields = new Dictionary<string, FieldDefinition>();
@@ -100,9 +103,9 @@ namespace Netlyt.Web.Models.DataModels
         /// <param name="apiId"></param>
         /// <param name="existingDefinition"></param>
         /// <returns></returns>
-        public static bool Exists(Integration type, string apiId, out Integration existingDefinition)
+        public static bool Exists(IIntegration type, string apiId, out DataIntegration existingDefinition)
         {
-            var _typeStore = typeof(Integration).GetDataSource<Integration>();
+            var _typeStore = typeof(DataIntegration).GetDataSource<DataIntegration>();
             var integration = _typeStore.Where(x => x.APIKey == apiId && (x.Fields == type.Fields || x.Name == type.Name));
             if (integration == null || integration.Count() == 0)
             {
@@ -128,7 +131,7 @@ namespace Netlyt.Web.Models.DataModels
         /// <returns></returns>
         public IIntegration SaveType(string userApiId)
         {
-            Integration oldTypeDef = null;
+            DataIntegration oldTypeDef = null;
             if (!Exists(this, userApiId, out oldTypeDef))
             {
                 this.Save();
@@ -137,7 +140,7 @@ namespace Netlyt.Web.Models.DataModels
             {
                 this.Id = oldTypeDef.Id;
             }
-            return this;
+            return this as IIntegration;
         }
 
         public IntegratedDocument CreateDocument<T>(T data)
