@@ -7,8 +7,8 @@ using nvoid.db;
 using nvoid.db.Extensions;
 using Netlyt.Service;
 using Netlyt.Service.Integration;
+using Netlyt.Web.Models;
 
-// For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace Netlyt.Web.Controllers
 {
@@ -23,6 +23,7 @@ namespace Netlyt.Web.Controllers
             _integrationContext = typeof(DataIntegration).GetDataSource<DataIntegration>();
             _userManager = userManager;
         }
+
         [HttpGet("/")]
         [Authorize]
         public IEnumerable<DataIntegration> GetAll([FromQuery] int page)
@@ -31,6 +32,7 @@ namespace Netlyt.Web.Controllers
             int pageSize = 25;
             return _integrationContext.Where(x => x.Owner == user).Skip(page * pageSize).Take(pageSize).ToList();
         }
+
         [HttpGet("{id}", Name = "GetIntegration")]
         [Authorize]
         public IActionResult GetById(long id)
@@ -42,6 +44,7 @@ namespace Netlyt.Web.Controllers
             }
             return new ObjectResult(item);
         }
+
         [HttpPost]
         [Authorize]
         public IActionResult Create([FromBody] DataIntegration item)
@@ -56,9 +59,10 @@ namespace Netlyt.Web.Controllers
 
             return CreatedAtRoute("GetIntegration", new { id = item.Id }, item);
         }
+
         [HttpPut("{id}")]
         [Authorize]
-        public IActionResult Update(long id, [FromBody] DataIntegration item)
+        public IActionResult Update(long id, [FromBody] DataIntegrationUpdateViewModel item)
         {
             if (item == null || item.Id != id)
             {

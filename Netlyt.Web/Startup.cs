@@ -61,7 +61,6 @@ namespace Netlyt.Web
             //330
             services.AddMvc();
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
-
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -70,7 +69,8 @@ namespace Netlyt.Web
             services.AddTransient<UserManager<ApplicationUser>>();
             services.AddTransient<SignInManager<ApplicationUser>>();
             services.AddTransient<IEmailSender, AuthMessageSender>();
-            services.AddTransient<ISmsSender, AuthMessageSender>(); 
+            services.AddTransient<ISmsSender, AuthMessageSender>();
+            services.AddSingleton<UserService>();
         }
 
 

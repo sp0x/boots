@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Netlyt.Service;
 using Netlyt.Service.Auth;
+using Netlyt.Service.Models.Account;
 using Netlyt.Web.Models.AccountViewModels;
 using Netlyt.Web.Services;
 
@@ -23,13 +24,16 @@ namespace Netlyt.Web.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IEmailSender _emailSender;
         private readonly ILogger _logger;
+        private readonly UserService _userService;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             IEmailSender emailSender,
-            ILogger<AccountController> logger)
+            ILogger<AccountController> logger, 
+            UserService userService)
         {
+            _userService = userService;
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
@@ -219,8 +223,8 @@ namespace Netlyt.Web.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
-                var result = await _userManager.CreateAsync(user, model.Password);
+                ApplicationUser user;
+                var result = _userService.CreateUser(model, out user);
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
