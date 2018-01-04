@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 using nvoid.Integration;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Ml;
@@ -17,16 +19,35 @@ namespace Netlyt.Service.Data
         public DbSet<FieldDefinition> Fields { get; set; }
         public DbSet<FieldExtras> FieldExtras { get; set; }
         public DbSet<ApiAuth> ApiKeys { get; set; }
-
-        public ManagementDbContext()
-        {
-            
-        }
+         
 
         public ManagementDbContext(DbContextOptions<ManagementDbContext> options)
             : base(options)
-        {
-            
+        { 
+            //Console.WriteLine("Initialized context with options: " + options.ToString());
+            options = options;
         }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+//            builder.Entity<DataEventRecord>().HasKey(m => m.DataEventRecordId);
+//            builder.Entity<SourceInfo>().HasKey(m => m.SourceInfoId);
+//
+//            // shadow properties
+//            builder.Entity<DataEventRecord>().Property<DateTime>("UpdatedTimestamp");
+//            builder.Entity<SourceInfo>().Property<DateTime>("UpdatedTimestamp");
+
+            base.OnModelCreating(builder);
+        }
+
+//        public override int SaveChanges()
+//        {
+//            ChangeTracker.DetectChanges();
+////
+////            updateUpdatedProperty<SourceInfo>();
+////            updateUpdatedProperty<DataEventRecord>();
+//
+//            return base.SaveChanges();
+//        } 
     }
 }

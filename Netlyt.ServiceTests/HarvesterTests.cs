@@ -7,6 +7,7 @@ using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.IntegrationSource;
+using Netlyt.ServiceTests.IntegrationSource;
 using Xunit;
 
 namespace Netlyt.ServiceTests
@@ -14,6 +15,18 @@ namespace Netlyt.ServiceTests
     [Collection("Entity Parsers")]
     public class HarvesterTests
     {
+
+        private DynamicContextFactory _contextFactory;
+        private ApiService _apiService;
+        private ConfigurationFixture _config;
+
+        public HarvesterTests(ConfigurationFixture fixture)
+        {
+            _config = fixture;
+            _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
+            _apiService = new ApiService(_contextFactory);
+        }
+
         /// <summary>
         /// Test destination processing completion, synchronization returnins.
         /// </summary>
@@ -26,8 +39,8 @@ namespace Netlyt.ServiceTests
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
             var appId = "123123123";
-            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
-            var harvester = new Service.Harvester<IntegratedDocument>(threadCount);
+            var apiObj = _apiService.GetApi(appId);
+            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
             var outBlock = new IntegrationActionBlock(appId, (action, x) => { });
@@ -50,8 +63,8 @@ namespace Netlyt.ServiceTests
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var appId = "123123123";
-            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
-            var harvester = new Service.Harvester<IntegratedDocument>(threadCount);
+            var apiObj = _apiService.GetApi(appId);
+            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
             var outBlock = new IntegrationActionBlock(appId, (action, x) => { });
@@ -74,8 +87,8 @@ namespace Netlyt.ServiceTests
             
             Assert.NotNull(type);
             var appId = "123123123";
-            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
-            var harvester = new Service.Harvester<IntegratedDocument>(threadCount);
+            var apiObj = _apiService.GetApi(appId);
+            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, threadCount);
             harvester.LimitEntries(3);
 
             Assert.Equal(harvester.ThreadCount, threadCount);

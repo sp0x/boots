@@ -84,7 +84,7 @@ namespace Netlyt.Web.Controllers
             if (Request.Headers.TryGetValue("DataSource", out tmpSource)) type.Source = tmpSource.ToString();
             type.SaveType(userApiId);
             //Check if the entity type exists
-            var harvester = new Harvester<IntegratedDocument>();
+            var harvester = new Harvester<IntegratedDocument>(_apiService);
             var destination = (new MongoSink<IntegratedDocument>(userApiId));
             destination.LinkTo(_behaviourContext.GetActionBlock());
             harvester.SetDestination(destination);

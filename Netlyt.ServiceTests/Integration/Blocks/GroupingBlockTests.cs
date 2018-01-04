@@ -12,6 +12,7 @@ using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.IntegrationSource;
+using Netlyt.ServiceTests.IntegrationSource;
 using Xunit;
 
 namespace Netlyt.ServiceTests.Integration.Blocks
@@ -19,6 +20,18 @@ namespace Netlyt.ServiceTests.Integration.Blocks
     [Collection("Entity Parsers")]
     public class GroupingBlockTests
     {
+
+        private DynamicContextFactory _contextFactory;
+        private ApiService _apiService;
+        private ConfigurationFixture _config;
+
+        public GroupingBlockTests(ConfigurationFixture fixture)
+        {
+            _config = fixture;
+            _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
+            _apiService = new ApiService(_contextFactory);
+        }
+
         private GroupingBlock GetGrouper(string userId)
         {
             var grouper = new GroupingBlock(userId,
@@ -47,8 +60,8 @@ namespace Netlyt.ServiceTests.Integration.Blocks
                 .CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var appId = "123123123";
-            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(20);
+            var apiObj = _apiService.GetApi(appId);
+            var harvester = new Harvester<IntegratedDocument>(_apiService, 20);
             var grouper = GetGrouper(appId);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper); 
@@ -67,8 +80,8 @@ namespace Netlyt.ServiceTests.Integration.Blocks
                 .CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
             var appId = "123123123";
-            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(20);
+            var apiObj = _apiService.GetApi(appId);
+            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, 20);
 
             var grouper = GetGrouper(appId);
             var statsCounter = 0;

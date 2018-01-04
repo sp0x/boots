@@ -51,12 +51,12 @@ namespace Netlyt.Service
         protected int TotalEntryLimit => _totalEntryLimit;
         public uint ThreadCount { get; private set; }
 
-        public Harvester(uint threadCount = 4) : base()
+        public Harvester(ApiService apiService, uint threadCount = 4) : base()
         {
             Sets = new HashSet<IntegrationSet>();
             this.ThreadCount = threadCount;
             _stopwatch = new Stopwatch();
-            _apiService = new ApiService(new ManagementDbFactory());
+            _apiService = apiService;
         }
         
         /// <summary>

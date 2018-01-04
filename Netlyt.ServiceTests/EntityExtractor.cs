@@ -35,18 +35,22 @@ namespace Netlyt.ServiceTests
         private BsonArray _purchasesInWeekends;
         private BsonArray _purchasesBeforeWeekends;
         private DateHelper _dateHelper;
+        private DynamicContextFactory _contextFactory;
+        private ApiService _apiService;
 
         public EntityExtractor(ConfigurationFixture fixture)
         {
+
             _config = fixture;
+            _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
+            _apiService = new ApiService(_contextFactory);
             _purchases = new BsonArray();
             _purchasesOnHolidays = new BsonArray();
             _purchasesInWeekends = new BsonArray();
             _purchasesBeforeHolidays = new BsonArray();
             _purchasesBeforeWeekends = new BsonArray();
             _dateHelper = new DateHelper();
-        }
-
+        } 
 
 
         [Theory]
@@ -84,8 +88,8 @@ namespace Netlyt.ServiceTests
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());  
             var appId = "123123123";
-            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>();
+            var apiObj = _apiService.GetApi(appId);
+            var harvester = new Harvester<IntegratedDocument>(_apiService);
             var type = harvester.AddPersistentType(fileSource, apiObj, null, true); 
 
             var grouper = new GroupingBlock(appId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);

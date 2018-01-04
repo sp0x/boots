@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Driver;
 using nvoid.db.DB.MongoDB;
+using nvoid.db.Extensions;
 using nvoid.exec.Blocks;
 using Netlyt.Service;
 using Netlyt.Service.Data;
@@ -19,6 +20,8 @@ using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.IntegrationSource;
 using Netlyt.Service.Models;
+using Netlyt.Service.Time;
+using Netlyt.ServiceTests.IntegrationSource;
 using Netlyt.ServiceTests.Netinfo;
 using Xunit;
 
@@ -28,13 +31,25 @@ namespace Netlyt.ServiceTests.Integration.Blocks
     public class IntegrationBlockTests
     {
         private static string AppId = "123123123";
+
+        private DynamicContextFactory _contextFactory;
+        private ApiService _apiService;
+        private ConfigurationFixture _config;
+
+        public IntegrationBlockTests(ConfigurationFixture fixture)
+        {
+            _config = fixture;
+            _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
+            _apiService = new ApiService(_contextFactory);
+        }
+
         private Harvester<IntegratedDocument> GetHarvester(uint threadCount = 20, int limit = 10)
         {
             var inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, "TestData\\Ebag\\1156");
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(threadCount);
-            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(AppId);
+            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, threadCount);
+            var apiObj = _apiService.GetApi(AppId);
             harvester.LimitEntries(limit); 
             harvester.AddPersistentType(fileSource, apiObj, null, false);
             return harvester;

@@ -8,7 +8,7 @@ namespace Netlyt.Service.Migrations
     public partial class First : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
-        {
+        { 
             migrationBuilder.CreateTable(
                 name: "FieldExtras",
                 columns: table => new

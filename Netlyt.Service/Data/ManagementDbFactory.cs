@@ -1,11 +1,18 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Netlyt.Service.Data
 {
     public class ManagementDbFactory : IFactory<ManagementDbContext>
-    {
-        public ManagementDbContext Create()
+    { 
+        private DbContextOptionsBuilder<ManagementDbContext> _optionsBuilder;
+        public ManagementDbFactory(DbContextOptionsBuilder<ManagementDbContext> optionsBuilder)
         {
-
-            return new ManagementDbContext();
+            _optionsBuilder = optionsBuilder;
+        }
+        public ManagementDbContext Create()
+        { 
+            return new ManagementDbContext(_optionsBuilder.Options);
         }
     }
 }
