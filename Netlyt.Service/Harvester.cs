@@ -9,6 +9,8 @@ using System.Threading.Tasks.Dataflow;
 using nvoid.db.DB;
 using nvoid.db.Extensions;
 using nvoid.exec.Blocks;
+using nvoid.Integration;
+using Netlyt.Service.Data;
 using Netlyt.Service.Integration; 
 using Netlyt.Service.IntegrationSource; 
 using IntegrationFactory = Netlyt.Service.Integration.DataIntegration.Factory;
@@ -36,6 +38,7 @@ namespace Netlyt.Service
         private Stopwatch _stopwatch;
         private int _shardLimit;
         private int _totalEntryLimit;
+        private ApiService _apiService;
 
         public HashSet<IntegrationSet> Sets { get; private set; } 
         /// <summary>
@@ -53,6 +56,7 @@ namespace Netlyt.Service
             Sets = new HashSet<IntegrationSet>();
             this.ThreadCount = threadCount;
             _stopwatch = new Stopwatch();
+            _apiService = new ApiService(new ManagementDbFactory());
         }
         
         /// <summary>
@@ -83,13 +87,13 @@ namespace Netlyt.Service
         /// Resolves the type from the input, persists it to the DB, and adds it as an integration set from the given source.
         /// </summary>
         /// <param name="inputSource"></param>
-        /// <param name="userId"></param>
+        /// <param name="appId"></param>
         /// <param name="name">The name of the type that will be created</param>
         /// <param name="persist">Whether the type should be saved</param>
         /// <returns></returns>
         public IIntegration AddPersistentType(
             InputSource inputSource,
-            string userId,
+            ApiAuth appId,
             string name,
             bool persist = true,
             string outputCollection = null)
@@ -99,7 +103,7 @@ namespace Netlyt.Service
             {
                 throw new Exception("Could not resolve type!");
             } 
-            type.APIKey = userId;
+            type.APIKey = appId;
             type.Collection = outputCollection;
             if (!string.IsNullOrEmpty(name))
             {
@@ -107,7 +111,7 @@ namespace Netlyt.Service
             }
             if (persist)
             {
-                if (!Integration.DataIntegration.Exists(type, userId, out var existingDataType)) type.SaveType(userId);
+                if (!Integration.DataIntegration.Exists(type, appId.Id, out var existingDataType)) type.SaveType(appId.AppId);
                 else type = existingDataType;
             }
             AddType(type, inputSource);

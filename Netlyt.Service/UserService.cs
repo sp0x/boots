@@ -10,17 +10,17 @@ namespace Netlyt.Service
     public class UserService
     {
         private ILogger _logger;
-        private UserManager<ApplicationUser> _userManager;
+        private UserManager<User> _userManager;
 
-        public UserService(UserManager<ApplicationUser> userManager, ILogger logger)
+        public UserService(UserManager<User> userManager, ILogger logger)
         {
             _logger = logger;
             _userManager = userManager;
         }
 
-        public IdentityResult CreateUser(RegisterViewModel model, out ApplicationUser user)
+        public IdentityResult CreateUser(RegisterViewModel model, out User user)
         {
-            user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+            user = new User {  Username = model.Email ,Email = model.Email };
             var result = _userManager.CreateAsync(user, model.Password).Result;
             return result;
         }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using nvoid.db;
 using nvoid.db.Extensions;
 using nvoid.Integration;
+using Netlyt.Service;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
@@ -16,14 +17,15 @@ namespace Netlyt.Web.Controllers
     [Route("api")]
     public class ApiController : Controller
     {
-        private SocialNetworkApiManager _socialApiMan;
-        private RemoteDataSource<ApiAuth> _apiStore;
+        private SocialNetworkApiManager _socialApiMan; 
+        private ApiService _apiService;
 
 
-        public ApiController(SocialNetworkApiManager socialApiMan)
+        public ApiController(SocialNetworkApiManager socialApiMan,
+            ApiService apiService)
         {
             _socialApiMan = socialApiMan;
-            _apiStore = typeof(ApiAuth).GetDataSource<ApiAuth>();
+            _apiService = apiService;
         }
 
         [Route("[action]")]
@@ -50,7 +52,7 @@ namespace Netlyt.Web.Controllers
         public async Task<ActionResult> SocialPermissions(string type = "Local")
         {
             var apiId = HttpContext.Session.GetUserApiId();
-            var api = _apiStore.First(x => x.Id == apiId);
+            var api = _apiService.GetApi(apiId);
             ActionResult result = null;
             if (api == null)
             {
@@ -58,9 +60,10 @@ namespace Netlyt.Web.Controllers
             }
             else
             {
-                if (api.Permissions.ContainsKey(type))
+                var typePermission = api.Permissions.FirstOrDefault(x => x.Type == type);
+                if (typePermission!=null)
                 {
-                    result = Json(new { success = true, data = api.Permissions[type] });
+                    result = Json(new { success = true, data = typePermission });
                 }
                 else
                 {

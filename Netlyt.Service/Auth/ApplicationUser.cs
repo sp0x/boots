@@ -7,11 +7,9 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace Netlyt.Service.Auth
 { 
-    public class ApplicationUser : IdentityUser
-    {
-        [BsonIgnoreIfNull]
-        public virtual List<string> ApiKeys { get; set; }
-    }
+//    public class ApplicationUser : IdentityUser
+//    {
+//    }
 
 //    // You can add profile data for the user by adding more properties to your ApplicationUser class, please visit https://go.microsoft.com/fwlink/?LinkID=317594 to learn more.
 //    public class ApplicationUser : IdentityUser

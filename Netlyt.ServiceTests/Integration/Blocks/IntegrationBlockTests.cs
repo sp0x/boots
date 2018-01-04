@@ -13,6 +13,7 @@ using MongoDB.Driver;
 using nvoid.db.DB.MongoDB;
 using nvoid.exec.Blocks;
 using Netlyt.Service;
+using Netlyt.Service.Data;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
@@ -33,8 +34,9 @@ namespace Netlyt.ServiceTests.Integration.Blocks
                 .CurrentDirectory, "TestData\\Ebag\\1156");
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(threadCount);
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(AppId);
             harvester.LimitEntries(limit); 
-            harvester.AddPersistentType(fileSource, AppId, null, false);
+            harvester.AddPersistentType(fileSource, apiObj, null, false);
             return harvester;
         }
         [Fact]

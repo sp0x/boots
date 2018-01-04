@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using nvoid.db.DB;
+using Netlyt.Service;
+using Netlyt.Service.Data;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
@@ -44,12 +46,13 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
-            var userId = "123123123"; 
+            var appId = "123123123";
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(20);
-            var grouper = GetGrouper(userId);
+            var grouper = GetGrouper(appId);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper); 
-            harvester.AddPersistentType(fileSource, userId, null);
+            harvester.AddPersistentType(fileSource, apiObj, null);
             var results = await harvester.Synchronize();
             Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
             var syncDuration = harvester.ElapsedTime();
@@ -63,10 +66,11 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
-            var userId = "123123123";
+            var appId = "123123123";
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(20);
 
-            var grouper = GetGrouper(userId);
+            var grouper = GetGrouper(appId);
             var statsCounter = 0;
             var statsBlock = new StatsBlock((visit) =>
             {
@@ -77,7 +81,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             grouper.LinkTo(statsBlock, null);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper);
-            harvester.AddPersistentType(fileSource, userId, null);
+            harvester.AddPersistentType(fileSource, apiObj, null);
             var results = await harvester.Synchronize();
             //Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
             //Ensure that we went through all the items, with our entire dataflow.

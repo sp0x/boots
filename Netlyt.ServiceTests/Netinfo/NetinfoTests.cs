@@ -13,9 +13,11 @@ using nvoid.db.DB;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB; 
 using nvoid.db.Extensions; 
-using nvoid.extensions; 
+using nvoid.extensions;
+using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Analytics;
+using Netlyt.Service.Data;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
@@ -60,11 +62,12 @@ namespace Netlyt.ServiceTests.Netinfo
                 Console.WriteLine($"Parsing data in: {inputDirectory}");
                 var importCollectionId = Guid.NewGuid().ToString();
                 var mlist = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
+                var apiObj = new ApiService(new ManagementDbFactory()).GetApi(_appId);
                 //var altList = RemoteDataSource.GetMongoDb<BsonDocument>(importCollectionId);
 
                 var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
                 var harvester = new Harvester<ExpandoObject>(10);
-                var type = harvester.AddPersistentType(fileSource, _appId, null, true);
+                var type = harvester.AddPersistentType(fileSource, apiObj, null, true);
 
                 mlist.Truncate();
                 //harvester -> documentCreator -> inserter
@@ -108,11 +111,12 @@ namespace Netlyt.ServiceTests.Netinfo
         {
             var currentDir = Environment.CurrentDirectory;
             inputDirectory = Path.Combine(currentDir, inputDirectory);
-            Console.WriteLine($"Parsing data in: {inputDirectory}"); 
+            Console.WriteLine($"Parsing data in: {inputDirectory}");
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(_appId);
             var importTask = new DataImportTask<ExpandoObject>(new DataImportTaskOptions
             {
                 Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' }),
-                ApiKey = _appId,
+                ApiKey = apiObj,
                 TypeName = typeName,
                 ThreadCount = 10
             }.AddIndex("ondate"));
@@ -208,6 +212,7 @@ events : elements };
         public async void ExtractEntitiesFromReducedCollection(string collectionName, string demographySheet)
         {
             var appId = "123123123";
+            var apiObject = new ApiService(new ManagementDbFactory()).GetApi(appId);
             MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter());
             source.SetProjection(x =>
             {
@@ -252,7 +257,7 @@ events : elements };
                     doc.Document.Value.Set(name, BsonValue.Create(featureval));
                 }
                 //Cleanup
-                doc.IntegrationId = type.Id ; doc.APIKey = appId;
+                doc.IntegrationId = type.Id ; doc.APIId = apiObject.Id;
                 x.Features = null; 
                 return doc;
             });
@@ -283,9 +288,10 @@ events : elements };
             });
 
             var appId = "123123123";
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(20); 
             harvester.AddPersistentType("NetInfoUserFeatures_7_8", appId, source);
-            var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", appId);
+            var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", apiObj);
             typeDef.AddField("is_paying", typeof(int));
             DataIntegration existingTypeDef;
             if (!DataIntegration.Exists(typeDef, appId, out existingTypeDef)) typeDef.Save();
@@ -311,7 +317,7 @@ events : elements };
                     .ToBsonArray();
                 var sessions = CrossSiteAnalyticsHelper.GetWebSessions(userBlock).ToList();
                 var sessionWrapper = new DomainUserSessionCollection(sessions) {UserId = uuid, Created = dateNoticed};
-                var document = IntegratedDocument.FromType(sessionWrapper, typeDef, appId);
+                var document = IntegratedDocument.FromType(sessionWrapper, typeDef, apiObj.Id);
                 var documentBson = document.GetDocument();
                 documentBson["is_paying"] = userIsPaying ? 1 : 0;
                 documentBson["g_timestamp"] = g_timestamp;
@@ -415,13 +421,15 @@ events : elements };
             Assert.True(results.ProcessedEntries == recordLimit);
         }
 
-        private void DumpUsergroupSessionsToMongo(string userAppId, EvalDictionaryBlock usersData)
+        private void DumpUsergroupSessionsToMongo(long userAPIId, EvalDictionaryBlock usersData)
         {
             var entityBlock = usersData;
-            var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8",userAppId);
+            var apiService = new ApiService(new ManagementDbFactory());
+            ApiAuth apiObject = apiService.GetApi(userAPIId);
+            var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", apiObject);
             typeDef.AddField("is_paying", typeof(int));
             DataIntegration existingTypeDef;
-            if (!DataIntegration.Exists(typeDef, userAppId, out existingTypeDef)) typeDef.Save();
+            if (!DataIntegration.Exists(typeDef, userAPIId, out existingTypeDef)) typeDef.Save();
             else typeDef = existingTypeDef;
             var entityPairs = entityBlock.Elements;
             try
@@ -448,7 +456,7 @@ events : elements };
                         sessionWrapper.UserId = uuid;
                         sessionWrapper.Created = dateNoticed;
 
-                        var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAppId);
+                        var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAPIId);
                         var documentBson = document.GetDocument();
                         documentBson["is_paying"] = userIsPaying ? 1 : 0;
                         document.IntegrationId = typeDef.Id;
@@ -472,10 +480,11 @@ events : elements };
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter(){ Delimiter = ';' });
 
-            var userId = "123123123";
+            var appId = "123123123";
             int threadCount = 12;
             var harvester = new Netlyt.Service.Harvester<ExpandoObject>(10);
-            var type = harvester.AddPersistentType(fileSource, userId, null, true);
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
+            var type = harvester.AddPersistentType(fileSource, apiObj, null, true);
             
             var cachedReducer = new ReduceCacheBlock(_appId,
                 (document) => $"{document.GetString("uuid")}:{document.GetDate("ondate")?.DaysTotal()}",
@@ -535,7 +544,8 @@ events : elements };
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(10);
-            harvester.AddPersistentType(fileSource, _appId, null, true);
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(_appId);
+            harvester.AddPersistentType(fileSource, apiObj, null, true);
 
             var grouper = new GroupingBlock(_appId,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",

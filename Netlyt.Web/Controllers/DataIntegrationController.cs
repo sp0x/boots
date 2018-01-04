@@ -14,7 +14,6 @@ using nvoid.db;
 using nvoid.db.Batching;
 using nvoid.db.Extensions;
 using Netlyt.Service;
-using Netlyt.Service.Auth;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.IntegrationSource;
@@ -36,17 +35,22 @@ namespace Netlyt.Web.Controllers
         private BehaviourContext _behaviourContext;
         private RemoteDataSource<IntegratedDocument> _documentStore;
         private SocialNetworkApiManager _socNetManager;
+        private IntegrationService _integrationService;
+        private ApiService _apiService;
 
-        public DataIntegrationController(UserManager<ApplicationUser> userManager,
-            IUserStore<ApplicationUser> userStore,
+        public DataIntegrationController(UserManager<User> userManager,
+            IUserStore<User> userStore,
             BehaviourContext behaviourCtx,
-            SocialNetworkApiManager socNetManager)
+            SocialNetworkApiManager socNetManager,
+            IntegrationService integrationService,
+            ApiService apiService)
         {
             _behaviourContext = behaviourCtx;
+            _apiService = apiService;
             //Move both of these 
             _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
             _socNetManager = socNetManager;
-
+            _integrationService = integrationService;
         }
 
 
@@ -74,8 +78,9 @@ namespace Netlyt.Web.Controllers
             var userApiId = HttpContext.Session.GetUserApiId();
             var memSource = InMemorySource.Create(Request.Body, new JsonFormatter());
             var type = (DataIntegration)memSource.GetTypeDefinition();
-            type.APIKey = userApiId;
+            type.APIKey = _apiService.GetApi(userApiId);
             StringValues tmpSource;
+            _integrationService.SaveType(type);
             if (Request.Headers.TryGetValue("DataSource", out tmpSource)) type.Source = tmpSource.ToString();
             type.SaveType(userApiId);
             //Check if the entity type exists
@@ -96,7 +101,8 @@ namespace Netlyt.Web.Controllers
         [HttpPost]
         public async Task<ActionResult> SocialEntity()
         {
-            var userApiId = HttpContext.Session.GetUserApiId();
+            var userAppId = HttpContext.Session.GetUserApiId();
+            var userApi = _apiService.GetApi(userAppId);
             JToken bodyJson = Request.ReadBodyAsJson();
 
             //Todo: secure this..
@@ -108,7 +114,7 @@ namespace Netlyt.Web.Controllers
 
             //Todo: do this without relying on mongo, using the document store
             var mongoCollection = _documentStore.AsMongoDbQueryable();
-            var apiQuery = Builders<IntegratedDocument>.Filter.Where(x => x.APIKey == userApiId);
+            var apiQuery = Builders<IntegratedDocument>.Filter.Where(x => x.APIId == userApi.Id);
             var userDocumentFilter = BsonSerializer.Deserialize<BsonDocument>(userFilter.ToString());
             //var entityQuery = Builders<IntegratedDocument>.Filter.(userDocumentFilter);
             var query = Builders<IntegratedDocument>.Filter.And(apiQuery, userDocumentFilter);

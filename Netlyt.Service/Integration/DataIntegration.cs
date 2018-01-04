@@ -6,8 +6,10 @@ using System.Linq.Expressions;
 using Dynamitey; 
 using nvoid.db.DB;
 using nvoid.db.Extensions;
+using nvoid.Integration;
 using Netlyt.Service.Ml;
 using Netlyt.Service.Source;
+using NHibernate.Util;
 
 namespace Netlyt.Service.Integration
 {
@@ -16,27 +18,29 @@ namespace Netlyt.Service.Integration
         : Entity, IIntegration
     { 
         public long Id { get; set; }
-        public List<Model> Models { get; set; }
+        public virtual ICollection<ModelIntegration> Models { get; set; }
         public User Owner { get; set; }
         public string FeatureScript { get; set; }
         public string Name { get; set; }        
         public int DataEncoding { get; set; }
-        public string APIKey { get; set; }
+        public ApiAuth APIKey { get; set; }
         public string DataFormatType { get; set; }
         public string Source { get; set; }
         public string Collection { get; set; }
-        public Dictionary<string, FieldDefinition> Fields { get; set; }
-        public IntegrationTypeExtras Extras { get; set; }
+        public ICollection<FieldDefinition> Fields { get; set; }
+        public ICollection<IntegrationExtra> Extras { get; set; }
+
         public static DataIntegration Empty { get; set; } = new DataIntegration("Empty");
 
         public DataIntegration()
-        {
-            
+        { 
+            Fields = new HashSet<FieldDefinition>();
+            Models = new HashSet<ModelIntegration>();
+            Extras = new HashSet<IntegrationExtra>();
         }
         public DataIntegration(string name)
-        {
-            Fields = new Dictionary<string, FieldDefinition>();
-            Extras = new IntegrationTypeExtras();
+            : this()
+        { 
             this.Name = name;
         }
 
@@ -48,7 +52,7 @@ namespace Netlyt.Service.Integration
         public DataIntegration SetFieldsFromType<T>(T instance)
         {
             if (instance == null) throw new ArgumentNullException(nameof(instance));
-            Fields = new Dictionary<string, FieldDefinition>();
+            Fields = new List<FieldDefinition>();
             var type = typeof(T);
             if (instance is ExpandoObject)
             {
@@ -59,7 +63,7 @@ namespace Netlyt.Service.Integration
                     if (value == null) continue;
                     Type memberType = value.GetType();
                     var fieldDefinition = new FieldDefinition(memberName, memberType);
-                    Fields.Add(memberName, fieldDefinition);
+                    Fields.Add(fieldDefinition);
                 }
             }
             else
@@ -75,7 +79,7 @@ namespace Netlyt.Service.Integration
                         if (memberValue == null) continue;
                         Type memberType = memberValue.GetType();
                         var fieldDefinition = new FieldDefinition(memberName, memberType);
-                        Fields.Add(memberName, fieldDefinition);
+                        Fields.Add(fieldDefinition); //memberName
                     }
                 }
                 else
@@ -89,7 +93,7 @@ namespace Netlyt.Service.Integration
                             if (memberValue == null) continue;
                             Type memberType = memberValue.GetType();
                             var fieldDefinition = new FieldDefinition(property.Name, memberType);
-                            Fields.Add(property.Name, fieldDefinition);
+                            Fields.Add(fieldDefinition); //property.Name
                         }
                     }
                 }
@@ -100,13 +104,33 @@ namespace Netlyt.Service.Integration
         /// 
         /// </summary>
         /// <param name="type"></param>
+        /// <param name="appId"></param>
+        /// <param name="existingDefinition"></param>
+        /// <returns></returns>
+        public static bool Exists(IIntegration type, string appId, out DataIntegration existingDefinition)
+        {
+            var _typeStore = typeof(DataIntegration).GetDataSource<DataIntegration>();
+            var integration = _typeStore.Where(x => x.APIKey.AppId == appId && (x.Fields == type.Fields || x.Name == type.Name));
+            if (integration == null || integration.Count() == 0)
+            {
+                existingDefinition = null;
+                return false;
+            }
+            existingDefinition = integration.First();
+            return existingDefinition != null;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="type"></param>
         /// <param name="apiId"></param>
         /// <param name="existingDefinition"></param>
         /// <returns></returns>
-        public static bool Exists(IIntegration type, string apiId, out DataIntegration existingDefinition)
+        public static bool Exists(IIntegration type, long apiId, out DataIntegration existingDefinition)
         {
             var _typeStore = typeof(DataIntegration).GetDataSource<DataIntegration>();
-            var integration = _typeStore.Where(x => x.APIKey == apiId && (x.Fields == type.Fields || x.Name == type.Name));
+            var integration = _typeStore.Where(x => x.APIKey.Id == apiId && (x.Fields == type.Fields || x.Name == type.Name));
             if (integration == null || integration.Count() == 0)
             {
                 existingDefinition = null;
@@ -148,14 +172,14 @@ namespace Netlyt.Service.Integration
             var doc = new IntegratedDocument();
             doc.SetDocument(data);
             doc.IntegrationId = Id;
-            doc.APIKey = this.APIKey;
+            doc.APIId = this.APIKey.Id;
             return doc;
         }
 
         public void AddField(string fieldName, Type type)
         {
             var fdef = new FieldDefinition(fieldName, type);
-            Fields.Add(fieldName, fdef);
+            Fields.Add(fdef); //fieldName
         }
     }
 }

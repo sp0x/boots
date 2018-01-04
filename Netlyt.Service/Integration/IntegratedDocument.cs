@@ -12,7 +12,7 @@ namespace Netlyt.Service.Integration
         public int Id { get; set; }
         public Lazy<BsonDocument> Document { get; set; }
         public BsonDocument Reserved { get; set; }
-        public string APIKey { get; set; }
+        public long APIId { get; set; }
         public long IntegrationId { get; set; }
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
@@ -106,19 +106,28 @@ namespace Netlyt.Service.Integration
             var newDocument = new IntegratedDocument();
             newDocument.Document = new Lazy<BsonDocument>(CloneDocument);
             newDocument.Reserved = Reserved.Clone().ToBsonDocument();
-            newDocument.APIKey = this.APIKey;
+            newDocument.APIId = this.APIId;
             newDocument.IntegrationId = this.IntegrationId;
             return newDocument;
         }
 
-        public static IntegratedDocument FromType<T>(T visitSession, DataIntegration typedef, string appId)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="visitSession"></param>
+        /// <param name="typedef"></param>
+        /// <param name="apiId">The id of the api object.</param>
+        /// <returns></returns>
+        public static IntegratedDocument FromType<T>(T visitSession, DataIntegration typedef, long apiId)
         { 
             var document = new IntegratedDocument();
             document.Document = new Lazy<BsonDocument>(()=> visitSession.ToBsonDocument());
             document.IntegrationId = typedef.Id;
-            document.APIKey = appId;
+            document.APIId = apiId;
             return document;
         }
+         
 
         public DateTime? GetDate(string key)
         {

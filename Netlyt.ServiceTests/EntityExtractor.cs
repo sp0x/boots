@@ -11,6 +11,7 @@ using nvoid.db.Extensions;
 using nvoid.exec.Blocks;
 using nvoid.extensions;
 using Netlyt.Service;
+using Netlyt.Service.Data;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
@@ -82,12 +83,13 @@ namespace Netlyt.ServiceTests
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());  
-            var userId = "123123123"; 
+            var appId = "123123123";
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>();
-            var type = harvester.AddPersistentType(fileSource, userId, null, true); 
+            var type = harvester.AddPersistentType(fileSource, apiObj, null, true); 
 
-            var grouper = new GroupingBlock(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
-            var saver = new MongoSink<IntegratedDocument>(userId);
+            var grouper = new GroupingBlock(appId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
+            var saver = new MongoSink<IntegratedDocument>(appId);
             var demographyImporter = new EntityDataImporter(demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
             demographyImporter.UseInputKey((input) => input[0] );

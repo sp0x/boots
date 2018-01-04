@@ -5,7 +5,13 @@ namespace Netlyt.Service
 {
     public class Organization : Entity
     {
-        public List<User> Members { get; set; }
+        public long Id { get; set; }
+        public virtual ICollection<User> Members { get; set; }
         public string Name { get; set; }
+
+        public Organization()
+        {
+            Members = new HashSet<User>();
+        }
     }
 }

@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using Netlyt.Service;
+using Netlyt.Service.Data;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
@@ -23,13 +25,14 @@ namespace Netlyt.ServiceTests
             var threadCount = (uint)8;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
-            var userId = "123123123";
+            var appId = "123123123";
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
             var harvester = new Service.Harvester<IntegratedDocument>(threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
-            var outBlock = new IntegrationActionBlock(userId, (action, x) => { });
+            var outBlock = new IntegrationActionBlock(appId, (action, x) => { });
             harvester.SetDestination(outBlock);
-            harvester.AddPersistentType(fileSource, userId, null); 
+            harvester.AddPersistentType(fileSource, apiObj, null); 
             var hresult = await harvester.Synchronize();
             Assert.True(outBlock.ProcessingCompletion.IsCompleted);
             Assert.True(outBlock.BufferCompletion.IsCompleted);
@@ -46,13 +49,14 @@ namespace Netlyt.ServiceTests
             var threadCount = (uint)8;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
-            var userId = "123123123";
+            var appId = "123123123";
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
             var harvester = new Service.Harvester<IntegratedDocument>(threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
-            var outBlock = new IntegrationActionBlock(userId, (action, x) => { });
+            var outBlock = new IntegrationActionBlock(appId, (action, x) => { });
             harvester.SetDestination(outBlock);
-            harvester.AddPersistentType(fileSource, userId, null);
+            harvester.AddPersistentType(fileSource, apiObj, null);
             Assert.True(harvester.Sets.Count > 0);
             var hresult = await harvester.Synchronize();
             Assert.True(hresult.ProcessedEntries == 10);
@@ -69,13 +73,14 @@ namespace Netlyt.ServiceTests
             var type = fileSource.GetTypeDefinition() as DataIntegration;
             
             Assert.NotNull(type);
-            var userId = "123123123"; 
+            var appId = "123123123";
+            var apiObj = new ApiService(new ManagementDbFactory()).GetApi(appId);
             var harvester = new Service.Harvester<IntegratedDocument>(threadCount);
             harvester.LimitEntries(3);
 
             Assert.Equal(harvester.ThreadCount, threadCount);
-            type.APIKey = userId; 
-            var outBlock = new IntegrationActionBlock(userId, (action, x) =>
+            type.APIKey = apiObj; 
+            var outBlock = new IntegrationActionBlock(appId, (action, x) =>
             { });
             harvester.SetDestination(outBlock);
             harvester.AddType(type, fileSource);
