@@ -93,7 +93,7 @@ namespace Netlyt.Web.Controllers
             destination.LinkTo(_behaviourContext.GetActionBlock());
             harvester.SetDestination(destination);
             harvester.AddType(type, memSource);
-            harvester.Synchronize();
+            var result = harvester.Synchronize();
             return Json(new
             {
                 success = true,

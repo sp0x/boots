@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,7 @@ namespace Netlyt.Web.Controllers
 {
     [Produces("application/json")]
     [Route("api/[action]")]
+    [Authorize]
     public class ApiController : Controller
     {
         private SocialNetworkApiManager _socialApiMan; 
@@ -29,7 +31,7 @@ namespace Netlyt.Web.Controllers
             _apiService = apiService;
         }
 
-        [Route("[action]")]
+        [Route("api/[action]")]
         [HttpPost]
         public async Task<ActionResult> RegisterSocialNetwork()
         {
@@ -58,7 +60,8 @@ namespace Netlyt.Web.Controllers
         /// Gets the all permissions of this api
         /// </summary>
         /// <returns></returns>
-        [Route("[action]")]
+        [Route("api/SocialPermissions")]
+        [Authorize(AuthenticationSchemes = Netlyt.Data.AuthenticationSchemes.DataSchemes)]
         [HttpGet]
         public async Task<ActionResult> SocialPermissions(string type = "Local")
         {

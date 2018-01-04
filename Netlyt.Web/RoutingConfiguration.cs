@@ -33,7 +33,8 @@ namespace Netlyt.Web
 
             if (ctx.Request.Headers.TryGetValue("Host", out hostname))
             {
-                return regex.IsMatch(hostname); 
+                var isMatch = regex.IsMatch(hostname);
+                return isMatch; 
             }
             else
             {
