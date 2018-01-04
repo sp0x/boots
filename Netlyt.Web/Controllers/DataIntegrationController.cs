@@ -14,6 +14,7 @@ using nvoid.db;
 using nvoid.db.Batching;
 using nvoid.db.Extensions;
 using Netlyt.Service;
+using Netlyt.Service.Data;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.IntegrationSource;
@@ -37,15 +38,18 @@ namespace Netlyt.Web.Controllers
         private SocialNetworkApiManager _socNetManager;
         private IntegrationService _integrationService;
         private ApiService _apiService;
+        private ManagementDbContext _context;
 
         public DataIntegrationController(UserManager<User> userManager,
             IUserStore<User> userStore,
             BehaviourContext behaviourCtx,
+            ManagementDbContext context,
             SocialNetworkApiManager socNetManager,
             IntegrationService integrationService,
             ApiService apiService)
         {
             _behaviourContext = behaviourCtx;
+            _context = context;
             _apiService = apiService;
             //Move both of these 
             _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
@@ -79,12 +83,12 @@ namespace Netlyt.Web.Controllers
             var memSource = InMemorySource.Create(Request.Body, new JsonFormatter());
             var type = (DataIntegration)memSource.GetTypeDefinition();
             type.APIKey = api;
+            type.Owner = _apiService.GetApiUser(api);
             StringValues tmpSource;
-            _integrationService.SaveType(type);
+            _integrationService.SaveOrFetchExisting(ref type);
             if (Request.Headers.TryGetValue("DataSource", out tmpSource)) type.Source = tmpSource.ToString();
-            type.SaveType(api.AppId);
             //Check if the entity type exists
-            var harvester = new Harvester<IntegratedDocument>(_apiService);
+            var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService);
             var destination = (new MongoSink<IntegratedDocument>(api.AppId));
             destination.LinkTo(_behaviourContext.GetActionBlock());
             harvester.SetDestination(destination);

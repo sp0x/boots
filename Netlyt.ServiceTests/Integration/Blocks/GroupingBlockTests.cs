@@ -24,12 +24,14 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         private DynamicContextFactory _contextFactory;
         private ApiService _apiService;
         private ConfigurationFixture _config;
+        private IntegrationService _integrationService;
 
         public GroupingBlockTests(ConfigurationFixture fixture)
         {
             _config = fixture;
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
-            _apiService = new ApiService(_contextFactory, null);
+            _apiService = fixture.GetService<ApiService>();
+            _integrationService = fixture.GetService<IntegrationService>();
         }
 
         private GroupingBlock GetGrouper(string userId)
@@ -61,7 +63,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Harvester<IntegratedDocument>(_apiService, 20);
+            var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService, 20);
             var grouper = GetGrouper(appId);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper); 
@@ -81,7 +83,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, 20);
+            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20);
 
             var grouper = GetGrouper(appId);
             var statsCounter = 0;

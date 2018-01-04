@@ -19,12 +19,14 @@ namespace Netlyt.ServiceTests
         private DynamicContextFactory _contextFactory;
         private ApiService _apiService;
         private ConfigurationFixture _config;
+        private IntegrationService _integrationService;
 
         public HarvesterTests(ConfigurationFixture fixture)
         {
             _config = fixture;
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
-            _apiService = new ApiService(_contextFactory, null);
+            _apiService = fixture.GetService<ApiService>();
+            _integrationService = fixture.GetService<IntegrationService>();
         }
 
         /// <summary>
@@ -40,7 +42,7 @@ namespace Netlyt.ServiceTests
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, threadCount);
+            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
             var outBlock = new IntegrationActionBlock(appId, (action, x) => { });
@@ -64,7 +66,7 @@ namespace Netlyt.ServiceTests
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, threadCount);
+            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
             var outBlock = new IntegrationActionBlock(appId, (action, x) => { });
@@ -88,7 +90,7 @@ namespace Netlyt.ServiceTests
             Assert.NotNull(type);
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, threadCount);
+            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
             harvester.LimitEntries(3);
 
             Assert.Equal(harvester.ThreadCount, threadCount);

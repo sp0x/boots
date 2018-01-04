@@ -3,8 +3,7 @@ using Netlyt.Service.Integration;
 namespace Netlyt.Service.Ml
 {
     public class ModelIntegration
-    {
-        public long Id { get; set; }
+    { 
         public long ModelId { get; set; }
         public Model Model { get; set; }
 

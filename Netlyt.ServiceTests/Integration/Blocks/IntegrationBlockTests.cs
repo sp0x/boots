@@ -35,12 +35,14 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         private DynamicContextFactory _contextFactory;
         private ApiService _apiService;
         private ConfigurationFixture _config;
+        private IntegrationService _integrationService;
 
         public IntegrationBlockTests(ConfigurationFixture fixture)
         {
             _config = fixture;
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
-            _apiService = new ApiService(_contextFactory, null);
+            _apiService = fixture.GetService<ApiService>();
+            _integrationService = fixture.GetService<IntegrationService>();
         }
 
         private Harvester<IntegratedDocument> GetHarvester(uint threadCount = 20, int limit = 10)
@@ -48,7 +50,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, "TestData\\Ebag\\1156");
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, threadCount);
+            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
             var apiObj = _apiService.GetApi(AppId);
             harvester.LimitEntries(limit); 
             harvester.AddPersistentType(fileSource, apiObj, null, false);

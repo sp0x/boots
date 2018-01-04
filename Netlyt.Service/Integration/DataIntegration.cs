@@ -23,7 +23,8 @@ namespace Netlyt.Service.Integration
         public string FeatureScript { get; set; }
         public string Name { get; set; }        
         public int DataEncoding { get; set; }
-        public ApiAuth APIKey { get; set; }
+        public long APIKeyId { get; set; }
+        public virtual ApiAuth APIKey { get; set; }
         public string DataFormatType { get; set; }
         public string Source { get; set; }
         public string Collection { get; set; }
@@ -99,73 +100,7 @@ namespace Netlyt.Service.Integration
                 }
             }
             return this;
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="appId"></param>
-        /// <param name="existingDefinition"></param>
-        /// <returns></returns>
-        public static bool Exists(IIntegration type, string appId, out DataIntegration existingDefinition)
-        {
-            var _typeStore = typeof(DataIntegration).GetDataSource<DataIntegration>();
-            var integration = _typeStore.Where(x => x.APIKey.AppId == appId && (x.Fields == type.Fields || x.Name == type.Name));
-            if (integration == null || integration.Count() == 0)
-            {
-                existingDefinition = null;
-                return false;
-            }
-            existingDefinition = integration.First();
-            return existingDefinition != null;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="apiId"></param>
-        /// <param name="existingDefinition"></param>
-        /// <returns></returns>
-        public static bool Exists(IIntegration type, long apiId, out DataIntegration existingDefinition)
-        {
-            var _typeStore = typeof(DataIntegration).GetDataSource<DataIntegration>();
-            var integration = _typeStore.Where(x => x.APIKey.Id == apiId && (x.Fields == type.Fields || x.Name == type.Name));
-            if (integration == null || integration.Count() == 0)
-            {
-                existingDefinition = null;
-                return false;
-            }
-            existingDefinition = integration.First();
-            return existingDefinition != null;
-        }
-        //
-        //        public override void PrepareForSaving()
-        //        {
-        //            base.PrepareForSaving();
-        //            if (string.IsNullOrEmpty(APIKey))
-        //                throw new InvalidOperationException("Only user owned type definitions can be saved!");
-        //        }
-
-        /// <summary>
-        /// Checks if this type already exists, and updates it's id if it does.
-        /// If not, the type is saved.
-        /// </summary>
-        /// <param name="userApiId">The user's API id, to which to subscribe the type</param>
-        /// <returns></returns>
-        public IIntegration SaveType(string userApiId)
-        {
-            DataIntegration oldTypeDef = null;
-            if (!Exists(this, userApiId, out oldTypeDef))
-            {
-                this.Save();
-            }
-            else
-            {
-                this.Id = oldTypeDef.Id;
-            }
-            return this as IIntegration;
-        }
+        } 
 
         public IntegratedDocument CreateDocument<T>(T data)
         {

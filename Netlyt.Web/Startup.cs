@@ -41,18 +41,12 @@ namespace Netlyt.Web
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
             if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!");
             var mongoConnectionString = databaseConfiguration.Value;
-            var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection");
-            //            services.AddDbContext<ManagementDbContext>(options =>
-            //            {
-            //                options.UseSqlServer(Configuration.GetConnectionString("PostgreSQLConnection"));
-            //            });
+            var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection"); 
             services.AddDbContext<ManagementDbContext>(options =>
                 options.UseNpgsql(postgresConnectionString)
             );
             //services.AddScoped<IDataAccessProvider, DataAccessPostgreSqlProvider.DataAccessPostgreSqlProvider>();
-
-
-
+             
             services.AddIdentity<User, UserRole>()
                 .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();
@@ -81,7 +75,11 @@ namespace Netlyt.Web
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
             services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
-                new DynamicContextFactory(() => s.GetService<ManagementDbContext>())
+                new DynamicContextFactory(() =>
+                {
+                    var opsBuilder = new DbContextOptionsBuilder<ManagementDbContext>().UseNpgsql(postgresConnectionString);
+                    return new ManagementDbContext(opsBuilder.Options);
+                })
             );
             services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
             services.AddTransient<UserService>();

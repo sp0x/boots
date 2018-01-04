@@ -20,8 +20,7 @@ namespace Netlyt.Service.Integration
         string DataFormatType { get; }
         ICollection<FieldDefinition> Fields { get; }
 
-        ICollection<IntegrationExtra> Extras { get; }
-        IIntegration SaveType(string userApiId);
+        ICollection<IntegrationExtra> Extras { get; } 
 
         IntegratedDocument CreateDocument<T>(T data);
     }
