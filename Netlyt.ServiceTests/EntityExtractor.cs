@@ -43,7 +43,7 @@ namespace Netlyt.ServiceTests
 
             _config = fixture;
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
-            _apiService = new ApiService(_contextFactory);
+            _apiService = new ApiService(_contextFactory, null);
             _purchases = new BsonArray();
             _purchasesOnHolidays = new BsonArray();
             _purchasesInWeekends = new BsonArray();

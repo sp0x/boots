@@ -16,7 +16,7 @@ using Netlyt.Web.Services;
 namespace Netlyt.Web.Controllers
 {
     [Authorize]
-    [Route("[controller]/[action]")]
+    [Route("user/[action]")]
     public class AccountController : Controller
     {
         private readonly UserManager<User> _userManager;
@@ -42,20 +42,19 @@ namespace Netlyt.Web.Controllers
         [TempData]
         public string ErrorMessage { get; set; }
 
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<IActionResult> Login(string returnUrl = null)
-        {
-            // Clear the existing external cookie to ensure a clean login process
-            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-
-            ViewData["ReturnUrl"] = returnUrl;
-            return View();
-        }
-
+//        [HttpGet]
+//        [AllowAnonymous]
+//        public async Task<IActionResult> Login(string returnUrl = null)
+//        {
+//            // Clear the existing external cookie to ensure a clean login process
+//            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+//
+//            ViewData["ReturnUrl"] = returnUrl;
+//            return View();
+//        }
+//
         [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
+        [AllowAnonymous] 
         public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
@@ -63,15 +62,19 @@ namespace Netlyt.Web.Controllers
             {
                 // This doesn't count login failures towards account lockout
                 // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+                var result = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, true, lockoutOnFailure: false);
+                
                 if (result.Succeeded)
                 {
+                    var u = User;
                     _logger.LogInformation("User logged in.");
-                    return RedirectToLocal(returnUrl);
+                    var userid = User.GetUserId();
+                    _userService.InitializeUserSession(HttpContext.User);
+                    return Json(new {success = true}); 
                 }
                 if (result.RequiresTwoFactor)
                 {
-                    return RedirectToAction(nameof(LoginWith2fa), new { returnUrl, model.RememberMe });
+                    return RedirectToAction(nameof(LoginWith2fa), new { returnUrl });
                 }
                 if (result.IsLockedOut)
                 {
@@ -81,12 +84,10 @@ namespace Netlyt.Web.Controllers
                 else
                 {
                     ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    return View(model);
+                    return Json(new {success = false, message = "Invalid login attempt."}); 
                 }
             }
-
-            // If we got this far, something failed, redisplay form
-            return View(model);
+            return BadRequest();
         }
 
         [HttpGet]
@@ -206,24 +207,24 @@ namespace Netlyt.Web.Controllers
             return View();
         }
 
-        [HttpGet]
-        [AllowAnonymous]
-        public IActionResult Register(string returnUrl = null)
-        {
-            ViewData["ReturnUrl"] = returnUrl;
-            return View();
-        }
+//        [HttpGet]
+//        [AllowAnonymous]
+//        public IActionResult Register(string returnUrl = null)
+//        {
+//            ViewData["ReturnUrl"] = returnUrl;
+//            return View();
+//        }
 
         [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
+        [AllowAnonymous] 
         public async Task<IActionResult> Register(RegisterViewModel model, string returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
+            IdentityResult result;
             if (ModelState.IsValid)
             {
                 User user;
-                var result = _userService.CreateUser(model, out user);
+                result = _userService.CreateUser(model, out user);
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
@@ -234,13 +235,21 @@ namespace Netlyt.Web.Controllers
 
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     _logger.LogInformation("User created a new account with password.");
-                    return RedirectToLocal(returnUrl);
+                    //return RedirectToLocal(returnUrl);
                 }
-                AddErrors(result);
+                else
+                {
+                    var response = Json(result);
+                    response.StatusCode = 400;
+                    return response;
+                } 
+                return Json(new {success = true, apiKeys = user.ApiKeys});
             }
-
-            // If we got this far, something failed, redisplay form
-            return View(model);
+            else
+            {
+                return BadRequest();
+            }
+             
         }
 
         [HttpPost]
@@ -249,7 +258,7 @@ namespace Netlyt.Web.Controllers
         {
             await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out.");
-            return RedirectToAction(nameof(HomeController.Index), "Home");
+            return Json(new {success = true});
         }
 
         [HttpPost]
@@ -337,7 +346,7 @@ namespace Netlyt.Web.Controllers
         {
             if (userId == null || code == null)
             {
-                return RedirectToAction(nameof(HomeController.Index), "Home");
+                return BadRequest();
             }
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
@@ -346,14 +355,7 @@ namespace Netlyt.Web.Controllers
             }
             var result = await _userManager.ConfirmEmailAsync(user, code);
             return View(result.Succeeded ? "ConfirmEmail" : "Error");
-        }
-
-        [HttpGet]
-        [AllowAnonymous]
-        public IActionResult ForgotPassword()
-        {
-            return View();
-        }
+        } 
 
         [HttpPost]
         [AllowAnonymous]
@@ -436,7 +438,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet]
         public IActionResult AccessDenied()
         {
-            return View();
+            return Unauthorized();
         }
 
         #region Helpers
@@ -457,7 +459,7 @@ namespace Netlyt.Web.Controllers
             }
             else
             {
-                return RedirectToAction(nameof(HomeController.Index), "Home");
+                return BadRequest();
             }
         }
 

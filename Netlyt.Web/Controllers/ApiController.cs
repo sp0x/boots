@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using nvoid.db;
 using nvoid.db.Extensions;
@@ -14,7 +15,7 @@ using Newtonsoft.Json.Linq;
 namespace Netlyt.Web.Controllers
 {
     [Produces("application/json")]
-    [Route("api")]
+    [Route("api/[action]")]
     public class ApiController : Controller
     {
         private SocialNetworkApiManager _socialApiMan; 
@@ -41,6 +42,16 @@ namespace Netlyt.Web.Controllers
 
             _socialApiMan.RegisterNetwork(HttpContext.Session, socnetType, appId, appSecret);
             return Json(new { success = true });
+        }
+
+        [HttpGet(Name = "keys")]
+        [Authorize]
+        public async Task<ActionResult> GetApiKeys()
+        {
+            var user = User;
+            user = user;
+            object keys = new object();
+            return Json(keys);
         }
 
         /// <summary>

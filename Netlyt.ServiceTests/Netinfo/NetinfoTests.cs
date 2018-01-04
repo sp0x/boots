@@ -51,7 +51,7 @@ namespace Netlyt.ServiceTests.Netinfo
             _appId = "123123123";
             _dateHelper = new DateHelper();
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
-            _apiService = new ApiService(_contextFactory);
+            _apiService = new ApiService(_contextFactory, null);
         }
 
         [Theory]

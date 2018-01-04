@@ -15,27 +15,32 @@ using Microsoft.Extensions.Options;
 using nvoid.db;
 using nvoid.db.Extensions;
 using nvoid.Integration;
+using Netlyt.Service;
 
 namespace Netlyt.Web.Middleware.Hmac
 {
     public class HmacHandler : AuthenticationHandler<HmacOptions>
     {
-        private readonly IMemoryCache _memoryCache;
-        private readonly RemoteDataSource<ApiAuth> _authSource;
+        private readonly IMemoryCache _memoryCache; 
         private string _iv;
         private int _iterations;
         private byte[] _salt;
+        private ApiService _apiService;
+        private UserService _userService;
 
         public HmacHandler(
             IOptionsMonitor<HmacOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
             ISystemClock clock,
-            IMemoryCache memoryCache) : base(options, logger, encoder, clock)
+            IMemoryCache memoryCache,
+            ApiService apiService,
+            UserService userService) : base(options, logger, encoder, clock)
         {
             // store custom services here...
             _memoryCache = memoryCache;
-            _authSource = typeof(ApiAuth).GetDataSource<ApiAuth>();
+            _apiService = apiService;
+            _userService = userService;
             _iv = "9595948593968468"; //new byte[]{ 4,5,2,8,7,1,8,2,
             //              9,7,3,4,8,2,9,3 };
             _iterations = 200;
@@ -54,16 +59,7 @@ namespace Netlyt.Web.Middleware.Hmac
 
             if (valid)
             {
-                var claimsIdentity = new ClaimsIdentity("HMAC");
-                var principal = new ClaimsPrincipal(claimsIdentity);
-                var user = Context.User;
-                var appApiId = Context.Session.GetString("APP_API_ID");
-                if (appApiId == null)
-                {
-                    Context.Session.SetString("APP_API_ID", apiAuth.Id.ToString());
-                    user.AddIdentity(claimsIdentity);
-                }
-                Response.Headers.Add("APP_API_ID", apiAuth.Id.ToString());
+                var principal = _userService.InitializeHmacSession(apiAuth);
                 var authProps = new AuthenticationProperties();
                 var ticket = new AuthenticationTicket(principal, authProps, Options.AuthenticationScheme);
                 return AuthenticateResult.Success(ticket);
@@ -137,7 +133,7 @@ namespace Netlyt.Web.Middleware.Hmac
             body = null;
 
             //App filter
-            matchingApiAuth = _authSource.FindFirst(x => x.AppId == appId);
+            matchingApiAuth = _apiService.GetApi(appId);
             if (matchingApiAuth == null)//Options.AppId != AppId)
             {
                 return false;

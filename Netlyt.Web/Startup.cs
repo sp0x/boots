@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -7,11 +8,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using nvoid.db.DB.Configuration; 
+using nvoid.db.DB.Configuration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Web.Middleware;
-using Netlyt.Web.Middleware.Hmac; 
+using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
 using IdentityRole = Microsoft.AspNetCore.Identity.MongoDB.IdentityRole;
 
@@ -31,7 +32,7 @@ namespace Netlyt.Web
             BehaviourContext.Configure(Configuration.GetSection("behaviour"));
             BehaviourContext.Run();
         }
-         
+
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -56,10 +57,9 @@ namespace Netlyt.Web
                 .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();
 
-//            services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
-//                .AddDefaultTokenProviders();
+            //            services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
+            //                .AddDefaultTokenProviders();
 
-            services.AddHmacAuthentication(); 
             services.AddMemoryCache();
             services.AddSession(options =>
             {
@@ -80,16 +80,39 @@ namespace Netlyt.Web
             services.AddTransient<SignInManager<User>>();
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
-            services.AddTransient<IFactory<ManagementDbContext>, ManagementDbFactory>();
-            services.AddSingleton<UserService>();
+            services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
+                new DynamicContextFactory(() => s.GetService<ManagementDbContext>())
+            );
+            services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
+            services.AddTransient<UserService>();
+            services.AddTransient<ApiService>();
+            SetupAuthentication(services);
         }
 
-
+        public void SetupAuthentication(IServiceCollection services)
+        {
+            services.AddHmacAuthentication();
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options => {
+                    options.LoginPath = "/user/Login/";
+                });
+            services.ConfigureApplicationCookie(options =>
+            {
+                // Cookie settings
+                options.Cookie.HttpOnly = true;
+                options.Cookie.Expiration = TimeSpan.FromDays(150);
+                options.LoginPath = "/user/Login"; // If the LoginPath is not set here, ASP.NET Core will default to /Account/Login
+                options.LogoutPath = "/user/Logout"; // If the LogoutPath is not set here, ASP.NET Core will default to /Account/Logout
+                options.AccessDeniedPath = "/user/AccessDenied"; // If the AccessDeniedPath is not set here, ASP.NET Core will default to /Account/AccessDenied
+                options.SlidingExpiration = true;
+            });
+        }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            loggerFactory.AddConsole();
             loggerFactory.AddDebug();
             app.UseAuthentication();
 
@@ -104,16 +127,16 @@ namespace Netlyt.Web
             }
             app.UseSession();
             app.UseStaticFiles();
-            var routeHelper = app.ApplicationServices.GetService<RoutingConfiguration>(); 
+            var routeHelper = app.ApplicationServices.GetService<RoutingConfiguration>();
             app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), builder =>
             {
                 app.UseEnableRequestRewind();
-                builder.UseAuthentication(); 
-//                builder.UseHmacAuthentication(new HmacOptions()
-//                {
-//                    MaxRequestAgeInSeconds = 300,
-//                    AutomaticAuthenticate = true
-//                });
+                builder.UseAuthentication();
+                //                builder.UseHmacAuthentication(new HmacOptions()
+                //                {
+                //                    MaxRequestAgeInSeconds = 300,
+                //                    AutomaticAuthenticate = true
+                //                });
                 builder.UseMvc(routes =>
                 {
                     routes.MapRoute(
@@ -124,7 +147,8 @@ namespace Netlyt.Web
                 {
                     if (!context.User.Identity.IsAuthenticated)
                     {
-                        await context.Response.WriteAsync(context.User.Identity.IsAuthenticated.ToString());
+                        context.Response.StatusCode = 401;
+                        //await context.Response.Flush();
                     }
                     else
                     {

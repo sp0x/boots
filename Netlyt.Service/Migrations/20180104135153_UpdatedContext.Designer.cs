@@ -5,16 +5,16 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.Internal;
-using Microsoft.EntityFrameworkCore.ValueGeneration;
 using Netlyt.Service.Data;
 using System;
 
 namespace Netlyt.Service.Migrations
 {
     [DbContext(typeof(ManagementDbContext))]
-    partial class ManagementDbContextModelSnapshot : ModelSnapshot
+    [Migration("20180104135153_UpdatedContext")]
+    partial class UpdatedContext
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,9 +29,6 @@ namespace Netlyt.Service.Migrations
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken();
 
-                    b.Property<string>("Discriminator")
-                        .IsRequired();
-
                     b.Property<string>("Name")
                         .HasMaxLength(256);
 
@@ -45,8 +42,6 @@ namespace Netlyt.Service.Migrations
                         .HasName("RoleNameIndex");
 
                     b.ToTable("AspNetRoles");
-
-                    b.HasDiscriminator<string>("Discriminator").HasValue("IdentityRole");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -368,8 +363,6 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed");
 
-                    b.Property<string>("RoleId");
-
                     b.Property<string>("SecurityStamp");
 
                     b.Property<bool>("TwoFactorEnabled");
@@ -387,8 +380,6 @@ namespace Netlyt.Service.Migrations
                         .HasName("UserNameIndex");
 
                     b.HasIndex("OrganizationId");
-
-                    b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUsers");
                 });
@@ -445,16 +436,6 @@ namespace Netlyt.Service.Migrations
                     b.HasIndex("ApiAuthId");
 
                     b.ToTable("ApiPermissionsSet");
-                });
-
-            modelBuilder.Entity("Netlyt.Service.UserRole", b =>
-                {
-                    b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityRole");
-
-
-                    b.ToTable("UserRole");
-
-                    b.HasDiscriminator().HasValue("UserRole");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -582,10 +563,6 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Service.Organization", "Organization")
                         .WithMany("Members")
                         .HasForeignKey("OrganizationId");
-
-                    b.HasOne("Netlyt.Service.UserRole", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId");
                 });
 
             modelBuilder.Entity("nvoid.Integration.ApiAuth", b =>

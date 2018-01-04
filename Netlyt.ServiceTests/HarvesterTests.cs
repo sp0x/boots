@@ -24,7 +24,7 @@ namespace Netlyt.ServiceTests
         {
             _config = fixture;
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
-            _apiService = new ApiService(_contextFactory);
+            _apiService = new ApiService(_contextFactory, null);
         }
 
         /// <summary>

@@ -29,7 +29,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         {
             _config = fixture;
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
-            _apiService = new ApiService(_contextFactory);
+            _apiService = new ApiService(_contextFactory, null);
         }
 
         private GroupingBlock GetGrouper(string userId)

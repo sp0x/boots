@@ -75,17 +75,17 @@ namespace Netlyt.Web.Controllers
         public async Task<ActionResult> Entity()
         {
             //Dont close the body! 
-            var userApiId = HttpContext.Session.GetUserApiId();
+            var api = _apiService.GetCurrentApi();
             var memSource = InMemorySource.Create(Request.Body, new JsonFormatter());
             var type = (DataIntegration)memSource.GetTypeDefinition();
-            type.APIKey = _apiService.GetApi(userApiId);
+            type.APIKey = api;
             StringValues tmpSource;
             _integrationService.SaveType(type);
             if (Request.Headers.TryGetValue("DataSource", out tmpSource)) type.Source = tmpSource.ToString();
-            type.SaveType(userApiId);
+            type.SaveType(api.AppId);
             //Check if the entity type exists
             var harvester = new Harvester<IntegratedDocument>(_apiService);
-            var destination = (new MongoSink<IntegratedDocument>(userApiId));
+            var destination = (new MongoSink<IntegratedDocument>(api.AppId));
             destination.LinkTo(_behaviourContext.GetActionBlock());
             harvester.SetDestination(destination);
             harvester.AddType(type, memSource);
