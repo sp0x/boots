@@ -29,8 +29,7 @@ $permissionsArray = ["email"];
 $client->requirePermissions("Facebook", $permissionsArray);
 var_dump($permissionsArray);
 
-$dataClient = $client->getDataClient();
-$status = $dataClient->createEntity($newUser);
+$dataClient = $client->getDataClient(); 
 $newUser["Name"] = "Divan";
 $newUser["Id"] = 3;
 $status = $dataClient->createEntity($newUser);

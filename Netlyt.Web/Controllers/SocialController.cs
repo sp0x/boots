@@ -1,12 +1,7 @@
-﻿using System;
-using System.Linq;
-using System.Net;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using nvoid.db;
-using nvoid.db.Extensions;
-using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
@@ -16,15 +11,15 @@ using Newtonsoft.Json.Linq;
 namespace Netlyt.Web.Controllers
 {
     [Produces("application/json")]
-    [Route("api/[action]")]
-    [Authorize]
-    public class ApiController : Controller
+    [Authorize(AuthenticationSchemes = Netlyt.Data.AuthenticationSchemes.ApiSchemes)]
+    [Route("social")]
+    public class SocialController : Controller
     {
         private SocialNetworkApiManager _socialApiMan; 
         private ApiService _apiService;
 
 
-        public ApiController(SocialNetworkApiManager socialApiMan,
+        public SocialController(SocialNetworkApiManager socialApiMan,
             ApiService apiService)
         {
             _socialApiMan = socialApiMan;
@@ -46,8 +41,7 @@ namespace Netlyt.Web.Controllers
             return Json(new { success = true });
         }
 
-        [HttpGet(Name = "keys")]
-        [Authorize]
+        [HttpGet(Name = "keys")] 
         public async Task<ActionResult> GetApiKeys()
         {
             var user = User;
@@ -60,10 +54,9 @@ namespace Netlyt.Web.Controllers
         /// Gets the all permissions of this api
         /// </summary>
         /// <returns></returns>
-        [Route("api/SocialPermissions")]
-        [Authorize(AuthenticationSchemes = Netlyt.Data.AuthenticationSchemes.DataSchemes)]
-        [HttpGet]
-        public async Task<ActionResult> SocialPermissions(string type = "Local")
+        [Route("Permissions")]
+        [AllowAnonymous]
+        public async Task<ActionResult> Permissions(string type = "Local")
         {
             var apiId = HttpContext.Session.GetUserApiId();
             var api = _apiService.GetApi(apiId);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -14,6 +15,7 @@ using Netlyt.Service.Data;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
+using Newtonsoft.Json;
 using IdentityRole = Microsoft.AspNetCore.Identity.MongoDB.IdentityRole;
 
 namespace Netlyt.Web
@@ -62,7 +64,6 @@ namespace Netlyt.Web
                 options.CookieHttpOnly = true;
             });
             //330
-            services.AddMvc();
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
@@ -85,6 +86,7 @@ namespace Netlyt.Web
             services.AddTransient<UserService>();
             services.AddTransient<ApiService>();
             SetupAuthentication(services);
+            services.AddMvc();
         }
 
         public void SetupAuthentication(IServiceCollection services)
@@ -126,41 +128,7 @@ namespace Netlyt.Web
             app.UseSession();
             app.UseStaticFiles();
             var routeHelper = app.ApplicationServices.GetService<RoutingConfiguration>();
-            app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), builder =>
-            {
-                app.UseEnableRequestRewind();
-                builder.UseAuthentication();
-                //                builder.UseHmacAuthentication(new HmacOptions()
-                //                {
-                //                    MaxRequestAgeInSeconds = 300,
-                //                    AutomaticAuthenticate = true
-                //                });
-                builder.UseMvc(routes =>
-                {
-                    routes.MapRoute(
-                        name: "default",
-                        template: "{controller=Home}/{action=Index}/{id?}");
-                });
-                builder.Run(async (context) =>
-                {
-                    if (!context.User.Identity.IsAuthenticated)
-                    {
-                        context.Response.StatusCode = 401;
-                        //await context.Response.Flush();
-                    }
-                    else
-                    {
-                    }
-                    //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
-                    //it should be True
-                });
-                //                builder.Run(async (context) =>
-                //                {
-                //                    //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
-                //                    //it should be True
-                //                    await context.Response.WriteAsync(context.User.Identity.IsAuthenticated.ToString());
-                //                });
-            });
+            app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), builder => SetupApi(app, builder) );
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
@@ -173,6 +141,53 @@ namespace Netlyt.Web
             //                    name: "default",
             //                    template: "{controller=Home}/{action=Index}/{id?}");
             //            });
+        }
+
+        /// <summary>
+        /// Setup api.* requests
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="builder"></param>
+        /// <returns></returns>
+        private static void SetupApi(IApplicationBuilder app, IApplicationBuilder builder)
+        {
+            app.UseEnableRequestRewind();
+            builder.UseAuthentication();
+            //                builder.UseHmacAuthentication(new HmacOptions()
+            //                {
+            //                    MaxRequestAgeInSeconds = 300,
+            //                    AutomaticAuthenticate = true
+            //                });
+            builder.UseMvc(routes =>
+            {
+                routes.MapRoute(
+                    name: "default",
+                    template: "{controller=Home}/{action=Index}/{id?}");
+            });
+            builder.Run(async (context) =>
+            {
+                if (true)//!context.User.Identity.IsAuthenticated)
+                {
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsync(JsonConvert.SerializeObject(new
+                    {
+                        error = "Route not found.",
+                        success = false
+                    }));
+                    //await context.Response.Flush();
+                }
+                else
+                {
+                }
+                //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
+                //it should be True
+            });
+            //                builder.Run(async (context) =>
+            //                {
+            //                    //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
+            //                    //it should be True
+            //                    await context.Response.WriteAsync(context.User.Identity.IsAuthenticated.ToString());
+            //                });
         }
     }
 }

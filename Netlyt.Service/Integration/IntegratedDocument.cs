@@ -2,6 +2,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
 using nvoid.db.DB;
 using Netlyt.Service.Integration.Blocks;
 
@@ -9,7 +11,8 @@ namespace Netlyt.Service.Integration
 {
     public class IntegratedDocument : Entity
     {
-        public int Id { get; set; }
+        [BsonId(IdGenerator = typeof(StringObjectIdGenerator))]
+        public string Id { get; set; }
         public Lazy<BsonDocument> Document { get; set; }
         public BsonDocument Reserved { get; set; }
         public long APIId { get; set; }

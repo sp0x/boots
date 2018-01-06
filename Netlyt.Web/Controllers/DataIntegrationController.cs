@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Primitives;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -29,7 +28,7 @@ namespace Netlyt.Web.Controllers
     /// TODO: Create a service for the actions performed in this controller.
     /// </summary>
     [Produces("application/json")]
-    [Authorize(AuthenticationSchemes = Netlyt.Data.AuthenticationSchemes.DataSchemes)]
+    [Authorize(AuthenticationSchemes = Netlyt.Data.AuthenticationSchemes.ApiSchemes)]
     [Route("data")]
     public class DataIntegrationController : Controller
     {
@@ -39,6 +38,7 @@ namespace Netlyt.Web.Controllers
         private IntegrationService _integrationService;
         private ApiService _apiService;
         private ManagementDbContext _context;
+        private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
 
         public DataIntegrationController(UserManager<User> userManager,
             IUserStore<User> userStore,
@@ -46,7 +46,8 @@ namespace Netlyt.Web.Controllers
             ManagementDbContext context,
             SocialNetworkApiManager socNetManager,
             IntegrationService integrationService,
-            ApiService apiService)
+            ApiService apiService,
+            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider)
         {
             _behaviourContext = behaviourCtx;
             _context = context;
@@ -55,6 +56,7 @@ namespace Netlyt.Web.Controllers
             _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
             _socNetManager = socNetManager;
             _integrationService = integrationService;
+            _actionDescriptorCollectionProvider = actionDescriptorCollectionProvider;
         }
 
 
@@ -68,6 +70,19 @@ namespace Netlyt.Web.Controllers
             });
         }
 
+        private void GetRoutes()
+        {
+            var routes = _actionDescriptorCollectionProvider.ActionDescriptors.Items
+                .Select(x => new {
+                Action = x.RouteValues["Action"],
+                Controller = x.RouteValues["Controller"],
+                Name = x.AttributeRouteInfo?.Name,
+                Template = x.AttributeRouteInfo?.Template,
+                Contraint = x.ActionConstraints
+            }).ToList();
+            routes = routes;
+        }
+
         /// <summary>   (An Action that handles HTTP POST requests) Posts entity data record(s). </summary>
         ///
         /// <remarks>   Vasko, 18-Dec-17. </remarks>
@@ -78,6 +93,8 @@ namespace Netlyt.Web.Controllers
         [HttpPost]
         public async Task<ActionResult> Entity()
         {
+            //GetRoutes();
+
             //Dont close the body! 
             var api = _apiService.GetCurrentApi();
             var memSource = InMemorySource.Create(Request.Body, new JsonFormatter());
@@ -93,7 +110,7 @@ namespace Netlyt.Web.Controllers
             destination.LinkTo(_behaviourContext.GetActionBlock());
             harvester.SetDestination(destination);
             harvester.AddType(type, memSource);
-            var result = harvester.Synchronize();
+            var result = await harvester.Synchronize();
             return Json(new
             {
                 success = true,
