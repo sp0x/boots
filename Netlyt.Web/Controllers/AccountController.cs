@@ -24,19 +24,22 @@ namespace Netlyt.Web.Controllers
         private readonly IEmailSender _emailSender;
         private readonly ILogger _logger;
         private readonly UserService _userService;
+        private ApiService _apiService;
 
         public AccountController(
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             IEmailSender emailSender,
             ILogger<AccountController> logger, 
-            UserService userService)
+            UserService userService,
+            ApiService apiService)
         {
             _userService = userService;
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
             _logger = logger;
+            _apiService = apiService;
         }
 
         [TempData]
@@ -434,11 +437,18 @@ namespace Netlyt.Web.Controllers
             return View();
         }
 
-
         [HttpGet]
         public IActionResult AccessDenied()
         {
             return Unauthorized();
+        }
+
+        [HttpGet(Name = "keys")]
+        public async Task<ActionResult> GetApiKeys()
+        {
+            var user = _apiService.GetCurrentApiUser();
+            if (user == null) return Json(new {success = false, message = "No user matching your keys."});
+            return Json(user.ApiKeys);
         }
 
         #region Helpers

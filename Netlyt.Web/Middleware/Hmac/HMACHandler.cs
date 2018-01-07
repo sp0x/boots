@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using nvoid.db;
 using nvoid.db.Extensions;
 using nvoid.Integration;
@@ -27,6 +28,7 @@ namespace Netlyt.Web.Middleware.Hmac
         private byte[] _salt;
         private ApiService _apiService;
         private UserService _userService;
+        private IHttpContextAccessor _contextAccessor;
 
         public HmacHandler(
             IOptionsMonitor<HmacOptions> options,
@@ -35,7 +37,8 @@ namespace Netlyt.Web.Middleware.Hmac
             ISystemClock clock,
             IMemoryCache memoryCache,
             ApiService apiService,
-            UserService userService) : base(options, logger, encoder, clock)
+            UserService userService,
+            IHttpContextAccessor contextAccessor) : base(options, logger, encoder, clock)
         {
             // store custom services here...
             _memoryCache = memoryCache;
@@ -45,27 +48,58 @@ namespace Netlyt.Web.Middleware.Hmac
             //              9,7,3,4,8,2,9,3 };
             _iterations = 200;
             _salt = new byte[] { }; //243, 133, 64, 76, 111, 136, 1, 78};
+            _contextAccessor = contextAccessor;
+        }
+
+        protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+        {
+            return base.HandleChallengeAsync(properties);
         }
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            var authorization = Request.Headers["Authorization"];
-            if (string.IsNullOrEmpty(authorization))
+            var apiId = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");
+            if (string.IsNullOrEmpty(apiId))
             {
-                return AuthenticateResult.Fail("No authorization header.");
-            }
-            ApiAuth apiAuth;
-            var valid = Validate(Request, out apiAuth);
+                var authorization = Request.Headers["Authorization"];
+                if (string.IsNullOrEmpty(authorization))
+                {
+                    return AuthenticateResult.Fail("No authorization header.");
+                } 
+                ApiAuth apiAuth;
+                var valid = Validate(Request, out apiAuth);
 
-            if (valid)
+                if (valid)
+                {
+                    _apiService.SetCurrentApi(apiAuth);
+                    var ticket = await _userService.InitializeHmacSession();
+                    return AuthenticateResult.Success(ticket);
+                }
+            }
+            else
             {
-                var principal = _userService.InitializeHmacSession(apiAuth);
-                var authProps = new AuthenticationProperties();
-                var ticket = new AuthenticationTicket(principal, authProps, Options.AuthenticationScheme);
+                RefreshAuth();
+                var ticket = _userService.ValidateHmacSession();
                 return AuthenticateResult.Success(ticket);
             }
-
             return AuthenticateResult.Fail("Authentication failed");
+        }
+
+        private void RefreshAuth()
+        { 
+            StringValues clientVersion;
+            if (_contextAccessor.HttpContext.Request.Headers.TryGetValue("ClientVersion", out clientVersion))
+            {
+                //Do something with the version of netlyt client..
+                clientVersion = clientVersion;
+            }
+            else
+            {
+                //This is a legacy version, decrypt the content.
+                clientVersion = clientVersion;
+                var crApi = _apiService.GetCurrentApi();
+                DecryptLegacyBody(crApi);
+            }
 
         }
 
@@ -95,12 +129,7 @@ namespace Netlyt.Web.Middleware.Hmac
                     //If the request is valid, xor the body and write it
                     if (isValidRequest)
                     {
-                        if (!string.IsNullOrEmpty(body))
-                        {
-                            body = XorString(body, apiAuth.AppSecret); 
-                            byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
-                            Request.Body = new MemoryStream(bodyBytes);
-                        }
+                        DecryptBody(apiAuth, body);
                     }
                     return isValidRequest;
                 }
@@ -115,6 +144,37 @@ namespace Netlyt.Web.Middleware.Hmac
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Decrypts the body of the request
+        /// </summary>
+        /// <param name="apiAuth"></param>
+        /// <param name="body"></param>
+        private void DecryptBody(ApiAuth apiAuth, string body)
+        {
+            if (!string.IsNullOrEmpty(body))
+            {
+                body = XorString(body, apiAuth.AppSecret);
+                byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(body);
+                Request.Body = new MemoryStream(bodyBytes);
+            }
+        }
+        /// <summary>
+        /// Decrypts the body of the request
+        /// </summary>
+        /// <param name="apiAuth"></param> 
+        private void DecryptLegacyBody(ApiAuth apiAuth)
+        {
+            var contentBytes = ReadFully(Request.Body);
+            var contentString = System.Text.Encoding.UTF8.GetString(contentBytes);
+            contentBytes = null;
+            if (!string.IsNullOrEmpty(contentString))
+            {
+                contentString = XorString(contentString, apiAuth.AppSecret);
+                byte[] bodyBytes = System.Text.Encoding.UTF8.GetBytes(contentString);
+                Request.Body = new MemoryStream(bodyBytes);
+            }
         }
 
         private bool IsValidRequest(HttpRequest req, string appId, string incomingBase64Signature, string nonce, string requestTimeStamp,
@@ -174,124 +234,7 @@ namespace Netlyt.Web.Middleware.Hmac
 
             return result.ToString();
         }
-
-        private string DecodeMessage(string text, string key)
-        {
-            var clearMessage = XorString(text, key);
-            return clearMessage;
-        }
-
-        public byte[] Decode(string str)
-        {
-            var decbuff = Convert.FromBase64String(str);
-            return decbuff;
-        }
-
-        //        private String DecryptRJ256(byte[] cypher, string KeyString, byte[] iv)
-        //        {
-        //            var sRet = "";
-        //
-        //            var encoding = new UTF8Encoding();
-        //            var keyBytes = encoding.GetBytes(KeyString); 
-        ////            var crypto = new RijndaelEnhanced(KeyString, IVString, 0, 0, 256, "SHA256", "", 200);
-        ////            var ret = crypto.DecryptToBytes(cypher);
-        //            using (var rj = new RijndaelManaged())
-        //            {
-        //                try
-        //                { 
-        //                    var derivedKey = new Rfc2898DeriveBytes(keyBytes, _salt , _iterations);
-        //                    //AES.Key = key.GetBytes(AES.KeySize / 8);
-        //                    rj.Mode = CipherMode.CBC;
-        //                    rj.BlockSize = 128;
-        //                    rj.Padding = PaddingMode.Zeros;
-        //                    rj.Key = derivedKey.GetBytes(rj.KeySize / 8);
-        //                    rj.IV = iv;
-        //                    var ms = new MemoryStream(cypher);
-        //
-        //                    using (var cs = new CryptoStream(ms, rj.CreateDecryptor(), CryptoStreamMode.Read))
-        //                    {
-        //                        using (var sr = new StreamReader(cs))
-        //                        {
-        //                            sRet = sr.ReadLine();
-        //                        }
-        //                    }
-        //                }
-        //                catch (Exception ex)
-        //                {
-        //                    ex = ex;
-        //                }
-        //                finally
-        //                {
-        //                    rj.Clear();
-        //                }
-        //            }
-        //
-        //            return sRet;
-        //        }
-
-
-        public String Decrypt(String text, String key)
-        {
-            try
-            {
-                MD5 md5 = System.Security.Cryptography.MD5.Create();
-                byte[] keyBytes = System.Text.Encoding.ASCII.GetBytes(key);
-                byte[] keyBytesHash = md5.ComputeHash(keyBytes);
-                var keySize = 128;
-                var passwordSize = keySize / 8;
-                //pad key out to 32 bytes (256bits) if its too short
-                if (keyBytesHash.Length < passwordSize)
-                {
-                    var paddedkey = new byte[passwordSize];
-                    Buffer.BlockCopy(keyBytesHash, 0, paddedkey, 0, keyBytesHash.Length);
-                    keyBytesHash = paddedkey;
-                }
-
-                var ivBytes = Encoding.ASCII.GetBytes(this._iv);
-                var rawData = System.Convert.FromBase64String(text);
-                using (AesManaged aes = new AesManaged())
-                {
-
-                    var ivhex = BitConverter.ToString(keyBytesHash).Replace("-", string.Empty);
-                    var keyhex = BitConverter.ToString(ivBytes).Replace("-", string.Empty);
-
-                    // Encrypt File
-                    using (var ms = new MemoryStream())
-                    {
-                        aes.Mode = CipherMode.CBC;
-                        aes.Padding = PaddingMode.None;
-                        aes.KeySize = 128;
-                        aes.BlockSize = 128;
-
-                        var decryptor = aes.CreateEncryptor(keyBytesHash, ivBytes);
-                        var result = PerformCryptography(decryptor, rawData);
-                        var ascii = Encoding.ASCII.GetString(result);
-                        var utf = Encoding.UTF8.GetString(result);
-                        return ascii;
-                    }
-                }
-
-            }
-            catch (Exception ex)
-            {
-                ex = ex;
-            }
-            return "";
-        }
-
-        private byte[] PerformCryptography(ICryptoTransform cryptoTransform, byte[] data)
-        {
-            using (var memoryStream = new MemoryStream())
-            {
-                using (var cryptoStream = new CryptoStream(memoryStream, cryptoTransform, CryptoStreamMode.Write))
-                {
-                    cryptoStream.Write(data, 0, data.Length);
-                    cryptoStream.FlushFinalBlock();
-                    return memoryStream.ToArray();
-                }
-            }
-        }
-
+  
         private string[] GetAuthenticationValues(string rawAuthenticationHeader)
         {
             rawAuthenticationHeader = System.Text.Encoding.ASCII.GetString(Convert.FromBase64String(rawAuthenticationHeader));

@@ -57,13 +57,7 @@ namespace Netlyt.Web
             //                .AddDefaultTokenProviders();
 
             services.AddMemoryCache();
-            services.AddSession(options =>
-            {
-                // Set a short timeout for easy testing.
-                options.IdleTimeout = TimeSpan.FromDays(7);
-                options.CookieHttpOnly = true;
-            });
-            //330
+            services.AddSession();
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
@@ -87,15 +81,22 @@ namespace Netlyt.Web
             services.AddTransient<ApiService>();
             SetupAuthentication(services);
             services.AddMvc();
+            //Enable for 100% auth coverage by default
+//            services.AddMvc(options =>
+//            {
+//                // All endpoints need authentication
+//                options.Filters.Add(new AuthorizeFilter(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build()));
+//            });
         }
 
         public void SetupAuthentication(IServiceCollection services)
         {
             services.AddHmacAuthentication();
-            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(options => {
-                    options.LoginPath = "/user/Login/";
-                });
+//            //Add cookie auth
+//            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+//                .AddCookie(options => {
+//                    options.LoginPath = "/user/Login/";
+//                });
             services.ConfigureApplicationCookie(options =>
             {
                 // Cookie settings
@@ -115,7 +116,6 @@ namespace Netlyt.Web
             loggerFactory.AddConsole();
             loggerFactory.AddDebug();
             app.UseAuthentication();
-
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -126,7 +126,7 @@ namespace Netlyt.Web
                 app.UseExceptionHandler("/Home/Error");
             }
             app.UseSession();
-            app.UseStaticFiles();
+            app.UseStaticFiles(); 
             var routeHelper = app.ApplicationServices.GetService<RoutingConfiguration>();
             app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), builder => SetupApi(app, builder) );
             app.UseMvc(routes =>
@@ -152,18 +152,14 @@ namespace Netlyt.Web
         private static void SetupApi(IApplicationBuilder app, IApplicationBuilder builder)
         {
             app.UseEnableRequestRewind();
-            builder.UseAuthentication();
-            //                builder.UseHmacAuthentication(new HmacOptions()
-            //                {
-            //                    MaxRequestAgeInSeconds = 300,
-            //                    AutomaticAuthenticate = true
-            //                });
+            app.UseSession();
             builder.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
+            builder.UseAuthentication(); 
             builder.Run(async (context) =>
             {
                 if (true)//!context.User.Identity.IsAuthenticated)

@@ -2,11 +2,13 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using nvoid.Integration;
+using Netlyt.Data;
 using Netlyt.Service.Models.Account; 
 
 namespace Netlyt.Service
@@ -28,7 +30,7 @@ namespace Netlyt.Service
             _apiService = apiService;
             _contextAccessor = contextAccessor;
         }
-
+        
         public IdentityResult CreateUser(RegisterViewModel model, out User user)
         {
             var username = model.Email.Substring(0, model.Email.IndexOf("@"));
@@ -39,14 +41,41 @@ namespace Netlyt.Service
             return result;
         }
 
-        public ClaimsPrincipal InitializeHmacSession(ApiAuth apiAuth)
+        public AuthenticationTicket ValidateHmacSession()
         {
-            var claimsIdentity = new ClaimsIdentity("HMAC");
-            var principal = new ClaimsPrincipal(claimsIdentity); 
             var user = _contextAccessor.HttpContext.User;
-            _apiService.SetCurrentApi(apiAuth);
-            user.AddIdentity(claimsIdentity);
-            return principal;
+            var identity2 = user.Identity;
+            // success! Now we just need to create the auth ticket
+            var identity = new ClaimsIdentity(AuthenticationSchemes.DataSchemes); // the name of our auth scheme
+            var principal = new ClaimsPrincipal(identity);
+            // you could add any custom claims here
+            //var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), null, "apikey"); 
+             
+            var authProps = new AuthenticationProperties();
+            var ticket = new AuthenticationTicket(principal, authProps, AuthenticationSchemes.DataSchemes);
+            return ticket;
+        }
+        public async Task<AuthenticationTicket> InitializeHmacSession()
+        {
+            var userAccount = _apiService.GetCurrentApiUser();
+            var appApiIdStr = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");
+            var userClaims = new List<Claim>();
+            userClaims.Add(new Claim(ClaimTypes.Name, userAccount.UserName));
+            userClaims.Add(new Claim("ApiId", appApiIdStr));
+            userClaims.Add(new Claim(ClaimTypes.Email, userAccount.Email));
+
+            var claimsIdentity = new ClaimsIdentity(userClaims, AuthenticationSchemes.DataSchemes);
+            var principal = new ClaimsPrincipal(claimsIdentity);
+            var signInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            await _contextAccessor.HttpContext.SignInAsync(principal: principal, scheme: signInScheme);
+            _contextAccessor.HttpContext.User.AddIdentity(claimsIdentity);
+            var signedIn = _contextAccessor.HttpContext.User.Identity.IsAuthenticated;
+            var authProps = new AuthenticationProperties()
+            {
+                IsPersistent = true
+            };
+            var ticket = new AuthenticationTicket(principal, authProps, AuthenticationSchemes.DataSchemes);
+            return ticket;
             //            var appApiId = HostingApplication.Context.Session.GetString("APP_API_ID");
             //            if (appApiId == null)
             //            {

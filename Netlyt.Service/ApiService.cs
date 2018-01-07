@@ -38,6 +38,14 @@ namespace Netlyt.Service
             return ApiAuth.Generate();
         }
 
+        public User GetCurrentApiUser()
+        {
+            var appApiIdStr = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");
+            if (string.IsNullOrEmpty(appApiIdStr)) return null;
+            var id = long.Parse(appApiIdStr);
+            var user = _context.Users.FirstOrDefault(x => x.ApiKeys.Any(a => a.Id == id));
+            return user;
+        }
         public ApiAuth GetCurrentApi()
         {
             var appApiIdStr = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");

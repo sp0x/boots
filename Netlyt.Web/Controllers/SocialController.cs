@@ -39,16 +39,7 @@ namespace Netlyt.Web.Controllers
 
             _socialApiMan.RegisterNetwork(HttpContext.Session, socnetType, appId, appSecret);
             return Json(new { success = true });
-        }
-
-        [HttpGet(Name = "keys")] 
-        public async Task<ActionResult> GetApiKeys()
-        {
-            var user = User;
-            user = user;
-            object keys = new object();
-            return Json(keys);
-        }
+        } 
 
         /// <summary>
         /// Gets the all permissions of this api
