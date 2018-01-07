@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+using System.Collections.Generic; 
 using System.Dynamic;
-using System.Linq;
-using CachingFramework.Redis;
-using MongoDB.Bson;
+using System.Linq; 
 using nvoid.db.DB.Configuration;
 using nvoid.extensions; 
 using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core;
-using StackExchange.Redis.Extensions.Jil;
-using Jil;
+using StackExchange.Redis.Extensions.Jil; 
 using nvoid.exec.Blocks;
 
 namespace Netlyt.Service.Integration.Blocks
@@ -23,7 +19,7 @@ namespace Netlyt.Service.Integration.Blocks
         private Func<ExpandoObject, string> _groupBySelector;
         private JilSerializer _serializer;
         private StackExchangeRedisCacheClient _cacheClient;
-        private IDatabase _redis;
+        //private IDatabase _redis;
         /// <summary>
         /// 
         /// </summary>
@@ -46,7 +42,7 @@ namespace Netlyt.Service.Integration.Blocks
             if (connection == null) throw new Exception("No redis connection found!"); 
             _serializer = new JilSerializer();
             _cacheClient = new StackExchangeRedisCacheClient(connection, _serializer);
-            _redis = connection.GetDatabase(0);
+            //_redis = connection.GetDatabase(0);
             _groupBySelector = selector;
             _inputProjection = inputProjection;
         }
@@ -56,9 +52,9 @@ namespace Netlyt.Service.Integration.Blocks
             var keyObject = _groupBySelector(intDoc);
             var key = string.Format("{0}:{1}", _keyBase, keyObject.ToString());
             var valueToCollect = _inputProjection(intDoc.Clone());  
-            var hashItems = ((IDictionary<string, object>) valueToCollect)
-                .Select(x => new HashEntry(x.Key, x.Value.ToString())).ToArray();
-            _redis.HashSet(key, hashItems);
+//            var hashItems = ((IDictionary<string, object>) valueToCollect)
+//                .Select(x => new HashEntry(x.Key, x.Value.ToString())).ToArray();
+//            _redis.HashSet(key, hashItems);
             //_cacheClient.Add(key, hashItems);
             return intDoc;
 //            var intDocDocument = intDoc.GetDocument();

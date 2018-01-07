@@ -22,21 +22,21 @@ namespace Netlyt.ServiceTests.Lex.Expressions
         [InlineData(new object[]
         {
             @" 
-            reduce day = time_s(input.ondate) / (60*60*24), 
-                   uuid = input.uuid
-            reduce_map  ondate = input.ondate,
-                        value = input.value,
-                        type = input.type
+            reduce day = time(this.ondate) / (60*60*24), 
+                   uuid = this.uuid
+            reduce_map  ondate = this.ondate,
+                        value = this.value,
+                        type = this.type
                     ",
-            "day = time_s(input.ondate) / 60 * 60 * 24, uuid = input.uuid",
-            "ondate = input.ondate, value = input.value, type = input.type"
-        })]
-        public void ParseMapReduce(
+            "day = time(this.ondate) / 60 * 60 * 24, uuid = this.uuid",
+            "ondate = this.ondate, value = this.value, type = this.type",
+           })]
+        public void ParseMapReduceMap(
             string txt,
             string expectedKeys,
-            string expectedValues)
+            string expectedValues
+           )
         {
-
             var tokenizer = new PrecedenceTokenizer();
             var parser = new TokenParser(tokenizer.Tokenize(txt));
             var mapReduce = parser.ReadMapReduce();
@@ -46,9 +46,34 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             Assert.Equal(expectedValues, values);
             var codeGen = new CodeGenerator();
             var emittedBlob = codeGen.GenerateFromExpression(mapReduce);
-            emittedBlob = emittedBlob;
+            Assert.True(emittedBlob.Length > 100);
             //Generate the code for a map reduce with mongo
-
+        }
+        [Theory]
+        [InlineData(new object[]
+        {
+            @"reduce day = time(this.ondate) / (60*60*24), 
+            uuid = this.uuid
+            reduce_map  ondate = this.ondate,
+            value = this.value,
+            type = this.type
+            reduce aggregate 
+                events = selectMany(values, (x) => x.events),
+                uuid = key.uuid,
+                day = key.day,
+                noticed_date = if any(events) events[0].ondate else null",
+            ""
+        })]
+        public void ParseMapReduceAggregate(string code, string expectedAggregate)
+        {
+            var tokenizer = new PrecedenceTokenizer();
+            var parser = new TokenParser(tokenizer.Tokenize(code));
+            var mapReduce = parser.ReadMapReduce();
+            var values = mapReduce.ValueMembers.ConcatExpressions();
+            var keys = mapReduce.Keys.ConcatExpressions();
+            var codeGen = new CodeGenerator();
+            var emittedBlob = codeGen.GenerateFromExpression(mapReduce);
+            Assert.True(emittedBlob.Length > 100);
         }
 
     }

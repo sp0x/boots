@@ -10,8 +10,8 @@ namespace Netlyt.Service.IntegrationSource
     {
         long Size { get; }
         Encoding Encoding { get; set; }
-        IInputFormatter Formatter { get;  } 
-        IIntegrationTypeDefinition GetTypeDefinition();
+        IInputFormatter Formatter { get;  }
+        IIntegration GetTypeDefinition();
         dynamic GetNext();
     }
 }

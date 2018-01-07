@@ -7,13 +7,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using nvoid.db.DB.Configuration;
-using Netlyt.Data;
+using nvoid.db.DB.Configuration; 
 using Netlyt.Service;
-using Netlyt.Service.Auth;
+using Netlyt.Service.Data;
 using Netlyt.Web.Middleware;
-using Netlyt.Web.Middleware.Hmac;
-using Netlyt.Web.Models.DataModels;
+using Netlyt.Web.Middleware.Hmac; 
 using Netlyt.Web.Services;
 using IdentityRole = Microsoft.AspNetCore.Identity.MongoDB.IdentityRole;
 
@@ -39,11 +37,21 @@ namespace Netlyt.Web
         public void ConfigureServices(IServiceCollection services)
         {
             // Register identity framework services and also Mongo storage. 
-            var mongoConnectionString = DBConfig.GetGeneralDatabase().Value;
+            var databaseConfiguration = DBConfig.GetGeneralDatabase();
+            if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!");
+            var mongoConnectionString = databaseConfiguration.Value;
+            var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection");
+            //            services.AddDbContext<ManagementDbContext>(options =>
+            //            {
+            //                options.UseSqlServer(Configuration.GetConnectionString("PostgreSQLConnection"));
+            //            });
             services.AddDbContext<ManagementDbContext>(options =>
-            {
-                options.UseSqlServer(Configuration.GetConnectionString("PostgreSQLConnection"));
-            });
+                options.UseNpgsql(postgresConnectionString)
+            );
+            //services.AddScoped<IDataAccessProvider, DataAccessPostgreSqlProvider.DataAccessPostgreSqlProvider>();
+
+
+
             services.AddIdentity<User, UserRole>()
                 .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();
@@ -62,16 +70,18 @@ namespace Netlyt.Web
             //330
             services.AddMvc();
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
-
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<BehaviourContext>(this.BehaviourContext);
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
-            services.AddTransient<UserManager<ApplicationUser>>();
-            services.AddTransient<SignInManager<ApplicationUser>>();
+            services.AddTransient<UserManager<User>>();
+            services.AddTransient<IntegrationService>();
+            services.AddTransient<SignInManager<User>>();
             services.AddTransient<IEmailSender, AuthMessageSender>();
-            services.AddTransient<ISmsSender, AuthMessageSender>(); 
+            services.AddTransient<ISmsSender, AuthMessageSender>();
+            services.AddTransient<IFactory<ManagementDbContext>, ManagementDbFactory>();
+            services.AddSingleton<UserService>();
         }
 
 

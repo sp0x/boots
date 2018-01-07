@@ -10,10 +10,10 @@ namespace Netlyt.Service.Integration
     /// </summary>
     public class IntegrationSet 
     {
-        public IIntegrationTypeDefinition Definition { get; set; }
+        public IIntegration Definition { get; set; }
         public InputSource Source { get; set; }
 
-        public IntegrationSet(IIntegrationTypeDefinition inputDef, InputSource source)
+        public IntegrationSet(IIntegration inputDef, InputSource source)
         {
             this.Definition = inputDef;
             this.Source = source;
@@ -56,7 +56,7 @@ namespace Netlyt.Service.Integration
             if (entry == null) return null;
             var doc = new IntegratedDocument();
             doc.SetDocument(entry);
-            doc.TypeId = Definition.Id;
+            doc.IntegrationId = Definition.Id;
             return doc;
         }
         /// <summary>
@@ -66,7 +66,7 @@ namespace Netlyt.Service.Integration
         /// <returns></returns>
         public IntegratedDocument Wrap(ExpandoObject data)
         {
-            return Definition.Wrap(data);
+            return Definition.CreateDocument(data);
         }
     }
 }

@@ -1,0 +1,5 @@
+﻿function(){
+	$key
+	$value
+	emit(__key, __value);
+}

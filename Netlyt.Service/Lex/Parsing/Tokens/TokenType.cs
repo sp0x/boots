@@ -9,9 +9,12 @@
         Assign,
         MemberAccess,
         Equals, NotEquals,
+        Lambda,
         Add, Subtract, Multiply, Divide,
         Comma,
         CloseParenthesis, OpenParenthesis,
+        CloseBracket, OpenBracket,
+        CloseCurlyBracket, OpenCurlyBracket,
         StringValue,
         FloatValue,
         Collection, Feature, Type,
@@ -25,6 +28,9 @@
         Set,
         Symbol,
         Reduce,
-        ReduceMap
+        ReduceMap,
+        ReduceAggregate,
+        Semicolon,
+        NewLine
     }
 }

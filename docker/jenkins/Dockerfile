@@ -10,7 +10,7 @@ RUN apt-get update -qq && apt-get install -qqy \
     lxc \
     iptables
 
-    # Install Docker from Docker Inc. repositories.
+# Install Docker from Docker Inc. repositories.
 RUN curl -sSL https://get.docker.com/ | sh
 # Install the magic wrapper. 
 
@@ -144,6 +144,8 @@ ENV COPY_REFERENCE_FILE_LOG $JENKINS_HOME/copy_reference_file.log
 
 USER ${user}
 
+#Docker config
+COPY docker.options /etc/default/docker
 COPY jenkins-support /usr/local/bin/jenkins-support
 COPY jenkins.sh /usr/local/bin/jenkins.sh
 ENTRYPOINT ["/bin/tini", "--", "/usr/local/bin/jenkins.sh"]

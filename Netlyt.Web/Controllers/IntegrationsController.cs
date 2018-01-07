@@ -1,37 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Linq; 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Netlyt.Web.Models.DataModels;
-using nvoid.db.DB.RDS;
+using nvoid.db; 
 using nvoid.db.Extensions;
+using Netlyt.Service;
+using Netlyt.Service.Integration;
+using Netlyt.Web.Models;
 
-// For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace Netlyt.Web.Controllers
 {
     [Route("api/[controller]")]
     public class IntegrationsController : Controller
     {
-        private RemoteDataSource<Integration> _integrationContext;
+        private RemoteDataSource<DataIntegration> _integrationContext;
         private readonly UserManager<User> _userManager;
         // GET: /<controller>/
         public IntegrationsController(UserManager<User> userManager)
         {
-            _integrationContext = typeof(Integration).GetDataSource<Integration>();
+            _integrationContext = typeof(DataIntegration).GetDataSource<DataIntegration>();
             _userManager = userManager;
         }
+
         [HttpGet("/")]
         [Authorize]
-        public IEnumerable<Integration> GetAll([FromQuery] int page)
+        public IEnumerable<DataIntegration> GetAll([FromQuery] int page)
         {
             var user = _userManager.GetUserAsync(User).Result;
             int pageSize = 25;
             return _integrationContext.Where(x => x.Owner == user).Skip(page * pageSize).Take(pageSize).ToList();
         }
+
         [HttpGet("{id}", Name = "GetIntegration")]
         [Authorize]
         public IActionResult GetById(long id, string target, string attr, string script)
@@ -58,7 +59,7 @@ namespace Netlyt.Web.Controllers
         }
         [HttpPost]
         [Authorize]
-        public IActionResult Create([FromBody] Integration item)
+        public IActionResult Create([FromBody] DataIntegration item)
         {
             if (item == null)
             {
@@ -70,9 +71,10 @@ namespace Netlyt.Web.Controllers
 
             return CreatedAtRoute("GetIntegration", new { id = item.Id }, item);
         }
+
         [HttpPut("{id}")]
         [Authorize]
-        public IActionResult Update(long id, [FromBody] Integration item)
+        public IActionResult Update(long id, [FromBody] DataIntegrationUpdateViewModel item)
         {
             if (item == null || item.Id != id)
             {

@@ -11,6 +11,7 @@ using nvoid.db.Extensions;
 using nvoid.exec.Blocks;
 using nvoid.extensions;
 using Netlyt.Service;
+using Netlyt.Service.Data;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
@@ -34,18 +35,22 @@ namespace Netlyt.ServiceTests
         private BsonArray _purchasesInWeekends;
         private BsonArray _purchasesBeforeWeekends;
         private DateHelper _dateHelper;
+        private DynamicContextFactory _contextFactory;
+        private ApiService _apiService;
 
         public EntityExtractor(ConfigurationFixture fixture)
         {
+
             _config = fixture;
+            _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
+            _apiService = new ApiService(_contextFactory);
             _purchases = new BsonArray();
             _purchasesOnHolidays = new BsonArray();
             _purchasesInWeekends = new BsonArray();
             _purchasesBeforeHolidays = new BsonArray();
             _purchasesBeforeWeekends = new BsonArray();
             _dateHelper = new DateHelper();
-        }
-
+        } 
 
 
         [Theory]
@@ -82,12 +87,13 @@ namespace Netlyt.ServiceTests
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());  
-            var userId = "123123123"; 
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>();
-            var type = harvester.AddPersistentType(fileSource, userId, null, true); 
+            var appId = "123123123";
+            var apiObj = _apiService.GetApi(appId);
+            var harvester = new Harvester<IntegratedDocument>(_apiService);
+            var type = harvester.AddPersistentType(fileSource, apiObj, null, true); 
 
-            var grouper = new GroupingBlock(userId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
-            var saver = new MongoSink<IntegratedDocument>(userId);
+            var grouper = new GroupingBlock(appId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
+            var saver = new MongoSink<IntegratedDocument>(appId);
             var demographyImporter = new EntityDataImporter(demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
             demographyImporter.UseInputKey((input) => input[0] );

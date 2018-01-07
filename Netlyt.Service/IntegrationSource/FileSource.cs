@@ -63,20 +63,20 @@ namespace Netlyt.Service.IntegrationSource
         ///     Gets the type definition of this source.
         /// </summary>
         /// <returns></returns>
-        public override IIntegrationTypeDefinition GetTypeDefinition()
+        public override IIntegration GetTypeDefinition()
         {
             try
             {
                 using (var fStream = Open())
                 {
                     var firstInstance = _cachedInstance = Formatter.GetNext(fStream, true);
-                    IntegrationTypeDefinition typedef = null;
+                    Integration.DataIntegration typedef = null;
                     if (firstInstance != null)
                     {
-                        typedef = new IntegrationTypeDefinition(FileName);
-                        typedef.CodePage = Encoding.CodePage;
+                        typedef = new Integration.DataIntegration(FileName);
+                        typedef.DataEncoding = Encoding.CodePage;
                         typedef.DataFormatType = Formatter.Name;
-                        typedef.ResolveFields(firstInstance);
+                        typedef.SetFieldsFromType(firstInstance);
                     }
                     return typedef;
                 }

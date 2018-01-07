@@ -24,8 +24,8 @@ namespace Netlyt.Service.Integration.Import
     {
         private DataImportTaskOptions _options;
         private Harvester<T> _harvester;
-        private IntegrationTypeDefinition _type;
-        public IntegrationTypeDefinition Type
+        private IIntegration _type;
+        public IIntegration Type
         {
             get
             {
@@ -38,13 +38,13 @@ namespace Netlyt.Service.Integration.Import
         }
         public CollectionDetails OutputCollection { get; private set; }
         
-        public DataImportTask(DataImportTaskOptions options)
+        public DataImportTask(ApiService apiService, DataImportTaskOptions options)
         {
             _options = options;
             string tmpGuid = Guid.NewGuid().ToString();
             var outCollection = new CollectionDetails(tmpGuid, $"{tmpGuid}_reduced");
             OutputCollection = outCollection;
-            _harvester = new Harvester<T>(_options.ThreadCount);
+            _harvester = new Harvester<T>(apiService, _options.ThreadCount);
             _type = _harvester.AddPersistentType(_options.Source, _options.ApiKey, _options.TypeName, true, outCollection.OutputCollection);
         }
 

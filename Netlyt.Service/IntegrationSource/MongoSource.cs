@@ -1,10 +1,7 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System; 
+using System.Collections.Generic; 
 using System.Diagnostics;
-using System.Dynamic;
-using System.Text;
+using System.Dynamic; 
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -43,7 +40,7 @@ namespace Netlyt.Service.IntegrationSource
             return this;
         }
 
-        public override IIntegrationTypeDefinition GetTypeDefinition()
+        public override IIntegration GetTypeDefinition()
         {
             BsonDocument firstElement = null;
             if (_aggregate != null)
@@ -57,14 +54,14 @@ namespace Netlyt.Service.IntegrationSource
             try
             {
                 var firstInstance = _cachedInstance = firstElement;
-                IntegrationTypeDefinition typedef = null;
+                Integration.DataIntegration typedef = null;
                 if (firstInstance != null)
                 {
                     if (_project != null) firstInstance = _project(firstInstance);
-                    typedef = new IntegrationTypeDefinition(_collection.CollectionNamespace.CollectionName);
-                    typedef.CodePage = Encoding.CodePage;
+                    typedef = new Integration.DataIntegration(_collection.CollectionNamespace.CollectionName);
+                    typedef.DataEncoding = Encoding.CodePage;
                     typedef.DataFormatType = Formatter.Name;
-                    typedef.ResolveFields(firstInstance);
+                    typedef.SetFieldsFromType(firstInstance);
                 }
                 return typedef;
             }
@@ -177,7 +174,7 @@ namespace Netlyt.Service.IntegrationSource
         /// Filters input from a given type
         /// </summary>
         /// <param name="type"></param>
-        public void Filter(IntegrationTypeDefinition type)
+        public void Filter(Integration.DataIntegration type)
         {
             if (_collection.CollectionNamespace.CollectionName != "IntegratedDocument")
             {

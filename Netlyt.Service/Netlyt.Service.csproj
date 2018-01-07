@@ -3,11 +3,16 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Integration\IntegrationTypeDefinition.cs" />
+    <Compile Remove="Integration\IntegrationTypeDefinition.Factory.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="Lex\Templates\Donutfile.txt" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Lex\Templates\Donutfile.txt" />
-    <EmbeddedResource Include="Lex\Templates\MapReduceTemplate.txt" />
+    <EmbeddedResource Include="Lex\Templates\MapReduceMapper.txt" />
+    <EmbeddedResource Include="Lex\Templates\MapReduceReducer.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Bogus\Source\Bogus\Bogus.csproj" />
@@ -15,6 +20,7 @@
     <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid.extensions\nvoid.extensions.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid\nvoid.csproj" />
+    <ProjectReference Include="..\Netlyt.Data\Netlyt.Data.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Auth\" />
@@ -23,10 +29,11 @@
   <ItemGroup>
     <PackageReference Include="Dynamitey" Version="1.0.2" />
     <PackageReference Include="LumenWorks.Framework.IO.Core" Version="1.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.3" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.6.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.4.4" />
     <PackageReference Include="NetMQ" Version="4.0.0.1" />
-    <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="2.0.0" />
     <PackageReference Include="StackExchange.Redis.Extensions.JilCore" Version="1.0.0" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
