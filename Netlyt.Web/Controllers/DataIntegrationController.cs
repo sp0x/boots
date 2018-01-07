@@ -79,8 +79,7 @@ namespace Netlyt.Web.Controllers
                 Name = x.AttributeRouteInfo?.Name,
                 Template = x.AttributeRouteInfo?.Template,
                 Contraint = x.ActionConstraints
-            }).ToList();
-            routes = routes;
+            }).ToList(); 
         }
 
         /// <summary>   (An Action that handles HTTP POST requests) Posts entity data record(s). </summary>

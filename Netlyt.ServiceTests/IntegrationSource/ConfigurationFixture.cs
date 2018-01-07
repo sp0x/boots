@@ -21,7 +21,7 @@ namespace Netlyt.ServiceTests.IntegrationSource
                 .AddJsonFile("appsettings.Development.json", optional: false, reloadOnChange: true);
             var config = builder.Build();
             DbOptionsBuilder = new DbContextOptionsBuilder<ManagementDbContext>()
-                .UseInMemoryDatabase();
+                .UseInMemoryDatabase("Testing");
             var services = new ServiceCollection();
             _context = CreateContext();
             ConfigureServices(services);
@@ -31,7 +31,7 @@ namespace Netlyt.ServiceTests.IntegrationSource
 
         private void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ManagementDbContext>(s => s.UseInMemoryDatabase());
+            services.AddDbContext<ManagementDbContext>(s => s.UseInMemoryDatabase("Testing"));
             services.AddTransient<ApiService>(s => new ApiService(_context, null));
             services.AddTransient<IntegrationService>(s => new IntegrationService(_context));
         }

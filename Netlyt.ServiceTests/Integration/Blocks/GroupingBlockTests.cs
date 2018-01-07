@@ -88,8 +88,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var grouper = GetGrouper(appId);
             var statsCounter = 0;
             var statsBlock = new StatsBlock((visit) =>
-            {
-                visit = visit;
+            { 
                 Interlocked.Increment(ref statsCounter);
                 Thread.Sleep(1000);
             }); 

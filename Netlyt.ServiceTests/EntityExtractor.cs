@@ -204,14 +204,13 @@ namespace Netlyt.ServiceTests
                         }
                     }
                     catch (Exception ex2)
-                    {
-                        ex2 = ex2;
+                    { 
                     }
                 }
             }
             catch (Exception ex)
             {
-                ex = ex;   
+                   
             }
             outputFs.Close();
         }

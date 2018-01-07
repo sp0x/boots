@@ -317,7 +317,7 @@ events : elements };
                                    userDocument["is_paying"].AsInt32 == 1;
                 var uuid = userDocument["uuid"].ToString();
                 var dateNoticed = DateTime.Parse(userDocument["noticed_date"].ToString());
-                DateTime g_timestamp = userDocument["noticed_date"].AsDateTime.StartOfWeek(DayOfWeek.Monday);
+                DateTime g_timestamp = userDocument["noticed_date"].ToUniversalTime().StartOfWeek(DayOfWeek.Monday);
                 userDocument["events"] =
                     ((BsonArray)userDocument["events"])
                     .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))

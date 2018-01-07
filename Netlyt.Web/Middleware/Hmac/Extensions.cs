@@ -22,8 +22,7 @@ namespace Netlyt.Web.Middleware.Hmac
             return services.AddAuthentication()
                 .AddScheme<HmacOptions, HmacHandler>(dataScheme, dataScheme,
                 (HmacOptions options) =>
-                {
-                    options = options;
+                { 
                     options.ClaimsIssuer = dataScheme;
                 })
                 .AddCookie(options =>
