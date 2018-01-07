@@ -16,6 +16,7 @@ namespace Netlyt.Web.Models.DataModels
         public int DataEncoding { get; set; }
         public string APIKey { get; set; }
         public string DataFormatType { get; set; }
+        public string OriginType { get; set; } // the type of the data e.g stream or file
         public string Collection { get; set; }
         public Dictionary<string, FieldDefinition> Fields { get; set; }
         public IntegrationTypeExtras Extras { get; set; }

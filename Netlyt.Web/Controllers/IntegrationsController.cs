@@ -34,14 +34,27 @@ namespace Netlyt.Web.Controllers
         }
         [HttpGet("{id}", Name = "GetIntegration")]
         [Authorize]
-        public IActionResult GetById(long id)
+        public IActionResult GetById(long id, string target, string attr, string script)
         {
             var item = _integrationContext.FirstOrDefault(t => t.Id == id);
             if (item == null)
             {
                 return NotFound();
             }
+            if (target!=null) {
+                if (script==null || attr==null) {
+                    return BadRequest();
+                }
+                //kick the async
+                return Accepted();
+            }
             return new ObjectResult(item);
+        }
+        [HttpGet("/job/{id}")]
+        [Authorize]
+        public IActionResult GetJob(long id)
+        {
+            return Accepted();
         }
         [HttpPost]
         [Authorize]
@@ -103,6 +116,5 @@ namespace Netlyt.Web.Controllers
             }
             return Ok(item.Fields);
         }
-
     }
 }
