@@ -12,7 +12,7 @@ using Netlyt.Web.Models;
 
 namespace Netlyt.Web.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("integration")]
     public class IntegrationsController : Controller
     {
         private RemoteDataSource<DataIntegration> _integrationContext;
@@ -24,7 +24,7 @@ namespace Netlyt.Web.Controllers
             _userManager = userManager;
         }
 
-        [HttpGet("/")]
+        [HttpGet("integration/all")]
         [Authorize]
         public IEnumerable<DataIntegration> GetAll([FromQuery] int page)
         {

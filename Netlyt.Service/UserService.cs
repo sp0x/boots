@@ -1,9 +1,15 @@
+using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
-using log4net.Core;
-using LinqToTwitter.Net;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Hosting.Internal;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Netlyt.Service.Auth;
-using Netlyt.Service.Models.Account;
+using Microsoft.Extensions.Logging;
+using nvoid.Integration;
+using Netlyt.Data;
+using Netlyt.Service.Models.Account; 
 
 namespace Netlyt.Service
 {
@@ -11,18 +17,92 @@ namespace Netlyt.Service
     {
         private ILogger _logger;
         private UserManager<User> _userManager;
+        private ApiService _apiService;
+        private IHttpContextAccessor _contextAccessor;
 
-        public UserService(UserManager<User> userManager, ILogger logger)
+        public UserService(UserManager<User> userManager, 
+            ApiService apiService,
+            ILoggerFactory lfactory,
+            IHttpContextAccessor contextAccessor)
         {
-            _logger = logger;
+            _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
             _userManager = userManager;
+            _apiService = apiService;
+            _contextAccessor = contextAccessor;
         }
-
+        
         public IdentityResult CreateUser(RegisterViewModel model, out User user)
         {
-            user = new User {  Username = model.Email ,Email = model.Email };
+            var username = model.Email.Substring(0, model.Email.IndexOf("@"));
+            user = new User {  UserName = username, Email = model.Email };
+            var apiKey = _apiService.Generate();
+            user.ApiKeys.Add(apiKey);
             var result = _userManager.CreateAsync(user, model.Password).Result;
             return result;
+        }
+
+        public AuthenticationTicket ValidateHmacSession()
+        {
+            var user = _contextAccessor.HttpContext.User;
+            var identity2 = user.Identity;
+            // success! Now we just need to create the auth ticket
+            var identity = new ClaimsIdentity(AuthenticationSchemes.DataSchemes); // the name of our auth scheme
+            var principal = new ClaimsPrincipal(identity);
+            // you could add any custom claims here
+            //var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), null, "apikey"); 
+             
+            var authProps = new AuthenticationProperties();
+            var ticket = new AuthenticationTicket(principal, authProps, AuthenticationSchemes.DataSchemes);
+            return ticket;
+        }
+        public async Task<AuthenticationTicket> InitializeHmacSession()
+        {
+            var userAccount = _apiService.GetCurrentApiUser();
+            var appApiIdStr = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");
+            var userClaims = new List<Claim>();
+            userClaims.Add(new Claim(ClaimTypes.Name, userAccount.UserName));
+            userClaims.Add(new Claim("ApiId", appApiIdStr));
+            userClaims.Add(new Claim(ClaimTypes.Email, userAccount.Email));
+
+            var claimsIdentity = new ClaimsIdentity(userClaims, AuthenticationSchemes.DataSchemes);
+            var principal = new ClaimsPrincipal(claimsIdentity);
+            var signInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            await _contextAccessor.HttpContext.SignInAsync(principal: principal, scheme: signInScheme);
+            _contextAccessor.HttpContext.User.AddIdentity(claimsIdentity);
+            var signedIn = _contextAccessor.HttpContext.User.Identity.IsAuthenticated;
+            var authProps = new AuthenticationProperties()
+            {
+                IsPersistent = true
+            };
+            var ticket = new AuthenticationTicket(principal, authProps, AuthenticationSchemes.DataSchemes);
+            return ticket;
+            //            var appApiId = HostingApplication.Context.Session.GetString("APP_API_ID");
+            //            if (appApiId == null)
+            //            {
+            //                Context.Session.SetString("APP_API_ID", apiAuth.Id.ToString());
+            //                user.AddIdentity(claimsIdentity);
+            //            }
+            //            Response.Headers.Add("APP_API_ID", apiAuth.Id.ToString());
+        }
+
+        public void InitializeUserSession(ClaimsPrincipal httpContextUser)
+        {
+            var appApiId = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");
+            if (appApiId == null)
+            {
+                //_contextAccessor.HttpContext.Session.SetString("APP_API_ID", apiAuth.Id.ToString());
+                //user.AddIdentity(claimsIdentity);
+            }
+            //_contextAccessor.HttpContext.Response.Headers.Add("APP_API_ID", apiAuth.Id.ToString());
+            //            var claims = new List<Claim>
+            //            {
+            //                new Claim(ClaimTypes.Name, loginModel.Username)
+            //            };
+            //
+            //            var userIdentity = new ClaimsIdentity(claims, "login");
+            //ClaimsPrincipal principal = new ClaimsPrincipal(httpContextUser);
+            var isAuthed = _contextAccessor.HttpContext.User.Identity.IsAuthenticated;
+            //await _contextAccessor.HttpContext.SignInAsync(httpContextUser);
         }
     }
 }

@@ -37,13 +37,15 @@ namespace Netlyt.ServiceTests
         private DateHelper _dateHelper;
         private DynamicContextFactory _contextFactory;
         private ApiService _apiService;
+        private IntegrationService _integrationService;
 
         public EntityExtractor(ConfigurationFixture fixture)
         {
 
             _config = fixture;
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
-            _apiService = new ApiService(_contextFactory);
+            _apiService = fixture.GetService<ApiService>();
+            _integrationService = fixture.GetService<IntegrationService>();
             _purchases = new BsonArray();
             _purchasesOnHolidays = new BsonArray();
             _purchasesInWeekends = new BsonArray();
@@ -89,7 +91,7 @@ namespace Netlyt.ServiceTests
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());  
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Harvester<IntegratedDocument>(_apiService);
+            var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService);
             var type = harvester.AddPersistentType(fileSource, apiObj, null, true); 
 
             var grouper = new GroupingBlock(appId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);

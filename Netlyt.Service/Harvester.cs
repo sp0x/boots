@@ -39,6 +39,7 @@ namespace Netlyt.Service
         private int _shardLimit;
         private int _totalEntryLimit;
         private ApiService _apiService;
+        private IntegrationService _integrationService;
 
         public HashSet<IntegrationSet> Sets { get; private set; } 
         /// <summary>
@@ -51,12 +52,15 @@ namespace Netlyt.Service
         protected int TotalEntryLimit => _totalEntryLimit;
         public uint ThreadCount { get; private set; }
 
-        public Harvester(ApiService apiService, uint threadCount = 4) : base()
+        public Harvester(ApiService apiService,
+            IntegrationService integrationService,
+            uint threadCount = 4) : base()
         {
             Sets = new HashSet<IntegrationSet>();
             this.ThreadCount = threadCount;
             _stopwatch = new Stopwatch();
             _apiService = apiService;
+            _integrationService = integrationService;
         }
         
         /// <summary>
@@ -77,8 +81,7 @@ namespace Netlyt.Service
 
             DataIntegration type = Integration.DataIntegration.Factory.CreateNamed(appId, name);
             DataIntegration existingType = null;
-            if (!DataIntegration.Exists(type, appId, out existingType)) type.Save();
-            else type = existingType;
+            _integrationService.SaveOrFetchExisting(ref type);  
             this.AddType(type, source); 
             return type;
         }
@@ -98,8 +101,8 @@ namespace Netlyt.Service
             bool persist = true,
             string outputCollection = null)
         {
-            var type = inputSource.GetTypeDefinition();
-            if (!(type is IIntegration))
+            var type = inputSource.GetTypeDefinition() as DataIntegration;
+            if (type==null)
             {
                 throw new Exception("Could not resolve type!");
             } 
@@ -110,9 +113,8 @@ namespace Netlyt.Service
                 type.Name = name;
             }
             if (persist)
-            {
-                if (!Integration.DataIntegration.Exists(type, appId.Id, out var existingDataType)) type.SaveType(appId.AppId);
-                else type = existingDataType;
+            { 
+                _integrationService.SaveOrFetchExisting(ref type); 
             }
             AddType(type, inputSource);
             return type;

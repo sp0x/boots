@@ -12,9 +12,10 @@ using System;
 namespace Netlyt.Service.Migrations
 {
     [DbContext(typeof(ManagementDbContext))]
-    partial class ManagementDbContextModelSnapshot : ModelSnapshot
+    [Migration("20180104195025_UpdatedIntegration")]
+    partial class UpdatedIntegration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -209,26 +210,36 @@ namespace Netlyt.Service.Migrations
 
             modelBuilder.Entity("Netlyt.Service.Ml.ModelIntegration", b =>
                 {
-                    b.Property<long>("ModelId");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
 
                     b.Property<string>("IntegrationId");
 
                     b.Property<long?>("IntegrationId1");
 
-                    b.HasKey("ModelId", "IntegrationId");
+                    b.Property<long>("ModelId");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("IntegrationId1");
+
+                    b.HasIndex("ModelId");
 
                     b.ToTable("ModelIntegration");
                 });
 
             modelBuilder.Entity("Netlyt.Service.ModelRule", b =>
                 {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
                     b.Property<long>("ModelId");
 
                     b.Property<long>("RuleId");
 
-                    b.HasKey("ModelId", "RuleId");
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModelId");
 
                     b.HasIndex("RuleId");
 
@@ -388,8 +399,7 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<string>("AppId")
-                        .IsRequired();
+                    b.Property<string>("AppId");
 
                     b.Property<string>("AppSecret");
 

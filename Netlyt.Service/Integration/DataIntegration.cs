@@ -28,7 +28,7 @@ namespace Netlyt.Service.Integration
         /// <summary>
         /// the type of the data e.g stream or file
         /// </summary>
-        public string OriginType { get; set; }
+        public string DataFormatType { get; set; }
         /// <summary>
         /// The source from which the integration is registered to receive data.
         /// Could be url or just a hint.

@@ -48,6 +48,17 @@ namespace Netlyt.Service.IntegrationSource
             return src;
         }
 
+        /// <summary>
+        /// </summary>
+        /// <inheritdoc/>
+        /// <returns>The input files as source</returns>
+        public override IEnumerable<InputSource> Shards()
+        {
+            var source = new InMemorySource(Content, Formatter);
+            source._cachedInstance = _cachedInstance;
+            yield return source;
+        }
+
         public override IIntegration GetTypeDefinition()
         {
             var firstInstance = _cachedInstance = Formatter.GetNext(Content, true);

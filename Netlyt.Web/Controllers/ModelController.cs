@@ -11,7 +11,7 @@ using Netlyt.Service.Ml;
 
 namespace Netlyt.Web.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("model")]
     [Authorize]
     public class ModelController : Controller
     {
@@ -27,7 +27,7 @@ namespace Netlyt.Web.Controllers
             _orionContext = behaviourCtx;
         }
 
-        [HttpGet("/")] 
+        [HttpGet("model/all")] 
         public IEnumerable<Model> GetAll([FromQuery] int page)
         {
             var user = _userManager.GetUserAsync(User).Result;

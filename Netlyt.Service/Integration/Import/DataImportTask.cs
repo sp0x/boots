@@ -38,13 +38,13 @@ namespace Netlyt.Service.Integration.Import
         }
         public CollectionDetails OutputCollection { get; private set; }
         
-        public DataImportTask(ApiService apiService, DataImportTaskOptions options)
+        public DataImportTask(ApiService apiService, IntegrationService integrationService, DataImportTaskOptions options)
         {
             _options = options;
             string tmpGuid = Guid.NewGuid().ToString();
             var outCollection = new CollectionDetails(tmpGuid, $"{tmpGuid}_reduced");
             OutputCollection = outCollection;
-            _harvester = new Harvester<T>(apiService, _options.ThreadCount);
+            _harvester = new Harvester<T>(apiService, integrationService, _options.ThreadCount);
             _type = _harvester.AddPersistentType(_options.Source, _options.ApiKey, _options.TypeName, true, outCollection.OutputCollection);
         }
 

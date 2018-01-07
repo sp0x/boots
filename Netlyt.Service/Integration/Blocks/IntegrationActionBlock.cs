@@ -10,10 +10,10 @@ namespace Netlyt.Service.Integration.Blocks
     {
         private Func<IntegrationActionBlock, IntegratedDocument, IntegratedDocument> _action; 
 
-        public IntegrationActionBlock(string userId, Action<IntegrationActionBlock, IntegratedDocument> action, int threadCount = 4)
+        public IntegrationActionBlock(string appId, Action<IntegrationActionBlock, IntegratedDocument> action, int threadCount = 4)
             :base(capacity: 100000, procType: BlockType.Action, threadCount: threadCount)
         {
-            this.UserId = userId;
+            this.AppId = appId;
             _action = ((act, x)=>
             {
                 action(act, x);
@@ -31,17 +31,17 @@ namespace Netlyt.Service.Integration.Blocks
             });
         }
 
-        public IntegrationActionBlock(string userId, Func<IntegrationActionBlock, IntegratedDocument, IntegratedDocument> action, int threadCount = 4)
+        public IntegrationActionBlock(string appId, Func<IntegrationActionBlock, IntegratedDocument, IntegratedDocument> action, int threadCount = 4)
             : base(capacity: 100000, procType: BlockType.Action, threadCount: threadCount)
         {
-            this.UserId = userId;
+            this.AppId = appId;
             _action = action;
         }
 
-        public IntegrationActionBlock(string userId, Action<IntegrationActionBlock, IntegratedDocument> action)
+        public IntegrationActionBlock(string appId, Action<IntegrationActionBlock, IntegratedDocument> action)
             : base(capacity: 100000, procType: BlockType.Action, threadCount : 4)
         {
-            UserId = userId;
+            AppId = appId;
             _action = ((act, x) =>
             {
                 action(act, x);

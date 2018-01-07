@@ -40,16 +40,16 @@ namespace Netlyt.Service.Integration.Blocks
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="userId"></param>
+        /// <param name="appId"></param>
         /// <param name="selector"></param>
         /// <param name="inputProjection">Projection to perform on the input</param>
         /// <param name="accumulator">Accumulate input data to the resolved element</param>
-        public GroupingBlock(string userId, Func<IntegratedDocument, object> selector,
+        public GroupingBlock(string appId, Func<IntegratedDocument, object> selector,
             Action<IntegratedDocument> inputProjection,
             Func<IntegratedDocument, BsonDocument, object> accumulator)
             : base(capacity: 1000, procType: BlockType.Action)
         {
-            base.UserId = userId;
+            base.AppId = appId;
             _groupBySelector = selector;
             this._accumulator = accumulator;
             this._inputProjection = inputProjection;
