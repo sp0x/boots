@@ -75,7 +75,7 @@ namespace Netlyt.Service.IntegrationSource
                     {
                         typedef = new Integration.DataIntegration(FileName);
                         typedef.DataEncoding = Encoding.CodePage;
-                        typedef.DataFormatType = Formatter.Name;
+                        typedef.OriginType = Formatter.Name;
                         typedef.SetFieldsFromType(firstInstance);
                     }
                     return typedef;

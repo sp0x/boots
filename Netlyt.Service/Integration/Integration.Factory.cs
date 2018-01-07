@@ -33,7 +33,7 @@ namespace Netlyt.Service.Integration
                 var type = typeof(T);
                 var typedef = new Service.Integration.DataIntegration(type.Name);
                 typedef.APIKey = apiObj;
-                typedef.DataFormatType = "dynamic";
+                typedef.OriginType = "dynamic";
                 typedef.DataEncoding = System.Text.Encoding.Default.CodePage;
                 var properties = type.GetProperties();
                 //var fields = type.GetFields(); 
