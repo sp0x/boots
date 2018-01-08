@@ -6,6 +6,10 @@
 	path = IntegrationDaemon
 	url = git@bitbucket.org:peeralytics/integrationdaemon.git
 	branch = master
+[submodule "Orion"]
+	path = Orion
+	url = git@bitbucket.org:peeralytics/orion.git
+	branch = master
 [submodule "libnvoid"]
 	path = libnvoid
 	url = git@bitbucket.org:peeralytics/nvoid_libs.git

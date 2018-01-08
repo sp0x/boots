@@ -38,7 +38,9 @@ node {
         } 
       
     } 
-
+    stage('Deploy') {
+        sh 'curl --request POST "http://deploy.netlyt.com/?token=b5a2425f52ee61b50f21ee921e4bfa25&hook=netlyt"'
+    }
     stage('Notify') {
         slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'dev', color: 'good',
          message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Successfull (<${env.BUILD_URL}|Open>)", teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
