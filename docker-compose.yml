@@ -15,7 +15,7 @@ services:
     depends_on:
       - redis
       - mongo.netlyt.com 
-      - postgre
+      - postgres
     ports:
       - "5000:5000"
       - "81:80"
