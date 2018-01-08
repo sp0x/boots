@@ -58,10 +58,10 @@ services:
     #to setup a user, follow this https://stackoverflow.com/questions/22638258/create-superuser-in-mongo
     command: mongod --auth
 
-  postgre:
+  postgres:
     image: postgres
-    container_name: postgre.netlyt.com
-    hostname: postgre.netlyt.com 
+    container_name: postgres.netlyt.com
+    hostname: postgres.netlyt.com 
     restart: always
     env_file:
       - postgre_auth.env
@@ -93,14 +93,14 @@ services:
 #-e LETSENCRYPT_EMAIL=vaskovasilev94@yahoo.com 
 #--network=webproxy --name my_app httpd:alpine
 
-  behaviour:
-    container_name: behaviour.netlyt.com
-    hostname: behaviour.netlyt.com
+  orion:
+    container_name: orion.netlyt.com
+    hostname: orion.netlyt.com
     build:
-      context: ./BehaviorAnalysis
+      context: ./orion
       dockerfile: Dockerfile
     volumes:
-      - ./BehaviorAnalysis/src:/app
+      - ./orion/src:/app
       - experiments:/experiments
     ports:
       - "5556:5556"
