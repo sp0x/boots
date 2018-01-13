@@ -58,10 +58,7 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             value = this.value,
             type = this.type
             reduce aggregate 
-                events = selectMany(values, (x) => x.events),
-                uuid = key.uuid,
-                day = key.day,
-                noticed_date = if any(events) events[0].ondate else null",
+                noticed_date = if(any(events), events[0].ondate, null)",
             ""
         })]
         public void ParseMapReduceAggregate(string code, string expectedAggregate)

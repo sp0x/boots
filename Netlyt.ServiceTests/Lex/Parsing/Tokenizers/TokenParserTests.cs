@@ -64,6 +64,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[]{"a[0,1]", "a[0, 1]"})]
         [InlineData(new object[]{"a[0,max(1, 2)]", "a[0, max(1, 2)]"})]
         [InlineData(new object[]{"a[0, c[1]]", "a[0, c[1]]"})]
+        [InlineData(new object[]{ "events[0].ondate", "events[0].ondate" })]
         public void TestArrayAccess(string code, string expOutcome)
         {
             var tokenizer = new PrecedenceTokenizer();
@@ -224,7 +225,8 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         {
             var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(content));
             var expression = parser.ReadVariable();
-            Assert.Equal(expected, expression.Member.Name);
+            MemberExpression member = expression.Member;
+            Assert.Equal(expected, member.Parent.ToString());
         }
 
         [Theory]
@@ -240,9 +242,9 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             var currentElement = root;
             while(currentElement.ChildMember != null)
             {
-                currentElement = currentElement.ChildMember;
+                currentElement = (MemberExpression)currentElement.ChildMember;
             }
-            Assert.Equal(expected, currentElement.Name);
+            Assert.Equal(expected, ((MemberExpression)currentElement).Parent.ToString());
         }
 
         [Theory]

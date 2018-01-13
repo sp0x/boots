@@ -168,6 +168,10 @@ namespace Netlyt.Service.Lex.Parsing
                     case TokenType.Semicolon:
                         Reader.DiscardToken();
                         break;
+                    case TokenType.MemberAccess: //Member access from the previous expression
+                        var subMember = ReadMemberAccess(terminatingPredicate, nextToken, previousExpressions);
+                        lvlExpressions.Add(subMember);
+                        break;
                     default:
                         if (IsOperator(nextToken))
                         {
@@ -224,6 +228,28 @@ namespace Netlyt.Service.Lex.Parsing
             }
             Reader.DiscardToken(TokenType.CloseBracket); 
             return expArray;
+        }
+
+        private IExpression ReadMemberAccess(
+            Predicate<TokenMarker> terminatingPredicate,
+            DslToken token, 
+            Stack<IExpression> previousExpressions)
+        { 
+            Reader.DiscardToken();
+            var left = previousExpressions.Pop();
+            var member = new MemberExpression(left);
+
+            //expArray.Object = left;
+            var currentCursor = Reader.Marker.Clone();
+            var isKeyword = Filters.Keyword(currentCursor);
+            var isTerminating = Filters.ExpressionTermination(currentCursor);
+            var valueExpression = ReadExpressions((c) =>
+            {
+                return isKeyword(c) || isTerminating(c);
+            }).FirstOrDefault();
+            member.ChildMember = valueExpression; 
+            return member
+;
         }
 
         private IExpression ReadOperator(
@@ -331,7 +357,8 @@ namespace Netlyt.Service.Lex.Parsing
         {
             Reader.DiscardToken(TokenType.MemberAccess);
             var memberSymbol = Reader.DiscardToken(TokenType.Symbol);
-            MemberExpression member = new MemberExpression(memberSymbol.Value);
+            var variableExp = new VariableExpression(memberSymbol.Value);
+            MemberExpression member = new MemberExpression(variableExp);
             return member;
 
             //ExpressionNode currentNode = null;
@@ -443,8 +470,6 @@ namespace Netlyt.Service.Lex.Parsing
                 var aggregate = ReadExpressions(Filters.Keyword(currentCursor));
                 aggregate = aggregate;
             }
-            
-
             var mapReduce = new MapReduceExpression()
             {
                 Keys = reduceKeyExpressions.Cast<AssignmentExpression>(),
@@ -816,7 +841,7 @@ namespace Netlyt.Service.Lex.Parsing
                     return IsKeyword(x.Token);
                 };
             }
-
+            
             /// <summary>   Returns a predicate for a cursor with a token on the same level as the given one. </summary>
             ///
             /// <remarks>   Vasko, 05-Dec-17. </remarks>
@@ -836,6 +861,15 @@ namespace Netlyt.Service.Lex.Parsing
                 };
             }
 
+            public static Predicate<TokenMarker> ExpressionTermination(TokenMarker currentMarker)
+            {
+                return x =>
+                {
+                    return x.Depth == currentMarker.Depth
+                           && (x.Token.TokenType == TokenType.Semicolon
+                               || x.Token.TokenType == TokenType.NewLine);
+                };
+            }
             /// <summary>   Function call end predicate, checking for a closing parenthesis on current depth.. </summary>
             ///
             /// <remarks>   Vasko, 25-Dec-17. </remarks>

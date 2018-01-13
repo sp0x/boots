@@ -6,14 +6,14 @@ namespace Netlyt.Service.Lex.Expressions
 {
     public class MemberExpression
         : Expression
-    {
-        public string Name { get; private set; }
-        public MemberExpression ChildMember { get; set; }
+    { 
+        public IExpression ChildMember { get; set; }
+        public IExpression Parent { get; set; }
         //public TypeExpression Type { get; private set; }
 
-        public MemberExpression(string name)
+        public MemberExpression(IExpression parent)
         {
-            this.Name = name;
+            this.Parent = parent;
         }
         public override IEnumerable<IExpression> GetChildren()
         {
@@ -25,19 +25,16 @@ namespace Netlyt.Service.Lex.Expressions
             var postfix = ChildMember==null ? "" : ChildMember.ToString();
             if (!string.IsNullOrEmpty(postfix)) postfix = $".{postfix}";
             else postfix = "";
-            return $"{Name}{postfix}";
+            return $"{Parent}{postfix}";
         }
 
         public string FullPath()
         {
             var buff = new StringBuilder();
-            buff.Append(Name);
+            buff.Append(Parent);
+            if (ChildMember == null) return buff.ToString();
             var element = ChildMember;
-            while (element != null)
-            {
-                buff.Append(".").Append(element.Name);
-                element = element.ChildMember;
-            }
+            buff.Append(".").Append(element);
             return buff.ToString();
         }
     }
