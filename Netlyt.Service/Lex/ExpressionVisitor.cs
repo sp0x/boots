@@ -4,21 +4,19 @@ using Netlyt.Service.Lex.Expressions;
 
 namespace Netlyt.Service.Lex
 {
+    /// <summary>
+    /// A base expression visiter that supports visiting all expression types.
+    /// </summary>
     public class ExpressionVisitor
     {
-        private ExpressionVisitResult _tmpResult;
-        /*Go through the expression tree and generate any of the required codw
-         * tip: use as template keyword
-         * implement inheriters who support different flavour
-         */
         public ExpressionVisitor()
-        {
-            Clear();
+        { 
         }
 
-        protected virtual void Clear()
+        public virtual ExpressionVisitResult CollectVariables(IExpression root)
         {
-            _tmpResult = new ExpressionVisitResult();
+            throw new Exception("stub");
+            //return new ExpressionVisitResult();
         }
 
         public virtual string Visit(IExpression expression)
@@ -76,8 +74,7 @@ namespace Netlyt.Service.Lex
         }
 
         protected virtual string VisitAssignment(AssignmentExpression exp)
-        {
-            exp = exp;
+        { 
             return null;
         }
 
@@ -96,5 +93,6 @@ namespace Netlyt.Service.Lex
         {
             return null;
         }
+         
     }
 }

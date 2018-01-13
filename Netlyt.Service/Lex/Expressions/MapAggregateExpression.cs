@@ -11,5 +11,10 @@ namespace Netlyt.Service.Lex.Expressions
         {
             Values = new List<AssignmentExpression>();
         }
+
+        public MapAggregateExpression(IEnumerable<AssignmentExpression> expressions)
+        {
+            Values = expressions;
+        }
     }
 }

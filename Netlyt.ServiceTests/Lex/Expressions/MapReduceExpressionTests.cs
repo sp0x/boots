@@ -44,7 +44,7 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             var keys = mapReduce.Keys.ConcatExpressions();
             Assert.Equal(expectedKeys, keys);
             Assert.Equal(expectedValues, values);
-            var codeGen = new CodeGenerator();
+            var codeGen = mapReduce.GetCodeGenerator();
             var emittedBlob = codeGen.GenerateFromExpression(mapReduce);
             Assert.True(emittedBlob.Length > 100);
             //Generate the code for a map reduce with mongo
@@ -58,19 +58,26 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             value = this.value,
             type = this.type
             reduce aggregate 
+                events = selectMany(values, (x) => x.events),
+                uuid = key.uuid,
+                day = key.day,
                 noticed_date = if(any(events), events[0].ondate, null)",
             ""
         })]
         public void ParseMapReduceAggregate(string code, string expectedAggregate)
         {
+            //396
             var tokenizer = new PrecedenceTokenizer();
             var parser = new TokenParser(tokenizer.Tokenize(code));
             var mapReduce = parser.ReadMapReduce();
             var values = mapReduce.ValueMembers.ConcatExpressions();
             var keys = mapReduce.Keys.ConcatExpressions();
-            var codeGen = new CodeGenerator();
-            var emittedBlob = codeGen.GenerateFromExpression(mapReduce);
-            Assert.True(emittedBlob.Length > 100);
+            var keyGenerator = mapReduce.GetCodeGenerator();
+            var aggGenerator = mapReduce.Aggregate.GetCodeGenerator();
+            var keyValue = keyGenerator.GenerateFromExpression(mapReduce);
+            var aggValue = aggGenerator.GenerateFromExpression(mapReduce.Aggregate);
+            Assert.True(keyValue.Length == 331);
+            Assert.True(aggValue.Length == 805);
         }
 
     }

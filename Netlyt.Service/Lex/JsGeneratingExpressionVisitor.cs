@@ -9,7 +9,7 @@ namespace Netlyt.Service.Lex
 {
     public class JsGeneratingExpressionVisitor
         : ExpressionVisitor
-    {
+    { 
         public Dictionary<VariableExpression, string> Variables { get; private set; }
         public JsGeneratingExpressionVisitor()
             : base()
@@ -82,7 +82,40 @@ namespace Netlyt.Service.Lex
         protected override string VisitParameter(ParameterExpression exp)
         { 
             var sb = new StringBuilder();
-            sb.Append(exp.ToString());
+            var paramValue = exp.Value;
+            var paramValueType = paramValue.GetType();
+            if (paramValueType == typeof(LambdaExpression))
+            {
+                var value = VisitLambda(paramValue as LambdaExpression);
+                sb.Append(value);
+            }
+            else if (paramValueType == typeof(CallExpression))
+            {
+                var value = VisitFunctionCall(paramValue as CallExpression);
+                sb.Append(value);
+            }
+            else
+            {
+                sb.Append(exp.ToString());
+            }
+            return sb.ToString();
+        }
+
+        private string VisitLambda(LambdaExpression lambda)
+        {
+            var sb = new StringBuilder();
+            sb.Append("function(");
+            for(int i=0; i<lambda.Parameters.Count; i++)
+            {
+                var param = lambda.Parameters[i];
+                var strParam = Visit(param);
+                sb.Append(strParam);
+                if(i<(lambda.Parameters.Count - 1)) sb.Append(", ");
+            }
+            sb.Append("){\n");
+            var bodyContent = Visit(lambda.Body.FirstOrDefault());
+            sb.Append(" return ").Append(bodyContent).Append(";");
+            sb.Append("\n}"); 
             return sb.ToString();
         }
 
@@ -92,7 +125,7 @@ namespace Netlyt.Service.Lex
             return val;
         }
 
-        public ExpressionVisitResult CollectVariables(IExpression root)
+        public override ExpressionVisitResult CollectVariables(IExpression root)
         {
             var strValue = Visit(root);
             var result = new ExpressionVisitResult();

@@ -11,11 +11,16 @@ namespace Netlyt.Service.Lex.Expressions
     {
         public IEnumerable<AssignmentExpression> Keys { get; set; }
         public IEnumerable<AssignmentExpression> ValueMembers { get; set; }
+        /// <summary>
+        /// A collection of values to aggregate
+        /// </summary>
+        public MapAggregateExpression Aggregate { get; set; }
 
         public MapReduceExpression()
         {
             Keys = new List<AssignmentExpression>();
             ValueMembers = new List<AssignmentExpression>();
+            Aggregate = new MapAggregateExpression();
         }
     }
 }

@@ -243,9 +243,11 @@ namespace Netlyt.Service.Lex.Parsing
             var currentCursor = Reader.Marker.Clone();
             var isKeyword = Filters.Keyword(currentCursor);
             var isTerminating = Filters.ExpressionTermination(currentCursor);
+            Predicate<TokenMarker> isComma = x => 
+                x.Depth == currentCursor.Depth && x.Token.TokenType == TokenType.Comma;
             var valueExpression = ReadExpressions((c) =>
             {
-                return isKeyword(c) || isTerminating(c);
+                return isKeyword(c) || isTerminating(c) || isComma(c);
             }).FirstOrDefault();
             member.ChildMember = valueExpression; 
             return member
@@ -463,17 +465,18 @@ namespace Netlyt.Service.Lex.Parsing
             Reader.DiscardToken(TokenType.ReduceMap);
             currentCursor = Reader.Marker.Clone();
             var valueExpressions = ReadExpressions(Filters.Keyword(currentCursor));
+            IEnumerable<IExpression> aggregate = new List<IExpression>();
             if (Reader.Current.TokenType == TokenType.ReduceAggregate)
             {
                 Reader.DiscardToken(TokenType.ReduceAggregate);
                 currentCursor = Reader.Marker.Clone();
-                var aggregate = ReadExpressions(Filters.Keyword(currentCursor));
-                aggregate = aggregate;
+                aggregate = ReadExpressions(Filters.Keyword(currentCursor));
             }
             var mapReduce = new MapReduceExpression()
             {
                 Keys = reduceKeyExpressions.Cast<AssignmentExpression>(),
-                ValueMembers = valueExpressions.Cast<AssignmentExpression>()
+                ValueMembers = valueExpressions.Cast<AssignmentExpression>(),
+                Aggregate = new MapAggregateExpression(aggregate.Cast<AssignmentExpression>())
             };
             return mapReduce;
         }

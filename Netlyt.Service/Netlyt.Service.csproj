@@ -12,7 +12,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Lex\Templates\Donutfile.txt" />
     <EmbeddedResource Include="Lex\Templates\MapReduceMapper.txt" />
-    <EmbeddedResource Include="Lex\Templates\MapReduceReducer.txt" />
+    <EmbeddedResource Include="Lex\Templates\MapReduceAggregate.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Bogus\Source\Bogus\Bogus.csproj" />
