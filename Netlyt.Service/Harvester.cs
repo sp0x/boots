@@ -36,8 +36,8 @@ namespace Netlyt.Service
     public class Harvester<TDocument> : Entity
     {
         private Stopwatch _stopwatch;
-        private int _shardLimit;
-        private int _totalEntryLimit;
+        private uint _shardLimit;
+        private uint _totalEntryLimit;
         private ApiService _apiService;
         private IntegrationService _integrationService;
 
@@ -48,8 +48,8 @@ namespace Netlyt.Service
         public IFlowBlock<TDocument> Destination { get; private set; }
         public ITargetBlock<TDocument> DestinationBlock { get; private set; }
 
-        protected int ShardLimit => _shardLimit;
-        protected int TotalEntryLimit => _totalEntryLimit;
+        protected uint ShardLimit => _shardLimit;
+        protected uint TotalEntryLimit => _totalEntryLimit;
         public uint ThreadCount { get; private set; }
 
         public Harvester(ApiService apiService,
@@ -76,7 +76,7 @@ namespace Netlyt.Service
             return this;
         }
 
-        public IIntegration AddPersistentType(string name, string appId, InputSource source)
+        public IIntegration AddIntegrationSource(string name, string appId, InputSource source)
         {
 
             DataIntegration type = Integration.DataIntegration.Factory.CreateNamed(appId, name);
@@ -87,37 +87,37 @@ namespace Netlyt.Service
         }
 
         /// <summary>
-        /// Resolves the type from the input, persists it to the DB, and adds it as an integration set from the given source.
+        /// Resolves the integration type from the input, persists it to the DB, and adds it as an integration set from the given source.
         /// </summary>
         /// <param name="inputSource"></param>
         /// <param name="appId"></param>
         /// <param name="name">The name of the type that will be created</param>
         /// <param name="persist">Whether the type should be saved</param>
         /// <returns></returns>
-        public IIntegration AddPersistentType(
+        public IIntegration AddIntegrationSource(
             InputSource inputSource,
             ApiAuth appId,
             string name,
             bool persist = true,
             string outputCollection = null)
         {
-            var type = inputSource.GetTypeDefinition() as DataIntegration;
-            if (type==null)
+            var integration = inputSource.GetTypeDefinition() as DataIntegration;
+            if (integration==null)
             {
                 throw new Exception("Could not resolve type!");
             } 
-            type.APIKey = appId;
-            type.Collection = outputCollection;
+            integration.APIKey = appId;
+            integration.Collection = outputCollection;
             if (!string.IsNullOrEmpty(name))
             {
-                type.Name = name;
+                integration.Name = name;
             }
             if (persist)
             { 
-                _integrationService.SaveOrFetchExisting(ref type); 
+                _integrationService.SaveOrFetchExisting(ref integration); 
             }
-            AddType(type, inputSource);
-            return type;
+            AddType(integration, inputSource);
+            return integration;
         }
 
         /// <summary>
@@ -222,7 +222,7 @@ namespace Netlyt.Service
                     if (ShardLimit > 0)
                     {
                         var shardsLeft = ShardLimit - shardsUsed;
-                        shards = shards.Take(shardsLeft);
+                        shards = shards.Take((int)shardsLeft);
                     }
                     //Interlocked.Add(ref shardsUsed, shards.Count());
                     Parallel.ForEach(shards, parallelOptions, (sourceShard, loopState, index) =>
@@ -246,7 +246,7 @@ namespace Netlyt.Service
                                 if (TotalEntryLimit != 0)
                                 {
                                     var entriesLeft = TotalEntryLimit - totalItemsUsed;
-                                    elements = elements.Take(entriesLeft);
+                                    elements = elements.Take((int)entriesLeft);
                                 }
                                 Parallel.ForEach(elements, parallelOptions, (entry, itemLoopState, itemIndex) =>
                                 {
@@ -311,7 +311,7 @@ namespace Netlyt.Service
                     if (ShardLimit > 0)
                     {
                         var shardsLeft = ShardLimit - shardsUsed;
-                        shards = shards.Take(shardsLeft);
+                        shards = shards.Take((int)shardsLeft);
                     }
                     //Interlocked.Add(ref shardsUsed, shards.Count());
                     Parallel.ForEach(shards, parallelOptions, (sourceShard, loopState, index) =>
@@ -335,7 +335,7 @@ namespace Netlyt.Service
                                 if (TotalEntryLimit != 0)
                                 {
                                     var entriesLeft = TotalEntryLimit - totalItemsUsed;
-                                    elements = elements.Take(entriesLeft);
+                                    elements = elements.Take((int)entriesLeft);
                                 }
                                 Parallel.ForEach(elements, parallelOptions, (entry, itemLoopState, itemIndex) =>
                                 {
@@ -411,7 +411,7 @@ namespace Netlyt.Service
         /// Limit the total number of input sources that this harvester can consume.
         /// </summary>
         /// <param name="max"></param>
-        public void LimitShards(int max)
+        public void LimitShards(uint max)
         {
             _shardLimit = max;
         }
@@ -419,7 +419,7 @@ namespace Netlyt.Service
         /// Limit the toal number of input entries that this havester can consume.
         /// </summary>
         /// <param name="max"></param>
-        public void LimitEntries(int max)
+        public void LimitEntries(uint max)
         {
             _totalEntryLimit = max;
         }

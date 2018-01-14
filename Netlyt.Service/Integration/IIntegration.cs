@@ -23,5 +23,7 @@ namespace Netlyt.Service.Integration
         ICollection<IntegrationExtra> Extras { get; } 
 
         IntegratedDocument CreateDocument<T>(T data);
+
+        string GetReducedCollectionName();
     }
 }

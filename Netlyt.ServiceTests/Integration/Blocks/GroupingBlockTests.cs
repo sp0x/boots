@@ -67,7 +67,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var grouper = GetGrouper(appId);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper); 
-            harvester.AddPersistentType(fileSource, apiObj, null);
+            harvester.AddIntegrationSource(fileSource, apiObj, null);
             var results = await harvester.Synchronize();
             Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
             var syncDuration = harvester.ElapsedTime();
@@ -95,7 +95,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             grouper.LinkTo(statsBlock, null);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper);
-            harvester.AddPersistentType(fileSource, apiObj, null);
+            harvester.AddIntegrationSource(fileSource, apiObj, null);
             var results = await harvester.Synchronize();
             //Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
             //Ensure that we went through all the items, with our entire dataflow.

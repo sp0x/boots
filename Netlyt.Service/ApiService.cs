@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using nvoid.Integration;
 using Netlyt.Service.Data;
@@ -33,6 +34,10 @@ namespace Netlyt.Service
             //}
         }
 
+        /// <summary>
+        /// Generates a new api auth key.
+        /// </summary>
+        /// <returns></returns>
         public ApiAuth Generate()
         {
             return ApiAuth.Generate();
@@ -67,6 +72,23 @@ namespace Netlyt.Service
         {
             var user = _context.Users.FirstOrDefault(x => x.ApiKeys.Any(a=> a.Id == api.Id));
             return user;
+        }
+
+        public void Register(ApiAuth key)
+        {
+            _context.ApiKeys.Add(key);
+            _context.SaveChanges();
+        }
+        public async Task RegisterAsync(ApiAuth key)
+        {
+            _context.ApiKeys.Add(key);
+            await _context.SaveChangesAsync();
+        }
+
+        public void RemoveKey(ApiAuth appId)
+        {
+            _context.ApiKeys.Remove(appId);
+            _context.SaveChanges();
         }
     }
 }

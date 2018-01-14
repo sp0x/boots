@@ -35,6 +35,7 @@ namespace Netlyt.Service.Integration
         /// </summary>
         public string Source { get; set; }
         public string Collection { get; set; }
+        
         public ICollection<FieldDefinition> Fields { get; set; }
         public ICollection<IntegrationExtra> Extras { get; set; }
 
@@ -107,8 +108,12 @@ namespace Netlyt.Service.Integration
                 }
             }
             return this;
-        } 
+        }
 
+        public string GetReducedCollectionName()
+        {
+            return $"{Collection}_reduced";
+        }
         public IntegratedDocument CreateDocument<T>(T data)
         {
             var doc = new IntegratedDocument();

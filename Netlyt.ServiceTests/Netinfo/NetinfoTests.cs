@@ -74,7 +74,7 @@ namespace Netlyt.ServiceTests.Netinfo
 
                 var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
                 var harvester = new Harvester<ExpandoObject>(_apiService, _integrationService, 10);
-                var type = harvester.AddPersistentType(fileSource, apiObj, null, true);
+                var type = harvester.AddIntegrationSource(fileSource, apiObj, null, true);
 
                 mlist.Truncate();
                 //harvester -> documentCreator -> inserter
@@ -227,7 +227,7 @@ events : elements };
                 return x["value"] as BsonDocument;
             });
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
-            var type = harvester.AddPersistentType("NetInfoUserFeatures_7_8_1", appId, source); 
+            var type = harvester.AddIntegrationSource("NetInfoUserFeatures_7_8_1", appId, source); 
 
             var dictEval = new EvalDictionaryBlock(
                 (document) => $"{document.GetString("uuid")}_{document.GetInt("day")}",
@@ -297,7 +297,7 @@ events : elements };
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20); 
-            harvester.AddPersistentType("NetInfoUserFeatures_7_8", appId, source);
+            harvester.AddIntegrationSource("NetInfoUserFeatures_7_8", appId, source);
             var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", apiObj);
             typeDef.AddField("is_paying", typeof(int));
             DataIntegration existingTypeDef;
@@ -352,7 +352,7 @@ events : elements };
             MongoSource source = MongoSource.CreateFromCollection(reducedSource, new BsonFormatter());
             var appId = "123123123";
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20);
-            var type = harvester.AddPersistentType("NetInfoUserSessions_7_8", appId, source);
+            var type = harvester.AddIntegrationSource("NetInfoUserSessions_7_8", appId, source);
             var batchSize = 10000;
             var updateBatchSize = (uint)10000;
             var recordLimit = 1000;
@@ -488,7 +488,7 @@ events : elements };
             int threadCount = 12;
             var harvester = new Netlyt.Service.Harvester<ExpandoObject>(_apiService, _integrationService, 10);
             var apiObj = _apiService.GetApi(appId);
-            var type = harvester.AddPersistentType(fileSource, apiObj, null, true);
+            var type = harvester.AddIntegrationSource(fileSource, apiObj, null, true);
             
             var cachedReducer = new ReduceCacheBlock(_appId,
                 (document) => $"{document.GetString("uuid")}:{document.GetDate("ondate")?.DaysTotal()}",
@@ -549,7 +549,7 @@ events : elements };
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
             var apiObj = _apiService.GetApi(_appId);
-            harvester.AddPersistentType(fileSource, apiObj, null, true);
+            harvester.AddIntegrationSource(fileSource, apiObj, null, true);
 
             var grouper = new GroupingBlock(_appId,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",

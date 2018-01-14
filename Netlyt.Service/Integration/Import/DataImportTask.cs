@@ -7,10 +7,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using nvoid.db.Batching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.exec.Blocks;
+using Netlyt.Service.Lex;
+using Netlyt.Service.Lex.Expressions;
+using Netlyt.Service.Lex.Parsing;
+using Netlyt.Service.Lex.Parsing.Tokenizers;
 
 namespace Netlyt.Service.Integration.Import
 {
@@ -42,13 +47,15 @@ namespace Netlyt.Service.Integration.Import
         {
             _options = options;
             string tmpGuid = Guid.NewGuid().ToString();
-            var outCollection = new CollectionDetails(tmpGuid, $"{tmpGuid}_reduced");
+            _type = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey, _options.TypeName, true, tmpGuid);
+            var outCollection = new CollectionDetails(tmpGuid, _type.GetReducedCollectionName());
             OutputCollection = outCollection;
             _harvester = new Harvester<T>(apiService, integrationService, _options.ThreadCount);
-            _type = _harvester.AddPersistentType(_options.Source, _options.ApiKey, _options.TypeName, true, outCollection.OutputCollection);
+            if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
+            if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit); 
         }
 
-        public async Task<DataImportResult> Import()
+        public async Task<DataImportResult> Import(CancellationToken? cancellationToken = null)
         {
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
             var rawEventsCollection = new MongoList(databaseConfiguration, OutputCollection.OutputCollection);
@@ -71,16 +78,32 @@ namespace Netlyt.Service.Integration.Import
                 Debug.WriteLine($"Inserted batch {batchesInserted}");
             }, executionOptions);
             transformerBlock.LinkTo(inserterBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            var result = await _harvester.ReadAll(readBatcher);
+            var result = await _harvester.ReadAll(readBatcher, cancellationToken);
             _harvester = null;
             await Task.WhenAll(inserterBlock.Completion, transformerBlock.Completion);
             foreach (var index in _options.IndexesToCreate)
             {
                 rawEventsCollection.EnsureIndex(index);
             }
-            var output = new DataImportResult(result, rawEventsCollection);
+            var output = new DataImportResult(result, rawEventsCollection); 
             return output;
         }
 
+        public async Task Reduce(string donutScript, uint inputDocumentsLimit = 0, SortDefinition<BsonDocument> orderBy = null)
+        {
+            MapReduceExpression mapReduce = new TokenParser(new PrecedenceTokenizer().Tokenize(donutScript)).ReadMapReduce();
+            MapReduceJsScript script = MapReduceJsScript.Create(mapReduce);
+            var targetCollection = OutputCollection.ReducedOutputCollection; 
+            var mapReduceOptions = new MapReduceOptions<BsonDocument, BsonDocument>
+            {
+                Sort = orderBy,
+                JavaScriptMode = true, 
+                OutputOptions = MapReduceOutputOptions.Replace(targetCollection)
+            };
+            if (inputDocumentsLimit > 0) mapReduceOptions.Limit = inputDocumentsLimit;
+            var databaseConfiguration = DBConfig.GetGeneralDatabase();
+            var sourceCollection = new MongoList(databaseConfiguration, OutputCollection.OutputCollection);
+            await sourceCollection.Records.MapReduceAsync<BsonDocument>(script.Map, script.Reduce, mapReduceOptions);
+        }
     }
 }

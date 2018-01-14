@@ -92,7 +92,7 @@ namespace Netlyt.ServiceTests
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
             var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService);
-            var type = harvester.AddPersistentType(fileSource, apiObj, null, true); 
+            var type = harvester.AddIntegrationSource(fileSource, apiObj, null, true); 
 
             var grouper = new GroupingBlock(appId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
             var saver = new MongoSink<IntegratedDocument>(appId);

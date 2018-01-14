@@ -52,8 +52,8 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
             var apiObj = _apiService.GetApi(AppId);
-            harvester.LimitEntries(limit); 
-            harvester.AddPersistentType(fileSource, apiObj, null, false);
+            harvester.LimitEntries((uint)limit); 
+            harvester.AddIntegrationSource(fileSource, apiObj, null, false);
             return harvester;
         }
         [Fact]
