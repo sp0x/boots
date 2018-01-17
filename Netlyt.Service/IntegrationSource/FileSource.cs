@@ -69,7 +69,7 @@ namespace Netlyt.Service.IntegrationSource
             {
                 using (var fStream = Open())
                 {
-                    var firstInstance = _cachedInstance = Formatter.GetNext(fStream, true);
+                    var firstInstance = _cachedInstance = Formatter.GetIterator(fStream, true);
                     Integration.DataIntegration typedef = null;
                     if (firstInstance != null)
                     {
@@ -188,7 +188,7 @@ namespace Netlyt.Service.IntegrationSource
         ///     Gets the next instance
         /// </summary>
         /// <returns></returns>
-        public override dynamic GetNext()
+        public override IEnumerable<dynamic> GetIterator()
         {
             lock (_lock)
             {
@@ -201,7 +201,7 @@ namespace Netlyt.Service.IntegrationSource
                     _cachedInstance = null;
                 }
                 //The stream position is increased, so there's no need for anything else.
-                lastInstance = Formatter.GetNext(_fileStream, resetNeeded);
+                lastInstance = Formatter.GetIterator(_fileStream, resetNeeded);
                 //If there are no more records in the current file source, and we're using a whole directory as a source
                 //and we have any remaining files to check
                 if (lastInstance == null && Mode == FileSourceMode.Directory && _fileIndex < _filesCache.Length - 1)
@@ -209,7 +209,7 @@ namespace Netlyt.Service.IntegrationSource
                     _fileIndex++;
                     _fileStream.Close();
                     //We reset, because the stream changed
-                    lastInstance = Formatter.GetNext(Open(), true);
+                    lastInstance = Formatter.GetIterator(Open(), true);
                 } 
                 return lastInstance;
             }

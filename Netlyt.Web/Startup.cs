@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
@@ -59,6 +60,7 @@ namespace Netlyt.Web
             services.AddMemoryCache();
             services.AddSession();
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
+            services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();

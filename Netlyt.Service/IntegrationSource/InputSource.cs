@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks.Dataflow;
+using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Source;
 
@@ -35,12 +37,12 @@ namespace Netlyt.Service.IntegrationSource
         }
 
         public abstract IIntegration GetTypeDefinition();
-        public abstract dynamic GetNext();
+        public abstract IEnumerable<dynamic> GetIterator();
 
-        public dynamic GetNext<T>()
+        public IEnumerable<T> GetIterator<T>()
             where T : class
         {
-            return GetNext() as T;
+            return GetIterator().Cast<T>();
         }
 
         public virtual void DoDispose()
@@ -70,11 +72,12 @@ namespace Netlyt.Service.IntegrationSource
 
         public IEnumerable<dynamic> AsEnumerable()
         {
-            dynamic nextItem;
-            while ((nextItem = GetNext()) != null)
-            {
-                yield return nextItem;
-            }
+            return GetIterator();
+//            dynamic nextItem;
+//            while ((nextItem = GetNext()) != null)
+//            {
+//                yield return nextItem;
+//            }
         } 
         public IEnumerator<object> GetEnumerator()
         {

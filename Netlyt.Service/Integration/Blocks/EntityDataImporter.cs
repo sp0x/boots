@@ -69,6 +69,11 @@ namespace Netlyt.Service.Integration.Blocks
             return null;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="intDoc"></param>
+        /// <returns></returns>
         protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
         {
             string[] matchingRow = null;

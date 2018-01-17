@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Source;
 
@@ -17,9 +18,9 @@ namespace Netlyt.Service.IntegrationSource
             throw new System.NotImplementedException();
         }
 
-        public override dynamic GetNext()
+        public override IEnumerable<dynamic> GetIterator()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public override void DoDispose()

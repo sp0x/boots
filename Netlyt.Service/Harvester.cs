@@ -262,15 +262,16 @@ namespace Netlyt.Service
                             }
                             else
                             {
-                                ExpandoObject entry;
-                                while ((entry = sourceShard.GetNext<ExpandoObject>()) != null)
+                                //ExpandoObject entry; 
+                                var iterator = sourceShard.GetIterator<ExpandoObject>();
+                                foreach (var entry in iterator)
                                 {
                                     if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit) break;
                                     targetBlock.SendChecked(entry,
-                                        () => TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit); 
-                                     
+                                        () => TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit);
+
                                     Interlocked.Increment(ref totalItemsUsed);
-                                }
+                                } 
                             }
                         }
                         Interlocked.Increment(ref shardsUsed);
@@ -338,7 +339,7 @@ namespace Netlyt.Service
                                     elements = elements.Take((int)entriesLeft);
                                 }
                                 Parallel.ForEach(elements, parallelOptions, (entry, itemLoopState, itemIndex) =>
-                                {
+                                { 
                                     if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit)
                                     {
                                         itemSetState.Break();
@@ -353,15 +354,16 @@ namespace Netlyt.Service
                                     {
                                         Destination.SendAsync(document).Wait();
                                     }
-                                    
                                     Interlocked.Increment(ref totalItemsUsed);
                                 });
                             }
                             else
                             {
-                                dynamic entry;
-                                while ((entry = sourceShard.GetNext()) != null)
+                                //dynamic entry;
+                                var iterator = sourceShard.GetIterator();
+                                foreach (var entry in iterator)
                                 {
+                                    if (entry == null) break;
                                     if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit) break;
                                     TDocument valueToSend;
                                     if (typeof(TDocument) == typeof(IntegratedDocument))
@@ -371,7 +373,7 @@ namespace Netlyt.Service
                                     else
                                     {
                                         valueToSend = entry;
-                                    } 
+                                    }
                                     Task<bool> sendTask = null;
                                     if (Destination == null)
                                     {
@@ -381,13 +383,14 @@ namespace Netlyt.Service
                                     {
                                         sendTask = Destination.SendAsync(valueToSend);
                                     }
-                                    var resultingTask = Task.WhenAny(Task.Delay(1000000000), sendTask).Result;
-                                    if (sendTask != resultingTask)
-                                    {
-                                        throw new Exception($"Block timeout while emitting {totalItemsUsed}-th item!");
-                                    }
+                                    var resultingTask = sendTask.Result;
+//                                    var resultingTask = Task.WhenAny(Task.Delay(1000000000), sendTask).Result;
+//                                    if (sendTask != resultingTask)
+//                                    {
+//                                        throw new Exception($"Block timeout while emitting {totalItemsUsed}-th item!");
+//                                    }
                                     Interlocked.Increment(ref totalItemsUsed);
-                                }
+                                } 
                             }
                         }
                         Interlocked.Increment(ref shardsUsed);

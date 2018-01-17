@@ -8,7 +8,7 @@ node {
 
     stage('Build the project') {
         /* Compile the project */  
-        slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'dev', color: 'good', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} started by changes from ", teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
+        slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'dev', color: 'good', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} started by changes from ${env.GIT_AUTHOR_EMAIL}", teamDomain: 'peeralytics', tokenCredentialId: 'jenkins-slack-integration'
         try {
             sh 'dotnet publish Netlyt.Web/Netlyt.Web.csproj -c Debug -o published/netlyt'
         } catch (Exception e) {

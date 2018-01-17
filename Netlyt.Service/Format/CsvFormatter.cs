@@ -8,7 +8,8 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Format
 {
-    public class CsvFormatter : IInputFormatter, IDisposable
+    public class CsvFormatter 
+        : IInputFormatter, IDisposable
     {
         public string Name => "Csv";
         public char Delimiter { get; set; } = ';';
@@ -28,25 +29,24 @@ namespace Netlyt.Service.Format
         /// <param name="fs"></param>
         /// <param name="reset"></param>
         /// <returns></returns>
-        public dynamic GetNext(Stream fs, bool reset = false)
+        public IEnumerable<dynamic> GetIterator(Stream fs, bool reset = false)
         {
-            return GetNext<ExpandoObject>(fs, reset);
+            return GetIterator<ExpandoObject>(fs, reset);
         }
 
-        public T GetNext<T>(Stream fs, bool reset = false)
+        public IEnumerable<T> GetIterator<T>(Stream fs, bool reset = false)
             where T : class
         {
             if (!fs.CanRead)
             {
-                return default(T);
-            }
+                yield break;
+            } 
             _reader = (!reset && _reader != null) ? _reader : new StreamReader(fs);
             _csvReader = (!reset && _csvReader != null) ? _csvReader : new CsvReader(_reader, true, Delimiter);
             if (_headers == null || reset)
             {
                 _headers = _csvReader.GetFieldHeaders();
             }
-
             var outputObject = new ExpandoObject() as IDictionary<string, Object>;
             if (_csvReader.ReadNextRecord())
             {
@@ -80,10 +80,10 @@ namespace Netlyt.Service.Format
             }
             else
             {
-                return default(T);
+                yield break;
             }
             _position++;
-            return outputObject as T;
+            yield return outputObject as T;
         }
 
         public IInputFormatter Clone()

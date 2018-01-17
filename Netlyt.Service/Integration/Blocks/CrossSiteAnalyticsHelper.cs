@@ -855,7 +855,6 @@ namespace Netlyt.Service.Integration.Blocks
             }
             _featureKeyDictionary[type][key_value] += 1;
 
-
             if (!_usersWithSpecialEvents.ContainsKey(uuid))
             {
                 _usersWithSpecialEvents[uuid] = new Dictionary<byte, HashSet<string>>();

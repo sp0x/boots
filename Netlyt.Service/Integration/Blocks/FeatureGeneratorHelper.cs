@@ -9,7 +9,7 @@ using Netlyt.Service.Time;
 namespace Netlyt.Service.Integration.Blocks
 {
     /// <summary>
-    /// 
+    /// Helps with premade feature generation blocks.
     /// </summary>
     public class FeatureGeneratorHelper
     {

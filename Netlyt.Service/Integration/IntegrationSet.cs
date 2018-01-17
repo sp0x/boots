@@ -8,7 +8,7 @@ namespace Netlyt.Service.Integration
     /// <summary>
     /// A integration set with definition and data source
     /// </summary>
-    public class IntegrationSet 
+    public class IntegrationSet
     {
         public IIntegration Definition { get; set; }
         public InputSource Source { get; set; }
@@ -31,7 +31,7 @@ namespace Netlyt.Service.Integration
             else return obj.Equals(this);
         }
 
-        
+
         public override int GetHashCode()
         {
             return base.GetHashCode();
@@ -39,32 +39,35 @@ namespace Netlyt.Service.Integration
 
         public IEnumerable<IntegratedDocument> AsEnumerable()
         {
-            dynamic nextItem;
-            while ((nextItem = Read()) != null)
+            var iter = Source.GetIterator();
+            foreach (var element in iter)
             {
-                yield return nextItem;
+                var doc = new IntegratedDocument();
+                doc.SetDocument(element);
+                doc.IntegrationId = Definition.Id;
+                yield return doc;
             }
         }
-
-        /// <summary>
-        /// Reads the next available item from this set
-        /// </summary>
-        /// <returns></returns>
-        public IntegratedDocument Read()
-        {
-            var entry = Source.GetNext();
-            if (entry == null) return null;
-            var doc = new IntegratedDocument();
-            doc.SetDocument(entry);
-            doc.IntegrationId = Definition.Id;
-            return doc;
-        }
+        //
+        //        /// <summary>
+        //        /// Reads the next available item from this set
+        //        /// </summary>
+        //        /// <returns></returns>
+        //        public IntegratedDocument Read()
+        //        {
+        //            var entry = Source.GetIterator();
+        //            if (entry == null) return null;
+        //            var doc = new IntegratedDocument();
+        //            doc.SetDocument(entry);
+        //            doc.IntegrationId = Definition.Id;
+        //            return doc;
+        //        }
         /// <summary>
         /// Wraps the data in an integration document
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public IntegratedDocument Wrap(ExpandoObject data)
+        public IntegratedDocument Wrap(dynamic data)
         {
             return Definition.CreateDocument(data);
         }

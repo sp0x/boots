@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Source;
 
@@ -61,7 +62,7 @@ namespace Netlyt.Service.IntegrationSource
 
         public override IIntegration GetTypeDefinition()
         {
-            var firstInstance = _cachedInstance = Formatter.GetNext(Content, true);
+            var firstInstance = _cachedInstance = Formatter.GetIterator(Content, true);
             Integration.DataIntegration typeDef = null;
             if (firstInstance != null)
             {
@@ -77,7 +78,7 @@ namespace Netlyt.Service.IntegrationSource
         /// Gets the next object instance
         /// </summary>
         /// <returns></returns>
-        public override dynamic GetNext()
+        public override IEnumerable<dynamic> GetIterator()
         {
             lock (_lock)
             {
@@ -89,7 +90,7 @@ namespace Netlyt.Service.IntegrationSource
                     Content.Position = 0;
                     _cachedInstance = null;
                 }
-                lastInstance = Formatter.GetNext(Content, resetNeeded);
+                lastInstance = Formatter.GetIterator(Content, resetNeeded);
                 return lastInstance;
             }
         }

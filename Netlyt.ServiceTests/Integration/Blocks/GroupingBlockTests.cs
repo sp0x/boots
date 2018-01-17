@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using nvoid.db.DB;
+using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Format;
@@ -25,6 +26,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         private ApiService _apiService;
         private ConfigurationFixture _config;
         private IntegrationService _integrationService;
+        private ApiAuth _apiAuth;
 
         public GroupingBlockTests(ConfigurationFixture fixture)
         {
@@ -32,11 +34,13 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
             _apiService = fixture.GetService<ApiService>();
             _integrationService = fixture.GetService<IntegrationService>();
+            _apiAuth = _apiService.Generate();
+            _apiService.Register(_apiAuth);
         }
 
-        private GroupingBlock GetGrouper(string userId)
+        private GroupingBlock GetGrouper(ApiAuth apiAuth)
         {
-            var grouper = new GroupingBlock(userId,
+            var grouper = new GroupingBlock(apiAuth,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
                 (accumulated, document) =>
@@ -60,14 +64,12 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         {
             inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
-            var appId = "123123123";
-            var apiObj = _apiService.GetApi(appId);
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());  
             var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService, 20);
-            var grouper = GetGrouper(appId);
+            var grouper = GetGrouper(_apiAuth);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper); 
-            harvester.AddIntegrationSource(fileSource, apiObj, null);
+            harvester.AddIntegrationSource(fileSource, _apiAuth, null);
             var results = await harvester.Synchronize();
             Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
             var syncDuration = harvester.ElapsedTime();
@@ -80,12 +82,10 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         {
             inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
-            var appId = "123123123";
-            var apiObj = _apiService.GetApi(appId);
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20);
 
-            var grouper = GetGrouper(appId);
+            var grouper = GetGrouper(_apiAuth);
             var statsCounter = 0;
             var statsBlock = new StatsBlock((visit) =>
             { 
@@ -95,7 +95,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             grouper.LinkTo(statsBlock, null);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper);
-            harvester.AddIntegrationSource(fileSource, apiObj, null);
+            harvester.AddIntegrationSource(fileSource, _apiAuth, null);
             var results = await harvester.Synchronize();
             //Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
             //Ensure that we went through all the items, with our entire dataflow.

@@ -12,11 +12,12 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Format
 {
-    public class BsonFormatter : IInputFormatter
+    public class BsonFormatter
+        : IInputFormatter
     {
         IAsyncCursorSource<BsonDocument> _finder = null;
         IAsyncCursor<BsonDocument> _cursor;
-        private BsonDocument[] _elementCache;
+        private List<BsonDocument> _elementCache;
         private int _position = -1;
         
         
@@ -39,56 +40,69 @@ namespace Netlyt.Service.Format
 
         
         public string Name { get; } = "BsonFormatter";
-        public dynamic GetNext(Stream fs, bool reset)
-        {
-            throw new NotImplementedException();
-        }
         public long Position()
         {
             return _passedElements + _position;
         }
 
-        public dynamic GetNext(IAsyncCursorSource<BsonDocument> cursorSource, bool reset)
+        public IEnumerable<dynamic> GetIterator(Stream fs, bool reset)
+        {
+            throw new NotImplementedException();
+        }
+        public IEnumerable<T> GetIterator<T>(Stream fs, bool reset) where T : class
+        {
+            throw new NotImplementedException();
+        }
+        public IEnumerable<dynamic> GetIterator(IAsyncCursorSource<BsonDocument> cursorSource, bool reset)
         {
             _finder = cursorSource;
 //            if (_size == 0 || reset)
 //            {
 //                _size = _finder.Count();
 //            } 
-            lock (_lock)
-            {
-
-                if (_cursor == null || reset)
-                {
-                    _cursor = cursorSource.ToCursor();
-                    _elementCache = _cursor.MoveNext() ? _cursor.Current.ToArray() : new BsonDocument[] { };
-                }
-                if (_elementCache != null && _position >= _elementCache.Count())
-                {
-                    _elementCache = _cursor.MoveNext() ? _cursor.Current.ToArray() : new BsonDocument[] { };
-                    _passedElements += _position;
-                    _position = 0;
-
-                }
-            }
+            GetCache(reset);
             if (_position == -1) _position = 0;
             //if (reset) cursor.Dispose();
             if (_elementCache!=null && _elementCache.Count() > _position)
             {
-                var element = _elementCache[_position];
-                Interlocked.Increment(ref _position);
+                while(_elementCache.Count>0)
+                {
+                    foreach (var element in _elementCache)
+                    { 
+                        yield return element;
+                        Interlocked.Increment(ref _position);
+                    }
+                    GetCache(false); 
+                };
+                //var element = _elementCache[_position];
                 //var output = BsonSerializer.Deserialize<ExpandoObject>(element);
-                return element;
+                //return element;
             }
             else
             {
-                return null;
+                //return null;
             }
         }
-        public T GetNext<T>(Stream fs, bool reset) where T : class
+
+        private void GetCache(bool reset)
         {
-            throw new NotImplementedException();
+            lock (_lock)
+            {
+                _elementCache?.Clear();
+                if (_cursor == null || reset)
+                {
+                    _cursor = _finder.ToCursor();
+                    _elementCache = _cursor.MoveNext() ? _cursor.Current.ToList() : new List<BsonDocument>();
+                }
+                if (_elementCache != null && _position >= _elementCache.Count())
+                { 
+                    _elementCache = _cursor.MoveNext() ? _cursor.Current.ToList() : new List<BsonDocument>();
+                    _passedElements += _position;
+                    _position = 0;
+                }
+            }
         }
+
 
         public IInputFormatter Clone()
         {

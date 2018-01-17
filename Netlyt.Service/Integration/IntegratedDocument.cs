@@ -15,6 +15,9 @@ namespace Netlyt.Service.Integration
         public string Id { get; set; }
         public Lazy<BsonDocument> Document { get; set; }
         public BsonDocument Reserved { get; set; }
+        /// <summary>
+        /// The id of the associated api key
+        /// </summary>
         public long APIId { get; set; }
         public long IntegrationId { get; set; }
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);

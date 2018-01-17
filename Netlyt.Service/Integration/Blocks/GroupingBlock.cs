@@ -6,6 +6,7 @@ using MongoDB.Bson;
 using nvoid.extensions;
 using System.Linq;
 using nvoid.exec.Blocks;
+using nvoid.Integration;
 using Netlyt.Service.Models;
 
 namespace Netlyt.Service.Integration.Blocks
@@ -40,16 +41,16 @@ namespace Netlyt.Service.Integration.Blocks
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="appId"></param>
+        /// <param name="apiKey"></param>
         /// <param name="selector"></param>
         /// <param name="inputProjection">Projection to perform on the input</param>
         /// <param name="accumulator">Accumulate input data to the resolved element</param>
-        public GroupingBlock(string appId, Func<IntegratedDocument, object> selector,
+        public GroupingBlock(ApiAuth apiKey, Func<IntegratedDocument, object> selector,
             Action<IntegratedDocument> inputProjection,
             Func<IntegratedDocument, BsonDocument, object> accumulator)
             : base(capacity: 1000, procType: BlockType.Action)
         {
-            base.AppId = appId;
+            base.AppId = apiKey.AppId;
             _groupBySelector = selector;
             this._accumulator = accumulator;
             this._inputProjection = inputProjection;

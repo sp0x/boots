@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
-namespace Netlyt.Service.Source
+namespace Netlyt.Service.Format
 {
     /// <summary>
     /// 
@@ -9,8 +10,8 @@ namespace Netlyt.Service.Source
     public interface IInputFormatter : IDisposable
     {
         string Name { get; }
-        dynamic GetNext(Stream fs, bool reset);
-        T GetNext<T>(Stream fs, bool reset) where T : class;
+        IEnumerable<dynamic> GetIterator(Stream fs, bool reset);
+        IEnumerable<T> GetIterator<T>(Stream fs, bool reset) where T : class; 
         IInputFormatter Clone();
 
         long Position();

@@ -22,6 +22,10 @@ namespace Netlyt.Service.IntegrationSource
         private IAsyncCursorSource<BsonDocument> _cursorSource;
         private Func<BsonDocument, BsonDocument> _project;
         private IAggregateFluent<BsonDocument> _aggregate;
+        /// <summary>
+        /// The amount of elements in each bson chunk
+        /// </summary>
+        public uint BatchSize { get; set; } = 1000;
         public double ProgressInterval { get; set; } = 0.5;
         private double _lastProgress;
         public IMongoCollection<BsonDocument> Collection => _collection;
@@ -99,7 +103,7 @@ namespace Netlyt.Service.IntegrationSource
             }
         }
 
-        public override dynamic GetNext()
+        public override IEnumerable<dynamic> GetIterator()
         {
             lock (_lock)
             {
@@ -114,7 +118,11 @@ namespace Netlyt.Service.IntegrationSource
                     }
                     else
                     {
-                        _cursorSource = _collection.Find(_query);
+                        var options = new FindOptions
+                        {
+                            BatchSize = (int)BatchSize
+                        };
+                        _cursorSource = _collection.Find(_query, options);
                         Size = ((IFindFluent<BsonDocument, BsonDocument>) _cursorSource).Count();
                     }
                 } 
@@ -122,20 +130,22 @@ namespace Netlyt.Service.IntegrationSource
                 { 
                     _cachedInstance = null;
                 }
-                var item = (Formatter as BsonFormatter)?.GetNext(_cursorSource, resetNeeded);
-                if (item == null) return null;
-                if (_project != null) item = _project(item); 
-                lastInstance = BsonSerializer.Deserialize<ExpandoObject>(item);
-#if DEBUG 
-                var crProgress = Progress;
-                if ((crProgress - _lastProgress) > ProgressInterval)
-                { 
-                    Debug.WriteLine($"Bson progress: %{Progress:0.0000} of {Size}");
-                    _lastProgress = crProgress;
-                }
+                var formatterIterator = (Formatter as BsonFormatter)?.GetIterator(_cursorSource, resetNeeded);
+                foreach (var formattedItem in formatterIterator)
+                {
+                    var item = formattedItem;
+                    if (_project != null) item = _project(item);
+                    lastInstance = item;//BsonSerializer.Deserialize<ExpandoObject>(item);
+#if DEBUG
+                    var crProgress = Progress;
+                    if ((crProgress - _lastProgress) > ProgressInterval)
+                    {
+                        Debug.WriteLine($"Bson progress: %{Progress:0.0000} of {Size}");
+                        _lastProgress = crProgress;
+                    }
 #endif
-                
-                return lastInstance;
+                    yield return lastInstance;
+                }
             }
         }
 

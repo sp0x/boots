@@ -8,6 +8,7 @@ using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core;
 using StackExchange.Redis.Extensions.Jil; 
 using nvoid.exec.Blocks;
+using nvoid.Integration;
 
 namespace Netlyt.Service.Integration.Blocks
 {
@@ -32,12 +33,12 @@ namespace Netlyt.Service.Integration.Blocks
 
 
         public ReduceCacheBlock(
-            string userId, 
+            ApiAuth apiKey, 
             Func<ExpandoObject, string> selector,
             Func<ExpandoObject, ExpandoObject> inputProjection)
             : base(capacity: 100000, procType: BlockType.Transform)
         {
-            _keyBase = $"reduce_cache:{userId}";
+            _keyBase = $"reduce_cache:{apiKey.AppId}";
             var connection = DBConfig.GetCachingConnection();
             if (connection == null) throw new Exception("No redis connection found!"); 
             _serializer = new JilSerializer();

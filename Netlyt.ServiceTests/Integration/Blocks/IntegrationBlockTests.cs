@@ -13,6 +13,7 @@ using MongoDB.Driver;
 using nvoid.db.DB.MongoDB;
 using nvoid.db.Extensions;
 using nvoid.exec.Blocks;
+using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Format;
@@ -36,6 +37,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         private ApiService _apiService;
         private ConfigurationFixture _config;
         private IntegrationService _integrationService;
+        private ApiAuth _apiAuth;
 
         public IntegrationBlockTests(ConfigurationFixture fixture)
         {
@@ -43,6 +45,8 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
             _apiService = fixture.GetService<ApiService>();
             _integrationService = fixture.GetService<IntegrationService>();
+            _apiAuth = _apiService.Generate();
+            _apiService.Register(_apiAuth);
         }
 
         private Harvester<IntegratedDocument> GetHarvester(uint threadCount = 20, int limit = 10)
@@ -235,7 +239,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var batchSize = (uint)3000;
             var featureSize = 1;
 
-            var grouper = new GroupingBlock(AppId,
+            var grouper = new GroupingBlock(_apiAuth,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
                 (doc, docx) => doc);

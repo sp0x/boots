@@ -10,6 +10,7 @@ using nvoid.db.DB;
 using nvoid.db.Extensions;
 using nvoid.exec.Blocks;
 using nvoid.extensions;
+using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Format;
@@ -38,6 +39,7 @@ namespace Netlyt.ServiceTests
         private DynamicContextFactory _contextFactory;
         private ApiService _apiService;
         private IntegrationService _integrationService;
+        private ApiAuth _apiAuth;
 
         public EntityExtractor(ConfigurationFixture fixture)
         {
@@ -52,6 +54,8 @@ namespace Netlyt.ServiceTests
             _purchasesBeforeHolidays = new BsonArray();
             _purchasesBeforeWeekends = new BsonArray();
             _dateHelper = new DateHelper();
+            _apiAuth = _apiService.Generate();
+            _apiService.Register(_apiAuth);
         } 
 
 
@@ -88,14 +92,11 @@ namespace Netlyt.ServiceTests
         public async void ExtractEntityFromDirectory(string inputDirectory, string demographySheet)
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());  
-            var appId = "123123123";
-            var apiObj = _apiService.GetApi(appId);
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());   
             var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService);
-            var type = harvester.AddIntegrationSource(fileSource, apiObj, null, true); 
-
-            var grouper = new GroupingBlock(appId, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
-            var saver = new MongoSink<IntegratedDocument>(appId);
+            var type = harvester.AddIntegrationSource(fileSource, _apiAuth, null, true); 
+            var grouper = new GroupingBlock(_apiAuth, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
+            var saver = new MongoSink<IntegratedDocument>(_apiAuth.AppId);
             var demographyImporter = new EntityDataImporter(demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
             demographyImporter.UseInputKey((input) => input[0] );
