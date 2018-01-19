@@ -310,11 +310,11 @@ namespace Netlyt.ServiceTests
             if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
             {
                 var dateTime = DateTime.Parse(onDate);
-                if (_dateHelper.IsHoliday(dateTime))
+                if (DateHelper.IsHoliday(dateTime))
                 {
                     _purchasesOnHolidays.Add(newElement);
                 }
-                else if (_dateHelper.IsHoliday(dateTime.AddDays(1)))
+                else if (DateHelper.IsHoliday(dateTime.AddDays(1)))
                 {
                     _purchasesBeforeHolidays.Add(newElement);
                 }

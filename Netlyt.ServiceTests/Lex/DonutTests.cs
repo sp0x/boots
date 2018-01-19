@@ -6,16 +6,19 @@ using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.Batching;
+using nvoid.db.Caching;
 using nvoid.db.DB;
 using nvoid.db.Extensions;
 using nvoid.extensions;
 using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
+using Netlyt.Service.Donut;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.IntegrationSource;
+using Netlyt.Service.Lex.Generation;
 using Netlyt.Service.Models;
 using Netlyt.Service.Time;
 using Netlyt.ServiceTests.IntegrationSource;
@@ -35,6 +38,7 @@ namespace Netlyt.ServiceTests.Lex
         private ApiService _apiService;
         private IntegrationService _integrationService;
         private ApiAuth _appId;
+        private RedisCacher _cacher;
         public const byte VisitTypedValue = 1;
 
         public DonutTests(ConfigurationFixture fixture)
@@ -49,7 +53,7 @@ namespace Netlyt.ServiceTests.Lex
             _integrationService = fixture.GetService<IntegrationService>();
             _appId = _apiService.Generate();
             _apiService.Register(_appId);
-
+            _cacher = fixture.GetService<RedisCacher>();
         }
 
         [Theory]
@@ -64,16 +68,11 @@ namespace Netlyt.ServiceTests.Lex
                 return x["value"] as BsonDocument;
             });
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
-            var type = harvester.AddIntegrationSource("NetInfoUserFeatures_7_8_1", _appId.AppId, source); 
-            var dictEval = new EvalDictionaryBlock(
-                //We use the uuid and day as a key
-                (document) => $"{document.GetString("uuid")}_{document.GetInt("day")}", 
-                //Visit every document in the child
-                (rootElement, newDoc) => AccumulateUserDocument(rootElement, newDoc, false),
-                //We select the child who's elements we'll visit
-                (rootElement) => rootElement.GetArray("events"));
-            _helper = new CrossSiteAnalyticsHelper(dictEval.Elements);
-            dictEval.Helper = _helper;
+            var type = harvester.AddIntegrationSource("NetInfoUserFeatures_7_8_1", _appId.AppId, source);
+            var donutMachine = new DonutfileGenerator<NetinfoDonutfile>(_cacher);
+            var donut = donutMachine.Generate();
+            var dictEval = new MemberVisitingBlock(donut.ProcessRecord);
+            _helper = new CrossSiteAnalyticsHelper();
 
             var featureHelper = new FeatureGeneratorHelper() { Helper = _helper, TargetDomain = "ebag.bg" };
             var featureGenerator = new FeatureGenerator<IntegratedDocument>(
@@ -127,22 +126,6 @@ namespace Netlyt.ServiceTests.Lex
             Debug.WriteLine(result.ProcessedEntries);
         }
 
-        /// <summary>
-        /// Adds the type&value pair combinations in the helper
-        /// </summary>
-        /// <param name="block"></param>
-        /// <param name="arg"></param>
-        private void CollectTypeValuePair(string userId, BsonDocument arg)
-        {
-            if (arg.IsNumeric("value"))
-            {
-                var intval = arg.GetInt("value");
-                var ev = arg.GetInt("type");
-                var key_value = $"{ev}_{intval}";
-                if (string.IsNullOrEmpty(userId)) return;
-                _helper.AddRatingFeature(VisitTypedValue, userId, key_value);
-            }
-        }
         private void JoinDemography(string[] demographyFields, IntegratedDocument userDocument)
         {
             int tAge;
@@ -170,7 +153,7 @@ namespace Netlyt.ServiceTests.Lex
             var value = newEntry.GetString("value");
             var onDate = newEntry.GetDate("ondate").Value;
             var uuid = accumulator.GetString("uuid");
-            CollectTypeValuePair(uuid, newEntry);
+            //CollectTypeValuePair(uuid, newEntry);
             //            var newElement = new
             //            {
             //                ondate = newEntry.GetDate("ondate"),
@@ -196,11 +179,11 @@ namespace Netlyt.ServiceTests.Lex
             }
             if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
             {
-                if (_dateHelper.IsHoliday(onDate))
+                if (DateHelper.IsHoliday(onDate))
                 {
                     _helper.PurchasesOnHolidays.Add(newEntry);
                 }
-                else if (_dateHelper.IsHoliday(onDate.AddDays(1)))
+                else if (DateHelper.IsHoliday(onDate.AddDays(1)))
                 {
                     _helper.PurchasesBeforeHolidays.Add(newEntry);
                 }

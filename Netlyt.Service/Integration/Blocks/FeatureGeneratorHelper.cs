@@ -149,8 +149,8 @@ namespace Netlyt.Service.Integration.Blocks
                     var dateTimeNextDay = dateTime.AddDays(1);
                     if (dateTime.DayOfWeek == DayOfWeek.Friday) visitsBeforeWeekends.Add(ebagVisit);
                     else if (dateTime.DayOfWeek > DayOfWeek.Friday) visitsOnWeekends.Add(ebagVisit);
-                    else if (dateHelper.IsHoliday(dateTimeNextDay)) visitsBeforeHolidays.Add(ebagVisit);
-                    else if (dateHelper.IsHoliday(dateTime)) visitsOnHolidays.Add(ebagVisit);
+                    else if (DateHelper.IsHoliday(dateTimeNextDay)) visitsBeforeHolidays.Add(ebagVisit);
+                    else if (DateHelper.IsHoliday(dateTime)) visitsOnHolidays.Add(ebagVisit);
                 }
 
                 if (!hasVisitedPromotion && visitUrl.Contains("/promo-products"))
@@ -164,8 +164,8 @@ namespace Netlyt.Service.Integration.Blocks
                     else if (dateTime >= lastMonthStart && dateTime <= lastMonthEnd) boughtLastMonth.Add(ebagVisit);
                     else if (dateTime >= lastYearStart && dateTime <= lastYearEnd) boughtLastYear.Add(ebagVisit);
                     else if (dateTime.Month == today.Month) purchasesInThisMonth.Add(ebagVisit);
-                    else if (dateHelper.IsHoliday(dateTime)) purchasesInHolidays.Add(ebagVisit);
-                    else if (dateHelper.IsHoliday(dateTimeNextDay)) purchasesBeforeHolidays.Add(ebagVisit);
+                    else if (DateHelper.IsHoliday(dateTime)) purchasesInHolidays.Add(ebagVisit);
+                    else if (DateHelper.IsHoliday(dateTimeNextDay)) purchasesBeforeHolidays.Add(ebagVisit);
                     else if (dateTime.DayOfWeek > DayOfWeek.Friday) purchasesInWeekends.Add(ebagVisit);
                     else if (dateTime.DayOfWeek == DayOfWeek.Friday) purchasesBeforeWeekends.Add(ebagVisit);
                     purchases.Add(ebagVisit);

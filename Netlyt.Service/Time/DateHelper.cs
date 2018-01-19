@@ -5,21 +5,37 @@ namespace Netlyt.Service.Time
 {
     public class DateHelper
     {
-        private HashSet<DateTime> HolidayDict = new HashSet<DateTime>();
-
-        public DateHelper()
+        private static Dictionary<int, HashSet<DateTime>> HolidayDict = new Dictionary<int, HashSet<DateTime>>();
+        private static DateHelper _instance;
+        static DateHelper()
         {
+            int year = DateTime.Now.Year;
             //Load bg holidays
-            var holidays = GetHolidays(DateTime.Now.Year);
+            var holidays = GetHolidays(year);
+            var holidaySet = new HashSet<DateTime>();
             foreach (var hol in holidays)
             {
-                HolidayDict.Add(hol);
+                holidaySet.Add(hol);
             }
+            HolidayDict.Add(year, holidaySet);
         }
 
-        public bool IsHoliday(DateTime day)
+        private static void LoadYearHolidays(int year)
         {
-            return HolidayDict.Contains(day);
+            if (HolidayDict.ContainsKey(year)) return;
+            var holidays = GetHolidays(year);
+            var holidaySet = new HashSet<DateTime>();
+            foreach (var hol in holidays)
+            {
+                holidaySet.Add(hol);
+            }
+            HolidayDict.Add(year, holidaySet);
+        }
+
+        public static bool IsHoliday(DateTime day)
+        {
+            LoadYearHolidays(day.Year);
+            return HolidayDict[day.Year].Contains(day);
         }
 
         private static HashSet<DateTime> GetHolidays(int year)

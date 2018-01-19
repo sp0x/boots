@@ -14,7 +14,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="LumenWorks.Framework.IO.Core" Version="1.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Redis.Core" Version="1.0.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.0-preview-20180109-01" />
     <PackageReference Include="Microsoft.Tpl.Dataflow" Version="4.5.24" />
     <PackageReference Include="xunit" Version="2.3.1" />

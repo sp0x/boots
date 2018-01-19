@@ -15,6 +15,9 @@ namespace Netlyt.Service.Models
         }
           
     }
+    /// <summary>
+    /// 
+    /// </summary>
     public class Score : IComparer<Score>
     {
         public double Value { get; set; }

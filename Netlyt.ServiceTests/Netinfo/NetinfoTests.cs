@@ -682,11 +682,11 @@ events : elements };
             }
             if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
             {
-                if (_dateHelper.IsHoliday(onDate))
+                if (DateHelper.IsHoliday(onDate))
                 {
                     _helper.PurchasesOnHolidays.Add(newEntry);
                 }
-                else if (_dateHelper.IsHoliday(onDate.AddDays(1)))
+                else if (DateHelper.IsHoliday(onDate.AddDays(1)))
                 {
                     _helper.PurchasesBeforeHolidays.Add(newEntry);
                 }

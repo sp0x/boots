@@ -883,9 +883,13 @@ namespace Netlyt.Service.Integration.Blocks
             {
                 Score<string> feature = i>= sortedFeatures.Length ? null : sortedFeatures[i];
                 var value = 0;
-                if (feature!=null && _usersWithSpecialEvents.ContainsKey(userId) && _usersWithSpecialEvents[userId].ContainsKey(featureId))
+                if (feature!=null && _usersWithSpecialEvents.ContainsKey(userId))
                 {
-                    value = _usersWithSpecialEvents[userId][featureId].Contains(feature.Value) ? 1 : 0;
+                    var userSpecialEvents = _usersWithSpecialEvents[userId];
+                    if (userSpecialEvents.ContainsKey(featureId))
+                    {
+                        value = userSpecialEvents[featureId].Contains(feature.Value) ? 1 : 0;
+                    }
                 }                
                 yield return value;
             }

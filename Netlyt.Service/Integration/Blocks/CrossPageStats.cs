@@ -3,10 +3,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using nvoid.extensions;
-using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.Models;
 
-namespace Netlyt.Service
+namespace Netlyt.Service.Integration.Blocks
 {
     /// <summary>
     /// Stats for multiple pages
