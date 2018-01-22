@@ -233,6 +233,7 @@ namespace Netlyt.Web.Controllers
 //        }
 
         [HttpPost("/register")]
+        [HttpPost("/auth")]
         [AllowAnonymous] 
         public async Task<IActionResult> Register(RegisterViewModel model, string returnUrl = null)
         {
