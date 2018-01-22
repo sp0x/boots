@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Netlyt.Service; 
 using Netlyt.Service.Models.Account;
@@ -25,6 +26,7 @@ namespace Netlyt.Web.Controllers
         private readonly ILogger _logger;
         private readonly UserService _userService;
         private ApiService _apiService;
+        private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
 
         public AccountController(
             UserManager<User> userManager,
@@ -32,7 +34,8 @@ namespace Netlyt.Web.Controllers
             IEmailSender emailSender,
             ILogger<AccountController> logger, 
             UserService userService,
-            ApiService apiService)
+            ApiService apiService,
+            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider)
         {
             _userService = userService;
             _userManager = userManager;
@@ -40,6 +43,7 @@ namespace Netlyt.Web.Controllers
             _emailSender = emailSender;
             _logger = logger;
             _apiService = apiService;
+            _actionDescriptorCollectionProvider = actionDescriptorCollectionProvider;
         }
 
         [TempData]
@@ -56,7 +60,7 @@ namespace Netlyt.Web.Controllers
         //            return View();
         //        }
         //
-        [HttpGet("/me")]
+        [HttpGet("/user/me")] // /me = host/me, me = host/user/GetProfile/me 
         public async Task<IActionResult> GetProfile()
         {
             var user = await _userManager.GetUserAsync(User);
