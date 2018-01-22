@@ -6,6 +6,8 @@ using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
+using Netlyt.Service.Models;
+using Netlyt.Service.Models.CacheMaps;
 
 namespace Netlyt.ServiceTests
 {
@@ -27,6 +29,7 @@ namespace Netlyt.ServiceTests
             DBConfig.Initialize(config);
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider();
+            RedisCacher.RegisterSerialize<PageStatsCacher, PageStats>();
         }
 
         private void ConfigureServices(IServiceCollection services)

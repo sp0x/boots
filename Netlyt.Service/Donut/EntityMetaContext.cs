@@ -14,18 +14,23 @@ namespace Netlyt.Service.Donut
         /// <summary>
         /// A dict of metaCategory , ( metaValue, userIds )
         /// </summary>
-        private ConcurrentDictionary<int, Dictionary<string, HashSet<string>>> _entityMetaValues;
-
-        private RedisCacher _cacher;
-        public EntityMetaContext(RedisCacher cacher)
-        {
-            _cacher = cacher;
+        private ConcurrentDictionary<int, Dictionary<string, HashSet<string>>> _entityMetaValues; 
+        public EntityMetaContext()
+        { 
             _metaValues = new ConcurrentDictionary<int, Dictionary<string, Score>>();
             _entityMetaValues = new ConcurrentDictionary<int, Dictionary<string, HashSet<string>>>();
             //_entityMetaValues = new ConcurrentDictionary<string, Dictionary<int, HashSet<string>>>();
-
         }
 
+        public ConcurrentDictionary<int, Dictionary<string, Score>> GetMetaValues()
+        {
+            return _metaValues;
+        }
+
+        public ConcurrentDictionary<int, Dictionary<string, HashSet<string>>> GetEntityMetaValues()
+        {
+            return _entityMetaValues;
+        }
         /// <summary>
         /// 
         /// </summary>

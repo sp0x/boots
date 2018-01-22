@@ -69,8 +69,9 @@ namespace Netlyt.ServiceTests.Lex
             });
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
             var type = harvester.AddIntegrationSource("NetInfoUserFeatures_7_8_1", _appId.AppId, source);
-            var donutMachine = new DonutfileGenerator<NetinfoDonutfile>(_cacher);
+            var donutMachine = new DonutfileGenerator<NetinfoDonutfile, NetinfoDonutContext>(type, _cacher); 
             var donut = donutMachine.Generate();
+
             var dictEval = new MemberVisitingBlock(donut.ProcessRecord);
             _helper = new CrossSiteAnalyticsHelper();
 

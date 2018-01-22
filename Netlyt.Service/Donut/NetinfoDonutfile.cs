@@ -10,17 +10,14 @@ using Netlyt.Service.Time;
 namespace Netlyt.Service.Donut
 {
     public class NetinfoDonutfile
-        : Donutfile
-    { 
-        private NetinfoDonutContext _context;
-
+        : Donutfile<NetinfoDonutContext>
+    {  
         /// <summary>
         /// 
         /// </summary>
         /// <param name="cacher"></param>
         public NetinfoDonutfile(RedisCacher cacher) : base(cacher)
         { 
-            _context = new NetinfoDonutContext(cacher); 
         }
         const int META_NUMERIC_TYPE_VALUE = 1;
 
@@ -44,43 +41,43 @@ namespace Netlyt.Service.Donut
                 {
                     var metaVal = $"{type}_{value}";
                     if (string.IsNullOrEmpty(uuid)) return;
-                    _context.IncrementMetaCategory(META_NUMERIC_TYPE_VALUE, metaVal);
-                    _context.AddEntityMetaCategory(uuid, META_NUMERIC_TYPE_VALUE, metaVal);
+                    Context.IncrementMetaCategory(META_NUMERIC_TYPE_VALUE, metaVal);
+                    Context.AddEntityMetaCategory(uuid, META_NUMERIC_TYPE_VALUE, metaVal);
                 } 
                 var pageHost = value.ToHostname();
                 var pageSelector = pageHost;
                 var isNewPage = false;
-                if (!_context.PageStats.ContainsKey(pageHost))
+                if (!Context.PageStats.ContainsKey(pageSelector))
                 {
-                    _context.PageStats.TryAdd(pageSelector, new PageStats()
+                    Context.PageStats.TryAdd(pageSelector, new PageStats()
                     {
                         Page = value
                     });
                 }
-                _context.PageStats[pageSelector].PageVisitsTotal++;
+                Context.PageStats[pageSelector].PageVisitsTotal++;
                 if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
                 {
                     if (DateHelper.IsHoliday(onDate))
                     {
-                        _context.PurchasesOnHolidays.Add(uuid);
+                        Context.PurchasesOnHolidays.Add(uuid);
                     }
                     else if (DateHelper.IsHoliday(onDate.AddDays(1)))
                     {
-                        _context.PurchasesBeforeHolidays.Add(uuid);
+                        Context.PurchasesBeforeHolidays.Add(uuid);
                     }
                     else if (onDate.DayOfWeek == DayOfWeek.Friday)
                     {
-                        _context.PurchasesBeforeWeekends.Add(uuid);
+                        Context.PurchasesBeforeWeekends.Add(uuid);
                     }
                     else if (onDate.DayOfWeek > DayOfWeek.Friday)
                     {
-                        _context.PurchasesInWeekends.Add(uuid);
+                        Context.PurchasesInWeekends.Add(uuid);
                     }
-                    _context.Purchases.Add(uuid);
-                    _context.PayingUsers.Add(uuid);//["is_paying"] = 1;
+                    Context.Purchases.Add(uuid);
+                    Context.PayingUsers.Add(uuid);//["is_paying"] = 1;
                 } 
             }
-            _context.Cache();
+            Context.Cache();
         }
 
 

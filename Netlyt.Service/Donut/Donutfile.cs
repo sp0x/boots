@@ -1,13 +1,31 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using nvoid.db.Caching;
+using Netlyt.Service.Integration;
 using StackExchange.Redis;
 
 namespace Netlyt.Service.Donut
 {
-    public class Donutfile
+    public class Donutfile<TContext> : IDisposable
+        where TContext : DonutContext
     {
+        public TContext Context { get; set; }
         public Donutfile(RedisCacher cacher)
         { 
+        }
+
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

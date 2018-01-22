@@ -1,13 +1,18 @@
 using System;
 using System.Collections.Generic;
+using nvoid.db.Caching;
 using nvoid.extensions;
 using Netlyt.Service.Integration.Blocks;
 
 namespace Netlyt.Service.Models
 {
+
+//
+
+
     /// <summary>
     /// Page stats helper
-    /// </summary>
+    /// </summary> 
     public class PageStats
     {
         public string PageHost => Strings.ToHostname(Page);
@@ -20,6 +25,7 @@ namespace Netlyt.Service.Models
         /// The number of times this hostname was visited, including the times that the user just went to another page.
         /// </summary>
         public long PageVisitsTotal { get; set; }
+        [CacheKey]
         public string Page { get; set; }
         public int PurchasedUsers { get; set; }
         /// <summary>

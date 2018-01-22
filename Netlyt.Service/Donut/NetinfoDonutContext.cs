@@ -1,11 +1,11 @@
 ﻿using System.Collections.Concurrent;
 using nvoid.db.Caching;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Models;
 
 namespace Netlyt.Service.Donut
 {
-    public class NetinfoDonutContext
-        : DonutContext
+    public class NetinfoDonutContext : DonutContext
     {
         /// Donutfile meta key (page stats in this case)
         public ConcurrentDictionary<string, PageStats> PageStats { get; set; }
@@ -15,12 +15,13 @@ namespace Netlyt.Service.Donut
         public ConcurrentBag<string> PurchasesBeforeHolidays { get; set; }
         public ConcurrentBag<string> PurchasesBeforeWeekends { get; set; }
         public ConcurrentBag<string> PurchasesInWeekends { get; set; }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="cacher"></param>
-        public NetinfoDonutContext(RedisCacher cacher)
-            : base(cacher)
+        public NetinfoDonutContext(RedisCacher cacher, DataIntegration intd)
+            : base(cacher, intd)
         { 
             PageStats = new ConcurrentDictionary<string, PageStats>();
             Purchases = new ConcurrentBag<string>();

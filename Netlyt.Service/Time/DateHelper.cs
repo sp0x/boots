@@ -7,6 +7,7 @@ namespace Netlyt.Service.Time
     {
         private static Dictionary<int, HashSet<DateTime>> HolidayDict = new Dictionary<int, HashSet<DateTime>>();
         private static DateHelper _instance;
+        private static readonly object _lock = new object();
         static DateHelper()
         {
             int year = DateTime.Now.Year;
@@ -22,14 +23,17 @@ namespace Netlyt.Service.Time
 
         private static void LoadYearHolidays(int year)
         {
-            if (HolidayDict.ContainsKey(year)) return;
-            var holidays = GetHolidays(year);
-            var holidaySet = new HashSet<DateTime>();
-            foreach (var hol in holidays)
+            lock (_lock)
             {
-                holidaySet.Add(hol);
+                if (HolidayDict.ContainsKey(year)) return;
+                var holidays = GetHolidays(year);
+                var holidaySet = new HashSet<DateTime>();
+                foreach (var hol in holidays)
+                {
+                    holidaySet.Add(hol);
+                }
+                HolidayDict.Add(year, holidaySet);
             }
-            HolidayDict.Add(year, holidaySet);
         }
 
         public static bool IsHoliday(DateTime day)
