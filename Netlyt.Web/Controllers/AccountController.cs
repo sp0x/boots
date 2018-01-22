@@ -60,7 +60,7 @@ namespace Netlyt.Web.Controllers
         //            return View();
         //        }
         //
-        [HttpGet("/user/me")] // /me = host/me, me = host/user/GetProfile/me 
+        [HttpGet("/user/me")] // /me = host/me, me = host/user/GetProfile/me  
         public async Task<IActionResult> GetProfile()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -70,7 +70,7 @@ namespace Netlyt.Web.Controllers
             }
             return BadRequest();
         }
-        [HttpPost]
+        [HttpPost("/user/login")] 
         [AllowAnonymous] 
         public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
         {
@@ -269,7 +269,7 @@ namespace Netlyt.Web.Controllers
              
         }
 
-        [HttpPost]
+        [HttpPost("/user/logout")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
