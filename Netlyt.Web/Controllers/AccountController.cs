@@ -45,17 +45,27 @@ namespace Netlyt.Web.Controllers
         [TempData]
         public string ErrorMessage { get; set; }
 
-//        [HttpGet]
-//        [AllowAnonymous]
-//        public async Task<IActionResult> Login(string returnUrl = null)
-//        {
-//            // Clear the existing external cookie to ensure a clean login process
-//            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-//
-//            ViewData["ReturnUrl"] = returnUrl;
-//            return View();
-//        }
-//
+        //        [HttpGet]
+        //        [AllowAnonymous]
+        //        public async Task<IActionResult> Login(string returnUrl = null)
+        //        {
+        //            // Clear the existing external cookie to ensure a clean login process
+        //            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        //
+        //            ViewData["ReturnUrl"] = returnUrl;
+        //            return View();
+        //        }
+        //
+        [HttpGet("/me")]
+        public async Task<IActionResult> GetProfile()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                return Ok(user);
+            }
+            return BadRequest();
+        }
         [HttpPost]
         [AllowAnonymous] 
         public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)

@@ -8,7 +8,13 @@ using nvoid.db.Extensions;
 using Netlyt.Service;
 using Netlyt.Service.Integration;
 using Netlyt.Web.Models;
-
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http.Extensions;
+using System.IO;
+using static Netlyt.Web.Attributes;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Netlyt.Web.Helpers;
+using Newtonsoft.Json.Linq;
 
 namespace Netlyt.Web.Controllers
 {
@@ -59,17 +65,40 @@ namespace Netlyt.Web.Controllers
         }
         [HttpPost]
         [Authorize]
-        public IActionResult Create([FromBody] DataIntegration item)
+        [DisableFormValueModelBinding]
+        public async Task<IActionResult> Create()
         {
-            if (item == null)
+            DataIntegration integration = null;
+            if (Request.GetMultipartBoundary() == null)
             {
-                return BadRequest();
+                var model = JObject.Parse(await Request.GetRawBodyString());
+                //regular post do something with this?
             }
+            else
+            {
+                // borrowed from https://dotnetcoretutorials.com/2017/03/12/uploading-files-asp-net-core/
+                FormValueProvider formModel;
+                var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                using (var stream = System.IO.File.Create(path))
+                {
+                    formModel = await Request.StreamFile(stream);
+                }
+                integration = new DataIntegration();
 
-            _integrationContext.Add(item);
-            _integrationContext.Save(item);
+                var bindingSuccessful = await TryUpdateModelAsync(integration, prefix: "",
+                   valueProvider: formModel);
 
-            return CreatedAtRoute("GetIntegration", new { id = item.Id }, item);
+                if (!bindingSuccessful)
+                {
+                    if (!ModelState.IsValid)
+                    {
+                        return BadRequest(ModelState);
+                    }
+                }                
+            }
+            _integrationContext.Add(integration);
+            _integrationContext.Save(integration);
+            return CreatedAtRoute("GetIntegration", new { id = integration.Id }, integration);
         }
 
         [HttpPut("{id}")]
