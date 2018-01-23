@@ -81,6 +81,7 @@ namespace Netlyt.Web
             services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
             services.AddTransient<UserService>();
             services.AddTransient<ApiService>();
+            services.AddTransient<OrganizationService>();
             SetupAuthentication(services);
             services.AddMvc();
             //Enable for 100% auth coverage by default

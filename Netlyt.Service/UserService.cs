@@ -19,22 +19,36 @@ namespace Netlyt.Service
         private UserManager<User> _userManager;
         private ApiService _apiService;
         private IHttpContextAccessor _contextAccessor;
+        private OrganizationService _orgService;
 
         public UserService(UserManager<User> userManager, 
             ApiService apiService,
             ILoggerFactory lfactory,
-            IHttpContextAccessor contextAccessor)
+            IHttpContextAccessor contextAccessor,
+            OrganizationService orgService)
         {
             _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
             _userManager = userManager;
             _apiService = apiService;
             _contextAccessor = contextAccessor;
+            _orgService = orgService;
         }
         
         public IdentityResult CreateUser(RegisterViewModel model, out User user)
         {
             var username = model.Email.Substring(0, model.Email.IndexOf("@"));
-            user = new User {  UserName = username, Email = model.Email };
+            user = new User
+            {
+                UserName = username, Email = model.Email,
+                FirstName = model.FirstName,
+                LastName = model.LastName
+            };
+            var org = _orgService.Get(model.Org);
+            if (org == null)
+                user.Organization = new Organization()
+                {
+                    Name = model.Org
+                };
             var apiKey = _apiService.Generate();
             user.ApiKeys.Add(apiKey);
             var result = _userManager.CreateAsync(user, model.Password).Result;
