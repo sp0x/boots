@@ -15,7 +15,7 @@ namespace Netlyt.Service.Lex.Parsing
     public class TokenParser
     { 
         private List<string> _sourceCollections;
-        private MatchCondition _currentMatchCondition;
+        //private MatchCondition _currentMatchCondition;
 
         private const string ExpectedObjectErrorText = "Expected =, !=, IN or NOT IN but found: ";
         private OrderByExpression OrderBy { get; set; }
@@ -316,8 +316,7 @@ namespace Netlyt.Service.Lex.Parsing
 
         public VariableExpression ReadVariable()
         {
-            VariableExpression exp = null;
-            string postfix = "";
+            VariableExpression exp = null; 
             //Read the symbol
             var token = Reader.DiscardToken(TokenType.Symbol);
             exp = new VariableExpression(token.Value);
@@ -678,8 +677,7 @@ namespace Netlyt.Service.Lex.Parsing
                 {
                     break;
                 }
-            }
-            memberTokenStack = memberTokenStack;
+            } 
         } 
 
         /// <summary>
@@ -732,11 +730,11 @@ namespace Netlyt.Service.Lex.Parsing
 
         private void EqualityMatchCondition()
         {
-            _currentMatchCondition.Object = Reader.GetObject();
+            //_currentMatchCondition.Object = Reader.GetObject();
             Reader.DiscardToken();
-            _currentMatchCondition.Operator = Reader.GetOperator();
+            //_currentMatchCondition.Operator = Reader.GetOperator();
             Reader.DiscardToken();
-            _currentMatchCondition.Value = Reader.Current.Value;
+            //_currentMatchCondition.Value = Reader.Current.Value;
             Reader.DiscardToken();
         }
 
@@ -753,9 +751,9 @@ namespace Netlyt.Service.Lex.Parsing
 
         private void ParseInCondition(DslOperator inOperator)
         {
-            _currentMatchCondition.Operator = inOperator;
-            _currentMatchCondition.Values = new List<string>();
-            _currentMatchCondition.Object = Reader.GetObject();
+            //_currentMatchCondition.Operator = inOperator;
+            //_currentMatchCondition.Values = new List<string>();
+            //_currentMatchCondition.Object = Reader.GetObject();
             Reader.DiscardToken();
 
             if (inOperator == DslOperator.In)
@@ -770,7 +768,7 @@ namespace Netlyt.Service.Lex.Parsing
 
         private void StringLiteralList()
         {
-            _currentMatchCondition.Values.Add(Reader.ReadToken(TokenType.StringValue).Value);
+            //_currentMatchCondition.Values.Add(Reader.ReadToken(TokenType.StringValue).Value);
             Reader.DiscardToken(TokenType.StringValue);
             StringLiteralListNext();
         }
@@ -780,7 +778,7 @@ namespace Netlyt.Service.Lex.Parsing
             if (Reader.Current.TokenType == TokenType.Comma)
             {
                 Reader.DiscardToken(TokenType.Comma);
-                _currentMatchCondition.Values.Add(Reader.ReadToken(TokenType.StringValue).Value);
+                //_currentMatchCondition.Values.Add(Reader.ReadToken(TokenType.StringValue).Value);
                 Reader.DiscardToken(TokenType.StringValue);
                 StringLiteralListNext();
             }

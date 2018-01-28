@@ -119,7 +119,7 @@ namespace Netlyt.Web.Controllers
 
         [Route("[action]")]
         [HttpPost]
-        public async Task<ActionResult> SocialEntity()
+        public ActionResult SocialEntity()
         {
             var userAppId = HttpContext.Session.GetUserApiId();
             var userApi = _apiService.GetApi(userAppId);
@@ -162,7 +162,7 @@ namespace Netlyt.Web.Controllers
 
         [Route("[action]")]
         [HttpPost]
-        public async Task<ActionResult> EntityData()
+        public ActionResult EntityData()
         {
 
             var requestBody = (new StreamReader(Request.Body)).ReadToEnd();

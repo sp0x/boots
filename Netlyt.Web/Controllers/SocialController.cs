@@ -28,7 +28,7 @@ namespace Netlyt.Web.Controllers
 
         [Route("api/[action]")]
         [HttpPost]
-        public async Task<ActionResult> RegisterSocialNetwork()
+        public ActionResult RegisterSocialNetwork()
         {
             var userApiId = HttpContext.Session.GetUserApiId();
             JToken bodyJson = Request.ReadBodyAsJson();
@@ -47,7 +47,7 @@ namespace Netlyt.Web.Controllers
         /// <returns></returns>
         [Route("Permissions")]
         [AllowAnonymous]
-        public async Task<ActionResult> Permissions(string type = "Local")
+        public ActionResult Permissions(string type = "Local")
         {
             var apiId = HttpContext.Session.GetUserApiId();
             var api = _apiService.GetApi(apiId);

@@ -61,11 +61,11 @@ namespace Netlyt.Web.Controllers
         //        }
         //
         [HttpGet("/user/me")] // /me = host/me, me = host/user/GetProfile/me  
-        public async Task<IActionResult> GetProfile()
+        public async Task<ActionResult> GetProfile()
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await _userService.GetUser(User);
             if (user != null)
-            {
+            { 
                 return Ok(user);
             }
             return BadRequest();
@@ -458,8 +458,8 @@ namespace Netlyt.Web.Controllers
             return Unauthorized();
         }
 
-        [HttpGet(Name = "keys")]
-        public async Task<ActionResult> GetApiKeys()
+        [HttpGet("/user/keys")]
+        public ActionResult GetApiKeys()
         {
             var user = _apiService.GetCurrentApiUser();
             if (user == null) return Json(new {success = false, message = "No user matching your keys."});

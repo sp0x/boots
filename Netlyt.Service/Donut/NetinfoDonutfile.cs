@@ -45,8 +45,7 @@ namespace Netlyt.Service.Donut
                     Context.AddEntityMetaCategory(uuid, META_NUMERIC_TYPE_VALUE, metaVal);
                 } 
                 var pageHost = value.ToHostname();
-                var pageSelector = pageHost;
-                var isNewPage = false;
+                var pageSelector = pageHost; 
                 if (!Context.PageStats.ContainsKey(pageSelector))
                 {
                     Context.PageStats.TryAdd(pageSelector, new PageStats()

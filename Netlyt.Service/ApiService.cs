@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using nvoid.Integration;
@@ -89,6 +91,11 @@ namespace Netlyt.Service
         {
             _context.ApiKeys.Remove(appId);
             _context.SaveChanges();
+        }
+
+        public IQueryable<ApiAuth> GetUserKeys(User user)
+        {
+            return _context.Users.Where(x => x.Id == user.Id).SelectMany(x => x.ApiKeys);
         }
     }
 }

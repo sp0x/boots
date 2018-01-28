@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using nvoid.db.DB;
+using nvoid.Integration;
 
 namespace Netlyt.Service
 {
@@ -7,6 +8,7 @@ namespace Netlyt.Service
     {
         public long Id { get; set; }
         public virtual ICollection<User> Members { get; set; }
+        public ApiAuth ApiKey { get; set; }
         public string Name { get; set; }
 
         public Organization()

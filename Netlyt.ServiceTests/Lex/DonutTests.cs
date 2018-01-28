@@ -151,55 +151,55 @@ namespace Netlyt.ServiceTests.Lex
         private object AccumulateUserDocument(IntegratedDocument accumulator, BsonDocument newEntry, bool appendEvent = true)
         {
             return newEntry;
-            var value = newEntry.GetString("value");
-            var onDate = newEntry.GetDate("ondate").Value;
-            var uuid = accumulator.GetString("uuid");
-            //CollectTypeValuePair(uuid, newEntry);
-            //            var newElement = new
-            //            {
-            //                ondate = newEntry.GetDate("ondate"),
-            //                event_id = newEntry.GetInt("event_id"),
-            //                type = newEntry.GetInt("type"),
-            //                value = newEntry.GetString("value")
-            //            }.ToBsonDocument();
-            var pageHost = value.ToHostname();
-            var pageSelector = pageHost;
-            var isNewPage = false;
-            if (!_helper.Stats.ContainsPage(pageHost))
-            {
-                _helper.Stats.AddPage(pageSelector, new PageStats()
-                {
-                    Page = value
-                });
-            }
-            _helper.Stats[pageSelector].PageVisitsTotal++;
-
-            if (appendEvent)
-            {
-                //accumulator.AddDocumentArrayItem("events", newEntry);
-            }
-            if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
-            {
-                if (DateHelper.IsHoliday(onDate))
-                {
-                    _helper.PurchasesOnHolidays.Add(newEntry);
-                }
-                else if (DateHelper.IsHoliday(onDate.AddDays(1)))
-                {
-                    _helper.PurchasesBeforeHolidays.Add(newEntry);
-                }
-                else if (onDate.DayOfWeek == DayOfWeek.Friday)
-                {
-                    _helper.PurchasesBeforeWeekends.Add(newEntry);
-                }
-                else if (onDate.DayOfWeek > DayOfWeek.Friday)
-                {
-                    _helper.PurchasesInWeekends.Add(newEntry);
-                }
-                _helper.Purchases.Add(newEntry);
-                accumulator["is_paying"] = 1;
-            }
-            return newEntry;
+//            var value = newEntry.GetString("value");
+//            var onDate = newEntry.GetDate("ondate").Value;
+//            var uuid = accumulator.GetString("uuid");
+//            //CollectTypeValuePair(uuid, newEntry);
+//            //            var newElement = new
+//            //            {
+//            //                ondate = newEntry.GetDate("ondate"),
+//            //                event_id = newEntry.GetInt("event_id"),
+//            //                type = newEntry.GetInt("type"),
+//            //                value = newEntry.GetString("value")
+//            //            }.ToBsonDocument();
+//            var pageHost = value.ToHostname();
+//            var pageSelector = pageHost;
+//            var isNewPage = false;
+//            if (!_helper.Stats.ContainsPage(pageHost))
+//            {
+//                _helper.Stats.AddPage(pageSelector, new PageStats()
+//                {
+//                    Page = value
+//                });
+//            }
+//            _helper.Stats[pageSelector].PageVisitsTotal++;
+//
+//            if (appendEvent)
+//            {
+//                //accumulator.AddDocumentArrayItem("events", newEntry);
+//            }
+//            if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
+//            {
+//                if (DateHelper.IsHoliday(onDate))
+//                {
+//                    _helper.PurchasesOnHolidays.Add(newEntry);
+//                }
+//                else if (DateHelper.IsHoliday(onDate.AddDays(1)))
+//                {
+//                    _helper.PurchasesBeforeHolidays.Add(newEntry);
+//                }
+//                else if (onDate.DayOfWeek == DayOfWeek.Friday)
+//                {
+//                    _helper.PurchasesBeforeWeekends.Add(newEntry);
+//                }
+//                else if (onDate.DayOfWeek > DayOfWeek.Friday)
+//                {
+//                    _helper.PurchasesInWeekends.Add(newEntry);
+//                }
+//                _helper.Purchases.Add(newEntry);
+//                accumulator["is_paying"] = 1;
+//            }
+//            return newEntry;
         }
 
     }

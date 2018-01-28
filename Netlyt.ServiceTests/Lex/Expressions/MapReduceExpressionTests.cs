@@ -87,10 +87,9 @@ namespace Netlyt.ServiceTests.Lex.Expressions
                 events = selectMany(values, (x) => x.events),
                 uuid = key.uuid,
                 day = key.day,
-                noticed_date = if(any(events), events[0].ondate, null)",
-            ""
+                noticed_date = if(any(events), events[0].ondate, null)"
         })]
-        public void ParseMapReduceAggregate(string code, string expectedAggregate)
+        public void ParseMapReduceAggregate(string code)
         {
             var tokenizer = new PrecedenceTokenizer();
             var parser = new TokenParser(tokenizer.Tokenize(code));

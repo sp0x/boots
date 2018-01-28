@@ -6,7 +6,7 @@ namespace Netlyt.Service.Time
     public class DateHelper
     {
         private static Dictionary<int, HashSet<DateTime>> HolidayDict = new Dictionary<int, HashSet<DateTime>>();
-        private static DateHelper _instance;
+        //private static DateHelper _instance;
         private static readonly object _lock = new object();
         static DateHelper()
         {

@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
-using System.Linq;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Dynamic; 
 using System.Linq.Expressions;
 using Dynamitey; 
-using nvoid.db.DB;
-using nvoid.db.Extensions;
+using nvoid.db.DB; 
 using nvoid.Integration;
 using Netlyt.Service.Ml;
-using Netlyt.Service.Source;
-using NHibernate.Util;
+using Netlyt.Service.Source; 
 
 namespace Netlyt.Service.Integration
 {
@@ -23,8 +21,11 @@ namespace Netlyt.Service.Integration
         public string FeatureScript { get; set; }
         public string Name { get; set; }        
         public int DataEncoding { get; set; }
+        [ForeignKey("APIKey")]
         public long APIKeyId { get; set; }
-        public virtual ApiAuth APIKey { get; set; }
+        public virtual ApiAuth APIKey { get; set; } 
+        public long? PublicKeyId { get; set; }
+        public virtual ApiAuth PublicKey { get; set; }
         /// <summary>
         /// the type of the data e.g stream or file
         /// </summary>

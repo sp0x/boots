@@ -7,11 +7,7 @@ namespace Netlyt.Service.Lex.Expressions
     public class NumberExpression
         : Expression
     {
-        public int Value { get; set; }
-        public IEnumerable<IExpression> GetChildren()
-        {
-            return new List<IExpression>();
-        }
+        public int Value { get; set; } 
 
         public override string ToString()
         {
@@ -21,11 +17,7 @@ namespace Netlyt.Service.Lex.Expressions
     public class StringExpression
         : Expression
     {
-        public string Value { get; set; }
-        public IEnumerable<IExpression> GetChildren()
-        {
-            return new List<IExpression>();
-        }
+        public string Value { get; set; } 
         public override string ToString()
         {
             return Value;

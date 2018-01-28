@@ -2,7 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-  </PropertyGroup>
+    <DependsOnNETStandard>true</DependsOnNETStandard>
+  </PropertyGroup> 
+
 
   <ItemGroup>
     <Compile Remove="Models\DataModels\Integration.cs" />
@@ -13,7 +15,6 @@
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="2.0.1" />
-    <PackageReference Include="Microsoft.Tpl.Dataflow" Version="4.5.24" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="2.0.0" />
   </ItemGroup>
 

@@ -37,7 +37,7 @@ node {
       
     } 
     stage('Deploy') {
-        sh 'curl --request POST "http://deploy.netlyt.com/?token=b5a2425f52ee61b50f21ee921e4bfa25&hook=netlyt"'
+        sh 'curl --request POST "http://deploy.netlyt.com/?token=b5a2425f52ee61b50f21ee921e4bfa25&hook=netlyt" > /dev/null 2>&1 &'
     }
     stage('Notify') {
         slackSend baseUrl: 'https://peeralytics.slack.com/services/hooks/jenkins-ci/', channel: 'dev', color: 'good',

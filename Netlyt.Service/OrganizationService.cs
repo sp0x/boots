@@ -7,7 +7,7 @@ namespace Netlyt.Service
 {
     public class OrganizationService
     {
-        private IHttpContextAccessor _contextAccessor;
+        //private IHttpContextAccessor _contextAccessor;
         private ManagementDbContext _context;
         public OrganizationService(ManagementDbContext context)
         {

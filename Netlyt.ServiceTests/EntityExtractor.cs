@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using nvoid.db.Batching;
@@ -56,40 +57,41 @@ namespace Netlyt.ServiceTests
             _dateHelper = new DateHelper();
             _apiAuth = _apiService.Generate();
             _apiService.Register(_apiAuth);
-        } 
+        }
 
 
-        [Theory]
-        [InlineData("TestData\\Ebag\\1155\\UUID_1155_all.csv")]
-        public void ExtractEntityFromSingleFile(string inputFile)
-        {
-//            inputFile = Path.Combine(Environment.CurrentDirectory, inputFile);
-//            var fileSource = FileSource.CreateFromFile(inputFile, new CsvFormatter());
-//            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
-//            Assert.NotNull(type);
-//
-//            var userId = "123123123";
-//            var userApiId = Guid.NewGuid().ToString();
-//            var harvester = new Netlyt.Service.Harvester();
-//            type.APIKey = userId;
-//            type.SaveType(userApiId);
-//
-//            var saver = new MongoSink(userId);
-//            var featureGen = new FeatureGeneratorHelper();
-//            var featureBlock = featureGen.GetBlock();
-//            featureBlock.LinkTo(saver, new DataflowLinkOptions{ PropagateCompletion = true}); //We modify the entity to fill all it's data, then generate feature, and then save
-//            harvester.SetDestination(modifier);
-//            harvester.AddType(type, fileSource);
-//            harvester.Synchronize();
-        } 
+        //        [Theory]
+        //        [InlineData("TestData\\Ebag\\1155\\UUID_1155_all.csv")]
+        //        public void ExtractEntityFromSingleFile(string inputFile)
+        //        {
+        ////            inputFile = Path.Combine(Environment.CurrentDirectory, inputFile);
+        ////            var fileSource = FileSource.CreateFromFile(inputFile, new CsvFormatter());
+        ////            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
+        ////            Assert.NotNull(type);
+        ////
+        ////            var userId = "123123123";
+        ////            var userApiId = Guid.NewGuid().ToString();
+        ////            var harvester = new Netlyt.Service.Harvester();
+        ////            type.APIKey = userId;
+        ////            type.SaveType(userApiId);
+        ////
+        ////            var saver = new MongoSink(userId);
+        ////            var featureGen = new FeatureGeneratorHelper();
+        ////            var featureBlock = featureGen.GetBlock();
+        ////            featureBlock.LinkTo(saver, new DataflowLinkOptions{ PropagateCompletion = true}); //We modify the entity to fill all it's data, then generate feature, and then save
+        ////            harvester.SetDestination(modifier);
+        ////            harvester.AddType(type, fileSource);
+        ////            harvester.Synchronize();
+        //        } 
 
         /// <summary>
         /// DEPRECATED
         /// </summary>
         /// <param name="inputDirectory"></param>
         /// <param name="demographySheet"></param>
+        [Theory]
         [InlineData(new object[]{"TestData\\Ebag\\1156", "TestData\\Ebag\\demograpy.csv" })]
-        public async void ExtractEntityFromDirectory(string inputDirectory, string demographySheet)
+        public void ExtractEntityFromDirectory(string inputDirectory, string demographySheet)
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());   
@@ -132,10 +134,10 @@ namespace Netlyt.ServiceTests
             
             harvester.SetDestination(grouper);
             harvester.AddType(type, fileSource);
-            harvester.Synchronize();
-            
+            Task.WaitAll(harvester.Synchronize(), saver.ProcessingCompletion);
+
             //Task.WaitAll(grouper.Completion, featureGen.Completion, );
-            await saver.ProcessingCompletion;
+            //await saver.ProcessingCompletion;
         }
 
 
@@ -205,13 +207,14 @@ namespace Netlyt.ServiceTests
                         }
                     }
                     catch (Exception ex2)
-                    { 
+                    {
+                        Trace.WriteLine(ex2.Message);
                     }
                 }
             }
             catch (Exception ex)
             {
-                   
+                Trace.WriteLine(ex.Message);
             }
             outputFs.Close();
         }

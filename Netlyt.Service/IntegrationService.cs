@@ -10,7 +10,7 @@ namespace Netlyt.Service
 {
     public class IntegrationService
     {
-        private IFactory<ManagementDbContext> _factory;
+        //private IFactory<ManagementDbContext> _factory;
         private ManagementDbContext _context;
 
         public IntegrationService(ManagementDbContext context)

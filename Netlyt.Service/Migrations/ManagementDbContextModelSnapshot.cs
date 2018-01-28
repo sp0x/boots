@@ -152,6 +152,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("OwnerId");
 
+                    b.Property<long?>("PublicKeyId");
+
                     b.Property<string>("Source");
 
                     b.HasKey("Id");
@@ -159,6 +161,8 @@ namespace Netlyt.Service.Migrations
                     b.HasIndex("APIKeyId");
 
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("PublicKeyId");
 
                     b.ToTable("Integrations");
                 });
@@ -240,9 +244,13 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
+                    b.Property<long?>("ApiKeyId");
+
                     b.Property<string>("Name");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ApiKeyId");
 
                     b.ToTable("Organizations");
                 });
@@ -503,6 +511,10 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Service.User", "Owner")
                         .WithMany()
                         .HasForeignKey("OwnerId");
+
+                    b.HasOne("nvoid.Integration.ApiAuth", "PublicKey")
+                        .WithMany()
+                        .HasForeignKey("PublicKeyId");
                 });
 
             modelBuilder.Entity("Netlyt.Service.Integration.IntegrationExtra", b =>
@@ -542,6 +554,13 @@ namespace Netlyt.Service.Migrations
                         .WithMany("Models")
                         .HasForeignKey("RuleId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Netlyt.Service.Organization", b =>
+                {
+                    b.HasOne("nvoid.Integration.ApiAuth", "ApiKey")
+                        .WithMany()
+                        .HasForeignKey("ApiKeyId");
                 });
 
             modelBuilder.Entity("Netlyt.Service.Rule", b =>

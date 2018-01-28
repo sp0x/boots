@@ -79,8 +79,7 @@ namespace Netlyt.Service
         public DataIntegration AddIntegrationSource(string name, string appId, InputSource source)
         {
 
-            DataIntegration type = Integration.DataIntegration.Factory.CreateNamed(appId, name);
-            DataIntegration existingType = null;
+            DataIntegration type = Integration.DataIntegration.Factory.CreateNamed(appId, name); 
             _integrationService.SaveOrFetchExisting(ref type);  
             this.AddType(type, source); 
             return type;

@@ -13,22 +13,6 @@ namespace Netlyt.Service.Lex.Generation
         public override string GenerateFromExpression(Expression mapAggregate)
         {
             string reduceTemplate;
-
-            var reduce = @"
-function (key, values) {
-  var elements = [];
-  var startTime = null;
-  values.forEach(function(a){ 
-	for(var i=0; i<a.events.length;i++) elements.push(a.events[i]);    
-  });  
-  if(startTime==null && elements.length>0) startTime = elements[0].ondate;
-  return {
-uuid : key.uuid,
-day : key.day,
-noticed_date : startTime,
-events : elements };
-}";
-
             using (StreamReader reader = new StreamReader(GetTemplate("MapReduceAggregate.txt")))
             {
                 reduceTemplate = reader.ReadToEnd();

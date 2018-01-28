@@ -8,7 +8,7 @@ namespace Netlyt.Service.Lex.Expressions
         : Expression
     { 
         public IExpression ChildMember { get; set; }
-        public IExpression Parent { get; set; }
+        //public IExpression Parent { get; set; }
         //public TypeExpression Type { get; private set; }
 
         public MemberExpression(IExpression parent)

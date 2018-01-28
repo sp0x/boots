@@ -25,7 +25,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             Assert.True(x.Parameters.Count > 0);
             var parameterExpression = x.Parameters.First();
             Assert.IsType<VariableExpression>(parameterExpression.Value);
-            Assert.Equal(((VariableExpression) parameterExpression.Value).Name, "a");
+            Assert.Equal("a", ((VariableExpression) parameterExpression.Value).Name);
         }
 
         [Theory]
@@ -47,8 +47,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[]{"(a) => a+1", "(a) => a + 1"})]
         [InlineData(new object[]{"(a, b) => a+1", "(a, b) => a + 1"})]
         [InlineData(new object[]{"(a, b, c, d) => max(a+1, b, c, d)", "(a, b, c, d) => max(a + 1, b, c, d)"})]
-        [InlineData(new object[]{ "fna((a, b, c, d) => max(a+1, b, c, d))", "fna((a, b, c, d) => max(a + 1, b, c, d))"})]
-        [InlineData(new object[]{ "fna((a, b, c, d) => max(a+1, b, c, d))", "fna((a, b, c, d) => max(a + 1, b, c, d))"})]
+        [InlineData(new object[]{ "fna((a, b, c, d) => max(a+1, b, c, d))", "fna((a, b, c, d) => max(a + 1, b, c, d))"})] 
         public void TokenizeLambda2(string fc, string expectedLambda)
         { 
             var tokenizer = new PrecedenceTokenizer();
@@ -164,8 +163,8 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             var param2 = x.Parameters.Skip(1).First();
             Assert.IsType<VariableExpression>(param1.Value);
             Assert.IsType<VariableExpression>(param2.Value);
-            Assert.Equal(((VariableExpression)param1.Value).ToString(), "a.one"); 
-            Assert.Equal(((VariableExpression)param2.Value).Name, "b"); 
+            Assert.Equal("a.one",((VariableExpression)param1.Value).ToString()); 
+            Assert.Equal("b", ((VariableExpression)param2.Value).Name); 
         }
 
         [Theory]
@@ -180,7 +179,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             var param2 = x.Parameters.Skip(1).First();
             Assert.IsType<CallExpression>(param1.Value);
             Assert.IsType<VariableExpression>(param2.Value);
-            Assert.Equal(((CallExpression)param1.Value).Name, "g");
+            Assert.Equal("g", ((CallExpression)param1.Value).Name);
             Assert.True(((CallExpression) param1.Value).Parameters.Count == 2);
             VariableExpression fnp1Param1= (VariableExpression)((CallExpression)param1.Value).Parameters.First().Value;
             VariableExpression fnp1Param2 = (VariableExpression)((CallExpression)param1.Value).Parameters.Skip(1).First().Value;
@@ -326,15 +325,14 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             order by uuid, time
             set User.id=unique(events.uuid)
             set User.visit_count=count(events.value)",
-            "User", "events", "uuid, time",
+            "User", "uuid, time",
             new string[] {
                 "User.id", "unique(events.uuid)",
                 "User.visit_count", "count(events.value)" }
         })]
         public void ParseFeatureDefinition(
             string txt, 
-            string expectedFeatureTypeName,
-            string expectedSource,
+            string expectedFeatureTypeName, 
             string expectedPreSort,
             string[] expectedFeatureKVP)
         {

@@ -1,4 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
@@ -117,6 +121,23 @@ namespace Netlyt.Service
             //ClaimsPrincipal principal = new ClaimsPrincipal(httpContextUser);
             var isAuthed = _contextAccessor.HttpContext.User.Identity.IsAuthenticated;
             //await _contextAccessor.HttpContext.SignInAsync(httpContextUser);
+        }
+
+        public async Task<User> GetUser(ClaimsPrincipal user)
+        {
+            var userModel = await _userManager.GetUserAsync(user);
+            if (userModel != null)
+            {
+                var keys = _apiService.GetUserKeys(userModel);
+                var myAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath
+                    (@"D:\dev\asp.net\Netlyt\Netlyt.Web\bin\Debug\netcoreapp2.0\nvoid.dll");
+                var x = Assembly.LoadFile(@"D:\dev\asp.net\Netlyt\Netlyt.Web\bin\Debug\netcoreapp2.0\nvoid.dll");
+                var outTypes = x.ExportedTypes.ToList();
+                var myType = myAssembly.GetType("nvoid.Integration.ApiAuth");
+                var myInstance = Activator.CreateInstance(myType);
+                if (keys!=null) userModel.ApiKeys = keys?.ToList();
+            }
+            return userModel;
         }
     }
 }

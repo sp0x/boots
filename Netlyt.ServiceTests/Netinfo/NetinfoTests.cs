@@ -93,7 +93,7 @@ namespace Netlyt.ServiceTests.Netinfo
 
                 inputTarget.LinkTo(documentCreator, new DataflowLinkOptions { PropagateCompletion = true });
                 documentCreator.LinkTo(inserter.BatchBlock);
-                documentCreator.Completion.ContinueWith(x =>
+                var tx = documentCreator.Completion.ContinueWith(x =>
                 {
                     inserter.Trigger();
                     inserter.Complete();
@@ -167,8 +167,8 @@ events : elements };
         /// <param name="inputDirectory"></param>
         /// <param name="targetDomain"></param>
         [Theory]
-        [InlineData(new object[] { "TestData\\Ebag\\1156", "ebag.bg" })] 
-        public async void ExtractAvgTimeBetweenVisitFeatures(string inputDirectory, string targetDomain)
+        [InlineData(new object[] { "TestData\\Ebag\\1156" })] 
+        public async void ExtractAvgTimeBetweenVisitFeatures(string inputDirectory)
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
@@ -463,13 +463,14 @@ events : elements };
                         document.IntegrationId = typeDef.Id;
                         //document.Save();
                     }
-                    catch (Exception ex2)
+                    catch 
                     {
                     }
                 }
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
+                Trace.WriteLine(ex.Message);
             }
         }
 
@@ -665,8 +666,7 @@ events : elements };
 //                value = newEntry.GetString("value")
 //            }.ToBsonDocument();
             var pageHost = value.ToHostname();
-            var pageSelector = pageHost;
-            var isNewPage = false;
+            var pageSelector = pageHost; 
             if (!_helper.Stats.ContainsPage(pageHost))
             {
                 _helper.Stats.AddPage(pageSelector, new PageStats()

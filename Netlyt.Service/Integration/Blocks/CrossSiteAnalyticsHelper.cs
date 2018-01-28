@@ -201,8 +201,7 @@ namespace Netlyt.Service.Integration.Blocks
                     var visits = (BsonArray)valueDocument["events"];
                     var userIsPaying = userPair.Value.Has("is_paying") && userPair.Value.GetInt("is_paying") ==1;
                     if (userIsPaying)
-                    {
-                        userIsPaying = userIsPaying;
+                    { 
                     }
                     //var userInternetBrowsingTime = TimeSpan.Zero;
 

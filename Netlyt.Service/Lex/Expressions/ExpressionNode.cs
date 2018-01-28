@@ -7,8 +7,7 @@ namespace Netlyt.Service.Lex.Expressions
     public class ExpressionNode
         : Expression
     {
-        protected Stack<IExpression> Children { get; set; }
-        public ExpressionNode Parent { get; set; }
+        protected Stack<IExpression> Children { get; set; } 
         private DslToken Token { get; set; }
         public short Depth { get; private set; }
 
@@ -42,8 +41,7 @@ namespace Netlyt.Service.Lex.Expressions
         //            Children.Push(node);
         //            return this;
         //        }
-
-        public IEnumerable<IExpression> GetChildren() => Children;
+         
 
         public int GetChildrenCount()
         {

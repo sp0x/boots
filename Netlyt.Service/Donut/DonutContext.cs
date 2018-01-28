@@ -60,12 +60,7 @@ namespace Netlyt.Service.Donut
         private void CacheMetaContext()
         {
             var meta = base.GetMetaValues();
-            var entityMeta = base.GetEntityMetaValues();
-            if (meta.Count > 0)
-            {
-                meta = meta;
-            }
-            meta = meta;
+            var entityMeta = base.GetEntityMetaValues(); 
         }
 
         private void CacheMember(CacheMember member)
@@ -169,8 +164,7 @@ namespace Netlyt.Service.Donut
             else
             {
                 return null;
-            }
-            return null;
+            } 
         } 
 
         protected virtual void Dispose(bool disposing)

@@ -23,8 +23,8 @@ namespace Netlyt.Web.Middleware.Hmac
     public class HmacHandler : AuthenticationHandler<HmacOptions>
     {
         private readonly IMemoryCache _memoryCache; 
-        private string _iv;
-        private int _iterations;
+        //private string _iv;
+        //private int _iterations;
         private byte[] _salt;
         private ApiService _apiService;
         private UserService _userService;
@@ -44,9 +44,9 @@ namespace Netlyt.Web.Middleware.Hmac
             _memoryCache = memoryCache;
             _apiService = apiService;
             _userService = userService;
-            _iv = "9595948593968468"; //new byte[]{ 4,5,2,8,7,1,8,2,
-            //              9,7,3,4,8,2,9,3 };
-            _iterations = 200;
+//            _iv = "9595948593968468"; //new byte[]{ 4,5,2,8,7,1,8,2,
+//            //              9,7,3,4,8,2,9,3 };
+//            _iterations = 200;
             _salt = new byte[] { }; //243, 133, 64, 76, 111, 136, 1, 78};
             _contextAccessor = contextAccessor;
         }
@@ -90,13 +90,11 @@ namespace Netlyt.Web.Middleware.Hmac
             StringValues clientVersion;
             if (_contextAccessor.HttpContext.Request.Headers.TryGetValue("ClientVersion", out clientVersion))
             {
-                //Do something with the version of netlyt client..
-                clientVersion = clientVersion;
+                //Do something with the version of netlyt client.. 
             }
             else
             {
-                //This is a legacy version, decrypt the content.
-                clientVersion = clientVersion;
+                //This is a legacy version, decrypt the content. 
                 var crApi = _apiService.GetCurrentApi();
                 DecryptLegacyBody(crApi);
             }
@@ -305,10 +303,10 @@ namespace Netlyt.Web.Middleware.Hmac
                 }
                 return ms.ToArray();
             }
-            if (input.CanSeek)
-            {
-                input.Position = 0;
-            }
+//            if (input.CanSeek)
+//            {
+//                input.Position = 0;
+//            }
         }
 
         //        public Task AuthenticateAsync(HttpAuthenticationContext context, CancellationToken cancellationToken)
