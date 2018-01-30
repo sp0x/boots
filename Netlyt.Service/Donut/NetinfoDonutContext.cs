@@ -8,13 +8,13 @@ namespace Netlyt.Service.Donut
     public class NetinfoDonutContext : DonutContext
     {
         /// Donutfile meta key (page stats in this case)
-        public ConcurrentDictionary<string, PageStats> PageStats { get; set; }
-        public ConcurrentBag<string> Purchases { get; set; }
-        public ConcurrentBag<string> PayingUsers { get; set; }
-        public ConcurrentBag<string> PurchasesOnHolidays { get; set; }
-        public ConcurrentBag<string> PurchasesBeforeHolidays { get; set; }
-        public ConcurrentBag<string> PurchasesBeforeWeekends { get; set; }
-        public ConcurrentBag<string> PurchasesInWeekends { get; set; }
+        public CacheHash<PageStats> PageStats { get; set; }
+        public CacheSet<string> Purchases { get; set; }
+        public CacheSet<string> PayingUsers { get; set; }
+        public CacheSet<string> PurchasesOnHolidays { get; set; }
+        public CacheSet<string> PurchasesBeforeHolidays { get; set; }
+        public CacheSet<string> PurchasesBeforeWeekends { get; set; }
+        public CacheSet<string> PurchasesInWeekends { get; set; }
 
         /// <summary>
         /// 
@@ -23,13 +23,6 @@ namespace Netlyt.Service.Donut
         public NetinfoDonutContext(RedisCacher cacher, DataIntegration intd)
             : base(cacher, intd)
         { 
-            PageStats = new ConcurrentDictionary<string, PageStats>();
-            Purchases = new ConcurrentBag<string>();
-            PayingUsers = new ConcurrentBag<string>();
-            PurchasesOnHolidays = new ConcurrentBag<string>();
-            PurchasesBeforeHolidays = new ConcurrentBag<string>();
-            PurchasesBeforeWeekends = new ConcurrentBag<string>();
-            PurchasesInWeekends = new ConcurrentBag<string>();
         }
 
     }

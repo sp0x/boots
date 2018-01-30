@@ -3,8 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
+using System.Reflection; 
 using nvoid.db.Caching;
 using nvoid.db.Extensions;
 using Netlyt.Service.Integration;
@@ -12,17 +11,45 @@ using StackExchange.Redis;
 
 namespace Netlyt.Service.Donut
 {
-    
+    public interface ICacheSetFinder
+    { 
+        IReadOnlyList<CacheSetProperty> FindSets(DonutContext context);
+    }
+
+    internal class ContextSetDiscoveryService
+    {
+        private DonutContext _context;
+        private ICacheSetFinder _setFinder;
+        private ICacheSetSource _setSource;
+
+        public ContextSetDiscoveryService(DonutContext ctx)
+        {
+            _context = ctx;
+            _setFinder = new CacheSetFinder();
+            _setSource = new CacheSetSource();
+        }
+
+        public void Initialize()
+        {
+            foreach (var setInfo in _setFinder.FindSets(_context).Where(p => p.Setter != null))
+            {
+                setInfo.Setter.SetClrValue(_context, ((ICacheSetCollection)_context).GetOrAddSet(_setSource, setInfo.ClrType));
+            }
+        }
+    }
+
+
     /// <summary>
     /// 
     /// </summary>
-    public class DonutContext : EntityMetaContext, IDisposable
+    public class DonutContext : EntityMetaContext, ICacheSetCollection, IDisposable
     {
-        private List<CacheMember> _contextMembers;
         private readonly object _cacheLock = new object();
         private readonly RedisCacher _cacher;
         public DataIntegration Integration { get; set; }
         private ConcurrentDictionary<string, List<HashEntry>> CurrentCache { get; set; }
+        private readonly IDictionary<Type, ICacheSet> _sets = new Dictionary<Type, ICacheSet>();
+        public string Prefix { get; set; }
 
         /// <summary>
         /// The entity interval on which to cache the values.
@@ -34,13 +61,20 @@ namespace Netlyt.Service.Donut
             CacheInterval = 100;
             Integration = integration;
             CurrentCache = new ConcurrentDictionary<string, List<HashEntry>>();
-            var prefix = $"integration_context:{Integration.Id}:";
-            _contextMembers = this.GetType()
-                .GetProperties()
-                .Where(x=> x.Name!="Integration")
-                .Select(x=> new CacheMember(prefix, x))
-                .ToList();
-        } 
+            Prefix = $"integration_context:{Integration.Id}";
+            new ContextSetDiscoveryService(this).Initialize();
+        }
+
+        object ICacheSetCollection.GetOrAddSet(ICacheSetSource source, Type type)
+        {  
+            if (!_sets.TryGetValue(type, out var set))
+            {
+                set = source.Create(this, type);
+                _sets[type] = set;
+            }
+
+            return set;
+        }
 
         /// <summary>
         /// Caches all the properties
@@ -49,10 +83,11 @@ namespace Netlyt.Service.Donut
         {
             lock (_cacheLock)
             {
-                foreach (var member in _contextMembers)
-                {
-                    CacheMember(member);
-                }
+                //Go over each cache set, and update.
+//                foreach (var member in _contextMembers)
+//                {
+//                    CacheMember(member);
+//                }
                 CacheMetaContext();
             }
         }
@@ -67,6 +102,7 @@ namespace Netlyt.Service.Donut
         {
             var mValue = member.GetValue(this);
             var valType = mValue.GetType();
+            //Use the member type for mapping, instead of converting to hashmap every time..
             if (typeof(IDictionary).IsAssignableFrom(valType))
             {
                 var dictValueType = valType.GetGenericArguments().Skip(1).FirstOrDefault();
@@ -104,6 +140,8 @@ namespace Netlyt.Service.Donut
 
         private void CacheDictionary(IDictionary dict, CacheMember member)
         {
+            //Use the Type of the value, a single instance, modifying it in merges, no need to serialize
+            //possibly wrap the obj in some cacheable obj interface?
             foreach (DictionaryEntry pair in dict)
             { 
                 var memberKey = member.GetSubKey(pair.Key.ToString());

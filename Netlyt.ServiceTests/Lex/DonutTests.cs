@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
+using System.Diagnostics; 
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.Batching;
-using nvoid.db.Caching;
-using nvoid.db.DB;
-using nvoid.db.Extensions;
-using nvoid.extensions;
+using nvoid.db.Caching; 
+using nvoid.db.Extensions; 
 using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
@@ -20,8 +17,7 @@ using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.IntegrationSource;
 using Netlyt.Service.Lex.Generation;
 using Netlyt.Service.Models;
-using Netlyt.Service.Time;
-using Netlyt.ServiceTests.IntegrationSource;
+using Netlyt.Service.Time; 
 using Xunit;
 
 namespace Netlyt.ServiceTests.Lex
