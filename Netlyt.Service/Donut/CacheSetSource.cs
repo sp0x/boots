@@ -7,22 +7,35 @@ namespace Netlyt.Service.Donut
 {
     public class CacheSetSource : ICacheSetSource
     {
+        /// <summary>
+        /// The method that creates constructors
+        /// </summary>
         private static readonly MethodInfo _genericCreate
             = typeof(CacheSetSource).GetTypeInfo().GetDeclaredMethod(nameof(CreateConstructor));
-
+        /// <summary>
+        /// A cache of 
+        /// </summary>
         private readonly ConcurrentDictionary<Type, Func<ICacheSetCollection, object>> _cache
             = new ConcurrentDictionary<Type, Func<ICacheSetCollection, object>>();
 
-        public virtual ICacheSet Create(ICacheSetCollection context, Type type)
+        public virtual ICacheSet Create(ICacheSetCollection context, Type entityType)
         {
             var result = _cache.GetOrAdd(
-                type,
-                t => (Func<ICacheSetCollection, object>)_genericCreate.MakeGenericMethod(t).Invoke(null, null))(context);
+                entityType,
+                t => (Func<ICacheSetCollection, ICacheSet>)_genericCreate.MakeGenericMethod(t).Invoke(null, null))(context);
             return result as ICacheSet;
         }
-         
-        private static Func<ICacheSetCollection, object> CreateConstructor<TEntity>()
+
+        /// <summary>
+        /// Creates a constructor for a cache set of TEntity
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
+        private static Func<ICacheSetCollection, ICacheSet<TEntity>> CreateConstructor<TEntity>()
             where TEntity : class
-            => c => new InternalCacheSet<TEntity>(c);
+        {
+            ICacheSet<TEntity> Ret(ICacheSetCollection c) => new InternalCacheSet<TEntity>(c);
+            return Ret;
+        }
     }
 }

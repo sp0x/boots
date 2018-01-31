@@ -31,7 +31,10 @@ namespace Netlyt.Service.Donut
                     p => new CacheSetProperty(
                         p.Name,
                         p.PropertyType.GetTypeInfo().GenericTypeArguments.Single(),
-                        p.SetMethod == null ? null : factory.Create(p)))
+                        p.SetMethod == null ? null : factory.Create(p))
+                    {
+                        Attributes = p.GetCustomAttributes()
+                    })
                 .ToArray();
         }
     }

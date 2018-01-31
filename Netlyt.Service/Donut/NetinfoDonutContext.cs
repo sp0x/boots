@@ -1,14 +1,17 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using nvoid.db.Caching;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Models;
+using Netlyt.Service.Models.CacheMaps;
 
 namespace Netlyt.Service.Donut
-{
+{ 
     public class NetinfoDonutContext : DonutContext
     {
         /// Donutfile meta key (page stats in this case)
-        public CacheHash<PageStats> PageStats { get; set; }
+        [CacheBacking(CacheType.Hash)]
+        public CacheSet<PageStats> PageStats { get; set; }
         public CacheSet<string> Purchases { get; set; }
         public CacheSet<string> PayingUsers { get; set; }
         public CacheSet<string> PurchasesOnHolidays { get; set; }
@@ -25,5 +28,9 @@ namespace Netlyt.Service.Donut
         { 
         }
 
+        protected override void ConfigureCacheMap()
+        { 
+            RedisCacher.RegisterCacheMap<PageStatsMap, PageStats>();
+        }
     }
 }

@@ -28,9 +28,9 @@ namespace Netlyt.ServiceTests
             _context = CreateContext();
             DBConfig.Initialize(config);
             ConfigureServices(services);
-            ServiceProvider = services.BuildServiceProvider();
-            RedisCacher.RegisterSerialize<PageStatsCacher, PageStats>();
+            ServiceProvider = services.BuildServiceProvider(); 
         }
+
 
         private void ConfigureServices(IServiceCollection services)
         {
