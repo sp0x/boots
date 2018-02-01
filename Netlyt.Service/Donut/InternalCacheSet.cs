@@ -85,6 +85,15 @@ namespace Netlyt.Service.Donut
             if (Type != CacheType.Hash) throw new InvalidOperationException("CacheSet is not of type Hash");
             lock (_mergeLock)
             {
+                if (!_dictionary.ContainsKey(key))
+                {
+                    var fqkey = _cacheMap.GetKey(_context.Prefix, Name, key);
+                    var hashValue = _cachingService.GetHash(fqkey, _cacheMap);
+                    if (hashValue != null)
+                    {
+                        _dictionary.TryAdd(key, hashValue);
+                    }
+                }
                 if (!_dictionary.TryAdd(key, value))
                 {
                     //Merge

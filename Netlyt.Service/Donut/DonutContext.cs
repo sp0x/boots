@@ -95,15 +95,17 @@ namespace Netlyt.Service.Donut
                     return;
                 }
                 _currentCacheRunIndex = 0;
+
+                //Go over each cache set, and update.
+                foreach (var set in _sets.Values)
+                {
+                    set.Cache();
+                    //Clear the set
+                    set.ClearLocalCache();
+                }
+                //CacheMetaContext();
             }
-            //Go over each cache set, and update.
-            foreach (var set in _sets.Values)
-            {
-                set.Cache();
-                //Clear the set
-                //set.Value.ClearLocalCache();
-            }
-            //CacheMetaContext();
+
         }
 
         private void CacheMetaContext()
