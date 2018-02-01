@@ -66,8 +66,10 @@ namespace Netlyt.ServiceTests.Lex
             source.ProgressInterval = 0.03;
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
             var type = harvester.AddIntegrationSource("NetInfoUserFeatures_7_8_1", _appId.AppId, source);
+            //hehe
             var donutMachine = new DonutfileGenerator<NetinfoDonutfile, NetinfoDonutContext>(type, _cacher); 
             var donut = donutMachine.Generate();
+            donut.SetupCacheInterval(source.Size);
 
             var dictEval = new MemberVisitingBlock(donut.ProcessRecord);
             _helper = new CrossSiteAnalyticsHelper();

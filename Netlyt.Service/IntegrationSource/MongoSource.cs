@@ -36,6 +36,7 @@ namespace Netlyt.Service.IntegrationSource
             _collection = list.Records;
             _lock = new object();
             _query = Builders<BsonDocument>.Filter.Empty;
+            Size = GetSize();
         }
 
         public MongoSource SetProjection(Func<BsonDocument, BsonDocument> project)

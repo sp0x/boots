@@ -18,7 +18,7 @@ namespace Netlyt.Service.Donut
         private readonly ConstructorInfo _constructor;
         private readonly object _mergeLock;
         private readonly ICacheMap<T> _cacheMap;
-        private CachingPersistanceService _cachingService;
+        private CachingPersistеnceService _cachingService;
 
         /// <inheritdoc />
         public InternalCacheSet([NotNull] ICacheSetCollection context)
@@ -29,7 +29,7 @@ namespace Netlyt.Service.Donut
             _constructor = typeof(T).GetConstructor(new Type[] { });
             _mergeLock = new object();
             _cacheMap = RedisCacher.GetCacheMap<T>();
-            _cachingService = new CachingPersistanceService(_context);
+            _cachingService = new CachingPersistеnceService(_context);
         }
 
         public IEnumerator<T> GetEnumerator()

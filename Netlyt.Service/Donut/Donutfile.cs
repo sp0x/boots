@@ -14,7 +14,11 @@ namespace Netlyt.Service.Donut
         { 
         }
 
-
+        public virtual void SetupCacheInterval(long totalIntegrationSize)
+        {
+            var interval = (int)(totalIntegrationSize * 0.05);
+            Context.SetCacheRunInterval(interval);
+        }
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)

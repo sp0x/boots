@@ -22,8 +22,7 @@ namespace Netlyt.Service.Lex.Generation
             var assembly = Assembly.GetExecutingAssembly();
             var resourceName = "Netlyt.Service.Lex.Templates.Donutfile.txt";
             _cacher = cacher;
-            _integration = integration;
-
+            _integration = integration; 
             using (Stream stream = assembly.GetManifestResourceStream(resourceName))
             using (StreamReader reader = new StreamReader(stream))
             {

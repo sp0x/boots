@@ -20,6 +20,8 @@ namespace Netlyt.Service.Donut
         public NetinfoDonutfile(RedisCacher cacher) : base(cacher)
         { 
         }
+         
+        
         const int META_NUMERIC_TYPE_VALUE = 1;
 
         /// <summary>

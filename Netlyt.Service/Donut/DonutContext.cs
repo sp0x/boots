@@ -32,7 +32,7 @@ namespace Netlyt.Service.Donut
         /// <summary>
         /// The entity interval on which to cache the values.
         /// </summary>
-        private int CacheRunInterval { get; set; }
+        public int CacheRunInterval { get; private set; }
         public DonutContext(RedisCacher cacher, DataIntegration integration)
         {
             _cacher = cacher;
@@ -45,6 +45,11 @@ namespace Netlyt.Service.Donut
             new ContextSetDiscoveryService(this).Initialize();
         }
 
+        public void SetCacheRunInterval(int interval)
+        {
+            if (interval < 0 || interval == 0) return;
+            CacheRunInterval = interval;
+        }
         ICacheSet ICacheSetCollection.GetOrAddSet(ICacheSetSource source, Type type)
         {
             if (!_sets.TryGetValue(type, out var set))
@@ -58,11 +63,11 @@ namespace Netlyt.Service.Donut
         /// <summary>
         /// Caches all the properties
         /// </summary>
-        public void Cache()
+        public void Cache(bool force = false)
         {
             lock (_cacheLock)
             {
-                if (_currentCacheRunIndex < CacheRunInterval)
+                if (!force && _currentCacheRunIndex < CacheRunInterval)
                 {
                     _currentCacheRunIndex++;
                     return;
@@ -80,11 +85,11 @@ namespace Netlyt.Service.Donut
         /// <summary>
         /// Caches all the properties
         /// </summary>
-        public void CacheAndClear()
+        public void CacheAndClear(bool force = false)
         {
             lock (_cacheLock)
             {
-                if (_currentCacheRunIndex < CacheRunInterval)
+                if (!force && _currentCacheRunIndex < CacheRunInterval)
                 {
                     _currentCacheRunIndex++;
                     return;
@@ -98,7 +103,6 @@ namespace Netlyt.Service.Donut
                 //Clear the set
                 //set.Value.ClearLocalCache();
             }
-            _currentCacheRunIndex = 0;
             //CacheMetaContext();
         }
 
@@ -113,6 +117,7 @@ namespace Netlyt.Service.Donut
         {
             if (disposing)
             {
+                Cache(true);
                 _cacher?.Dispose();
             }
         }
