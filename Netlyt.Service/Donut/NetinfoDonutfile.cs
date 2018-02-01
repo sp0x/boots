@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using MongoDB.Bson;
 using nvoid.db.Caching;
 using nvoid.db.DB;
@@ -30,12 +31,12 @@ namespace Netlyt.Service.Donut
             var entry = intDoc?.Document?.Value;
             if (entry == null) return;
             var events = entry["events"] as BsonArray;
+            var uuid = entry["uuid"].ToString();
             foreach (var raw_event in events)
             {
                 var evnt = raw_event as BsonDocument;
                 var value = evnt.GetString("value");
                 var onDate = evnt.GetDate("ondate").Value;
-                var uuid = evnt.GetString("uuid");
                 var type = evnt.GetInt("type");
                 if (value.IsNumeric())
                 {
@@ -73,7 +74,7 @@ namespace Netlyt.Service.Donut
                     Context.PayingUsers.Add(uuid);//["is_paying"] = 1;
                 } 
             }
-            Context.Cache();
+            Context.CacheAndClear();
         }
 
 

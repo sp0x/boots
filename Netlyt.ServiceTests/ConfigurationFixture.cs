@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,8 @@ namespace Netlyt.ServiceTests
 
         public ConfigurationFixture()
         {
+            var p = Process.GetCurrentProcess();
+            Debug.WriteLine($"Started test process: {p.Id}");
             var builder = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.Development.json", optional: false, reloadOnChange: true);
             var config = builder.Build();

@@ -14,23 +14,22 @@ namespace Netlyt.Service.Donut
     {
         private ICacheSetCollection _context;
         private readonly ConcurrentDictionary<string, T> _dictionary;
-        private readonly List<T> _list;
+        private readonly ConcurrentBag<T> _list;
         private readonly ConstructorInfo _constructor;
         private readonly object _mergeLock;
         private readonly ICacheMap<T> _cacheMap;
-//        public Type ElementType { get; }
-//        public Expression Expression { get; }
-//        public IQueryProvider Provider { get; }
+        private CachingPersistanceService _cachingService;
 
         /// <inheritdoc />
         public InternalCacheSet([NotNull] ICacheSetCollection context)
         {
             _context = context;
             _dictionary = new ConcurrentDictionary<string, T>();
-            _list = new List<T>();
+            _list = new ConcurrentBag<T>();
             _constructor = typeof(T).GetConstructor(new Type[] { });
             _mergeLock = new object();
             _cacheMap = RedisCacher.GetCacheMap<T>();
+            _cachingService = new CachingPersistanceService(_context);
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -71,6 +70,16 @@ namespace Netlyt.Service.Donut
             return element;
         }
 
+        public override IEnumerable<T> GetSet()
+        {
+            return _list;
+        }
+
+        public override IDictionary<string, T> GetHashes()
+        {
+            return _dictionary;
+        }
+
         public override void AddOrMerge(string key, T value)
         {
             if (Type != CacheType.Hash) throw new InvalidOperationException("CacheSet is not of type Hash");
@@ -108,9 +117,15 @@ namespace Netlyt.Service.Donut
             Type = backingType;
         }
 
-        public override void Cache(CachingPersistanceService svc)
+        public override void Cache()
         {
-            svc.Cache<T>(this); 
+            _cachingService.Cache(this, _cacheMap).Wait(); 
+        }
+
+        public override void ClearLocalCache()
+        {
+            _dictionary.Clear();
+            _list.Clear();
         }
     }
 }

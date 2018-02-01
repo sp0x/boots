@@ -3,6 +3,9 @@ using nvoid.db.Caching;
 
 namespace Netlyt.Service.Donut
 {
+    /// <summary>
+    /// Service that helps find the sets that are available in a cache context.
+    /// </summary>
     internal class ContextSetDiscoveryService
     {
         private DonutContext _context;
@@ -21,6 +24,7 @@ namespace Netlyt.Service.Donut
             foreach (var setInfo in _setFinder.FindSets(_context).Where(p => p.Setter != null))
             {
                 var newSet = ((ICacheSetCollection)_context).GetOrAddSet(_setSource, setInfo.ClrType);
+                newSet.Name = setInfo.Name;
                 if (setInfo.Attributes.FirstOrDefault(x => x.GetType() == typeof(CacheBacking)) is CacheBacking backing)
                 {
                     newSet.SetType(backing.Type);
