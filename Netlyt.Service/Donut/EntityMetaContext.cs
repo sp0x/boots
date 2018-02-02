@@ -9,8 +9,15 @@ namespace Netlyt.Service.Donut
 {
     public class EntityMetaContext
     {
+        /// <summary>
+        /// 
+        /// </summary>
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        /// <summary>
+        /// /
+        /// </summary>
         private ConcurrentDictionary<int, Dictionary<string, Score>> _metaValues;
+
         /// <summary>
         /// A dict of metaCategory , ( metaValue, userIds )
         /// </summary>
@@ -74,5 +81,14 @@ namespace Netlyt.Service.Donut
             if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
         }
 
+        protected void ClearMetaValues()
+        {
+            _metaValues.Clear();
+        }
+
+        protected void ClearEntityMetaValues()
+        {
+            _entityMetaValues.Clear();
+        }
     }
 }

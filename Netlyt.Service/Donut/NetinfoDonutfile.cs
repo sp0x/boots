@@ -6,6 +6,7 @@ using nvoid.db.DB;
 using nvoid.extensions;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Models;
+using Netlyt.Service.Models.Netinfo;
 using Netlyt.Service.Time;
 
 namespace Netlyt.Service.Donut
@@ -20,7 +21,6 @@ namespace Netlyt.Service.Donut
         public NetinfoDonutfile(RedisCacher cacher) : base(cacher)
         { 
         }
-         
         
         const int META_NUMERIC_TYPE_VALUE = 1;
 
@@ -34,6 +34,7 @@ namespace Netlyt.Service.Donut
             if (entry == null) return;
             var events = entry["events"] as BsonArray;
             var uuid = entry["uuid"].ToString();
+            //var userObj = Context.UserCookies.AddOrMerge(uuid, new NetinfoUserCookie {Uuid = uuid});
             foreach (var raw_event in events)
             {
                 var evnt = raw_event as BsonDocument;
@@ -53,25 +54,12 @@ namespace Netlyt.Service.Donut
                 {
                     Page = value, PageVisitsTotal = 1
                 }); 
-                //Context.PageStats.GetOrAddHash(pageSelector).PageVisitsTotal++;
-                if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
+                if (value.Contains("payments/finish") && pageHost.Contains("ebag.bg"))
                 {
-                    if (DateHelper.IsHoliday(onDate))
-                    {
-                        Context.PurchasesOnHolidays.Add(uuid);
-                    }
-                    else if (DateHelper.IsHoliday(onDate.AddDays(1)))
-                    {
-                        Context.PurchasesBeforeHolidays.Add(uuid);
-                    }
-                    else if (onDate.DayOfWeek == DayOfWeek.Friday)
-                    {
-                        Context.PurchasesBeforeWeekends.Add(uuid);
-                    }
-                    else if (onDate.DayOfWeek > DayOfWeek.Friday)
-                    {
-                        Context.PurchasesInWeekends.Add(uuid);
-                    }
+                    if (DateHelper.IsHoliday(onDate))Context.PurchasesOnHolidays.Add(uuid);
+                    else if (DateHelper.IsHoliday(onDate.AddDays(1)))Context.PurchasesBeforeHolidays.Add(uuid);
+                    else if (onDate.DayOfWeek == DayOfWeek.Friday)Context.PurchasesBeforeWeekends.Add(uuid);
+                    else if (onDate.DayOfWeek > DayOfWeek.Friday)Context.PurchasesInWeekends.Add(uuid);
                     Context.Purchases.Add(uuid);
                     Context.PayingUsers.Add(uuid);//["is_paying"] = 1;
                 } 

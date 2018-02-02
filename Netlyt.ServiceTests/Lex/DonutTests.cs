@@ -63,15 +63,15 @@ namespace Netlyt.ServiceTests.Lex
                 if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
                 return x["value"] as BsonDocument;
             });
-            source.ProgressInterval = 0.03;
+            source.ProgressInterval = 0.05;
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
             var type = harvester.AddIntegrationSource("NetInfoUserFeatures_7_8_1", _appId.AppId, source);
             //hehe
             var donutMachine = new DonutfileGenerator<NetinfoDonutfile, NetinfoDonutContext>(type, _cacher); 
             var donut = donutMachine.Generate();
             donut.SetupCacheInterval(source.Size);
-
-            var dictEval = new MemberVisitingBlock(donut.ProcessRecord);
+            
+            var metaBlock = new MemberVisitingBlock(donut.ProcessRecord);
             _helper = new CrossSiteAnalyticsHelper();
 
             var featureHelper = new FeatureGeneratorHelper() { Helper = _helper, TargetDomain = "ebag.bg" };
@@ -110,7 +110,7 @@ namespace Netlyt.ServiceTests.Lex
             var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 3000);
 
             demographyImporter.Helper = _helper;
-            //dictEval.LinkOnComplete(demographyImporter); // retoggle
+            metaBlock.LinkOnComplete(demographyImporter); // retoggle
             demographyImporter.LinkTo(featureGeneratorBlock);
             featureGeneratorBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
             insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
@@ -121,7 +121,7 @@ namespace Netlyt.ServiceTests.Lex
             //->pass each event through AccumulateUserDocument to collect stats
             //->bing in demographic data to the already grouped userbase
             //->pass the day_user document through FeatureGenerator to create it's features
-            harvester.SetDestination(dictEval);
+            harvester.SetDestination(metaBlock);
             var result = await harvester.Synchronize();
             Debug.WriteLine(result.ProcessedEntries);
         }

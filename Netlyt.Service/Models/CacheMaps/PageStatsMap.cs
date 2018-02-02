@@ -1,11 +1,11 @@
 using System;
 using nvoid.db.Caching;
+using Netlyt.Service.Models.Netinfo;
 using StackExchange.Redis;
 
 namespace Netlyt.Service.Models.CacheMaps
 {
-    public class PageStatsMap 
-        : CacheMap<PageStats>
+    public class PageStatsMap  : CacheMap<PageStats>
     {
         public override void Map()
         {

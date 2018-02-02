@@ -80,11 +80,13 @@ namespace Netlyt.Service.Donut
             return _dictionary;
         }
 
-        public override void AddOrMerge(string key, T value)
+        public override T AddOrMerge(string key, T value)
         {
             if (Type != CacheType.Hash) throw new InvalidOperationException("CacheSet is not of type Hash");
+            T outputValue = default(T);
             lock (_mergeLock)
             {
+                T oldValue = null;
                 if (!_dictionary.ContainsKey(key))
                 {
                     var fqkey = _cacheMap.GetKey(_context.Prefix, Name, key);
@@ -92,16 +94,15 @@ namespace Netlyt.Service.Donut
                     if (hashValue != null)
                     {
                         _dictionary.TryAdd(key, hashValue);
+                        oldValue = hashValue;
                     }
                 }
-                if (!_dictionary.TryAdd(key, value))
-                {
-                    //Merge
-                    var oldValue = _dictionary[key];
-                    _cacheMap.Merge(oldValue, value);
-                }
+                else oldValue = _dictionary[key];
+                if (oldValue != null) value = _cacheMap.Merge(oldValue, value);
+                _dictionary[key] = value;
+                outputValue = value;
             }
-            
+            return outputValue;
         }
 
         /// <summary>

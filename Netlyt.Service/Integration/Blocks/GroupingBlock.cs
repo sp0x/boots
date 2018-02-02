@@ -8,6 +8,7 @@ using System.Linq;
 using nvoid.exec.Blocks;
 using nvoid.Integration;
 using Netlyt.Service.Models;
+using Netlyt.Service.Models.Netinfo;
 
 namespace Netlyt.Service.Integration.Blocks
 {

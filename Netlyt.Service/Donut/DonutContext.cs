@@ -27,7 +27,7 @@ namespace Netlyt.Service.Donut
         private readonly IDictionary<Type, ICacheSet> _sets = new Dictionary<Type, ICacheSet>();
         public string Prefix { get; set; }
         public RedisCacher Database => _cacher;
-        private int _currentCacheRunIndex;
+        private int _currentCacheRunIndex; 
 
         /// <summary>
         /// The entity interval on which to cache the values.
@@ -103,15 +103,51 @@ namespace Netlyt.Service.Donut
                     //Clear the set
                     set.ClearLocalCache();
                 }
-                //CacheMetaContext();
+                CacheMetaContext();
+                ClearMetaContext();
             }
 
         }
 
+        private void ClearMetaContext()
+        {
+            ClearMetaValues();
+            ClearEntityMetaValues();
+        }
+
+        /// <summary>
+        /// Caches all the meta categories and values
+        /// </summary>
         private void CacheMetaContext()
         {
-            var meta = base.GetMetaValues();
-            var entityMeta = base.GetEntityMetaValues();
+            //metaCategory->(meta value->score)
+            var metaCategoryScores = base.GetMetaValues();
+            foreach (var categoryPair in metaCategoryScores)
+            {
+                var categoryId = categoryPair.Key;
+                var categoryKey = $"{Prefix}:_m:{categoryId}";
+                foreach (var val in categoryPair.Value)
+                {
+                    var fullKey = $"{categoryKey}:{val.Key}";
+                    var cntHash = new HashEntry("count", val.Value.Count);
+                    var scoreHash = new HashEntry("score", val.Value.Value);
+                    _cacher.SetHash(fullKey, cntHash);
+                    _cacher.SetHash(fullKey, scoreHash); 
+                }
+            }
+            //metaCategory->(metaValue->element set)
+            var metaCategoryValueSets = base.GetEntityMetaValues();
+            foreach (var categoryPair in metaCategoryValueSets)
+            {
+                var categoryId = categoryPair.Key;
+                var categoryKey = $"{Prefix}:_mv:{categoryId}";
+                foreach (var metaVal in categoryPair.Value)
+                {
+                    var fullKey = $"{categoryKey}:{metaVal.Key}";
+                    var set = metaVal.Value; 
+                    _cacher.SetAddAll(fullKey,set.Select(x=> (RedisValue)x));
+                }
+            }
         }
 
 

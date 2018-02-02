@@ -27,6 +27,7 @@ using Netlyt.Service.Time;
 using Netlyt.ServiceTests.IntegrationSource;
 using Xunit;
 using Netlyt.Service.Integration.Import;
+using Netlyt.Service.Models.Netinfo;
 
 namespace Netlyt.ServiceTests.Netinfo
 {

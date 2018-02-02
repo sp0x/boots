@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using nvoid.extensions;
 using Netlyt.Service.Models;
+using Netlyt.Service.Models.Netinfo;
 
 namespace Netlyt.Service.Integration.Blocks
 {
