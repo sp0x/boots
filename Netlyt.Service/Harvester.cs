@@ -41,7 +41,7 @@ namespace Netlyt.Service
         private ApiService _apiService;
         private IntegrationService _integrationService;
 
-        public HashSet<IntegrationSet> Sets { get; private set; } 
+        public HashSet<IntegrationSet> IntegrationSets { get; private set; } 
         /// <summary>
         /// The destination to which documents will be dispatched
         /// </summary>
@@ -56,7 +56,7 @@ namespace Netlyt.Service
             IntegrationService integrationService,
             uint threadCount = 4) : base()
         {
-            Sets = new HashSet<IntegrationSet>();
+            IntegrationSets = new HashSet<IntegrationSet>();
             this.ThreadCount = threadCount;
             _stopwatch = new Stopwatch();
             _apiService = apiService;
@@ -72,7 +72,7 @@ namespace Netlyt.Service
         {
             if (input == null) throw new ArgumentException(nameof(input));
             var newSet = new IntegrationSet(input, source);
-            Sets.Add(newSet);
+            IntegrationSets.Add(newSet);
             return this;
         }
 
@@ -146,7 +146,7 @@ namespace Netlyt.Service
         /// Starts reading all the sets that are available.
         /// Returns whenever the whole pipeline is complete.
         /// </summary>
-        public Task<HarvesterResult> Synchronize(CancellationToken? cancellationToken = null)
+        public Task<HarvesterResult> Run(CancellationToken? cancellationToken = null)
         {
             var cToken = cancellationToken ?? CancellationToken.None;
             //Destination.ConsumeAsync(cToken);
@@ -206,7 +206,7 @@ namespace Netlyt.Service
             var totalItemsUsed = 0;
             var shardsUsed = 0;
             //Go through all type sets
-            Parallel.ForEach(Sets, parallelOptions,
+            Parallel.ForEach(IntegrationSets, parallelOptions,
                 (IntegrationSet itemSet, ParallelLoopState itemSetState) =>
                 {
                     //We shouldn't get any more items
@@ -280,9 +280,8 @@ namespace Netlyt.Service
             return totalItemsUsed;
         }
 
-
         /// <summary>
-        /// 
+        /// Goes through all the integrations.
         /// </summary>
         /// <param name="parallelOptions"></param>
         /// <param name="totalShardsUsed"></param>
@@ -291,12 +290,12 @@ namespace Netlyt.Service
         {
             var totalItemsUsed = 0;
             var shardsUsed = 0;
-            if (Sets.Count == 0)
+            if (IntegrationSets.Count == 0)
             {
                 throw new Exception("No sets to process!");
             }
             //Go through all type sets
-            Parallel.ForEach(Sets, parallelOptions,
+            Parallel.ForEach(IntegrationSets, parallelOptions,
                 (IntegrationSet itemSet, ParallelLoopState itemSetState) =>
                 {
                     //We shouldn't get any more items
@@ -306,7 +305,6 @@ namespace Netlyt.Service
                         itemSetState.Break();
                         return;
                     }
-
                     var shards = itemSet.Source.Shards();
                     if (ShardLimit > 0)
                     {

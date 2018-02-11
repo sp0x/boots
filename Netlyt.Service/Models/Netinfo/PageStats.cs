@@ -155,7 +155,7 @@ namespace Netlyt.Service.Models.Netinfo
         }
 
         /// <summary>
-        /// Sets the rating of this page, with respect to another page.
+        /// IntegrationSets the rating of this page, with respect to another page.
         /// </summary>
         /// <param name="targetPage"></param>
         /// <param name="rating"></param>
@@ -168,7 +168,7 @@ namespace Netlyt.Service.Models.Netinfo
             TargetRatings[targetPage] = new Score(rating);
         }
         /// <summary>
-        /// Sets the rating of this page, with respect to another page.
+        /// IntegrationSets the rating of this page, with respect to another page.
         /// </summary>
         /// <param name="targetPage"></param>
         /// <param name="rating"></param>

@@ -79,7 +79,7 @@ namespace Netlyt.Service.Integration.Blocks
             string[] matchingRow = null;
             if (_entityKeyResolver != null && MappedItems.Count > 0)
             {
-                var entityKey = _entityKeyResolver(intDoc);
+                var entityKey = _entityKeyResolver(intDoc); 
                 matchingRow = MappedItems.ContainsKey(entityKey) ? MappedItems[entityKey] : null;
             }
             else

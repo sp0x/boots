@@ -815,7 +815,6 @@ namespace Netlyt.Service.Integration.Blocks
                             return bsonValue == null ? false : bsonValue.Contains("targetSiteVisits") && bsonValue["targetSiteVisits"].AsInt64 > 0;
                         })
                         .ToList());
-
                 this.AgeGroups = DistinctUsers
                     .SelectMany(x => x.Value)
                     .GroupBy(x => GetBsonString(x.GetDocument(), "age"))

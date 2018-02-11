@@ -30,6 +30,7 @@ namespace Netlyt.Service.Donut
         /// <param name="intDoc"></param>
         public void ProcessRecord(IntegratedDocument intDoc)
         {
+            //TODO: Use meta categories for age, gender, agePurchased, genderPurchased groups because we just need the count (we can use the value also with meta values)
             var entry = intDoc?.Document?.Value;
             if (entry == null) return;
             var events = entry["events"] as BsonArray;

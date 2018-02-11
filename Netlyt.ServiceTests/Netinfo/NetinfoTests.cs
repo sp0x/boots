@@ -207,7 +207,7 @@ events : elements };
                 return doc;
             })); 
             harvester.SetDestination(grouper);
-            var completion = await harvester.Synchronize();
+            var completion = await harvester.Run();
             var syncDuration = harvester.ElapsedTime();
             Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
         }
@@ -277,7 +277,7 @@ events : elements };
             dictEval.AddFlowCompletionTask(insertBatcher.Completion);
             
             harvester.SetDestination(dictEval);
-            var result = await harvester.Synchronize();
+            var result = await harvester.Run();
             Debug.WriteLine(result.ProcessedEntries);
         } 
 
@@ -335,7 +335,7 @@ events : elements };
             dictEval.AddFlowCompletionTask(sessionBatcher.Completion);
             dictEval.AddFlowCompletionTask(sessionDocBlock.Completion);
             harvester.SetDestination(dictEval);
-            var syncResults = await harvester.Synchronize();
+            var syncResults = await harvester.Run();
             var syncDuration = harvester.ElapsedTime();
             Debug.WriteLine($"Read all docs in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
             //Task.WaitAll(grouper.Completion, featureGen.Completion, );
@@ -422,7 +422,7 @@ events : elements };
 
             builder.AddFlowCompletionTask(updateBatch.Block.Completion);
             harvester.SetDestination(builder);
-            var results = await harvester.Synchronize();
+            var results = await harvester.Run();
             Assert.True(results.ProcessedEntries == recordLimit);
         }
 
@@ -534,7 +534,7 @@ events : elements };
             harvester.AddType(type, fileSource);
             harvester.SetDestination(cachedReducer);
             //var res1 = await harvester.ReadAll(grouper.GetBuffer());
-            var result = await harvester.Synchronize();
+            var result = await harvester.Run();
 //            Console.ReadLine();
         }
 
@@ -593,7 +593,7 @@ events : elements };
             grouper.LinkOnCompleteEx(featuresBlock); 
 
             harvester.SetDestination(grouper); 
-            var completion = await harvester.Synchronize();
+            var completion = await harvester.Run();
             var syncDuration = harvester.ElapsedTime();
             Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
 

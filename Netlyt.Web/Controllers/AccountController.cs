@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -13,6 +14,7 @@ using Netlyt.Service;
 using Netlyt.Service.Models.Account;
 using Netlyt.Web.Models.AccountViewModels;
 using Netlyt.Web.Services;
+using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web.Controllers
 {
@@ -27,8 +29,10 @@ namespace Netlyt.Web.Controllers
         private readonly UserService _userService;
         private ApiService _apiService;
         private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
+        private IMapper _mapper;
 
         public AccountController(
+            IMapper mapper,
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             IEmailSender emailSender,
@@ -37,6 +41,7 @@ namespace Netlyt.Web.Controllers
             ApiService apiService,
             IActionDescriptorCollectionProvider actionDescriptorCollectionProvider)
         {
+            _mapper = mapper;
             _userService = userService;
             _userManager = userManager;
             _signInManager = signInManager;
@@ -63,10 +68,10 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/user/me")] // /me = host/me, me = host/user/GetProfile/me  
         public async Task<ActionResult> GetProfile()
         {
-            var user = await _userService.GetUser(User);
+            User user = await _userService.GetUser(User);
             if (user != null)
             { 
-                return Ok(user);
+                return Ok(_mapper.Map<UserViewModel>(user));
             }
             return BadRequest();
         }
@@ -82,10 +87,8 @@ namespace Netlyt.Web.Controllers
                 var result = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, true, lockoutOnFailure: false);
                 
                 if (result.Succeeded)
-                {
-                    var u = User;
-                    _logger.LogInformation("User logged in.");
-                    var userid = User.GetUserId();
+                { 
+                    _logger.LogInformation("User logged in."); 
                     _userService.InitializeUserSession(HttpContext.User);
                     return Json(new {success = true}); 
                 }
@@ -232,8 +235,7 @@ namespace Netlyt.Web.Controllers
 //            return View();
 //        }
 
-        [HttpPost("/register")]
-        [HttpPost("/auth")]
+        [HttpPost("/user")] 
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody]RegisterViewModel model, string returnUrl = null)
         {
@@ -459,11 +461,12 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpGet("/user/keys")]
-        public ActionResult GetApiKeys()
+        public async Task<ActionResult> GetApiKeys()
         {
-            var user = _apiService.GetCurrentApiUser();
+            var user = await _userService.GetUser(User);
             if (user == null) return Json(new {success = false, message = "No user matching your keys."});
-            return Json(user.ApiKeys);
+            return Json(user.ApiKeys
+                .Select(x=>_mapper.Map<ApiAuthViewModel>(x)));
         }
 
         #region Helpers

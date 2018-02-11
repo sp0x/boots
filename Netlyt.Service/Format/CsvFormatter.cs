@@ -17,6 +17,20 @@ namespace Netlyt.Service.Format
         private StreamReader _reader;
         private CsvReader _csvReader;
         private long _position = -1;
+        private bool _usePresetHeaders = false;
+        public string[] Headers
+        {
+            get
+            {
+                return _headers;
+            }
+            set
+            {
+                _headers = value;
+                _usePresetHeaders = true;
+            }
+        }
+        public bool SkipHeader { get; set; }
 
         public CsvFormatter()
         {
@@ -43,13 +57,14 @@ namespace Netlyt.Service.Format
             } 
             _reader = (!reset && _reader != null) ? _reader : new StreamReader(fs);
             _csvReader = (!reset && _csvReader != null) ? _csvReader : new CsvReader(_reader, true, Delimiter);
-            if (_headers == null || reset)
+            if (!SkipHeader && (_headers == null || reset))
             {
-                _headers = _csvReader.GetFieldHeaders();
+                var headerValues = _csvReader.GetFieldHeaders();
+                if (!_usePresetHeaders) _headers = headerValues;
             }
-            var outputObject = new ExpandoObject() as IDictionary<string, Object>;
-            if (_csvReader.ReadNextRecord())
+            while (_csvReader.ReadNextRecord())
             {
+                var outputObject = new ExpandoObject() as IDictionary<string, Object>;
                 for (var i = 0; i < _csvReader.FieldCount; i++)
                 {
                     string fldValue = _csvReader[i];
@@ -77,13 +92,10 @@ namespace Netlyt.Service.Format
                         outputObject.Add(fldName, fldValue);
                     }
                 }
+
+                _position++;
+                yield return outputObject as T;
             }
-            else
-            {
-                yield break;
-            }
-            _position++;
-            yield return outputObject as T;
         }
 
         public IInputFormatter Clone()

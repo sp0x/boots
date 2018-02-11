@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
-using System.Text;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
@@ -17,7 +15,6 @@ using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Generation;
 using Netlyt.Service.Lex.Parsing;
 using Netlyt.Service.Lex.Parsing.Tokenizers;
-using Netlyt.ServiceTests.IntegrationSource;
 using Xunit;
 
 namespace Netlyt.ServiceTests.Lex.Expressions
@@ -96,7 +93,7 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             var mapReduce = parser.ReadMapReduce();
             var values = mapReduce.ValueMembers.ConcatExpressions();
             var keys = mapReduce.Keys.ConcatExpressions();
-            var script = MapReduceJsScript.Create(mapReduce); 
+            var script = MapReduceJsScript.Create(mapReduce);
             Assert.True(script.Map.Length == 331);
             Assert.True(script.Reduce.Length == 805);
         }
@@ -128,7 +125,7 @@ namespace Netlyt.ServiceTests.Lex.Expressions
                 Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' }),
                 ApiKey = _appId,
                 TypeName = "TestingType",
-                ThreadCount = 1, //So that we actually get predictable results!
+                ThreadCount = 1, //So that we actually get predictable results with our limit!
                 TotalEntryLimit = entryLimit
             }.AddIndex("ondate"));
             var importResult = await importTask.Import();

@@ -70,7 +70,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper); 
             harvester.AddIntegrationSource(fileSource, _apiAuth, null);
-            var results = await harvester.Synchronize();
+            var results = await harvester.Run();
             Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
             var syncDuration = harvester.ElapsedTime();
             Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}");
@@ -96,7 +96,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper);
             harvester.AddIntegrationSource(fileSource, _apiAuth, null);
-            var results = await harvester.Synchronize();
+            var results = await harvester.Run();
             //Assert.True(results.ProcessedEntries == 10 && grouper.EntityDictionary.Count > 0);
             //Ensure that we went through all the items, with our entire dataflow.
             Assert.True(results.ProcessedEntries == statsCounter);

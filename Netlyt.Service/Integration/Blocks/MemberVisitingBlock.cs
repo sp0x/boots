@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using MongoDB.Bson;
 using nvoid.exec.Blocks;
 
@@ -32,6 +33,12 @@ namespace Netlyt.Service.Integration.Blocks
         {
             _action(intDoc);
             return intDoc;
+        }
+
+
+        protected override IEnumerable<IntegratedDocument> GetCollectedItems()
+        {
+            return null;
         }
     }
 }

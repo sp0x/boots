@@ -1,4 +1,5 @@
-﻿using System; 
+﻿using System;
+using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -14,8 +15,7 @@ using Netlyt.Service.Data;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
-using Newtonsoft.Json;
-using IdentityRole = Microsoft.AspNetCore.Identity.MongoDB.IdentityRole;
+using Newtonsoft.Json; 
 
 namespace Netlyt.Web
 {
@@ -40,8 +40,7 @@ namespace Netlyt.Web
         {
             // Register identity framework services and also Mongo storage. 
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!");
-            var mongoConnectionString = databaseConfiguration.Value;
+            if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!"); 
             var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection"); 
             services.AddDbContext<ManagementDbContext>(options =>
                 options.UseNpgsql(postgresConnectionString)
@@ -81,6 +80,7 @@ namespace Netlyt.Web
             services.AddTransient<ApiService>();
             services.AddTransient<OrganizationService>();
             SetupAuthentication(services);
+            services.AddAutoMapper();
             services.AddMvc();
             //Enable for 100% auth coverage by default
 //            services.AddMvc(options =>

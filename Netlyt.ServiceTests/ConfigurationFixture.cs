@@ -7,15 +7,13 @@ using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Models;
-using Netlyt.Service.Models.CacheMaps;
 
 namespace Netlyt.ServiceTests
 {
     public class ConfigurationFixture : IDisposable
     {
         private ManagementDbContext _context;
-        public DbContextOptionsBuilder<ManagementDbContext> DbOptionsBuilder { get; private set; }
+        public DbContextOptionsBuilder<ManagementDbContext> DbOptionsBuilder { get; private set; } 
         public ServiceProvider ServiceProvider { get; set; }
 
         public ConfigurationFixture()
@@ -26,7 +24,7 @@ namespace Netlyt.ServiceTests
                 .AddJsonFile("appsettings.Development.json", optional: false, reloadOnChange: true);
             var config = builder.Build();
             DbOptionsBuilder = new DbContextOptionsBuilder<ManagementDbContext>()
-                .UseInMemoryDatabase("Testing");
+                .UseInMemoryDatabase("Testing"); 
             var services = new ServiceCollection();
             _context = CreateContext();
             DBConfig.Initialize(config);
@@ -46,7 +44,7 @@ namespace Netlyt.ServiceTests
         public ManagementDbContext CreateContext()
         {
             return new ManagementDbContext(DbOptionsBuilder.Options);
-        }
+        } 
 
         public T GetService<T>()
         {

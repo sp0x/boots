@@ -48,7 +48,7 @@ namespace Netlyt.ServiceTests
             var outBlock = new IntegrationActionBlock(appId, (action, x) => { });
             harvester.SetDestination(outBlock);
             harvester.AddIntegrationSource(fileSource, apiObj, null); 
-            var hresult = await harvester.Synchronize();
+            var hresult = await harvester.Run();
             Assert.True(outBlock.ProcessingCompletion.IsCompleted);
             Assert.True(outBlock.BufferCompletion.IsCompleted);
         }
@@ -72,8 +72,8 @@ namespace Netlyt.ServiceTests
             var outBlock = new IntegrationActionBlock(appId, (action, x) => { });
             harvester.SetDestination(outBlock);
             harvester.AddIntegrationSource(fileSource, apiObj, null);
-            Assert.True(harvester.Sets.Count > 0);
-            var hresult = await harvester.Synchronize();
+            Assert.True(harvester.IntegrationSets.Count > 0);
+            var hresult = await harvester.Run();
             Assert.True(hresult.ProcessedEntries == 10);
             Assert.True(hresult.ProcessedShards == 1);
         }
@@ -99,8 +99,8 @@ namespace Netlyt.ServiceTests
             { });
             harvester.SetDestination(outBlock);
             harvester.AddType(type, fileSource);
-            Assert.True(harvester.Sets.Count > 0);
-            await harvester.Synchronize();
+            Assert.True(harvester.IntegrationSets.Count > 0);
+            await harvester.Run();
             Assert.True(harvester.ElapsedTime().TotalMilliseconds > 0);
             var syncDuration = harvester.ElapsedTime();
             Debug.WriteLine($"Read all files in: {syncDuration.TotalSeconds}:{syncDuration.Milliseconds}"); 

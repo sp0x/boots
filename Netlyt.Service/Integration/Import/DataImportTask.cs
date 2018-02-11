@@ -47,14 +47,20 @@ namespace Netlyt.Service.Integration.Import
         {
             _options = options;
             string tmpGuid = Guid.NewGuid().ToString();
+            _harvester = new Harvester<T>(apiService, integrationService, _options.ThreadCount);
             _type = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey, _options.TypeName, true, tmpGuid);
             var outCollection = new CollectionDetails(tmpGuid, _type.GetReducedCollectionName());
             OutputCollection = outCollection;
-            _harvester = new Harvester<T>(apiService, integrationService, _options.ThreadCount);
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
             if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit); 
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task<DataImportResult> Import(CancellationToken? cancellationToken = null)
         {
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
@@ -78,8 +84,7 @@ namespace Netlyt.Service.Integration.Import
                 Debug.WriteLine($"Inserted batch {batchesInserted}");
             }, executionOptions);
             transformerBlock.LinkTo(inserterBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            var result = await _harvester.ReadAll(readBatcher, cancellationToken);
-            _harvester = null;
+            var result = await _harvester.ReadAll(readBatcher, cancellationToken); 
             await Task.WhenAll(inserterBlock.Completion, transformerBlock.Completion);
             foreach (var index in _options.IndexesToCreate)
             {
@@ -88,7 +93,13 @@ namespace Netlyt.Service.Integration.Import
             var output = new DataImportResult(result, rawEventsCollection); 
             return output;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="donutScript">The reduce script to execute.</param>
+        /// <param name="inputDocumentsLimit"></param>
+        /// <param name="orderBy"></param>
+        /// <returns></returns>
         public async Task Reduce(string donutScript, uint inputDocumentsLimit = 0, SortDefinition<BsonDocument> orderBy = null)
         {
             MapReduceExpression mapReduce = new TokenParser(new PrecedenceTokenizer().Tokenize(donutScript)).ReadMapReduce();

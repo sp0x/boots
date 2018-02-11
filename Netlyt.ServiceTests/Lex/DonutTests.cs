@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics; 
+using System.Diagnostics;
+using System.Dynamic;
+using System.IO;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.Batching;
-using nvoid.db.Caching; 
-using nvoid.db.Extensions; 
+using nvoid.db.Caching;
+using nvoid.db.DB.Configuration;
+using nvoid.db.DB.MongoDB;
+using nvoid.db.Extensions;
 using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
@@ -14,18 +18,19 @@ using Netlyt.Service.Donut;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
+using Netlyt.Service.Integration.Import;
 using Netlyt.Service.IntegrationSource;
 using Netlyt.Service.Lex.Generation;
 using Netlyt.Service.Models;
-using Netlyt.Service.Time; 
+using Netlyt.Service.Time;
 using Xunit;
 
 namespace Netlyt.ServiceTests.Lex
 {
-    [Collection("Entity Parsers")]
+    [Collection("DonutTests")]
     public class DonutTests
     {
-        private ConfigurationFixture _config;
+        private DonutConfigurationFixture _config;
         private CrossSiteAnalyticsHelper _helper;
         private IMongoCollection<IntegratedDocument> _documentStore;
         private DateHelper _dateHelper;
@@ -33,11 +38,11 @@ namespace Netlyt.ServiceTests.Lex
         private ManagementDbContext _context;
         private ApiService _apiService;
         private IntegrationService _integrationService;
-        private ApiAuth _appId;
+        private ApiAuth _appAuth;
         private RedisCacher _cacher;
         public const byte VisitTypedValue = 1;
 
-        public DonutTests(ConfigurationFixture fixture)
+        public DonutTests(DonutConfigurationFixture fixture)
         {
             _config = fixture;
             _helper = new CrossSiteAnalyticsHelper();
@@ -47,8 +52,8 @@ namespace Netlyt.ServiceTests.Lex
             _context = _contextFactory.Create();
             _apiService = fixture.GetService<ApiService>();
             _integrationService = fixture.GetService<IntegrationService>();
-            _appId = _apiService.Generate();
-            _apiService.Register(_appId);
+            _appAuth = _apiService.Generate();
+            _apiService.Register(_appAuth);
             _cacher = fixture.GetService<RedisCacher>();
         }
 
@@ -57,7 +62,7 @@ namespace Netlyt.ServiceTests.Lex
         public async void ExtractEntitiesFromReducedCollection(string collectionName, string demographySheet)
         {
             MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter());
-           
+
             source.SetProjection(x =>
             {
                 if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
@@ -65,12 +70,13 @@ namespace Netlyt.ServiceTests.Lex
             });
             source.ProgressInterval = 0.05;
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
-            var type = harvester.AddIntegrationSource("NetInfoUserFeatures_7_8_1", _appId.AppId, source);
+            harvester.LimitEntries(10000);
+            var type = harvester.AddIntegrationSource("NetInfoUserFeatures_7_8_1", _appAuth.AppId, source);
             //hehe
-            var donutMachine = new DonutfileGenerator<NetinfoDonutfile, NetinfoDonutContext>(type, _cacher); 
+            var donutMachine = new DonutfileGenerator<NetinfoDonutfile, NetinfoDonutContext>(type, _cacher);
             var donut = donutMachine.Generate();
             donut.SetupCacheInterval(source.Size);
-            
+
             var metaBlock = new MemberVisitingBlock(donut.ProcessRecord);
             _helper = new CrossSiteAnalyticsHelper();
 
@@ -103,7 +109,7 @@ namespace Netlyt.ServiceTests.Lex
                     doc.Document.Value.Set(name, BsonValue.Create(featureval));
                 }
                 //Cleanup
-                doc.IntegrationId = type.Id; doc.APIId = _appId.Id;
+                doc.IntegrationId = type.Id; doc.APIId = _appAuth.Id;
                 x.Features = null;
                 return doc;
             });
@@ -115,16 +121,90 @@ namespace Netlyt.ServiceTests.Lex
             featureGeneratorBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
             insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
-            //dictEval.AddFlowCompletionTask(insertBatcher.Completion); //retoggle
+            metaBlock.AddFlowCompletionTask(insertBatcher.Completion); //retoggle
             //harvester
             //->unpack reduced events
             //->pass each event through AccumulateUserDocument to collect stats
             //->bing in demographic data to the already grouped userbase
             //->pass the day_user document through FeatureGenerator to create it's features
             harvester.SetDestination(metaBlock);
-            var result = await harvester.Synchronize();
+            var result = await harvester.Run();
             Debug.WriteLine(result.ProcessedEntries);
         }
+
+        [Theory]
+        [InlineData(new object[] { "TestData\\Ebag\\demograpy.csv" })]
+        public async void TestDataSourceInput(string inputFile)
+        {
+            var currentDir = Environment.CurrentDirectory;
+            inputFile = Path.Combine(currentDir, inputFile);
+            Console.WriteLine($"Parsing data in: {inputFile}");
+            uint entryLimit = 0;
+            var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
+            {
+                Source = FileSource.CreateFromFile(inputFile, new CsvFormatter()
+                {
+                    Delimiter = ',',
+                    Headers = new[] { "uuid", "time", "gender", "age" },
+                    SkipHeader = true
+                }),
+                ApiKey = _appAuth,
+                TypeName = "TestingType",
+                ThreadCount = 1, //So that we actually get predictable results with our limit!
+                TotalEntryLimit = entryLimit
+            }.AddIndex("uuid"));
+            var importResult = await importTask.Import();
+            if (entryLimit > 0)
+            {
+                Assert.True(entryLimit == importResult.Data.ProcessedEntries);
+            }
+            else
+            {
+                Assert.True(importResult.Data.ProcessedEntries>0);
+            } 
+            importResult.Collection.Trash();
+        }
+
+        [Theory]
+        [InlineData(new object[]
+       {
+            "TestData\\Ebag\\NewJoin",
+           @"reduce day = time(this.ondate) / (60*60*24), 
+                uuid = this.uuid
+                reduce_map  ondate = this.ondate,
+                value = this.value,
+                type = this.type
+            reduce aggregate
+                events = selectMany(values, (x) => x.events),
+                uuid = key.uuid,
+                day = key.day,
+                noticed_date = if(any(events), events[0].ondate, null)"
+       })]
+        public async void TestMapReduceDonut(string inputDirectory, string mapReduceDonut)
+        {
+            var currentDir = Environment.CurrentDirectory;
+            inputDirectory = Path.Combine(currentDir, inputDirectory);
+            Console.WriteLine($"Parsing data in: {inputDirectory}");
+            uint entryLimit = 100;
+            var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
+            {
+                Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' }),
+                ApiKey = _appAuth,
+                TypeName = "TestingType",
+                ThreadCount = 1, //So that we actually get predictable results with our limit!
+                TotalEntryLimit = entryLimit
+            }.AddIndex("ondate"));
+            var importResult = await importTask.Import();
+            await importTask.Reduce(mapReduceDonut, entryLimit, Builders<BsonDocument>.Sort.Ascending("ondate"));
+            var databaseConfiguration = DBConfig.GetGeneralDatabase();
+            var reducedCollection = new MongoList(databaseConfiguration, importTask.OutputCollection.ReducedOutputCollection);
+            var reducedDocsCount = reducedCollection.Size;
+            Assert.Equal(64, reducedDocsCount);
+            //Cleanup
+            importResult.Collection.Trash();
+            reducedCollection.Trash();
+        }
+
 
         private void JoinDemography(string[] demographyFields, IntegratedDocument userDocument)
         {
@@ -145,60 +225,6 @@ namespace Netlyt.ServiceTests.Lex
             {
                 userDocumentDocument["gender"] = 0;
             }
-        } 
-
-        private object AccumulateUserDocument(IntegratedDocument accumulator, BsonDocument newEntry, bool appendEvent = true)
-        {
-            return newEntry;
-//            var value = newEntry.GetString("value");
-//            var onDate = newEntry.GetDate("ondate").Value;
-//            var uuid = accumulator.GetString("uuid");
-//            //CollectTypeValuePair(uuid, newEntry);
-//            //            var newElement = new
-//            //            {
-//            //                ondate = newEntry.GetDate("ondate"),
-//            //                event_id = newEntry.GetInt("event_id"),
-//            //                type = newEntry.GetInt("type"),
-//            //                value = newEntry.GetString("value")
-//            //            }.ToBsonDocument();
-//            var pageHost = value.ToHostname();
-//            var pageSelector = pageHost;
-//            var isNewPage = false;
-//            if (!_helper.Stats.ContainsPage(pageHost))
-//            {
-//                _helper.Stats.AddPage(pageSelector, new PageStats()
-//                {
-//                    Page = value
-//                });
-//            }
-//            _helper.Stats[pageSelector].PageVisitsTotal++;
-//
-//            if (appendEvent)
-//            {
-//                //accumulator.AddDocumentArrayItem("events", newEntry);
-//            }
-//            if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
-//            {
-//                if (DateHelper.IsHoliday(onDate))
-//                {
-//                    _helper.PurchasesOnHolidays.Add(newEntry);
-//                }
-//                else if (DateHelper.IsHoliday(onDate.AddDays(1)))
-//                {
-//                    _helper.PurchasesBeforeHolidays.Add(newEntry);
-//                }
-//                else if (onDate.DayOfWeek == DayOfWeek.Friday)
-//                {
-//                    _helper.PurchasesBeforeWeekends.Add(newEntry);
-//                }
-//                else if (onDate.DayOfWeek > DayOfWeek.Friday)
-//                {
-//                    _helper.PurchasesInWeekends.Add(newEntry);
-//                }
-//                _helper.Purchases.Add(newEntry);
-//                accumulator["is_paying"] = 1;
-//            }
-//            return newEntry;
         }
 
     }

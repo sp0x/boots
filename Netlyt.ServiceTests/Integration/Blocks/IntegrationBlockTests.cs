@@ -72,7 +72,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             });
             harv.LimitEntries(100);
             harv.SetDestination(block);
-            var results = await harv.Synchronize();
+            var results = await harv.Run();
             Assert.Equal(results.ProcessedEntries, cnt);
         }
 
@@ -95,7 +95,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             harv.LimitEntries(100);
             harv.SetDestination(block);
             
-            var results = await harv.Synchronize();
+            var results = await harv.Run();
             Assert.Equal(results.ProcessedEntries, cnt);
             Assert.Equal(results.ProcessedEntries, lCnt);
         }
@@ -119,7 +119,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             }));
             harv.LimitEntries(100);
             harv.SetDestination(block);
-            var results = await harv.Synchronize();
+            var results = await harv.Run();
             Assert.Equal(results.ProcessedEntries, cnt);
             Assert.Equal(results.ProcessedEntries, lCount);
         } 
@@ -171,7 +171,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             block.LinkOnComplete(blockA);
             //block.AddFlowCompletionTask(blockB.Completion);
             harv.SetDestination(block);
-            var results = await harv.Synchronize();
+            var results = await harv.Run();
             Assert.Equal(results.ProcessedEntries, iTransformOnCompletion / 2);
             Assert.Equal(results.ProcessedEntries, cnt);
             Assert.Equal(results.ProcessedEntries * rCycles, lCount);
@@ -221,7 +221,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             }));
             block.LinkOnComplete(onDoneBlock);
             harv.SetDestination(block);
-            var results = await harv.Synchronize();
+            var results = await harv.Run();
             Assert.Equal(results.ProcessedEntries, iOnDone);
             Assert.Equal(results.ProcessedEntries, iProcessDone);
             Assert.Equal(results.ProcessedEntries, cnt);
@@ -278,7 +278,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
 //                featuresBlock.Complete();
 //            });
             harvester.SetDestination(grouper);
-            var syncTask = harvester.Synchronize();
+            var syncTask = harvester.Run();
             HarvesterResult results = await syncTask;
             Debug.WriteLine($"Updates created {cntUpdates}");
             Assert.True(cntBatchesApplied!=0 && (cntBatchesApplied * batchSize >= results.ProcessedEntries));
