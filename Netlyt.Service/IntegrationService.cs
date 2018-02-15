@@ -21,7 +21,7 @@ namespace Netlyt.Service
         public void SaveOrFetchExisting(ref DataIntegration type)
         {
             DataIntegration exitingIntegration;
-            if (!Exists(type, type.APIKey.AppId, out exitingIntegration))
+            if (!IntegrationExists(type, type.APIKey.AppId, out exitingIntegration))
             {
                 _context.Integrations.Add(type);
                 _context.SaveChanges();
@@ -39,7 +39,7 @@ namespace Netlyt.Service
         /// <param name="appId"></param>
         /// <param name="existingDefinition"></param>
         /// <returns></returns>
-        public bool Exists(IIntegration type, string appId, out DataIntegration existingDefinition)
+        public bool IntegrationExists(IIntegration type, string appId, out DataIntegration existingDefinition)
         {
             var localFields = type.Fields;
             existingDefinition = (from x in _context.Integrations
@@ -65,7 +65,7 @@ namespace Netlyt.Service
         /// <param name="apiId"></param>
         /// <param name="existingDefinition"></param>
         /// <returns></returns>
-        public bool Exists(IIntegration type, long apiId, out DataIntegration existingDefinition)
+        public bool IntegrationExists(IIntegration type, long apiId, out DataIntegration existingDefinition)
         {
             existingDefinition = _context.Integrations.FirstOrDefault(x => x.APIKey.Id == apiId && (x.Fields == type.Fields || x.Name == type.Name));
             return existingDefinition != null;

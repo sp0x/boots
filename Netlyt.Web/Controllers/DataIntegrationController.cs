@@ -1,5 +1,4 @@
-﻿using System.IO;
-using System.Linq;
+﻿using System.IO; 
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -31,14 +30,10 @@ namespace Netlyt.Web.Controllers
     [Authorize(AuthenticationSchemes = Netlyt.Data.AuthenticationSchemes.ApiSchemes)]
     [Route("data")]
     public class DataIntegrationController : Controller
-    {
-        private BehaviourContext _behaviourContext;
-        private RemoteDataSource<IntegratedDocument> _documentStore;
-        private SocialNetworkApiManager _socNetManager;
-        private IntegrationService _integrationService;
-        private ApiService _apiService;
-        private ManagementDbContext _context;
-        private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
+    { 
+        private RemoteDataSource<IntegratedDocument> _documentStore; 
+        private ApiService _apiService; 
+        private DataIntegrationService _dataIntegrationService;
 
         public DataIntegrationController(UserManager<User> userManager,
             IUserStore<User> userStore,
@@ -47,16 +42,13 @@ namespace Netlyt.Web.Controllers
             SocialNetworkApiManager socNetManager,
             IntegrationService integrationService,
             ApiService apiService,
-            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider)
-        {
-            _behaviourContext = behaviourCtx;
-            _context = context;
+            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
+            DataIntegrationService dataIntegrationService)
+        {  
             _apiService = apiService;
             //Move both of these 
-            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
-            _socNetManager = socNetManager;
-            _integrationService = integrationService;
-            _actionDescriptorCollectionProvider = actionDescriptorCollectionProvider;
+            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();  
+            _dataIntegrationService = dataIntegrationService;
         }
 
 
@@ -68,19 +60,7 @@ namespace Netlyt.Web.Controllers
             {
                 success = true
             });
-        }
-
-        private void GetRoutes()
-        {
-            var routes = _actionDescriptorCollectionProvider.ActionDescriptors.Items
-                .Select(x => new {
-                Action = x.RouteValues["Action"],
-                Controller = x.RouteValues["Controller"],
-                Name = x.AttributeRouteInfo?.Name,
-                Template = x.AttributeRouteInfo?.Template,
-                Contraint = x.ActionConstraints
-            }).ToList(); 
-        }
+        } 
 
         /// <summary>   (An Action that handles HTTP POST requests) Posts entity data record(s). </summary>
         ///
@@ -93,27 +73,10 @@ namespace Netlyt.Web.Controllers
         public async Task<ActionResult> Entity()
         {
             //GetRoutes();
-
-            //Dont close the body! 
-            var api = _apiService.GetCurrentApi();
-            var memSource = InMemorySource.Create(Request.Body, new JsonFormatter());
-            var type = (DataIntegration)memSource.GetTypeDefinition();
-            type.APIKey = api;
-            type.Owner = _apiService.GetApiUser(api);
-            StringValues tmpSource;
-            _integrationService.SaveOrFetchExisting(ref type);
-            if (Request.Headers.TryGetValue("DataSource", out tmpSource)) type.Source = tmpSource.ToString();
-            //Check if the entity type exists
-            var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService);
-            var destination = (new MongoSink<IntegratedDocument>(api.AppId));
-            destination.LinkTo(_behaviourContext.GetActionBlock());
-            harvester.SetDestination(destination);
-            harvester.AddType(type, memSource);
-            var result = await harvester.Run();
+            var result = await _dataIntegrationService.PostEntityData(Request.Body);
             return Json(new
             {
-                success = true,
-                typeId = type.Id
+                success = true
             });
         }
 

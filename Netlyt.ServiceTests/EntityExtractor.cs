@@ -66,7 +66,7 @@ namespace Netlyt.ServiceTests
         //        {
         ////            inputFile = Path.Combine(Environment.CurrentDirectory, inputFile);
         ////            var fileSource = FileSource.CreateFromFile(inputFile, new CsvFormatter());
-        ////            var type = fileSource.GetTypeDefinition() as IntegrationTypeDefinition;
+        ////            var type = fileSource.ResolveTypeDefinition() as IntegrationTypeDefinition;
         ////            Assert.NotNull(type);
         ////
         ////            var userId = "123123123";

@@ -3,8 +3,8 @@
 use \Netlyt\Client;
 require __DIR__ . '/vendor/autoload.php';
 
-$appId = "0d2017992d314724924817fa828d5ade";
-$secret = "ErNR0Zr1TTRutU2mxeaPWvhIKWERhAV7508ZKX8kUQw=";
+$appId = "d4af4a7e3b1346e5a406123782799da1";
+$secret = "cwbdGy4mqK9n10OJDPWpvbHuR5jUsvVDY5b1TfdNRmE=";
 
 $client = new Netlyt\Client($appId, $secret);
 //Get the status of our client

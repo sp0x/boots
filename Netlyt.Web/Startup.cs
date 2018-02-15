@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Reflection;
 using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -66,6 +68,7 @@ namespace Netlyt.Web
             services.AddTransient<UserManager<User>>();
             services.AddTransient<IntegrationService>();
             services.AddTransient<SignInManager<User>>();
+            
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
             services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
@@ -79,15 +82,16 @@ namespace Netlyt.Web
             services.AddTransient<UserService>();
             services.AddTransient<ApiService>();
             services.AddTransient<OrganizationService>();
+            services.AddTransient<DataIntegrationService>();
             SetupAuthentication(services);
             services.AddAutoMapper();
             services.AddMvc();
             //Enable for 100% auth coverage by default
-//            services.AddMvc(options =>
-//            {
-//                // All endpoints need authentication
-//                options.Filters.Add(new AuthorizeFilter(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build()));
-//            });
+            //            services.AddMvc(options =>
+            //            {
+            //                // All endpoints need authentication
+            //                options.Filters.Add(new AuthorizeFilter(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build()));
+            //            }); 
         }
 
         public void SetupAuthentication(IServiceCollection services)

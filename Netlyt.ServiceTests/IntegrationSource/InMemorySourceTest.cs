@@ -22,7 +22,7 @@ namespace Netlyt.ServiceTests.IntegrationSource
         public void GetNextTest(string input)
         {
             var inMemoryTest = new InMemorySource(input, new JsonFormatter());
-            var type = inMemoryTest.GetTypeDefinition(); 
+            var type = inMemoryTest.ResolveTypeDefinition(); 
             Assert.NotNull(type);
         }
     }

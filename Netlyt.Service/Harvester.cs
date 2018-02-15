@@ -76,6 +76,13 @@ namespace Netlyt.Service
             return this;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name">The name of the integration</param>
+        /// <param name="appId">AppId key</param>
+        /// <param name="source">The input source</param>
+        /// <returns></returns>
         public DataIntegration AddIntegrationSource(string name, string appId, InputSource source)
         {
 
@@ -88,8 +95,8 @@ namespace Netlyt.Service
         /// <summary>
         /// Resolves the integration type from the input, persists it to the DB, and adds it as an integration set from the given source.
         /// </summary>
-        /// <param name="inputSource"></param>
-        /// <param name="appId"></param>
+        /// <param name="inputSource">The input to use for reading. It's registered to the api auth.</param>
+        /// <param name="appId">The api auth to which to link the integration</param>
         /// <param name="name">The name of the type that will be created</param>
         /// <param name="persist">Whether the type should be saved</param>
         /// <returns></returns>
@@ -100,7 +107,7 @@ namespace Netlyt.Service
             bool persist = true,
             string outputCollection = null)
         {
-            var integration = inputSource.GetTypeDefinition() as DataIntegration;
+            var integration = inputSource.ResolveTypeDefinition() as DataIntegration;
             if (integration==null)
             {
                 throw new Exception("Could not resolve type!");

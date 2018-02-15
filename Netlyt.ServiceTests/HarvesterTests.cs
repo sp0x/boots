@@ -85,7 +85,7 @@ namespace Netlyt.ServiceTests
             var threadCount = (uint)20;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
-            var type = fileSource.GetTypeDefinition() as DataIntegration;
+            var type = fileSource.ResolveTypeDefinition() as DataIntegration;
             
             Assert.NotNull(type);
             var appId = "123123123";

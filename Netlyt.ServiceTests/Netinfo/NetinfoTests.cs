@@ -294,12 +294,12 @@ events : elements };
 
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20); 
+            var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService, 20); 
             harvester.AddIntegrationSource("NetInfoUserFeatures_7_8", appId, source);
             var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", apiObj);
             typeDef.AddField("is_paying", typeof(int));
             DataIntegration existingTypeDef;
-            if (!_integrationService.Exists(typeDef, appId, out existingTypeDef)) typeDef.Save();
+            if (!_integrationService.IntegrationExists(typeDef, appId, out existingTypeDef)) typeDef.Save();
             else typeDef = existingTypeDef;
             var dictEval = new EvalDictionaryBlock(
                 (document) => $"{document.GetString("uuid")}_{document.GetInt("day")}",

@@ -43,12 +43,19 @@ namespace Netlyt.Service.Integration.Import
         }
         public CollectionDetails OutputCollection { get; private set; }
         
-        public DataImportTask(ApiService apiService, IntegrationService integrationService, DataImportTaskOptions options)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="apiService"></param>
+        /// <param name="integrationService"></param>
+        /// <param name="options"></param>
+         public DataImportTask(ApiService apiService, IntegrationService integrationService, DataImportTaskOptions options)
         {
             _options = options;
             string tmpGuid = Guid.NewGuid().ToString();
             _harvester = new Harvester<T>(apiService, integrationService, _options.ThreadCount);
-            _type = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey, _options.TypeName, true, tmpGuid);
+            _type = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey, 
+                _options.TypeName, true, tmpGuid);
             var outCollection = new CollectionDetails(tmpGuid, _type.GetReducedCollectionName());
             OutputCollection = outCollection;
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);

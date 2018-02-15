@@ -45,7 +45,7 @@ namespace Netlyt.Service.IntegrationSource
             return this;
         }
 
-        public override IIntegration GetTypeDefinition()
+        public override IIntegration ResolveTypeDefinition()
         {
             BsonDocument firstElement = null;
             if (_aggregate != null)

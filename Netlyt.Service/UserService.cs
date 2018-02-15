@@ -133,5 +133,12 @@ namespace Netlyt.Service
             }
             return userModel;
         }
+
+        public async Task<User> GetCurrentUser()
+        {
+            var userClaim = _contextAccessor.HttpContext.User;
+            var userObj = await GetUser(userClaim);
+            return userObj;
+        }
     }
 }

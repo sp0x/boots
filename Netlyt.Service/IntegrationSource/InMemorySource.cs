@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
@@ -14,6 +15,7 @@ namespace Netlyt.Service.IntegrationSource
         public Stream Content { get; private set; } 
         private object _lock = new object();
         private dynamic _cachedInstance;
+        private DataIntegration _cachedIntegration;
 
         public InMemorySource(string content, IInputFormatter formatter = null) : base(formatter)
         {
@@ -60,9 +62,11 @@ namespace Netlyt.Service.IntegrationSource
             yield return source;
         }
 
-        public override IIntegration GetTypeDefinition()
+        public override IIntegration ResolveTypeDefinition()
         {
-            var firstInstance = _cachedInstance = Formatter.GetIterator(Content, true);
+            if (_cachedIntegration != null) return _cachedIntegration;
+            var iterator = Formatter.GetIterator(Content, true);
+            var firstInstance = _cachedInstance = iterator.First();
             Integration.DataIntegration typeDef = null;
             if (firstInstance != null)
             {
@@ -71,7 +75,7 @@ namespace Netlyt.Service.IntegrationSource
                 typeDef.DataFormatType = Formatter.Name;
                 typeDef.SetFieldsFromType(firstInstance);
             }
-            return typeDef;
+            return _cachedIntegration = typeDef;
         }
 
         /// <summary>

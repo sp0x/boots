@@ -109,13 +109,11 @@ namespace Netlyt.Web.Controllers
             {
                 return BadRequest();
             }
-
             var integration = _integrationContext.FirstOrDefault(t => t.Id == id);
             if (integration == null)
             {
                 return NotFound();
             }
-
             //TODO: add logic to check if we're updating integrations or what
 
             _integrationContext.Update(integration);
