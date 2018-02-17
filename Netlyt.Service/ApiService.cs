@@ -76,6 +76,13 @@ namespace Netlyt.Service
             return user;
         }
 
+        public ApiAuth Create(string appId)
+        {
+            var auth = ApiAuth.Generate();
+            auth.AppId = appId;
+            Register(auth);
+            return auth;
+        }
         public void Register(ApiAuth key)
         {
             _context.ApiKeys.Add(key);

@@ -29,19 +29,19 @@ namespace Netlyt.Service.Integration.Import
     {
         private DataImportTaskOptions _options;
         private Harvester<T> _harvester;
-        private IIntegration _type;
-        public IIntegration Type
+        private DataIntegration _integration;
+        public DataIntegration Integration
         {
             get
             {
-                return _type;
+                return _integration;
             }
             private set
             {
-                _type = value;
+                _integration = value;
             }
         }
-        public CollectionDetails OutputCollection { get; private set; }
+        public DestinationCollection OutputDestinationCollection { get; private set; }
         
         /// <summary>
         /// 
@@ -54,10 +54,10 @@ namespace Netlyt.Service.Integration.Import
             _options = options;
             string tmpGuid = Guid.NewGuid().ToString();
             _harvester = new Harvester<T>(apiService, integrationService, _options.ThreadCount);
-            _type = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey, 
+            _integration = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey, 
                 _options.TypeName, true, tmpGuid);
-            var outCollection = new CollectionDetails(tmpGuid, _type.GetReducedCollectionName());
-            OutputCollection = outCollection;
+            var outCollection = new DestinationCollection(tmpGuid, _integration.GetReducedCollectionName());
+            OutputDestinationCollection = outCollection;
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
             if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit); 
         }
@@ -71,10 +71,10 @@ namespace Netlyt.Service.Integration.Import
         public async Task<DataImportResult> Import(CancellationToken? cancellationToken = null)
         {
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var rawEventsCollection = new MongoList(databaseConfiguration, OutputCollection.OutputCollection);
+            var rawEventsCollection = new MongoList(databaseConfiguration, OutputDestinationCollection.OutputCollection);
 
             rawEventsCollection.Truncate();
-            Debug.WriteLine($"Created temp collections: {rawEventsCollection.GetCollectionName()} & {OutputCollection.ReducedOutputCollection}");
+            Debug.WriteLine($"Created temp collections: {rawEventsCollection.GetCollectionName()} & {OutputDestinationCollection.ReducedOutputCollection}");
 
             var batchesInserted = 0;
             var batchSize = _options.ReadBlockSize;
@@ -111,7 +111,7 @@ namespace Netlyt.Service.Integration.Import
         {
             MapReduceExpression mapReduce = new TokenParser(new PrecedenceTokenizer().Tokenize(donutScript)).ReadMapReduce();
             MapReduceJsScript script = MapReduceJsScript.Create(mapReduce);
-            var targetCollection = OutputCollection.ReducedOutputCollection; 
+            var targetCollection = OutputDestinationCollection.ReducedOutputCollection; 
             var mapReduceOptions = new MapReduceOptions<BsonDocument, BsonDocument>
             {
                 Sort = orderBy,
@@ -120,7 +120,7 @@ namespace Netlyt.Service.Integration.Import
             };
             if (inputDocumentsLimit > 0) mapReduceOptions.Limit = inputDocumentsLimit;
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var sourceCollection = new MongoList(databaseConfiguration, OutputCollection.OutputCollection);
+            var sourceCollection = new MongoList(databaseConfiguration, OutputDestinationCollection.OutputCollection);
             await sourceCollection.Records.MapReduceAsync<BsonDocument>(script.Map, script.Reduce, mapReduceOptions);
         }
     }

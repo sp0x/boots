@@ -35,7 +35,7 @@ namespace Netlyt.Service.Data
             //            builder.Entity<DataEventRecord>().Property<DateTime>("UpdatedTimestamp");
             //            builder.Entity<SourceInfo>().Property<DateTime>("UpdatedTimestamp");
             builder.Entity<ModelRule>().HasKey(t => new {t.ModelId, t.RuleId});
-            builder.Entity<ModelIntegration>().HasKey(t => new {t.ModelId, t.IntegrationId}); 
+            builder.Entity<ModelIntegration>().HasKey(t => new {t.ModelId, t.IntegrationId});
             base.OnModelCreating(builder);
         }
 

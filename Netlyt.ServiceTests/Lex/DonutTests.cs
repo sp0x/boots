@@ -52,8 +52,10 @@ namespace Netlyt.ServiceTests.Lex
             _context = _contextFactory.Create();
             _apiService = fixture.GetService<ApiService>();
             _integrationService = fixture.GetService<IntegrationService>();
-            _appAuth = _apiService.Generate();
-            _apiService.Register(_appAuth);
+            //_appAuth = _apiService.Generate();
+            _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
+            if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
+            //_apiService.Register(_appAuth);
             _cacher = fixture.GetService<RedisCacher>();
         }
 
@@ -150,7 +152,7 @@ namespace Netlyt.ServiceTests.Lex
                 }),
                 ApiKey = _appAuth,
                 TypeName = "TestingType",
-                ThreadCount = 1, //So that we actually get predictable results with our limit!
+                //ThreadCount = 1, //So that we actually get predictable results with our limit!
                 TotalEntryLimit = entryLimit
             }.AddIndex("uuid"));
             var importResult = await importTask.Import();
@@ -162,7 +164,11 @@ namespace Netlyt.ServiceTests.Lex
             {
                 Assert.True(importResult.Data.ProcessedEntries>0);
             } 
-            importResult.Collection.Trash();
+            
+            var importTaskIntegration = importTask.Integration;
+            _integrationService.Remove(importTaskIntegration);
+            var nonExistingIntegration = _integrationService.GetById(importTaskIntegration.Id);
+            Assert.Null(nonExistingIntegration);
         }
 
         [Theory]
@@ -197,7 +203,7 @@ namespace Netlyt.ServiceTests.Lex
             var importResult = await importTask.Import();
             await importTask.Reduce(mapReduceDonut, entryLimit, Builders<BsonDocument>.Sort.Ascending("ondate"));
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var reducedCollection = new MongoList(databaseConfiguration, importTask.OutputCollection.ReducedOutputCollection);
+            var reducedCollection = new MongoList(databaseConfiguration, importTask.OutputDestinationCollection.ReducedOutputCollection);
             var reducedDocsCount = reducedCollection.Size;
             Assert.Equal(64, reducedDocsCount);
             //Cleanup

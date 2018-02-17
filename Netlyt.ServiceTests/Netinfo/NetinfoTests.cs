@@ -156,7 +156,7 @@ events : elements };
             {
                 Sort = Builders<BsonDocument>.Sort.Ascending("ondate"),
                 JavaScriptMode = true,
-                OutputOptions = MapReduceOutputOptions.Replace(importTask.OutputCollection.ReducedOutputCollection)
+                OutputOptions = MapReduceOutputOptions.Replace(importTask.OutputDestinationCollection.ReducedOutputCollection)
             };
             var reduceCursor = await importResult.Collection.Records.MapReduceAsync<BsonDocument>(map, reduce, mapReduceOptions);
         }

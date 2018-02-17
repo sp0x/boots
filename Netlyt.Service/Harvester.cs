@@ -96,13 +96,13 @@ namespace Netlyt.Service
         /// Resolves the integration type from the input, persists it to the DB, and adds it as an integration set from the given source.
         /// </summary>
         /// <param name="inputSource">The input to use for reading. It's registered to the api auth.</param>
-        /// <param name="appId">The api auth to which to link the integration</param>
+        /// <param name="appAuth">The api auth to which to link the integration</param>
         /// <param name="name">The name of the type that will be created</param>
         /// <param name="persist">Whether the type should be saved</param>
         /// <returns></returns>
-        public IIntegration AddIntegrationSource(
+        public DataIntegration AddIntegrationSource(
             InputSource inputSource,
-            ApiAuth appId,
+            ApiAuth appAuth,
             string name,
             bool persist = true,
             string outputCollection = null)
@@ -111,8 +111,12 @@ namespace Netlyt.Service
             if (integration==null)
             {
                 throw new Exception("Could not resolve type!");
-            } 
-            integration.APIKey = appId;
+            }
+            if (integration.Fields.Count == 0)
+            {
+                throw new InvalidOperationException("Integration needs to have at least 1 field.");
+            }
+            integration.APIKey = appAuth;
             integration.Collection = outputCollection;
             if (!string.IsNullOrEmpty(name))
             {

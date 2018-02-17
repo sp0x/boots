@@ -280,9 +280,9 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<long?>("DataIntegrationId");
-
                     b.Property<long?>("ExtrasId");
+
+                    b.Property<long>("IntegrationId");
 
                     b.Property<string>("Name");
 
@@ -290,9 +290,9 @@ namespace Netlyt.Service.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DataIntegrationId");
-
                     b.HasIndex("ExtrasId");
+
+                    b.HasIndex("IntegrationId");
 
                     b.ToTable("Fields");
                 });
@@ -572,13 +572,14 @@ namespace Netlyt.Service.Migrations
 
             modelBuilder.Entity("Netlyt.Service.Source.FieldDefinition", b =>
                 {
-                    b.HasOne("Netlyt.Service.Integration.DataIntegration")
-                        .WithMany("Fields")
-                        .HasForeignKey("DataIntegrationId");
-
                     b.HasOne("Netlyt.Service.Source.FieldExtras", "Extras")
                         .WithMany()
                         .HasForeignKey("ExtrasId");
+
+                    b.HasOne("Netlyt.Service.Integration.DataIntegration", "Integration")
+                        .WithMany("Fields")
+                        .HasForeignKey("IntegrationId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Netlyt.Service.Source.FieldExtra", b =>

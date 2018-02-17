@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Source;
@@ -69,7 +70,7 @@ namespace Netlyt.Service.IntegrationSource
             {
                 using (var fStream = Open())
                 {
-                    var firstInstance = _cachedInstance = Formatter.GetIterator(fStream, true);
+                    var firstInstance = _cachedInstance = Formatter.GetIterator(fStream, true).FirstOrDefault();
                     Integration.DataIntegration typedef = null;
                     if (firstInstance != null)
                     {

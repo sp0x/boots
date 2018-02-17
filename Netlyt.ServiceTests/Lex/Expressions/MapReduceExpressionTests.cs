@@ -131,7 +131,7 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             var importResult = await importTask.Import();
             await importTask.Reduce(mapReduceDonut, entryLimit, Builders<BsonDocument>.Sort.Ascending("ondate"));
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var reducedCollection = new MongoList(databaseConfiguration, importTask.OutputCollection.ReducedOutputCollection);
+            var reducedCollection = new MongoList(databaseConfiguration, importTask.OutputDestinationCollection.ReducedOutputCollection);
             var reducedDocsCount = reducedCollection.Size;
             Assert.Equal(64, reducedDocsCount);
             //Cleanup
