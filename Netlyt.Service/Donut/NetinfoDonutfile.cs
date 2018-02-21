@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using MongoDB.Bson;
 using nvoid.db.Caching;
 using nvoid.db.DB;
@@ -18,11 +19,13 @@ namespace Netlyt.Service.Donut
         /// 
         /// </summary>
         /// <param name="cacher"></param>
-        public NetinfoDonutfile(RedisCacher cacher) : base(cacher)
+        public NetinfoDonutfile(RedisCacher cacher, IServiceProvider serviceProvider) : base(cacher, serviceProvider)
         { 
         }
         
         const int META_NUMERIC_TYPE_VALUE = 1;
+        private const int META_GENDER = 1;
+        private const int META_AGE = 1;
 
         /// <summary>
         /// 
@@ -34,7 +37,17 @@ namespace Netlyt.Service.Donut
             var entry = intDoc?.Document?.Value;
             if (entry == null) return;
             var events = entry["events"] as BsonArray;
+
             var uuid = entry["uuid"].ToString();
+            var demography = Context.Demograpy.AsQueryable().FirstOrDefault(x => x["uuid"] == uuid);
+            int? age = 0;
+            char gender = '\0';
+            if (demography != null)
+            { 
+                age = demography.GetInt("age");
+                var genderStr = demography["gender"].ToString();
+                gender = genderStr.Length>0 ? genderStr[0] : '\0';
+            }
             //var userObj = Context.UserCookies.AddOrMerge(uuid, new NetinfoUserCookie {Uuid = uuid});
             foreach (var raw_event in events)
             {
@@ -48,7 +61,14 @@ namespace Netlyt.Service.Donut
                     if (string.IsNullOrEmpty(uuid)) return;
                     Context.IncrementMetaCategory(META_NUMERIC_TYPE_VALUE, metaVal);
                     Context.AddEntityMetaCategory(uuid, META_NUMERIC_TYPE_VALUE, metaVal);
-                } 
+                }
+                //Save gender
+                Context.IncrementMetaCategory(META_GENDER, new string(new char[] { gender }));
+                Context.AddEntityMetaCategory(uuid, META_GENDER, new string(new char[] { gender }));
+
+                Context.IncrementMetaCategory(META_AGE, age.ToString());
+                Context.AddEntityMetaCategory(uuid, META_AGE, age.ToString());
+
                 var pageHost = value.ToHostname();
                 var pageSelector = pageHost;
                 Context.PageStats.AddOrMerge(pageSelector, new PageStats()

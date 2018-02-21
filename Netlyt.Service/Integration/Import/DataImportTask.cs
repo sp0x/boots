@@ -55,8 +55,8 @@ namespace Netlyt.Service.Integration.Import
             string tmpGuid = Guid.NewGuid().ToString();
             _harvester = new Harvester<T>(apiService, integrationService, _options.ThreadCount);
             _integration = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey, 
-                _options.TypeName, true, tmpGuid);
-            var outCollection = new DestinationCollection(tmpGuid, _integration.GetReducedCollectionName());
+                _options.IntegrationName, true, tmpGuid);
+            var outCollection = new DestinationCollection(_integration.Collection, _integration.GetReducedCollectionName());
             OutputDestinationCollection = outCollection;
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
             if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit); 
@@ -71,10 +71,10 @@ namespace Netlyt.Service.Integration.Import
         public async Task<DataImportResult> Import(CancellationToken? cancellationToken = null)
         {
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var rawEventsCollection = new MongoList(databaseConfiguration, OutputDestinationCollection.OutputCollection);
+            var dstCollection = new MongoList(databaseConfiguration, OutputDestinationCollection.OutputCollection);
 
-            rawEventsCollection.Truncate();
-            Debug.WriteLine($"Created temp collections: {rawEventsCollection.GetCollectionName()} & {OutputDestinationCollection.ReducedOutputCollection}");
+            dstCollection.Truncate();
+            Debug.WriteLine($"Created temp collections: {dstCollection.GetCollectionName()} & {OutputDestinationCollection.ReducedOutputCollection}");
 
             var batchesInserted = 0;
             var batchSize = _options.ReadBlockSize;
@@ -86,7 +86,7 @@ namespace Netlyt.Service.Integration.Import
             var inserterBlock = new ActionBlock<IEnumerable<BsonDocument>>(x =>
             {
                 Debug.WriteLine($"Inserting batch {batchesInserted + 1} [{x.Count()}]");
-                rawEventsCollection.Records.InsertMany(x);
+                dstCollection.Records.InsertMany(x);
                 Interlocked.Increment(ref batchesInserted);
                 Debug.WriteLine($"Inserted batch {batchesInserted}");
             }, executionOptions);
@@ -95,9 +95,9 @@ namespace Netlyt.Service.Integration.Import
             await Task.WhenAll(inserterBlock.Completion, transformerBlock.Completion);
             foreach (var index in _options.IndexesToCreate)
             {
-                rawEventsCollection.EnsureIndex(index);
+                dstCollection.EnsureIndex(index);
             }
-            var output = new DataImportResult(result, rawEventsCollection); 
+            var output = new DataImportResult(result, dstCollection); 
             return output;
         }
         /// <summary>

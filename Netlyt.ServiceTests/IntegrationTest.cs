@@ -38,7 +38,7 @@ namespace Netlyt.ServiceTests
             var resBytes = Resources.ResourceManager.GetObject(file);
             var resStream = new MemoryStream(resBytes as byte[]);
             var fs = FileSource.Create(resStream, new JsonFormatter()); 
-            var type = fs.ResolveTypeDefinition();
+            var type = fs.ResolveIntegrationDefinition();
             Assert.NotNull(type);
             Assert.True(type.Fields.Count == 2); 
         }

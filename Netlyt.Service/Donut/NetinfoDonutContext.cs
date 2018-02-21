@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Dynamic;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using nvoid.db;
 using nvoid.db.Caching;
+using nvoid.Integration;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Models;
 using Netlyt.Service.Models.CacheMaps;
@@ -22,12 +27,15 @@ namespace Netlyt.Service.Donut
         public CacheSet<string> PurchasesBeforeWeekends { get; set; }
         public CacheSet<string> PurchasesInWeekends { get; set; }
 
+        [SourceFromIntegration("Demography")]
+        public DataSet<BsonDocument> Demograpy { get; set; }
+        
         /// <summary>
         /// 
         /// </summary>
         /// <param name="cacher"></param>
-        public NetinfoDonutContext(RedisCacher cacher, DataIntegration intd)
-            : base(cacher, intd)
+        public NetinfoDonutContext(RedisCacher cacher, DataIntegration intd, IServiceProvider serviceProvider)
+            : base(cacher, intd, serviceProvider)
         { 
         }
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
+using nvoid.Integration;
 using Netlyt.Data;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
@@ -89,6 +90,18 @@ namespace Netlyt.Service
         public DataIntegration GetById(long id)
         {
             return _context.Integrations.Find(id);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="contextApiAuth"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public DataIntegration GetByName(ApiAuth contextApiAuth, string name)
+        {
+            var integration = _context.Integrations.FirstOrDefault(x => x.APIKey.Id == contextApiAuth.Id && x.Name == name);
+            return integration;
         }
     }
 }

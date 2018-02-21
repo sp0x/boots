@@ -23,7 +23,7 @@ namespace Netlyt.Service.IntegrationSource
         {
         }
 
-        public override IIntegration ResolveTypeDefinition()
+        public override IIntegration ResolveIntegrationDefinition()
         {
             return null;
         }

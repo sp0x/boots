@@ -123,7 +123,7 @@ namespace Netlyt.ServiceTests.Netinfo
             {
                 Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' }),
                 ApiKey = _appId,
-                TypeName = typeName,
+                IntegrationName = typeName,
                 ThreadCount = 10
             }.AddIndex("ondate"));
             var importResult = await importTask.Import();
@@ -224,7 +224,7 @@ events : elements };
                 return x["value"] as BsonDocument;
             });
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
-            var type = harvester.AddIntegrationSource("NetInfoUserFeatures_7_8_1", _appId.AppId, source); 
+            var type = harvester.AddIntegrationSource(source, _appId, "NetInfoUserFeatures_7_8_1"); 
 
             var dictEval = new EvalDictionaryBlock(
                 (document) => $"{document.GetString("uuid")}_{document.GetInt("day")}",
@@ -295,7 +295,7 @@ events : elements };
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
             var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService, 20); 
-            harvester.AddIntegrationSource("NetInfoUserFeatures_7_8", appId, source);
+            harvester.AddIntegrationSource(source, apiObj, "NetInfoUserFeatures_7_8");
             var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", apiObj);
             typeDef.AddField("is_paying", typeof(int));
             DataIntegration existingTypeDef;
@@ -347,10 +347,9 @@ events : elements };
         [InlineData(new object[] { "IntegratedDocument" })]
         public async void ConstructTrees(string reducedSource)
         {
-            MongoSource source = MongoSource.CreateFromCollection(reducedSource, new BsonFormatter());
-            var appId = "123123123";
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20);
-            var type = harvester.AddIntegrationSource("NetInfoUserSessions_7_8", appId, source);
+            MongoSource source = MongoSource.CreateFromCollection(reducedSource, new BsonFormatter()); 
+            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20); 
+            var type = harvester.AddIntegrationSource(source, _appId, "NetInfoUserSessions_7_8");
             var batchSize = 10000;
             var updateBatchSize = (uint)10000;
             var recordLimit = 1000;

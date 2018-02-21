@@ -15,10 +15,12 @@ namespace Netlyt.Service.Lex.Generation
         private RedisCacher _cacher;
         private DataIntegration _integration;
         private Type _tContext;
+        private IServiceProvider _serviceProvider;
 
-        public DonutfileGenerator(DataIntegration integration, RedisCacher cacher)
+        public DonutfileGenerator(DataIntegration integration, RedisCacher cacher, IServiceProvider serviceProvider)
         {
             _tContext = typeof(TContext);
+            _serviceProvider = serviceProvider;
             var assembly = Assembly.GetExecutingAssembly();
             var resourceName = "Netlyt.Service.Lex.Templates.Donutfile.txt";
             _cacher = cacher;
@@ -36,8 +38,8 @@ namespace Netlyt.Service.Lex.Generation
         /// <returns></returns>
         public TDonut Generate()
         { 
-            var tobj = Activator.CreateInstance(typeof(TDonut), new[] { _cacher }) as TDonut;
-            var context = Activator.CreateInstance(_tContext, new object[]{ _cacher, _integration });
+            var tobj = Activator.CreateInstance(typeof(TDonut), new object[] { _cacher, _serviceProvider }) as TDonut;
+            var context = Activator.CreateInstance(_tContext, new object[]{ _cacher, _integration, _serviceProvider });
             tobj.Context = context as TContext; 
             return tobj;
         }

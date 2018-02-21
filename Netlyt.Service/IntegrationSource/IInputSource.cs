@@ -13,7 +13,7 @@ namespace Netlyt.Service.IntegrationSource
         long Size { get; }
         Encoding Encoding { get; set; }
         IInputFormatter Formatter { get;  }
-        IIntegration ResolveTypeDefinition();
+        IIntegration ResolveIntegrationDefinition();
         IEnumerable<dynamic> GetIterator();
         IEnumerable<T> GetIterator<T>()
             where T : class;

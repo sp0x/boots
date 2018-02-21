@@ -12,7 +12,7 @@ namespace Netlyt.Service.Donut
     public class InternalCacheSet<T> :
         CacheSet<T> where T : class
     {
-        private ICacheSetCollection _context;
+        private ISetCollection _context;
         private readonly ConcurrentDictionary<string, T> _dictionary;
         private readonly ConcurrentBag<T> _list;
         private readonly ConstructorInfo _constructor;
@@ -21,7 +21,7 @@ namespace Netlyt.Service.Donut
         private CachingPersistеnceService _cachingService;
 
         /// <inheritdoc />
-        public InternalCacheSet([NotNull] ICacheSetCollection context)
+        public InternalCacheSet([NotNull] ISetCollection context)
         {
             _context = context;
             _dictionary = new ConcurrentDictionary<string, T>();

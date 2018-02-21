@@ -6,8 +6,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using nvoid.db;
 using nvoid.db.Caching;
 using nvoid.db.Extensions;
+using nvoid.Integration;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Models;
 using Netlyt.Service.Models.CacheMaps;
@@ -18,14 +20,18 @@ namespace Netlyt.Service.Donut
     /// <summary>
     /// 
     /// </summary>
-    public class DonutContext : EntityMetaContext, ICacheSetCollection, IDisposable
+    public class DonutContext : EntityMetaContext, ISetCollection, IDisposable
     {
         private readonly object _cacheLock = new object();
         private readonly RedisCacher _cacher;
         public DataIntegration Integration { get; set; }
         private ConcurrentDictionary<string, List<HashEntry>> CurrentCache { get; set; }
         private readonly IDictionary<Type, ICacheSet> _sets = new Dictionary<Type, ICacheSet>();
+        private readonly IDictionary<Type, IDataSet> _dataSets = new Dictionary<Type, IDataSet>();
+ 
+
         public string Prefix { get; set; }
+        public ApiAuth ApiAuth { get; private set; }
         public RedisCacher Database => _cacher;
         private int _currentCacheRunIndex; 
 
@@ -33,16 +39,17 @@ namespace Netlyt.Service.Donut
         /// The entity interval on which to cache the values.
         /// </summary>
         public int CacheRunInterval { get; private set; }
-        public DonutContext(RedisCacher cacher, DataIntegration integration)
+        public DonutContext(RedisCacher cacher, DataIntegration integration, IServiceProvider serviceProvider)
         {
             _cacher = cacher;
+            ApiAuth = integration.APIKey;
             CacheRunInterval = 10000;
             _currentCacheRunIndex = 0;
             Integration = integration;
             CurrentCache = new ConcurrentDictionary<string, List<HashEntry>>();
             ConfigureCacheMap();
             Prefix = $"integration_context:{Integration.Id}";
-            new ContextSetDiscoveryService(this).Initialize();
+            new ContextSetDiscoveryService(this, serviceProvider).Initialize();
         }
 
         public void SetCacheRunInterval(int interval)
@@ -50,12 +57,22 @@ namespace Netlyt.Service.Donut
             if (interval < 0 || interval == 0) return;
             CacheRunInterval = interval;
         }
-        ICacheSet ICacheSetCollection.GetOrAddSet(ICacheSetSource source, Type type)
+        ICacheSet ISetCollection.GetOrAddSet(ICacheSetSource source, Type type)
         {
             if (!_sets.TryGetValue(type, out var set))
             {
                 set = source.Create(this, type);
                 _sets[type] = set;
+            }
+            return set;
+        }
+
+        public IDataSet GetOrAddDataSet(ICacheSetSource source, Type type)
+        {
+            if (!_dataSets.TryGetValue(type, out var set))
+            {
+                set = source.CreateDataSet(this, type);
+                _dataSets[type] = set;
             }
             return set;
         }

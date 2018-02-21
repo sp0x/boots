@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -40,6 +41,8 @@ namespace Netlyt.ServiceTests.Lex
         private IntegrationService _integrationService;
         private ApiAuth _appAuth;
         private RedisCacher _cacher;
+        private DatabaseConfiguration _dbConfig;
+        private IServiceProvider _serviceProvider;
         public const byte VisitTypedValue = 1;
 
         public DonutTests(DonutConfigurationFixture fixture)
@@ -57,6 +60,8 @@ namespace Netlyt.ServiceTests.Lex
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
             //_apiService.Register(_appAuth);
             _cacher = fixture.GetService<RedisCacher>();
+            _dbConfig = DBConfig.GetGeneralDatabase();
+            _serviceProvider = fixture.GetService<IServiceProvider>();
         }
 
         [Theory]
@@ -73,9 +78,9 @@ namespace Netlyt.ServiceTests.Lex
             source.ProgressInterval = 0.05;
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
             harvester.LimitEntries(10000);
-            var type = harvester.AddIntegrationSource("NetInfoUserFeatures_7_8_1", _appAuth.AppId, source);
+            var integration = harvester.AddIntegrationSource(source, _appAuth, "NetInfoUserFeatures_7_8_1");
             //hehe
-            var donutMachine = new DonutfileGenerator<NetinfoDonutfile, NetinfoDonutContext>(type, _cacher);
+            var donutMachine = new DonutfileGenerator<NetinfoDonutfile, NetinfoDonutContext>(integration, _cacher, _serviceProvider);
             var donut = donutMachine.Generate();
             donut.SetupCacheInterval(source.Size);
 
@@ -90,13 +95,7 @@ namespace Netlyt.ServiceTests.Lex
                 featureHelper.GetAvgTimeBetweenSessionFeatures
             }, 16);
             var featureGeneratorBlock = featureGenerator.CreateFeaturesBlock();
-
-            var demographyImporter = new EntityDataImporter(demographySheet, true);
-            demographyImporter.UseInputKey((input) => input[0]);
-            demographyImporter.SetEntityKey((input) => input.GetString("uuid"));
-            demographyImporter.JoinOn(JoinDemography);
-            demographyImporter.ReadData();
-
+            var demographyImport = await AddDemographyData(); 
             var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, IntegratedDocument>((x) =>
             {
                 var doc = x.Document;
@@ -111,15 +110,13 @@ namespace Netlyt.ServiceTests.Lex
                     doc.Document.Value.Set(name, BsonValue.Create(featureval));
                 }
                 //Cleanup
-                doc.IntegrationId = type.Id; doc.APIId = _appAuth.Id;
+                doc.IntegrationId = integration.Id; doc.APIId = _appAuth.Id;
                 x.Features = null;
                 return doc;
             });
             var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 3000);
-
-            demographyImporter.Helper = _helper;
-            metaBlock.LinkOnComplete(demographyImporter); // retoggle
-            demographyImporter.LinkTo(featureGeneratorBlock);
+             
+            //metaBlock.LinkOnComplete(demographyImporter); // retoggle
             featureGeneratorBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
             insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
@@ -132,42 +129,52 @@ namespace Netlyt.ServiceTests.Lex
             harvester.SetDestination(metaBlock);
             var result = await harvester.Run();
             Debug.WriteLine(result.ProcessedEntries);
+            demographyImport.Collection.Truncate();
         }
 
-        [Theory]
-        [InlineData(new object[] { "TestData\\Ebag\\demograpy.csv" })]
-        public async void TestDataSourceInput(string inputFile)
+        private async Task<DataImportResult> AddDemographyData()
         {
-            var currentDir = Environment.CurrentDirectory;
-            inputFile = Path.Combine(currentDir, inputFile);
-            Console.WriteLine($"Parsing data in: {inputFile}");
-            uint entryLimit = 0;
+            var inputFile = "TestData\\Ebag\\demograpy.csv";
             var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
             {
-                Source = FileSource.CreateFromFile(inputFile, new CsvFormatter()
+                Source = FileSource.CreateFromFile(Path.Combine(Environment.CurrentDirectory, inputFile), new CsvFormatter()
                 {
                     Delimiter = ',',
                     Headers = new[] { "uuid", "time", "gender", "age" },
                     SkipHeader = true
                 }),
                 ApiKey = _appAuth,
-                TypeName = "TestingType",
+                IntegrationName = "Demography",
+            }.AddIndex("uuid"));
+            var collection = new MongoList(_dbConfig, importTask.Integration.Collection);
+            collection.Truncate();
+            var importResult = await importTask.Import();
+            return importResult;
+        }
+
+
+        [Theory]
+        [InlineData(new object[] { "TestData\\Ebag\\demograpy.csv" })]
+        public async void TestDataSourceInput(string inputFile)
+        {  
+            uint entryLimit = 0;
+            var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
+            {
+                Source = FileSource.CreateFromFile(Path.Combine(Environment.CurrentDirectory, inputFile), new CsvFormatter()
+                {
+                    Delimiter = ',', Headers = new[] { "uuid", "time", "gender", "age" }, SkipHeader = true
+                }),
+                ApiKey = _appAuth,
+                IntegrationName = "TestingType",
                 //ThreadCount = 1, //So that we actually get predictable results with our limit!
                 TotalEntryLimit = entryLimit
             }.AddIndex("uuid"));
             var importResult = await importTask.Import();
-            if (entryLimit > 0)
-            {
-                Assert.True(entryLimit == importResult.Data.ProcessedEntries);
-            }
-            else
-            {
-                Assert.True(importResult.Data.ProcessedEntries>0);
-            } 
-            
-            var importTaskIntegration = importTask.Integration;
-            _integrationService.Remove(importTaskIntegration);
-            var nonExistingIntegration = _integrationService.GetById(importTaskIntegration.Id);
+
+            if (entryLimit > 0) Assert.True(entryLimit == importResult.Data.ProcessedEntries);
+            else Assert.True(importResult.Data.ProcessedEntries>0); 
+            _integrationService.Remove(importTask.Integration);
+            var nonExistingIntegration = _integrationService.GetById(importTask.Integration.Id);
             Assert.Null(nonExistingIntegration);
         }
 
@@ -196,7 +203,7 @@ namespace Netlyt.ServiceTests.Lex
             {
                 Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' }),
                 ApiKey = _appAuth,
-                TypeName = "TestingType",
+                IntegrationName = "TestingType",
                 ThreadCount = 1, //So that we actually get predictable results with our limit!
                 TotalEntryLimit = entryLimit
             }.AddIndex("ondate"));

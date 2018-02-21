@@ -62,7 +62,7 @@ namespace Netlyt.Service.IntegrationSource
             yield return source;
         }
 
-        public override IIntegration ResolveTypeDefinition()
+        public override IIntegration ResolveIntegrationDefinition()
         {
             if (_cachedIntegration != null) return _cachedIntegration;
             var iterator = Formatter.GetIterator(Content, true);

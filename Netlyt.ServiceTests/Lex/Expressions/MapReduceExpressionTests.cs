@@ -124,7 +124,7 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             {
                 Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' }),
                 ApiKey = _appId,
-                TypeName = "TestingType",
+                IntegrationName = "TestingType",
                 ThreadCount = 1, //So that we actually get predictable results with our limit!
                 TotalEntryLimit = entryLimit
             }.AddIndex("ondate"));

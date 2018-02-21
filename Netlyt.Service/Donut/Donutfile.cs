@@ -10,8 +10,11 @@ namespace Netlyt.Service.Donut
         where TContext : DonutContext
     {
         public TContext Context { get; set; }
-        public Donutfile(RedisCacher cacher)
-        { 
+        private IntegrationService _integrationService;
+
+        public Donutfile(RedisCacher cacher, IServiceProvider serviceProvider)
+        {
+            _integrationService = serviceProvider.GetService(typeof(IntegrationService)) as IntegrationService;
         }
 
         public virtual void SetupCacheInterval(long totalIntegrationSize)

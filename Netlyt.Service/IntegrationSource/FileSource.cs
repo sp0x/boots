@@ -64,7 +64,7 @@ namespace Netlyt.Service.IntegrationSource
         ///     Gets the type definition of this source.
         /// </summary>
         /// <returns></returns>
-        public override IIntegration ResolveTypeDefinition()
+        public override IIntegration ResolveIntegrationDefinition()
         {
             try
             {

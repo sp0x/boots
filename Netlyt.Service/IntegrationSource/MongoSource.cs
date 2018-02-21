@@ -45,16 +45,16 @@ namespace Netlyt.Service.IntegrationSource
             return this;
         }
 
-        public override IIntegration ResolveTypeDefinition()
+        public override IIntegration ResolveIntegrationDefinition()
         {
             BsonDocument firstElement = null;
             if (_aggregate != null)
             {
-                firstElement = _aggregate.First();
+                firstElement = _aggregate.First() ;
             }
             else
             {
-                _collection.Find(Builders<BsonDocument>.Filter.Empty).First();
+                firstElement = _collection.Find(Builders<BsonDocument>.Filter.Empty).First();
             }
             try
             {
@@ -66,7 +66,8 @@ namespace Netlyt.Service.IntegrationSource
                     typedef = new Integration.DataIntegration(_collection.CollectionNamespace.CollectionName);
                     typedef.DataEncoding = Encoding.CodePage;
                     typedef.DataFormatType = Formatter.Name;
-                    typedef.SetFieldsFromType(firstInstance);
+                    var instanceExpandoObj = BsonSerializer.Deserialize<ExpandoObject>(firstInstance);
+                    typedef.SetFieldsFromType(instanceExpandoObj);
                 }
                 return typedef;
             }

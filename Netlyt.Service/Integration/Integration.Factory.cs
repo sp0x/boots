@@ -19,7 +19,7 @@ namespace Netlyt.Service.Integration
             /// <returns></returns>
             public static Service.Integration.DataIntegration CreateFromSource(IInputSource fileSrc)
             {
-                var structure = fileSrc.ResolveTypeDefinition();
+                var structure = fileSrc.ResolveIntegrationDefinition();
                 return structure as Service.Integration.DataIntegration;
             }
 

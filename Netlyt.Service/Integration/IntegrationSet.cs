@@ -10,7 +10,7 @@ namespace Netlyt.Service.Integration
     /// </summary>
     public class IntegrationSet
     {
-        public IIntegration Definition { get; set; }
+        public IIntegration Definition { get; private set; }
         public InputSource Source { get; set; }
 
         public IntegrationSet(IIntegration inputDef, InputSource source)

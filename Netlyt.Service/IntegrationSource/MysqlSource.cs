@@ -13,7 +13,7 @@ namespace Netlyt.Service.IntegrationSource
         public MysqlSource(IInputFormatter formatter) : base(formatter)
         {
         }
-        public override IIntegration ResolveTypeDefinition()
+        public override IIntegration ResolveIntegrationDefinition()
         {
             throw new System.NotImplementedException();
         }

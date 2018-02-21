@@ -35,7 +35,7 @@ namespace Netlyt.Service
             //TODO: Resolve the formatter..
             var formatter = ResolveFormatter();
             var source = InMemorySource.Create(inputData, formatter);
-            DataIntegration integrationInfo = source.ResolveTypeDefinition() as DataIntegration;
+            DataIntegration integrationInfo = source.ResolveIntegrationDefinition() as DataIntegration;
             if (integrationInfo == null)
             {
                 throw new Exception("No integration found!");
@@ -45,7 +45,7 @@ namespace Netlyt.Service
 
             options.Source = source;
             options.ApiKey = apiKey;
-            options.TypeName = integrationInfo.Name;
+            options.IntegrationName = integrationInfo.Name;
             
             var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, options);
             var result = await importTask.Import();

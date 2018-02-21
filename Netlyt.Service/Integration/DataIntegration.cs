@@ -20,9 +20,7 @@ namespace Netlyt.Service.Integration
         public User Owner { get; set; }
         public string FeatureScript { get; set; }
         public string Name { get; set; }        
-        public int DataEncoding { get; set; }
-        [ForeignKey("APIKey")]
-        public long APIKeyId { get; set; }
+        public int DataEncoding { get; set; } 
         public virtual ApiAuth APIKey { get; set; } 
         public long? PublicKeyId { get; set; }
         public virtual ApiAuth PublicKey { get; set; }
@@ -64,9 +62,10 @@ namespace Netlyt.Service.Integration
             if (instance == null) throw new ArgumentNullException(nameof(instance));
             Fields = new List<FieldDefinition>();
             var type = typeof(T);
-            if (instance is ExpandoObject)
+            ExpandoObject xpObj = instance as ExpandoObject;
+            if (xpObj !=null)
             {
-                var fields = instance as IDictionary<string, object>;
+                var fields = xpObj as IDictionary<string, object>;
                 foreach (var memberName in fields.Keys)
                 {
                     var value = fields[memberName];

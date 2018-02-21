@@ -9,5 +9,6 @@ namespace Netlyt.Service.Source
         public ICollection<FieldExtra> Extra { get; set; } 
         public bool Unique { get; set; }
         public bool Nullable { get; set; }
+        public FieldDefinition Field { get; set; }
     }
 }

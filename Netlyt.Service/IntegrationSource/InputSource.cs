@@ -36,7 +36,7 @@ namespace Netlyt.Service.IntegrationSource
             this.Formatter = formatter;
         }
 
-        public abstract IIntegration ResolveTypeDefinition();
+        public abstract IIntegration ResolveIntegrationDefinition();
         public abstract IEnumerable<dynamic> GetIterator();
 
         public IEnumerable<T> GetIterator<T>()

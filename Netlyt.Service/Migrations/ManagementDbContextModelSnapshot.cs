@@ -280,8 +280,6 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<long?>("ExtrasId");
-
                     b.Property<long>("IntegrationId");
 
                     b.Property<string>("Name");
@@ -289,8 +287,6 @@ namespace Netlyt.Service.Migrations
                     b.Property<string>("Type");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ExtrasId");
 
                     b.HasIndex("IntegrationId");
 
@@ -304,6 +300,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<long?>("FieldExtrasId");
 
+                    b.Property<long?>("FieldId");
+
                     b.Property<string>("Key");
 
                     b.Property<string>("Value");
@@ -311,6 +309,8 @@ namespace Netlyt.Service.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FieldExtrasId");
+
+                    b.HasIndex("FieldId");
 
                     b.ToTable("FieldExtra");
                 });
@@ -320,11 +320,16 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
+                    b.Property<long?>("FieldId");
+
                     b.Property<bool>("Nullable");
 
                     b.Property<bool>("Unique");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FieldId")
+                        .IsUnique();
 
                     b.ToTable("FieldExtras");
                 });
@@ -572,10 +577,6 @@ namespace Netlyt.Service.Migrations
 
             modelBuilder.Entity("Netlyt.Service.Source.FieldDefinition", b =>
                 {
-                    b.HasOne("Netlyt.Service.Source.FieldExtras", "Extras")
-                        .WithMany()
-                        .HasForeignKey("ExtrasId");
-
                     b.HasOne("Netlyt.Service.Integration.DataIntegration", "Integration")
                         .WithMany("Fields")
                         .HasForeignKey("IntegrationId")
@@ -587,6 +588,17 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Service.Source.FieldExtras")
                         .WithMany("Extra")
                         .HasForeignKey("FieldExtrasId");
+
+                    b.HasOne("Netlyt.Service.Source.FieldDefinition", "Field")
+                        .WithMany()
+                        .HasForeignKey("FieldId");
+                });
+
+            modelBuilder.Entity("Netlyt.Service.Source.FieldExtras", b =>
+                {
+                    b.HasOne("Netlyt.Service.Source.FieldDefinition", "Field")
+                        .WithOne("Extras")
+                        .HasForeignKey("Netlyt.Service.Source.FieldExtras", "FieldId");
                 });
 
             modelBuilder.Entity("Netlyt.Service.User", b =>
