@@ -168,8 +168,7 @@ namespace Netlyt.Service
             int shardsUsed;
             var totalItemsUsed = ProcessInputShards(parallelOptions, out shardsUsed);
             //Let the dest know that we're finished passing data to it, so that it could complete.
-            Destination.Complete(); 
-            //_stopwatch.Stop(); 
+            Destination.Complete();  
             var flowCompletion = Destination.FlowCompletion();
             return flowCompletion.ContinueWith(continuationFunction: (t) =>
             {

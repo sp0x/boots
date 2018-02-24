@@ -30,8 +30,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
 {
     [Collection("Entity Parsers")]
     public class IntegrationBlockTests
-    {
-        private static string AppId = "123123123";
+    { 
 
         private DynamicContextFactory _contextFactory;
         private ApiService _apiService;
@@ -54,12 +53,38 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, "TestData\\Ebag\\1156");
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
-            var apiObj = _apiService.GetApi(AppId);
+            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount); 
             harvester.LimitEntries((uint)limit); 
-            harvester.AddIntegrationSource(fileSource, apiObj, null, false);
+            harvester.AddIntegrationSource(fileSource, _apiAuth, null, false);
             return harvester;
         }
+
+        [Fact]
+        public async void TestContinueWithChain()
+        {
+            var harv = GetHarvester();
+            var cnt = 0;
+            var str = "";
+            var metaBlock = new MemberVisitingBlock(new Action<IntegratedDocument>(x =>
+            { 
+            }));
+            //Simple increment, because the continuations should run sequentially, not in parallel.
+            metaBlock.ContinueWith(() =>
+                {
+                    str += "lo";
+                    cnt++;
+                })
+                .ContinueWith(() => {
+                    str += "l";
+                    cnt++;
+                });
+            harv.SetDestination(metaBlock);
+            harv.LimitEntries(100);
+            var results = await harv.Run();
+            Assert.Equal(2, cnt); 
+            Assert.Equal("lol", str); 
+        }
+
         [Fact]
         public async void TestSimple()
         {
@@ -269,7 +294,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             featuresBlock.LinkTo(updateCreator, new DataflowLinkOptions() { PropagateCompletion = true });
             updateCreator.LinkTo(updateBatcher, new DataflowLinkOptions() { PropagateCompletion = true });
             updateBatcher.LinkTo(updateApplier, new DataflowLinkOptions() { PropagateCompletion = true });
-            grouper.AddFlowCompletionTask(updateApplier.Completion);
+            grouper.AddCompletionTask(updateApplier.Completion);
             grouper.LinkOnCompleteEx(featuresBlock);
             
             //grouper.OnProcessingCompletion(()=>featuresBlock.Complete());

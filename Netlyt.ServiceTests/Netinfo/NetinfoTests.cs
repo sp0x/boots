@@ -23,8 +23,7 @@ using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.IntegrationSource;
 using Netlyt.Service.Models;
-using Netlyt.Service.Time;
-using Netlyt.ServiceTests.IntegrationSource;
+using Netlyt.Service.Time; 
 using Xunit;
 using Netlyt.Service.Integration.Import;
 using Netlyt.Service.Models.Netinfo;
@@ -38,21 +37,17 @@ namespace Netlyt.ServiceTests.Netinfo
         private ConfigurationFixture _config;
         private CrossSiteAnalyticsHelper _helper;
         private IMongoCollection<IntegratedDocument> _documentStore;
-        private ApiAuth _appId; 
-        private DateHelper _dateHelper;
+        private ApiAuth _appId;  
         private DynamicContextFactory _contextFactory;
-        private ApiService _apiService;
-        private ManagementDbContext _context;
+        private ApiService _apiService; 
         private IntegrationService _integrationService;
 
         public NetinfoTests(ConfigurationFixture fixture)
         {
             _config = fixture;
             _helper = new CrossSiteAnalyticsHelper();
-            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().AsMongoDbQueryable();
-            _dateHelper = new DateHelper();
-            _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
-            _context = _contextFactory.Create();
+            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().AsMongoDbQueryable(); 
+            _contextFactory = new DynamicContextFactory(() => _config.CreateContext()); 
             _apiService = fixture.GetService<ApiService>(); 
             _integrationService = fixture.GetService<IntegrationService>();
             _appId = _apiService.Generate();
@@ -199,8 +194,8 @@ events : elements };
             var featuresBlock = featureGenerator.CreateFeaturesBlock();
             featuresBlock.LinkTo(updateCreator);
             updateCreator.LinkTo(updateBatcher.Block);
-            grouper.AddFlowCompletionTask(featuresBlock.Completion);
-            grouper.AddFlowCompletionTask(updateBatcher.Block.Completion);
+            grouper.AddCompletionTask(featuresBlock.Completion);
+            grouper.AddCompletionTask(updateBatcher.Block.Completion);
             grouper.LinkOnComplete(new TransformBlock<IntegratedDocument, IntegratedDocument>(doc =>
             {
                 featuresBlock.Post(doc);
@@ -274,7 +269,7 @@ events : elements };
             featureGeneratorBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true }); 
             insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions{ PropagateCompletion = true}); 
 
-            dictEval.AddFlowCompletionTask(insertBatcher.Completion);
+            dictEval.AddCompletionTask(insertBatcher.Completion);
             
             harvester.SetDestination(dictEval);
             var result = await harvester.Run();
@@ -332,8 +327,8 @@ events : elements };
             
             dictEval.LinkOnCompleteEx(sessionDocBlock);
             sessionDocBlock.LinkTo(sessionBatcher.BatchBlock, new DataflowLinkOptions{ PropagateCompletion=true });
-            dictEval.AddFlowCompletionTask(sessionBatcher.Completion);
-            dictEval.AddFlowCompletionTask(sessionDocBlock.Completion);
+            dictEval.AddCompletionTask(sessionBatcher.Completion);
+            dictEval.AddCompletionTask(sessionDocBlock.Completion);
             harvester.SetDestination(dictEval);
             var syncResults = await harvester.Run();
             var syncDuration = harvester.ElapsedTime();
@@ -419,7 +414,7 @@ events : elements };
             updateCreator.LinkTo(updateBatch.Block, new DataflowLinkOptions { PropagateCompletion = true });
             //updateBatch.LinkToEnd(new DataflowLinkOptions { PropagateCompletion = true});
 
-            builder.AddFlowCompletionTask(updateBatch.Block.Completion);
+            builder.AddCompletionTask(updateBatch.Block.Completion);
             harvester.SetDestination(builder);
             var results = await harvester.Run();
             Assert.True(results.ProcessedEntries == recordLimit);
@@ -643,13 +638,7 @@ events : elements };
                 accumulator["is_paying"] = 1;
             }
             return newEntry;
-        }
-
-        private object AccumulateEntry(IntegratedDocument accumulator, BsonDocument newEntry,
-            bool appendEvent = true)
-        {
-            return accumulator;
-        }
+        } 
 
 
         private object AccumulateUserDocument(IntegratedDocument accumulator, BsonDocument newEntry, bool appendEvent = true)

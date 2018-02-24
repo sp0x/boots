@@ -1,14 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Dynamic;
+using System.Collections.Generic; 
 using System.IO;
 using System.Linq;
 using System.Threading;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Driver;
-using Netlyt.Service.Source;
+using MongoDB.Bson; 
+using MongoDB.Driver; 
 
 namespace Netlyt.Service.Format
 {
@@ -74,6 +70,7 @@ namespace Netlyt.Service.Format
                     }
                     GetCache(false); 
                 };
+                _position = _position;
                 //var element = _elementCache[_position];
                 //var output = BsonSerializer.Deserialize<ExpandoObject>(element);
                 //return element;

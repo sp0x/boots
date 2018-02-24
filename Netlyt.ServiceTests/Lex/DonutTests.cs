@@ -114,13 +114,18 @@ namespace Netlyt.ServiceTests.Lex
                 x.Features = null;
                 return doc;
             });
-            var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 3000);
-             
-            //metaBlock.LinkOnComplete(demographyImporter); // retoggle
+            var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 3000); 
+            metaBlock.ContinueWith(() =>
+            {
+                //Meta has passed, now generate our features
+                featureGeneratorBlock.Post(null);
+                featureGeneratorBlock.Complete();
+            });
             featureGeneratorBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
             insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
-
-            metaBlock.AddFlowCompletionTask(insertBatcher.Completion); //retoggle
+            metaBlock.AddCompletionTask(featureGeneratorBlock.Completion);
+            //metaBlock.AddCompletionTask(featureGeneratorBlock.Completion);
+            //metaBlock.AddCompletionTask(insertBatcher.Completion); //retoggle
             //harvester
             //->unpack reduced events
             //->pass each event through AccumulateUserDocument to collect stats
