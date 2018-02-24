@@ -4,6 +4,7 @@ using System.Linq;
 using MongoDB.Bson;
 using nvoid.db.Caching;
 using nvoid.db.DB;
+using nvoid.exec.Blocks;
 using nvoid.extensions;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Models;
@@ -20,7 +21,8 @@ namespace Netlyt.Service.Donut
         /// </summary>
         /// <param name="cacher"></param>
         public NetinfoDonutfile(RedisCacher cacher, IServiceProvider serviceProvider) : base(cacher, serviceProvider)
-        { 
+        {
+            ReplayInputOnFeatures = true;
         }
         
         const int META_NUMERIC_TYPE_VALUE = 1;
@@ -28,10 +30,10 @@ namespace Netlyt.Service.Donut
         private const int META_AGE = 1;
 
         /// <summary>
-        /// 
+        /// Gather all the data and create any kinds of stats
         /// </summary> 
         /// <param name="intDoc"></param>
-        public void ProcessRecord(IntegratedDocument intDoc)
+        public override void ProcessRecord(IntegratedDocument intDoc)
         {
             //TODO: Use meta categories for age, gender, agePurchased, genderPurchased groups because we just need the count (we can use the value also with meta values)
             var entry = intDoc?.Document?.Value;

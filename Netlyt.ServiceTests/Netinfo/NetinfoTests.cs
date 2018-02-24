@@ -493,7 +493,7 @@ events : elements };
             cachedReducer.LinkTo(DataflowBlock.NullTarget<ExpandoObject>());
 
 
-            var helper = new CrossSiteAnalyticsHelper();//grouper.GetBuffer());
+            var helper = new CrossSiteAnalyticsHelper();//grouper.GetInputBlock());
             var featureHelper = new FeatureGeneratorHelper() { Helper = helper, TargetDomain = "ebag.bg" };
 //            var featureGenerator = new FeatureGenerator<ExpandoObject>(featureHelper.GetFeatures, 12);
 //            featureGenerator.AddGenerator(featureHelper.GetAvgTimeBetweenSessionFeatures);
@@ -527,7 +527,7 @@ events : elements };
 
             harvester.AddType(type, fileSource);
             harvester.SetDestination(cachedReducer);
-            //var res1 = await harvester.ReadAll(grouper.GetBuffer());
+            //var res1 = await harvester.ReadAll(grouper.GetInputBlock());
             var result = await harvester.Run();
 //            Console.ReadLine();
         }

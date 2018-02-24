@@ -26,7 +26,7 @@ namespace Netlyt.Service.Analytics
 //            var flowOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = batchSize };
 //            var transformer = new TransformBlock<dynamic, IntegratedDocument>((dynamic x) => IntegratedDocument.Wrap(x) as Task<IntegratedDocument>, flowOptions);
 //            transformer.LinkTo(batchDest, new DataflowLinkOptions { PropagateCompletion = true });
-//            batchDest.LinkTo(builder.GetBuffer(), new DataflowLinkOptions { PropagateCompletion = true });
+//            batchDest.LinkTo(builder.GetInputBlock(), new DataflowLinkOptions { PropagateCompletion = true });
         }
 
         /// <summary>

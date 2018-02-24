@@ -46,7 +46,7 @@ namespace Netlyt.Service
         /// The destination to which documents will be dispatched
         /// </summary>
         public IFlowBlock<TDocument> Destination { get; private set; }
-        public ITargetBlock<TDocument> DestinationBlock { get; private set; }
+        //public ITargetBlock<TDocument> DestinationBlock { get; private set; }
 
         protected uint ShardLimit => _shardLimit;
         protected uint TotalEntryLimit => _totalEntryLimit;
@@ -141,11 +141,11 @@ namespace Netlyt.Service
             return this;
         }
 
-        public Harvester<TDocument> SetDestination(ITargetBlock<TDocument> dest)
-        {
-            DestinationBlock = dest;
-            return this;
-        }
+//        public Harvester<TDocument> SetDestination(ITargetBlock<TDocument> dest)
+//        {
+//            DestinationBlock = dest;
+//            return this;
+//        }
 
         private void ResetStopwatch()
         { 
@@ -168,7 +168,7 @@ namespace Netlyt.Service
             int shardsUsed;
             var totalItemsUsed = ProcessInputShards(parallelOptions, out shardsUsed);
             //Let the dest know that we're finished passing data to it, so that it could complete.
-            Destination.Complete();  
+            if(Destination!=null) Destination.Complete();   
             var flowCompletion = Destination.FlowCompletion();
             return flowCompletion.ContinueWith(continuationFunction: (t) =>
             {
@@ -335,6 +335,7 @@ namespace Netlyt.Service
                         var threadId = Thread.CurrentThread.ManagedThreadId;
                         Debug.WriteLine($"[T{threadId}]Harvester reading: {sourceShard}");
 #endif
+                        var destinationBlock = Destination.GetInputBlock();
                         using (sourceShard)
                         {
                             if (sourceShard.SupportsSeeking)
@@ -345,6 +346,7 @@ namespace Netlyt.Service
                                     var entriesLeft = TotalEntryLimit - totalItemsUsed;
                                     elements = elements.Take((int)entriesLeft);
                                 }
+
                                 Parallel.ForEach(elements, parallelOptions, (entry, itemLoopState, itemIndex) =>
                                 { 
                                     if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit)
@@ -355,7 +357,7 @@ namespace Netlyt.Service
                                     var document = itemSet.Wrap(entry);
                                     if (Destination == null)
                                     {
-                                        nvoid.exec.Blocks.Extensions.SendChecked(DestinationBlock, document, null);
+                                        nvoid.exec.Blocks.Extensions.SendChecked(destinationBlock, document, null);
                                     }
                                     else
                                     {
@@ -384,7 +386,7 @@ namespace Netlyt.Service
                                     Task<bool> sendTask = null;
                                     if (Destination == null)
                                     {
-                                        sendTask = DataflowBlock.SendAsync<TDocument>(DestinationBlock, valueToSend);
+                                        sendTask = DataflowBlock.SendAsync<TDocument>(destinationBlock, valueToSend);
                                     }
                                     else
                                     {
