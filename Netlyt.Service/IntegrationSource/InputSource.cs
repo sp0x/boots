@@ -113,5 +113,10 @@ namespace Netlyt.Service.IntegrationSource
         public virtual void Cleanup()
         { 
         }
+
+        public virtual void Reset()
+        {
+            Formatter.Reset();
+        }
     }
 }

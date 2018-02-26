@@ -37,6 +37,10 @@ namespace Netlyt.Service.Integration
             return base.GetHashCode();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<IntegratedDocument> AsEnumerable()
         {
             var iter = Source.GetIterator();
@@ -47,21 +51,8 @@ namespace Netlyt.Service.Integration
                 doc.IntegrationId = Definition.Id;
                 yield return doc;
             }
-        }
-        //
-        //        /// <summary>
-        //        /// Reads the next available item from this set
-        //        /// </summary>
-        //        /// <returns></returns>
-        //        public IntegratedDocument Read()
-        //        {
-        //            var entry = Source.GetIterator();
-        //            if (entry == null) return null;
-        //            var doc = new IntegratedDocument();
-        //            doc.SetDocument(entry);
-        //            doc.IntegrationId = Definition.Id;
-        //            return doc;
-        //        }
+        } 
+
         /// <summary>
         /// Wraps the data in an integration document
         /// </summary>
@@ -70,6 +61,11 @@ namespace Netlyt.Service.Integration
         public IntegratedDocument Wrap(dynamic data)
         {
             return Definition.CreateDocument(data);
+        }
+
+        public void Reset()
+        {
+            Source.Reset();
         }
     }
 }

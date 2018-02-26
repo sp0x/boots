@@ -8,8 +8,7 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Format
 {
-    public class JsonFormatter 
-        : IInputFormatter
+    public class JsonFormatter : IInputFormatter
     {
         public LineMode LineMode { get; set; }
         public string Name => "Json";
@@ -104,6 +103,11 @@ namespace Netlyt.Service.Format
         {
             var jsf = new JsonFormatter();
             return jsf;
+        }
+
+        public void Reset()
+        {
+            throw new NotImplementedException();
         }
 
         public long Position()

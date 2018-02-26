@@ -36,6 +36,13 @@ namespace Netlyt.Service.Format
 
         
         public string Name { get; } = "BsonFormatter";
+        public void Reset()
+        {
+            _position = 0;
+            _passedElements = 0;
+            GetCache(true);
+        }
+
         public long Position()
         {
             return _passedElements + _position;
@@ -85,14 +92,14 @@ namespace Netlyt.Service.Format
         {
             lock (_lock)
             {
-                _elementCache?.Clear();
                 if (_cursor == null || reset)
                 {
                     _cursor = _finder.ToCursor();
                     _elementCache = _cursor.MoveNext() ? _cursor.Current.ToList() : new List<BsonDocument>();
                 }
                 if (_elementCache != null && _position >= _elementCache.Count())
-                { 
+                {
+                    _elementCache?.Clear();
                     _elementCache = _cursor.MoveNext() ? _cursor.Current.ToList() : new List<BsonDocument>();
                     _passedElements += _position;
                     _position = 0;

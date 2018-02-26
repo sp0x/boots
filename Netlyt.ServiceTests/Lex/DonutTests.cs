@@ -97,36 +97,14 @@ namespace Netlyt.ServiceTests.Lex
             //Setup third sources and import blocks 
             _helper = new CrossSiteAnalyticsHelper();
             //Import any data that we need beforehand, because we'll used it in this flow.
-            var demographyImport = await AddDemographyData();
-            var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, IntegratedDocument>((x) =>
-            {
-                var doc = x.Document;
-                //Cleanup
-                doc.Document.Value.Remove("events");
-                doc.Document.Value.Remove("browsing_statistics");
-                foreach (var featurePair in x.Features)
-                {
-                    var name = featurePair.Key;
-                    if (string.IsNullOrEmpty(name)) continue;
-                    var featureval = featurePair.Value;
-                    doc.Document.Value.Set(name, BsonValue.Create(featureval));
-                }
-                //Cleanup
-                doc.IntegrationId = integration.Id; doc.APIId = _appAuth.Id;
-                x.Features = null;
-                return doc;
-            });
-            var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 3000);
-            insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
+            var demographyImport = await AddDemographyData(); 
 
             //Donut
             //hehe
             var donutMachine = new DonutfileGenerator<NetinfoDonutfile, NetinfoDonutContext>(integration, _cacher, _serviceProvider);
             var donut = donutMachine.Generate();
             donut.SetupCacheInterval(source.Size);
-            //Create our donut block.
-            var donutBlock = donut.CreateDataflowBlock(GetFeatureGenerator());
-            donutBlock.FeaturePropagator.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
+            //Create our donut block. 
             //metaBlock.AddCompletionTask(featureGeneratorBlock.Completion);
             //metaBlock.AddCompletionTask(insertBatcher.Completion); //retoggle
             //harvester
@@ -134,8 +112,9 @@ namespace Netlyt.ServiceTests.Lex
             //->pass each event through AccumulateUserDocument to collect stats
             //->bing in demographic data to the already grouped userbase
             //->pass the day_user document through FeatureGenerator to create it's features
-            harvester.SetDestination(donutBlock.FlowBlock);
-            var result = await harvester.Run();
+            var donutRunner = new DonutRunner<NetinfoDonutfile, NetinfoDonutContext>(harvester);
+            var result = await donutRunner.Run(donut, GetFeatureGenerator()); 
+            
             Debug.WriteLine(result.ProcessedEntries);
             demographyImport.Collection.Truncate();
         }

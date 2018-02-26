@@ -62,7 +62,19 @@ namespace Netlyt.Service
             _apiService = apiService;
             _integrationService = integrationService;
         }
-        
+
+        /// <summary>
+        /// Resets all input sources.
+        /// </summary>
+        public void Reset()
+        {
+            ResetStopwatch();
+            foreach (var set in IntegrationSets)
+            {
+                set.Reset();
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>

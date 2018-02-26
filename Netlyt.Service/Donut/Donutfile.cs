@@ -15,12 +15,11 @@ namespace Netlyt.Service.Donut
     {
         public TContext Context { get; set; }
         private IntegrationService _integrationService;
-        private IPropagatorBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>> _featuresBlock;
 
         /// <summary>
         /// If true, all initial input is replayed in the feature extraction step.
         /// </summary>
-        protected bool ReplayInputOnFeatures { get; set; }
+        public bool ReplayInputOnFeatures { get; protected set; }
 
         /// <summary>
         /// 
@@ -48,26 +47,19 @@ namespace Netlyt.Service.Donut
         /// 
         /// </summary>
         /// <returns></returns>
-        public DonutBlock
-            CreateDataflowBlock(FeatureGenerator<IntegratedDocument> featureGen)
+        public DonutBlock CreateDataflowBlock(FeatureGenerator<IntegratedDocument> featureGen)
         {
-            _featuresBlock = featureGen.CreateFeaturesBlock(); 
-            var metaBlock = new MemberVisitingBlock(this.ProcessRecord);
-            metaBlock.ContinueWith(RunFeatureExtraction);
+            var featuresBlock = featureGen.CreateFeaturesBlock(); 
+            var metaBlock = new MemberVisitingBlock(ProcessRecord);
+            //metaBlock.ContinueWith(RunFeatureExtraction);
             //_featuresBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
             //insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            metaBlock.AddCompletionTask(_featuresBlock.Completion);
-            var metaBlockInternal = metaBlock.GetInputBlock();
+            //metaBlock.AddCompletionTask(featuresBlock.Completion);
+            //var metaBlockInternal = metaBlock.GetInputBlock();
             //Encapsulate our input and features block, so they're usable.
-            var resultingBlock = DataflowBlock.Encapsulate<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>(metaBlockInternal, _featuresBlock);
-            return new DonutBlock(metaBlock, resultingBlock);
-        }
-
-        private void RunFeatureExtraction()
-        {
-            _featuresBlock.Post(null);
-            _featuresBlock.Complete();
-        }
+            //var resultingBlock = DataflowBlock.Encapsulate<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>(metaBlockInternal, featuresBlock);
+            return new DonutBlock(metaBlock, featuresBlock);
+        } 
 
         protected virtual void Dispose(bool disposing)
         {

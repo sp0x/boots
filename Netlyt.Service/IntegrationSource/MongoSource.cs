@@ -158,6 +158,7 @@ namespace Netlyt.Service.IntegrationSource
                 Formatter.Dispose();
                 //_cursor.Dispose();
             }
+            _lastProgress = 0;
         }
 
         public override IEnumerable<InputSource> Shards()
@@ -208,6 +209,12 @@ namespace Netlyt.Service.IntegrationSource
         {
             var aggregateArgs = new AggregateOptions { AllowDiskUse = true };
             return _collection.Aggregate< BsonDocument>(aggregateArgs); 
+        }
+
+        public override void Reset()
+        {
+            Cleanup();
+            base.Reset();
         }
     }
 }

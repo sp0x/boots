@@ -105,6 +105,11 @@ namespace Netlyt.Service.Format
             return formatter;
         }
 
+        public void Reset()
+        {
+            throw new NotImplementedException();
+        }
+
         public long Position()
         {
             return _position;

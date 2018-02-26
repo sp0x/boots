@@ -66,10 +66,10 @@ namespace Netlyt.Service.Integration
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         public IPropagatorBlock<TIn, T> CreateFeaturesBlock<T>()
-            where T : FeaturesWrapper<TIn>
+            where T : FeaturesWrapper<TIn>, new()
         {
             var options = new ExecutionDataflowBlockOptions {MaxDegreeOfParallelism = _threadCount};
-            var queueLock = new object();
+            var queueLock = new object(); 
             var transformerBlock = new TransformBlock<TIn, T>((doc) =>
             {
                 var queue = new Queue<KeyValuePair<string, object>>();
@@ -83,10 +83,8 @@ namespace Netlyt.Service.Integration
                             queue.Enqueue(feature);
                         }
                     }
-                });
-                var type = typeof(T);
-                var constructorInfo = type.GetConstructor(new Type[] { });
-                T featuresDoc = constructorInfo.Invoke(new object[]{}) as T;
+                }); 
+                T featuresDoc = new T();
                 Debug.Assert(featuresDoc != null, nameof(featuresDoc) + " != null");
                 featuresDoc.Document = doc;
                 featuresDoc.Features = queue; 
