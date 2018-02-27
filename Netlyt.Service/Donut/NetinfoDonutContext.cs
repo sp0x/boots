@@ -7,6 +7,7 @@ using nvoid.db;
 using nvoid.db.Caching;
 using nvoid.Integration;
 using Netlyt.Service.Integration;
+using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.Models;
 using Netlyt.Service.Models.CacheMaps;
 using Netlyt.Service.Models.Netinfo;
@@ -18,6 +19,8 @@ namespace Netlyt.Service.Donut
         /// Donutfile meta key (page stats in this case)
         [CacheBacking(CacheType.Hash)]
         public CacheSet<PageStats> PageStats { get; set; }
+        [CacheBacking(CacheType.Hash)]
+        public CacheSet<UserBrowsingStats> UserBrowsingStats { get; set; }
 //        [CacheBacking(CacheType.Hash)]
 //        public CacheSet<NetinfoUserCookie> UserCookies { get; set; }
         public CacheSet<string> Purchases { get; set; }
@@ -26,7 +29,7 @@ namespace Netlyt.Service.Donut
         public CacheSet<string> PurchasesBeforeHolidays { get; set; }
         public CacheSet<string> PurchasesBeforeWeekends { get; set; }
         public CacheSet<string> PurchasesInWeekends { get; set; }
-
+        
         [SourceFromIntegration("Demography")]
         public DataSet<BsonDocument> Demograpy { get; set; }
         
@@ -42,7 +45,10 @@ namespace Netlyt.Service.Donut
         protected override void ConfigureCacheMap()
         { 
             RedisCacher.RegisterCacheMap<PageStatsMap, PageStats>();
+            RedisCacher.RegisterCacheMap<DomainUserSessionMap, DomainUserSession>();
+            RedisCacher.RegisterCacheMap<UserBrowsingStatsMap, UserBrowsingStats>();
             RedisCacher.RegisterCacheMap<NetinfoUserCookeMap, NetinfoUserCookie>();
         }
+
     }
 }

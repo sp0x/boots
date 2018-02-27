@@ -8,6 +8,7 @@ using System.Threading;
 using MailKit;
 using MongoDB.Bson;
 using nvoid.extensions;
+using Netlyt.Service.Donut;
 using Netlyt.Service.Models;
 using Netlyt.Service.Models.Netinfo;
 
@@ -81,104 +82,15 @@ namespace Netlyt.Service.Integration.Blocks
             //            else DomainVisits[domain]++;
         }
 
-        public static IEnumerable<DomainUserSession> GetWebSessions(IntegratedDocument userDoc, string targetDomain)
-        {
-            return GetWebSessions(userDoc).Where(x => x.Domain.ToHostname().ToLower().Contains(targetDomain));
-        }
-
-        /// <summary>
-        /// Gets the web browsing sessions that the user made
-        /// </summary>
-        /// <param name="userDoc"></param>
-        /// <returns></returns>
-        public static IEnumerable<DomainUserSession> GetWebSessions(IntegratedDocument userDoc)
-        {
-            BsonDocument userDocDocument = userDoc.GetDocument();
-            BsonArray visits = null;
-            try
-            {
-                visits = userDocDocument.Contains("events") ? (BsonArray) userDocDocument.GetElement("events").Value : new BsonArray();
-            }
-            catch (Exception)
-            {
-                try
-                {
-                    userDocDocument = userDocDocument.Clone() as BsonDocument;
-                    visits = (userDocDocument!=null && userDocDocument.Contains("events")) ?
-                        (BsonArray)userDocDocument.GetElement("events").Value : new BsonArray();
-                }
-                catch (Exception e2)
-                {
-                    Debug.WriteLine(e2.Message);
-                }
-            }
-             
-            var firstVisit = visits.Count > 0 ? (BsonDocument)visits[0] : null;
-            var lastDomain = firstVisit!=null ? firstVisit["value"].ToString().ToHostname().ToLower() : null;
-
-            DateTime? lastDomainSessionStart = null;
-            if (firstVisit != null) lastDomainSessionStart = DateTime.Parse(firstVisit["ondate"].ToString());
-            var lastDomainVisitDuration = TimeSpan.Zero;
-
-
-            for (int i = 1; i < visits.Count; i++)
-            {
-                var visit = visits[i];
-                var currentUrl = visit["value"].ToString();
-                var crDomain = currentUrl.ToHostname().ToLower();
-                var visited = DateTime.Parse(visit["ondate"].ToString());
-                if (crDomain == lastDomain)
-                {
-                    //We're still in the same domain, nothing has changed
-                }
-                else
-                {
-                    //Domain has changed, add the time from the last domain
-                    var visitDuration = visited - lastDomainSessionStart.Value;
-                    //Add at least 2 seconds if duration is 0
-                    if (visitDuration.TotalSeconds == 0) visitDuration = visitDuration.Add(TimeSpan.FromSeconds(1));
-
-                    lastDomainSessionStart = visited;
-                    lastDomainVisitDuration = visitDuration;
-
-                    //A session has ended, yield it
-                    var session = new DomainUserSession(lastDomain, visited, visitDuration);
-                    
-                    yield return session;
-                }
-                lastDomain = crDomain;
-                
-            }
-            if (visits.Count > 1)
-            {
-                var visit = visits[visits.Count - 1];
-                var currentUrl = visit["value"].ToString();
-                var crDomain = currentUrl.ToHostname().ToLower();
-                var visited = lastDomainSessionStart.Value;
-                var visitEnd = DateTime.Parse(visit["ondate"].ToString());
-                var duration = visitEnd - visited;
-                if (duration.TotalSeconds <= 0) duration = TimeSpan.FromSeconds(1);
-
-                var session = new DomainUserSession(crDomain, visited, duration);
-                yield return session;
-            }
-            else
-            {
-                //Yield the last domain
-                if (firstVisit != null)
-                { 
-                    var currentUrl = firstVisit["value"].ToString();
-                    var crDomain = currentUrl.ToHostname().ToLower();
-                    var visited = DateTime.Parse(firstVisit["ondate"].ToString());
-                    var session = new DomainUserSession(crDomain, visited, TimeSpan.FromSeconds(1));
-                    yield return session;
-                }
-            }
-
-
-        }
+//        public static IEnumerable<DomainUserSession> GetWebSessions(IntegratedDocument userDoc, string targetDomain)
+//        {
+//            return NetinfoDonutfile.GetWebSessions(userDoc)
+//                .Where(x => x.Domain.ToHostname()
+//                .ToLower().Contains(targetDomain));
+//        } 
 
         private double? _longestVisitPurchaseDuration;
+
         /// <summary>
         /// Gets the max user time(secs) spent on the target domain, out of all the user's browsing times.
         /// Using: max(time_on_target_domain / time_in_all_domains) in seconds.
@@ -192,7 +104,8 @@ namespace Netlyt.Service.Integration.Blocks
         {
             lock (_sessionsLock)
             {
-                if (_longestVisitPurchaseDuration != null && useCache) return _longestVisitPurchaseDuration.Value;
+                if (_longestVisitPurchaseDuration != null && useCache)
+                    return _longestVisitPurchaseDuration.Value;
                 var spentTimes = new List<double>();
                 //DomainVisitsTotal = 0;
                 foreach (var userPair in this.EntityDictionary)
@@ -201,14 +114,12 @@ namespace Netlyt.Service.Integration.Blocks
                     string userId = valueDocument["uuid"].ToString();//Key.ToString();
                     var visits = (BsonArray)valueDocument["events"];
                     var userIsPaying = userPair.Value.Has("is_paying") && userPair.Value.GetInt("is_paying") ==1;
-                    if (userIsPaying)
-                    { 
-                    }
+
                     //var userInternetBrowsingTime = TimeSpan.Zero;
 
                     var firstVisit = visits.Count>0 ? visits[0] : null;
-                    var lastDomain = firstVisit == null ? null : firstVisit["value"].ToString().ToHostname().ToLower();
-                    var firstDomain = lastDomain==null? null : new string(lastDomain.ToCharArray());
+                    var lastDomain = firstVisit == null ? null :
+                        firstVisit["value"].ToString().ToHostname().ToLower();
                     var userTargetleadingHosts = new HashSet<string>();
 
                     DateTime? lastDomainSessionStart = null;
@@ -235,12 +146,8 @@ namespace Netlyt.Service.Integration.Blocks
                         {
                             userIsPaying = true;
                         }
-                        if (crDomain == lastDomain)
-                        {
-                            //We're still in the same domain, nothing has changed
-                        }
-                        else
-                        {
+                        if (crDomain != lastDomain)
+                        { 
                             //Domain has changed, add the time from the last domain
                             var visitDuration = visited - lastDomainSessionStart.Value;
                             //Add at least 2 seconds if duration is 0
@@ -251,7 +158,6 @@ namespace Netlyt.Service.Integration.Blocks
                             {
                                 weekendDomainVisits++;
                             }
-
                             domainChanges++;
 
                             completeBrowsingDuration += visitDuration;
@@ -259,7 +165,6 @@ namespace Netlyt.Service.Integration.Blocks
                             {
                                 timeSpentOnMobileSites += visitDuration;
                             }
-
 
                             //If we were on our target domain, and the current one is not any more
                             if (lastDomain == targetDomain)
@@ -346,6 +251,7 @@ namespace Netlyt.Service.Integration.Blocks
                 return _longestVisitPurchaseDuration.Value;
             }
         }
+
 
 
 

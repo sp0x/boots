@@ -9,8 +9,7 @@ using nvoid.db.Caching;
 
 namespace Netlyt.Service.Donut
 {
-    public class InternalCacheSet<T> :
-        CacheSet<T> where T : class
+    public class InternalCacheSet<T> : CacheSet<T> where T : class
     {
         private ISetCollection _context;
         private readonly ConcurrentDictionary<string, T> _dictionary;
@@ -103,6 +102,11 @@ namespace Netlyt.Service.Donut
                 outputValue = value;
             }
             return outputValue;
+        }
+
+        public override long Count()
+        {
+            return _cachingService.Count(Name);
         }
 
         /// <summary>

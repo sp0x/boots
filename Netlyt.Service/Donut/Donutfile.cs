@@ -59,7 +59,17 @@ namespace Netlyt.Service.Donut
             //Encapsulate our input and features block, so they're usable.
             //var resultingBlock = DataflowBlock.Encapsulate<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>(metaBlockInternal, featuresBlock);
             return new DonutBlock(metaBlock, featuresBlock);
-        } 
+        }
+
+        public void Complete()
+        {
+            OnMetaComplete();
+        }
+
+        protected virtual void OnMetaComplete()
+        {
+            
+        }
 
         protected virtual void Dispose(bool disposing)
         {

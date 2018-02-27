@@ -18,6 +18,7 @@ using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Analytics;
 using Netlyt.Service.Data;
+using Netlyt.Service.Donut;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
@@ -178,7 +179,8 @@ events : elements };
             grouper.Helper = _helper;
             //Group the users
             // create features for each user -> create Update -> batch update
-            var featureHelper = new FeatureGeneratorHelper() { Helper = _helper, TargetDomain = "ebag.bg"};
+            //var featureHelper = new NetinfoFeatureGeneratorHelper() { Helper = _helper, TargetDomain = "ebag.bg"};
+            var featureHelper = new NetinfoFeatureGeneratorHelper() { TargetDomain = "ebag.bg"};
             var featureGenerator = new FeatureGenerator<IntegratedDocument>(featureHelper.GetAvgTimeBetweenSessionFeatures, 8);
             var updateCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, FindAndModifyArgs<IntegratedDocument>>((docFeatures) =>
             {
@@ -228,7 +230,8 @@ events : elements };
             _helper = new CrossSiteAnalyticsHelper(dictEval.Elements);
             dictEval.Helper = _helper;
 
-            var featureHelper = new FeatureGeneratorHelper() { Helper = _helper, TargetDomain = "ebag.bg" };
+            //var featureHelper = new NetinfoFeatureGeneratorHelper() { Helper = _helper, TargetDomain = "ebag.bg" };
+            var featureHelper = new NetinfoFeatureGeneratorHelper() {  TargetDomain = "ebag.bg" };
             var featureGenerator = new FeatureGenerator<IntegratedDocument>(
                 new Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>[]
             {
@@ -315,7 +318,7 @@ events : elements };
                     ((BsonArray)userDocument["events"])
                     .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
                     .ToBsonArray();
-                var sessions = CrossSiteAnalyticsHelper.GetWebSessions(userBlock).ToList();
+                IList<DomainUserSession> sessions = null;//NetinfoDonutfile.GetWebSessions(userBlock).ToList();
                 var sessionWrapper = new DomainUserSessionCollection(sessions) {UserId = uuid, Created = dateNoticed};
                 var document = IntegratedDocument.FromType(sessionWrapper, typeDef, apiObj.Id);
                 var documentBson = document.GetDocument();
@@ -447,7 +450,7 @@ events : elements };
                             ((BsonArray)userDocument["events"])
                             .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
                             .ToBsonArray();
-                        var sessions = CrossSiteAnalyticsHelper.GetWebSessions(user).ToList();
+                        IList<DomainUserSession> sessions = null;//NetinfoDonutfile.GetWebSessions(user).ToList();
                         var sessionWrapper = new DomainUserSessionCollection(sessions);
                         sessionWrapper.UserId = uuid;
                         sessionWrapper.Created = dateNoticed;
@@ -494,7 +497,8 @@ events : elements };
 
 
             var helper = new CrossSiteAnalyticsHelper();//grouper.GetInputBlock());
-            var featureHelper = new FeatureGeneratorHelper() { Helper = helper, TargetDomain = "ebag.bg" };
+            //var featureHelper = new NetinfoFeatureGeneratorHelper() { Helper = helper, TargetDomain = "ebag.bg" };
+            var featureHelper = new NetinfoFeatureGeneratorHelper() { TargetDomain = "ebag.bg" };
 //            var featureGenerator = new FeatureGenerator<ExpandoObject>(featureHelper.GetFeatures, 12);
 //            featureGenerator.AddGenerator(featureHelper.GetAvgTimeBetweenSessionFeatures);
             //var featureGeneratorBlock = featureGenerator.CreateFeaturesBlock();

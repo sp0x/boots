@@ -64,9 +64,9 @@ namespace Netlyt.ServiceTests.Lex
             _serviceProvider = fixture.GetService<IServiceProvider>();
         }
 
-        public FeatureGenerator<IntegratedDocument> GetFeatureGenerator()
+        public FeatureGenerator<IntegratedDocument> GetFeatureGenerator(NetinfoDonutfile donut)
         {
-            var featureHelper = new FeatureGeneratorHelper() { Helper = _helper, TargetDomain = "ebag.bg" };
+            var featureHelper = new NetinfoFeatureGeneratorHelper() { Donut = donut, TargetDomain = "ebag.bg" };
             var featureGenerator = new FeatureGenerator<IntegratedDocument>(
                 new Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>[]
                 {
@@ -113,7 +113,7 @@ namespace Netlyt.ServiceTests.Lex
             //->bing in demographic data to the already grouped userbase
             //->pass the day_user document through FeatureGenerator to create it's features
             var donutRunner = new DonutRunner<NetinfoDonutfile, NetinfoDonutContext>(harvester);
-            var result = await donutRunner.Run(donut, GetFeatureGenerator()); 
+            var result = await donutRunner.Run(donut, GetFeatureGenerator(donut)); 
             
             Debug.WriteLine(result.ProcessedEntries);
             demographyImport.Collection.Truncate();

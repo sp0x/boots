@@ -5,17 +5,19 @@ using StackExchange.Redis;
 
 namespace Netlyt.Service.Models.CacheMaps
 {
-    public class PageStatsMap  : CacheMap<PageStats>
+    public class PageStatsMap : CacheMap<PageStats>
     {
         public override void Map()
         {
             AddMember(x => x.PurchasedUsers)
-                .Merge((a,b)=> a.PurchasedUsers+=b.PurchasedUsers)
+                .Merge((a, b) => a.PurchasedUsers += b.PurchasedUsers)
+                .AddMember(x => x.Transitions)
+                .Merge((a, b) => a.Transitions += b.Transitions)
                 .AddMember(x => x.PageVisitsTotal)
-                .Merge((a,b) => a.PageVisitsTotal += b.PageVisitsTotal)
-                .AddMember(x => x.TotalTransitionDuration.Ticks, "TotalTransitionDuration")
+                .Merge((a, b) => a.PageVisitsTotal += b.PageVisitsTotal);
+            AddMember(x => x.TotalTransitionDuration.Ticks, "TotalTransitionDuration")
                 .DeserializeAs((RedisValue hash) => new TimeSpan((long)hash))
-                .Merge((a,b)=> a.TotalTransitionDuration += b.TotalTransitionDuration);
+                .Merge((a, b) => a.TotalTransitionDuration += b.TotalTransitionDuration);
         }
     }
 }

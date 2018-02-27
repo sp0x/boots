@@ -27,12 +27,16 @@ namespace Netlyt.Service.Models.Netinfo
         [CacheKey]
         public string Page { get; set; }
         public int PurchasedUsers { get; set; }
+        public int Transitions { get; set; }
         /// <summary>
         /// The domains to which this page leads, and information about them
         /// </summary>
         public Dictionary<string, PageStats> FollowingReferences { get; private set; }
         public Dictionary<string, Score> TargetRatings { get; private set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public TimeSpan TotalTransitionDuration { get; set; }
         /// <summary>
         /// The number of times this domain had a session(user arriving, visiting 1 or more pages, and leaving)
@@ -67,6 +71,10 @@ namespace Netlyt.Service.Models.Netinfo
         public TimeSpan TransitionDurationAverage => UserVisits.Count == 0
             ? TimeSpan.Zero
             : TimeSpan.FromSeconds(TotalTransitionDuration.TotalSeconds / GetTotalTransitionCount());
+        /// <summary>
+        /// The time spent on the domain
+        /// </summary>
+        public TimeSpan VisitDuration { get; set; }
 
 
         public PageStats()
@@ -77,6 +85,17 @@ namespace Netlyt.Service.Models.Netinfo
             UserVisits = new Dictionary<string, PageVisit>();
             _ratingLock = new object();
             _visitLock = new object();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="visits"></param>
+        public PageStats(string page, int visits) : this()
+        {
+            Page = page;
+            PageVisitsTotal = visits;
         }
 
         /// <summary>

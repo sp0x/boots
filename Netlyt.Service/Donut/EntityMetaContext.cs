@@ -18,14 +18,18 @@ namespace Netlyt.Service.Donut
         /// </summary>
         private ConcurrentDictionary<int, Dictionary<string, Score>> _metaValues;
 
+        private ConcurrentDictionary<int, Dictionary<string, SetFlags>> _setFlags;
         /// <summary>
         /// A dict of metaCategory , ( metaValue, userIds )
         /// </summary>
         private ConcurrentDictionary<int, Dictionary<string, HashSet<string>>> _entityMetaValues; 
+        private RedisCacher _cacher;
+
         public EntityMetaContext()
         { 
             _metaValues = new ConcurrentDictionary<int, Dictionary<string, Score>>();
             _entityMetaValues = new ConcurrentDictionary<int, Dictionary<string, HashSet<string>>>();
+            _setFlags = new ConcurrentDictionary<int, Dictionary<string, SetFlags>>();
             //_entityMetaValues = new ConcurrentDictionary<string, Dictionary<int, HashSet<string>>>();
         }
 
@@ -38,8 +42,18 @@ namespace Netlyt.Service.Donut
         {
             return _entityMetaValues;
         }
+
+        public bool SetIsSorted(int category, string key)
+        {
+            if (!_setFlags.ContainsKey(category)) return false;
+            if (!_setFlags[category].ContainsKey(key)) return false;
+            var flags = _setFlags[category][key];
+            return flags.IsSorted;
+        }
+
+
         /// <summary>
-        /// 
+        /// Increments the score for a field in a category.
         /// </summary>
         /// <param name="metaCategory">Meta category id</param> 
         /// <param name="metaValue">The value to increment</param>
@@ -60,27 +74,58 @@ namespace Netlyt.Service.Donut
             if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
         }
 
+        public void AddEntityMetaCategory(string entitykey, int metaCategory, double metaValue, bool sorted = false)
+        {
+            AddEntityMetaCategory(entitykey, metaCategory, metaValue.ToString(), sorted);
+        }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="entitykey"></param>
         /// <param name="metaCategory"></param>
         /// <param name="metaValue"></param>
-        public void AddEntityMetaCategory(string entitykey, int metaCategory, string metaValue)
+        public void AddEntityMetaCategory(string entitykey, int metaCategory, string metaValue, bool sorted = false)
         {
             _lock.EnterWriteLock();
             if (!_entityMetaValues.ContainsKey(metaCategory))
             {
                 _entityMetaValues[metaCategory] = new Dictionary<string, HashSet<string>>();
             }
-            if (!_entityMetaValues[metaCategory].ContainsKey(metaValue))
+            if (!_entityMetaValues[metaCategory].ContainsKey(entitykey))
             {
-                _entityMetaValues[metaCategory][metaValue] = new HashSet<string>();
+                _entityMetaValues[metaCategory][entitykey] = new HashSet<string>();
             }
-            _entityMetaValues[metaCategory][metaValue].Add(entitykey);
+            _entityMetaValues[metaCategory][entitykey].Add(metaValue);
+            if (sorted)
+            {
+                if (!_setFlags.ContainsKey(metaCategory))
+                {
+                    _setFlags[metaCategory] = new Dictionary<string, SetFlags>();
+                }
+                if (!_setFlags[metaCategory].ContainsKey(entitykey))
+                {
+                    _setFlags[metaCategory][entitykey] = new SetFlags(false);
+                }
+                _setFlags[metaCategory][entitykey] = _setFlags[metaCategory][entitykey] = new SetFlags(true);
+            }
             if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
         }
 
+        public HashSet<String> GetEntityMetaValues(string key, int category)
+        {
+            _lock.EnterWriteLock();
+            if (!_entityMetaValues.ContainsKey(category))
+            {
+                _entityMetaValues[category] = new Dictionary<string, HashSet<string>>();
+            }
+            if (!_entityMetaValues[category].ContainsKey(key))
+            {
+                _entityMetaValues[category][key] = new HashSet<string>();
+            }
+            HashSet<string> collection = _entityMetaValues[category][key];
+            return collection;
+        }
+         
         protected void ClearMetaValues()
         {
             _metaValues.Clear();
@@ -89,6 +134,11 @@ namespace Netlyt.Service.Donut
         protected void ClearEntityMetaValues()
         {
             _entityMetaValues.Clear();
+        }
+
+        protected void SetCacher(RedisCacher cacher)
+        {
+            _cacher = cacher;
         }
     }
 }

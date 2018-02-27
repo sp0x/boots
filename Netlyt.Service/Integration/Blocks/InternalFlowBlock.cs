@@ -12,7 +12,7 @@ namespace Netlyt.Service.Integration.Blocks
             int threadCount = 4,
             int capacity = 1000) : base(procType: BlockType.Transform, threadCount: threadCount, capacity: capacity)
         {
-            SetInternalTransformer(func, null);
+            SetTransform(func, null);
         }
         protected override TOut OnBlockReceived(TIn intDoc)
         {

@@ -55,7 +55,7 @@ namespace Netlyt.Service.Donut
 
             _featuresBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
             flowBlock.ContinueWith(() =>
-            {
+            { 
                 RunFeatureExtraction(donut).Wait();
             }); 
             _harvester.SetDestination(flowBlock);
@@ -67,6 +67,7 @@ namespace Netlyt.Service.Donut
 
         private async Task RunFeatureExtraction(TDonut donut)
         {
+            donut.Complete();
             if (donut.ReplayInputOnFeatures)
             {
                 var featuresFlow = new InternalFlowBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>(_featuresBlock);

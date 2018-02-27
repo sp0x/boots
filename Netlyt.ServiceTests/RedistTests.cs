@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Caching.Redis;
+using System.Diagnostics; 
 using nvoid.db.Caching;
 using StackExchange.Redis;
 using Xunit;
@@ -46,6 +44,25 @@ namespace Netlyt.ServiceTests
             Console.WriteLine(t1);
             Console.WriteLine(t2);
             watch.Stop();
+        }
+
+        [Fact]
+        public void TestSetCount()
+        {
+            var kv = "__key1";
+            for (var i=0; i<10; i++) _cache.SetAdd(kv,i);
+            var kcount = _cache.SetItemCount(kv);
+            _cache.Remove("__key1");
+            Assert.Equal(10, kcount);
+        }
+        [Fact]
+        public void TestZScanLast()
+        {
+            var kv = "__key2";
+            for (var i = 0; i < 10; i++) _cache.SortedSetAdd(kv, $"lol{i}", i);
+            var maxValue = _cache.GetSortedSetMax(kv).Value.Score;
+            _cache.Remove(kv);
+            Assert.Equal(9, maxValue);
         }
 
         [Fact]

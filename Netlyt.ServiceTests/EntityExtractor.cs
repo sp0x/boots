@@ -14,6 +14,7 @@ using nvoid.extensions;
 using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
+using Netlyt.Service.Donut;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
@@ -76,7 +77,7 @@ namespace Netlyt.ServiceTests
         ////            type.SaveType(userApiId);
         ////
         ////            var saver = new MongoSink(userId);
-        ////            var featureGen = new FeatureGeneratorHelper();
+        ////            var featureGen = new NetinfoFeatureGeneratorHelper();
         ////            var featureBlock = featureGen.GetBlock();
         ////            featureBlock.LinkTo(saver, new DataflowLinkOptions{ PropagateCompletion = true}); //We modify the entity to fill all it's data, then generate feature, and then save
         ////            harvester.SetDestination(modifier);
@@ -114,9 +115,10 @@ namespace Netlyt.ServiceTests
             grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
             demographyImporter.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
 
-            var featureGen = new FeatureGeneratorHelper() { Helper = helper};
+            //var featureGen = new NetinfoFeatureGeneratorHelper() { Helper = helper};
+            var featureGen = new NetinfoFeatureGeneratorHelper() { };
             var featureGenBlock = featureGen.GetBlock();
-            featureGen.Helper = helper;
+            //featureGen.Helper = helper;readd
             //demographyImporter.LinkTo(featureGen); 
 
             //featureGenBlock.LinkTo(saver.GetProcessingBlock());
@@ -199,12 +201,12 @@ namespace Netlyt.ServiceTests
                             ((BsonArray) userDocument["events"])
                             .OrderBy(x => DateTime.Parse(x["ondate"].ToString()))
                             .ToBsonArray(); 
-                        foreach (DomainUserSession visitSession in CrossSiteAnalyticsHelper.GetWebSessions(userGroup))
-                        {
-                            var newLine = string.Format("{0},{1},{2},{3}", uuid, visitSession.Domain,
-                                visitSession.Duration.TotalSeconds, visitSession.Visited);
-                            csvWr.WriteLine(newLine);
-                        }
+//                        foreach (DomainUserSession visitSession in NetinfoDonutfile.GetWebSessions(userGroup))
+//                        {
+//                            var newLine = string.Format("{0},{1},{2},{3}", uuid, visitSession.Domain,
+//                                visitSession.Duration.TotalSeconds, visitSession.Visited);
+//                            csvWr.WriteLine(newLine);
+//                        }
                     }
                     catch (Exception ex2)
                     {
@@ -268,10 +270,10 @@ namespace Netlyt.ServiceTests
             dataImporter.PostAll(userValues);
         }
 
-        private void OnUserDemographyImported(FeatureGeneratorHelper gen, GroupingBlock usersData)
+        private void OnUserDemographyImported(NetinfoFeatureGeneratorHelper gen, GroupingBlock usersData)
         { 
             var userValues = usersData.EntityDictionary.Values;
-            gen.Helper.GroupDemographics();
+            //gen.Helper.GroupDemographics(); //readd
             var featureblock = gen.GetBlock();
             featureblock.PostAll(userValues); 
         }

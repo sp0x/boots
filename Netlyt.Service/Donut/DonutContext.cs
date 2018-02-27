@@ -43,13 +43,14 @@ namespace Netlyt.Service.Donut
         {
             _cacher = cacher;
             ApiAuth = integration.APIKey;
-            CacheRunInterval = 10000;
+            CacheRunInterval = 10;
             _currentCacheRunIndex = 0;
             Integration = integration;
             CurrentCache = new ConcurrentDictionary<string, List<HashEntry>>();
             ConfigureCacheMap();
             Prefix = $"integration_context:{Integration.Id}";
             new ContextSetDiscoveryService(this, serviceProvider).Initialize();
+            base.SetCacher(_cacher);
         }
 
         public void SetCacheRunInterval(int interval)
@@ -75,6 +76,13 @@ namespace Netlyt.Service.Donut
                 _dataSets[type] = set;
             }
             return set;
+        }
+
+        public double GetEntityMetaMaxValue(string key, int category, double @default)
+        {
+            var fqkey = GetMetaCacheKey(category, key);
+            var entityMetaMaxValue = _cacher.GetSortedSetMax(fqkey);
+            return entityMetaMaxValue!=null ? entityMetaMaxValue.Value.Score : @default;
         }
 
         /// <summary>
@@ -132,6 +140,11 @@ namespace Netlyt.Service.Donut
             ClearEntityMetaValues();
         }
 
+        private string GetMetaCacheKey(int category, string key)
+        { 
+            var categoryKey = $"{Prefix}:_mv:{category}";
+            return $"{categoryKey}:{key}";
+        }
         /// <summary>
         /// Caches all the meta categories and values
         /// </summary>
@@ -156,13 +169,27 @@ namespace Netlyt.Service.Donut
             var metaCategoryValueSets = base.GetEntityMetaValues();
             foreach (var categoryPair in metaCategoryValueSets)
             {
-                var categoryId = categoryPair.Key;
+                int categoryId = categoryPair.Key;
                 var categoryKey = $"{Prefix}:_mv:{categoryId}";
                 foreach (var metaVal in categoryPair.Value)
                 {
+                    var isSorted = SetIsSorted(categoryId, metaVal.Key);
                     var fullKey = $"{categoryKey}:{metaVal.Key}";
-                    var set = metaVal.Value; 
-                    _cacher.SetAddAll(fullKey,set.Select(x=> (RedisValue)x));
+                    var set = metaVal.Value;
+                    if (isSorted)
+                    {
+                        //Generate scores from x
+                        _cacher.SortedSetAddAll(fullKey, set.Select(x =>
+                        {
+                            var score = (double)double.Parse(x);
+                            var entry = new SortedSetEntry((RedisValue) x, score);
+                            return entry;
+                        }));
+                    }
+                    else
+                    {
+                        _cacher.SetAddAll(fullKey, set.Select(x => (RedisValue)x));
+                    }
                 }
             }
         }
