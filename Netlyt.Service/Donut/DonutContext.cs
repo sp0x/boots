@@ -33,7 +33,8 @@ namespace Netlyt.Service.Donut
         public string Prefix { get; set; }
         public ApiAuth ApiAuth { get; private set; }
         public RedisCacher Database => _cacher;
-        private int _currentCacheRunIndex; 
+        private int _currentCacheRunIndex;
+        private CachingPersistеnceService _cachingService;
 
         /// <summary>
         /// The entity interval on which to cache the values.
@@ -49,8 +50,8 @@ namespace Netlyt.Service.Donut
             CurrentCache = new ConcurrentDictionary<string, List<HashEntry>>();
             ConfigureCacheMap();
             Prefix = $"integration_context:{Integration.Id}";
-            new ContextSetDiscoveryService(this, serviceProvider).Initialize();
-            base.SetCacher(_cacher);
+            new ContextSetDiscoveryService(this, serviceProvider).Initialize(); 
+            _cachingService = new CachingPersistеnceService(this);
         }
 
         public void SetCacheRunInterval(int interval)
@@ -134,6 +135,11 @@ namespace Netlyt.Service.Donut
 
         }
 
+        public void Complete()
+        {
+            CacheAndClear(true);
+        }
+
         private void ClearMetaContext()
         {
             ClearMetaValues();
@@ -141,10 +147,37 @@ namespace Netlyt.Service.Donut
         }
 
         private string GetMetaCacheKey(int category, string key)
-        { 
-            var categoryKey = $"{Prefix}:_mv:{category}";
-            return $"{categoryKey}:{key}";
+        {
+            var baseKey = base.GetValueKey(category, key);
+            var categoryKey = $"{Prefix}:{baseKey}";
+            return categoryKey;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void TruncateSets()
+        {
+            lock (_cacheLock)
+            { 
+                foreach (var set in _sets.Values)
+                {
+                    set.Truncate();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="metaSpentTime"></param>
+        public void TruncateMeta(int metaSpentTime)
+        {
+            var subKey = base.GetValueKey(metaSpentTime, "");
+            var key = $"{Prefix}:{subKey}";
+            _cachingService.Truncate(key);
+        }
+
         /// <summary>
         /// Caches all the meta categories and values
         /// </summary>

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 using nvoid.db.Caching;
 
 namespace Netlyt.Service.Donut
@@ -13,7 +14,7 @@ namespace Netlyt.Service.Donut
     {
         private ISetCollection _context;
         private readonly ConcurrentDictionary<string, T> _dictionary;
-        private readonly ConcurrentBag<T> _list;
+        private readonly HashSet<T> _list;
         private readonly ConstructorInfo _constructor;
         private readonly object _mergeLock;
         private readonly ICacheMap<T> _cacheMap;
@@ -24,7 +25,7 @@ namespace Netlyt.Service.Donut
         {
             _context = context;
             _dictionary = new ConcurrentDictionary<string, T>();
-            _list = new ConcurrentBag<T>();
+            _list = new HashSet<T>();
             _constructor = typeof(T).GetConstructor(new Type[] { });
             _mergeLock = new object();
             _cacheMap = RedisCacher.GetCacheMap<T>();
@@ -109,6 +110,12 @@ namespace Netlyt.Service.Donut
             return _cachingService.Count(Name);
         }
 
+        public override void Truncate()
+        {
+            var keyBase = _cacheMap.GetKey(_context.Prefix, Name); 
+            _cachingService.Truncate(keyBase);
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -133,9 +140,13 @@ namespace Netlyt.Service.Donut
 
         public override void Cache()
         {
-            _cachingService.Cache(this, _cacheMap).Wait(); 
+            CacheAsync().Wait(); 
         }
 
+        public override async Task CacheAsync()
+        {
+            await _cachingService.Cache(this, _cacheMap);
+        }
         public override void ClearLocalCache()
         {
             _dictionary.Clear();

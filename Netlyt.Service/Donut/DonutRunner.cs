@@ -55,8 +55,9 @@ namespace Netlyt.Service.Donut
 
             _featuresBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
             flowBlock.ContinueWith(() =>
-            { 
-                RunFeatureExtraction(donut).Wait();
+            {
+                var extractionTask = RunFeatureExtraction(donut);
+                Task.WaitAll(extractionTask);
             }); 
             _harvester.SetDestination(flowBlock);
             

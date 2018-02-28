@@ -44,5 +44,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Lex\Generation\" />
+    <Folder Include="Donut\" />
   </ItemGroup>
 </Project>

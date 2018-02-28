@@ -13,7 +13,19 @@ namespace Netlyt.Service.Donut
     public abstract class Donutfile<TContext> : IDisposable
         where TContext : DonutContext
     {
-        public TContext Context { get; set; }
+        public TContext Context
+        {
+            get
+            {
+                return _context;
+            }
+            set
+            {
+                _context = value;
+                OnCreated();
+            }
+        }
+        private TContext _context;
         private IntegrationService _integrationService;
 
         /// <summary>
@@ -49,7 +61,7 @@ namespace Netlyt.Service.Donut
         /// <returns></returns>
         public DonutBlock CreateDataflowBlock(FeatureGenerator<IntegratedDocument> featureGen)
         {
-            var featuresBlock = featureGen.CreateFeaturesBlock(); 
+            var featuresBlock = featureGen.CreateFeaturesBlock();
             var metaBlock = new MemberVisitingBlock(ProcessRecord);
             //metaBlock.ContinueWith(RunFeatureExtraction);
             //_featuresBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
@@ -63,12 +75,16 @@ namespace Netlyt.Service.Donut
 
         public void Complete()
         {
+            Context.Complete();
             OnMetaComplete();
         }
 
+        protected virtual void OnCreated()
+        {
+
+        }
         protected virtual void OnMetaComplete()
         {
-            
         }
 
         protected virtual void Dispose(bool disposing)

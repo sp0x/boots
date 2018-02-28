@@ -23,7 +23,7 @@ namespace Netlyt.Service.Donut
         /// A dict of metaCategory , ( metaValue, userIds )
         /// </summary>
         private ConcurrentDictionary<int, Dictionary<string, HashSet<string>>> _entityMetaValues; 
-        private RedisCacher _cacher;
+        //private RedisCacher _cacher;
 
         public EntityMetaContext()
         { 
@@ -135,10 +135,19 @@ namespace Netlyt.Service.Donut
         {
             _entityMetaValues.Clear();
         }
+         
 
-        protected void SetCacher(RedisCacher cacher)
+        /// <summary>
+        /// Gets the key to a meta value
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        protected string GetValueKey(int category, string key)
         {
-            _cacher = cacher;
+            var fqkey = $"_mv:{category}";
+            if(!string.IsNullOrEmpty(key)) fqkey += $":{key}";
+            return fqkey;
         }
     }
 }

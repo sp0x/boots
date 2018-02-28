@@ -9,9 +9,9 @@ namespace Netlyt.Service.Models.CacheMaps
         {
             AddMember(x => x.Domain)
                 .AddMember(x => x.Duration.Ticks, "Duration")
-                .DeserializeAs(hash => new TimeSpan((long)hash))
-                .AddMember(x=>x.Visited.Ticks,"Visited")
-                .DeserializeAs(hash=> new DateTime((long)hash));
+                .DeserializeAs(hash => new TimeSpan((long)hash));
+            AddMember(x => x.Visited.Ticks, "Visited")
+                 .DeserializeAs(hash => new DateTime((long)hash));
         }
     }
 }

@@ -29,6 +29,24 @@ namespace Netlyt.Service.Donut
             ReplayInputOnFeatures = true;
         }
 
+        #region Overrides
+
+        protected override void OnCreated()
+        {
+            base.OnCreated();
+            Context.TruncateSets();
+            Context.TruncateMeta(META_SPENT_TIME);
+            Context.TruncateMeta(META_DOMAIN_CHANGE);
+            Context.TruncateMeta(META_AGE);
+            Context.TruncateMeta(META_GENDER);
+            Context.TruncateMeta(META_NUMERIC_TYPE_VALUE);
+        }
+
+        protected override void OnMetaComplete()
+        {
+        }
+        #endregion
+
         #region Gather info
         const int META_NUMERIC_TYPE_VALUE = 1;
         private const int META_GENDER = 2;
@@ -179,10 +197,6 @@ namespace Netlyt.Service.Donut
             Context.CacheAndClear();
         }
 
-        protected override void OnMetaComplete()
-        {
-
-        }
 
         public double GetLongestWebSessionDuration()
         {
@@ -194,7 +208,10 @@ namespace Netlyt.Service.Donut
         {
             if (value.Contains("payments/finish") && pageHost.Contains(TargetHost))
             {
-                if (DateHelper.IsHoliday(onDate)) Context.PurchasesOnHolidays.Add(uuid);
+                if (DateHelper.IsHoliday(onDate))
+                {
+                    Context.PurchasesOnHolidays.Add(uuid);
+                }
                 else if (DateHelper.IsHoliday(onDate.AddDays(1))) Context.PurchasesBeforeHolidays.Add(uuid);
                 else if (onDate.DayOfWeek == DayOfWeek.Friday) Context.PurchasesBeforeWeekends.Add(uuid);
                 else if (onDate.DayOfWeek > DayOfWeek.Friday) Context.PurchasesInWeekends.Add(uuid);

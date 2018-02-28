@@ -178,10 +178,10 @@ namespace Netlyt.Service
             ResetStopwatch();
             _stopwatch.Start();
             int shardsUsed;
+            var flowCompletion = Destination.FlowCompletion();
             var totalItemsUsed = ProcessInputShards(parallelOptions, out shardsUsed);
             //Let the dest know that we're finished passing data to it, so that it could complete.
-            if(Destination!=null) Destination.Complete();   
-            var flowCompletion = Destination.FlowCompletion();
+            Destination.Complete();
             return flowCompletion.ContinueWith(continuationFunction: (t) =>
             {
                 _stopwatch.Stop();
