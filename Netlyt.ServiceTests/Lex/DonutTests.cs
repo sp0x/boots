@@ -24,6 +24,7 @@ using Netlyt.Service.IntegrationSource;
 using Netlyt.Service.Lex.Generation;
 using Netlyt.Service.Models;
 using Netlyt.Service.Time;
+using Netlyt.ServiceTests.Netinfo;
 using Xunit;
 
 namespace Netlyt.ServiceTests.Lex
@@ -32,7 +33,7 @@ namespace Netlyt.ServiceTests.Lex
     public class DonutTests
     {
         private DonutConfigurationFixture _config;
-        private CrossSiteAnalyticsHelper _helper;
+        //private CrossSiteAnalyticsHelper _helper;
         private IMongoCollection<IntegratedDocument> _documentStore;
         private DateHelper _dateHelper;
         private DynamicContextFactory _contextFactory;
@@ -48,7 +49,7 @@ namespace Netlyt.ServiceTests.Lex
         public DonutTests(DonutConfigurationFixture fixture)
         {
             _config = fixture;
-            _helper = new CrossSiteAnalyticsHelper();
+            //_helper = new CrossSiteAnalyticsHelper();
             _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().AsMongoDbQueryable();
             _dateHelper = new DateHelper();
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
@@ -95,7 +96,7 @@ namespace Netlyt.ServiceTests.Lex
             var integration = harvester.AddIntegrationSource(source, _appAuth, "NetInfoUserFeatures_7_8_1");
 
             //Setup third sources and import blocks 
-            _helper = new CrossSiteAnalyticsHelper();
+            //_helper = new CrossSiteAnalyticsHelper();
             //Import any data that we need beforehand, because we'll used it in this flow.
             var demographyImport = await AddDemographyData(); 
 

@@ -10,9 +10,7 @@ using nvoid.db;
 using nvoid.db.Caching;
 using nvoid.db.Extensions;
 using nvoid.Integration;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Models;
-using Netlyt.Service.Models.CacheMaps;
+using Netlyt.Service.Integration; 
 using StackExchange.Redis;
 
 namespace Netlyt.Service.Donut

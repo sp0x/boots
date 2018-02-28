@@ -76,8 +76,7 @@ namespace Netlyt.Service.Format
                         Interlocked.Increment(ref _position);
                     }
                     GetCache(false); 
-                };
-                _position = _position;
+                }; 
                 //var element = _elementCache[_position];
                 //var output = BsonSerializer.Deserialize<ExpandoObject>(element);
                 //return element;

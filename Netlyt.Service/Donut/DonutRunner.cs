@@ -74,13 +74,14 @@ namespace Netlyt.Service.Donut
                 var featuresFlow = new InternalFlowBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>(_featuresBlock);
                 _harvester.Reset();
                 _harvester.SetDestination(featuresFlow);
-                var featuresResult = await _harvester.Run();
-                featuresResult = featuresResult;
+                var featuresResult = await _harvester.Run(); 
             }
             else
             {
                 throw new NotImplementedException();
             }
+            var x = 3;
+            x++;
         }
     }
 }

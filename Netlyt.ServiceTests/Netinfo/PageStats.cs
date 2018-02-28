@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using nvoid.db.Caching;
 using nvoid.extensions;
 using Netlyt.Service.Integration.Blocks;
+using Netlyt.Service.Models;
 
-namespace Netlyt.Service.Models.Netinfo
+namespace Netlyt.ServiceTests.Netinfo
 {
 
 //

@@ -1,7 +1,8 @@
 using System;
 using nvoid.db.Caching;
+using Netlyt.Service.Models;
 
-namespace Netlyt.Service.Models.CacheMaps
+namespace Netlyt.ServiceTests.Netinfo.Maps
 {
     public class DomainUserSessionMap : CacheMap<DomainUserSession>
     {

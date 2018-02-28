@@ -1,7 +1,6 @@
 using nvoid.db.Caching;
-using Netlyt.Service.Models.Netinfo;
 
-namespace Netlyt.Service.Models.CacheMaps
+namespace Netlyt.ServiceTests.Netinfo.Maps
 {
     public class NetinfoUserCookeMap : CacheMap<NetinfoUserCookie>
     {

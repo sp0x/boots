@@ -29,7 +29,7 @@ namespace Netlyt.Service.Integration.Blocks
         /// <summary>
         /// 
         /// </summary>
-        public CrossSiteAnalyticsHelper Helper { get; set; }
+        //public CrossSiteAnalyticsHelper Helper { get; set; }
 
         /// <summary>
         /// 

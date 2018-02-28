@@ -24,6 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Auth\" />
+    <Folder Include="Models\CacheMaps\" />
     <Folder Include="protos\" />
   </ItemGroup>
   <ItemGroup>

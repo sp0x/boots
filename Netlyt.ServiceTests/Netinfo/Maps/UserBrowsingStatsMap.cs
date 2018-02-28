@@ -1,7 +1,7 @@
 using nvoid.db.Caching;
 using Netlyt.Service.Integration.Blocks;
 
-namespace Netlyt.Service.Models.CacheMaps
+namespace Netlyt.ServiceTests.Netinfo.Maps
 {
     public class UserBrowsingStatsMap : CacheMap<UserBrowsingStats>
     {

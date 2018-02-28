@@ -4,10 +4,12 @@ using System.Linq;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using nvoid.extensions;
-using Netlyt.Service.Donut;
+using Netlyt.Service;
+using Netlyt.Service.Integration;
+using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.Time;
 
-namespace Netlyt.Service.Integration.Blocks
+namespace Netlyt.ServiceTests.Netinfo
 {
     /// <summary>
     /// Helps with premade feature generation blocks.
@@ -76,8 +78,8 @@ namespace Netlyt.Service.Integration.Blocks
                 .SelectMany(x => x.ToList()).ToBsonArray();
 
 
-            var completeTimeSpan = CrossSiteAnalyticsHelper.GetPeriod(events);
-            var realisticUserWebTime = CrossSiteAnalyticsHelper.GetDailyPeriodSum(events);
+            var completeTimeSpan = new TimeSpan();//CrossSiteAnalyticsHelper.GetPeriod(events);
+            var realisticUserWebTime = new TimeSpan(); //CrossSiteAnalyticsHelper.GetDailyPeriodSum(events);
             var today = DateTime.Today;
             var visitsPerTime = events.Count / mx1(completeTimeSpan.Days);
             var lastWeekStart = today.AddDays(-(int)today.DayOfWeek - 6);
@@ -181,14 +183,14 @@ namespace Netlyt.Service.Integration.Blocks
             Func<string, object, KeyValuePair<string, object>> toPair = (x, y) => new KeyValuePair<string, object>(x, y);
 
             yield return toPair("visits_per_time", visitsPerTime);
-            yield return toPair("bought_last_week", boughtLastWeek.Count() / mx1(CrossSiteAnalyticsHelper.GetPeriod(boughtLastWeek).Days));
-            yield return toPair("bought_last_month", boughtLastMonth.Count() /
-                                                                               mx1(CrossSiteAnalyticsHelper.GetPeriod(boughtLastMonth).Days));
-            yield return toPair("bought_last_year", boughtLastYear.Count() /
-                                                                              mx1(CrossSiteAnalyticsHelper.GetPeriod(boughtLastYear).Days));
-            yield return toPair("time_spent", CrossSiteAnalyticsHelper.GetVisitsTimeSpan(ebagVisits, realisticUserWebTime).TotalSeconds);
-            yield return toPair("time_spent_max", domainVisits?.Select(x =>
-                CrossSiteAnalyticsHelper.GetVisitsTimeSpan(x.ToBsonArray(), realisticUserWebTime)).Max().TotalSeconds);
+//            yield return toPair("bought_last_week", boughtLastWeek.Count() / mx1(CrossSiteAnalyticsHelper.GetPeriod(boughtLastWeek).Days));
+//            yield return toPair("bought_last_month", boughtLastMonth.Count() /
+//                                                                               mx1(CrossSiteAnalyticsHelper.GetPeriod(boughtLastMonth).Days));
+//            yield return toPair("bought_last_year", boughtLastYear.Count() /
+//                                                                              mx1(CrossSiteAnalyticsHelper.GetPeriod(boughtLastYear).Days));
+//            yield return toPair("time_spent", CrossSiteAnalyticsHelper.GetVisitsTimeSpan(ebagVisits, realisticUserWebTime).TotalSeconds);
+//            yield return toPair("time_spent_max", domainVisits?.Select(x =>
+//                CrossSiteAnalyticsHelper.GetVisitsTimeSpan(x.ToBsonArray(), realisticUserWebTime)).Max().TotalSeconds);
             yield return toPair("month", purchasesInThisMonth.Count() /
                                                                    mx1(purchases.Count));
             yield return toPair("prob_buy_is_holiday_user", purchasesInHolidays.Count() /

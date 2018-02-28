@@ -1,6 +1,6 @@
 using nvoid.db.Caching;
 
-namespace Netlyt.Service.Models.Netinfo
+namespace Netlyt.ServiceTests.Netinfo
 {
     public class NetinfoUserCookie
     {

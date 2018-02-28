@@ -6,9 +6,7 @@ using MongoDB.Bson;
 using nvoid.extensions;
 using System.Linq;
 using nvoid.exec.Blocks;
-using nvoid.Integration;
-using Netlyt.Service.Models;
-using Netlyt.Service.Models.Netinfo;
+using nvoid.Integration; 
 
 namespace Netlyt.Service.Integration.Blocks
 {
@@ -34,8 +32,7 @@ namespace Netlyt.Service.Integration.Blocks
 //        public event EventHandler<EventArgs> GroupingComplete;
 
         public ConcurrentDictionary<object, IntegratedDocument> EntityDictionary { get; private set; } 
-
-        public CrossSiteAnalyticsHelper Helper { get; set; }
+        
         //public BsonArray Purchases { get; set; }
         #endregion
 
@@ -109,14 +106,14 @@ namespace Netlyt.Service.Integration.Blocks
             var pageHost = page.ToHostname();
             var pageSelector = pageHost;
             var isNewPage = false;
-            if (!Helper.Stats.ContainsPage(pageHost))
-            {
-                Helper.Stats.AddPage(pageSelector, new PageStats()
-                {
-                    Page = page
-                });
-                isNewPage = true;
-            }
+//            if (!Helper.Stats.ContainsPage(pageHost))
+//            {
+//                Helper.Stats.AddPage(pageSelector, new PageStats()
+//                {
+//                    Page = page
+//                });
+//                isNewPage = true;
+//            }
             if (isNewUser)
             {
                 //this.PageStats[pageSelector].UsersVisitedTotal++;
@@ -125,7 +122,7 @@ namespace Netlyt.Service.Integration.Blocks
             {
                 //var duration = this.PageStats[pageSelector].VisitStarted;
             }
-            Helper.Stats[pageSelector].PageVisitsTotal++;
+            //Helper.Stats[pageSelector].PageVisitsTotal++;
         }
          
 

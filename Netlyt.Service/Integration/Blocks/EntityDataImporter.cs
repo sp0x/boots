@@ -15,8 +15,7 @@ namespace Netlyt.Service.Integration.Blocks
     {
         private string _inputFileName;
         private Func<string[], IntegratedDocument, bool> _matcher;
-        public char Delimiter { get; set; }
-        public CrossSiteAnalyticsHelper Helper { get; set; }
+        public char Delimiter { get; set; } 
         private Action<string[], IntegratedDocument> _joiner;
         private Func<string[], string> _inputMapper;
         private FileStream _fs;

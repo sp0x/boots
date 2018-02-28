@@ -22,6 +22,7 @@ using Netlyt.Service.IntegrationSource;
 using Netlyt.Service.Models;
 using Netlyt.Service.Time;
 using Netlyt.ServiceTests.IntegrationSource;
+using Netlyt.ServiceTests.Netinfo;
 using Xunit; 
 
 namespace Netlyt.ServiceTests
@@ -107,10 +108,10 @@ namespace Netlyt.ServiceTests
             demographyImporter.JoinOn(JoinDemography);
             demographyImporter.ReadData();
 
-            var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary); 
+            //var helper = new CrossSiteAnalyticsHelper(grouper.EntityDictionary); 
 
-            demographyImporter.Helper = helper;
-            grouper.Helper = helper;
+            //demographyImporter.Helper = helper;
+            //grouper.Helper = helper;
             
             grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
             demographyImporter.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
@@ -232,8 +233,8 @@ namespace Netlyt.ServiceTests
             var userValues = grouper.EntityDictionary.Values; 
             //var today = DateTime.Today;
             var dateHelper = new DateHelper();
-            double max_time_spent_by_any_paying_user_ebag =
-                dataImporter.Helper.GetLongestVisitPurchaseDuration("ebag.bg", "payments/finish");
+            double max_time_spent_by_any_paying_user_ebag = 0;
+                //dataImporter.Helper.GetLongestVisitPurchaseDuration("ebag.bg", "payments/finish");
             DateTimeFormatInfo dfi = DateTimeFormatInfo.CurrentInfo;
             Calendar cal = dfi.Calendar;
 
