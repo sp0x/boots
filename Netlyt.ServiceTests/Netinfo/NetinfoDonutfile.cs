@@ -198,7 +198,7 @@ namespace Netlyt.ServiceTests.Netinfo
 
         public double GetLongestWebSessionDuration()
         {
-            var value = Context.GetEntityMetaMaxValue("spent_time", META_SPENT_TIME, 1);
+            var value = Context.MetaEntityMax("spent_time", META_SPENT_TIME, 1);
             return value;
         }
 

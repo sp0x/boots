@@ -172,10 +172,10 @@ namespace Netlyt.ServiceTests.Lex
             "TestData\\Ebag\\NewJoin",
            @"reduce day = time(this.ondate) / (60*60*24), 
                 uuid = this.uuid
-                reduce_map  ondate = this.ondate,
+             reduce_map  ondate = this.ondate,
                 value = this.value,
                 type = this.type
-            reduce aggregate
+             reduce aggregate
                 events = selectMany(values, (x) => x.events),
                 uuid = key.uuid,
                 day = key.day,

@@ -77,7 +77,7 @@ namespace Netlyt.Service.Donut
             return set;
         }
 
-        public double GetEntityMetaMaxValue(string key, int category, double @default)
+        public double MetaEntityMax(string key, int category, double @default)
         {
             var fqkey = GetMetaCacheKey(category, key);
             var entityMetaMaxValue = _cacher.GetSortedSetMax(fqkey);

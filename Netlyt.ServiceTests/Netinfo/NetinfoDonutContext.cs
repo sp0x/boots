@@ -20,9 +20,7 @@ namespace Netlyt.ServiceTests.Netinfo
         [CacheBacking(CacheType.Hash)]
         public CacheSet<PageStats> PageStats { get; set; }
         [CacheBacking(CacheType.Hash)]
-        public CacheSet<UserBrowsingStats> UserBrowsingStats { get; set; }
-//        [CacheBacking(CacheType.Hash)]
-//        public CacheSet<NetinfoUserCookie> UserCookies { get; set; }
+        public CacheSet<UserBrowsingStats> UserBrowsingStats { get; set; } 
         public CacheSet<string> Purchases { get; set; }
         public CacheSet<string> PayingUsers { get; set; }
         public CacheSet<string> PurchasesOnHolidays { get; set; }
