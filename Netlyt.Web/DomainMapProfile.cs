@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using nvoid.Integration;
 using Netlyt.Service;
+using Netlyt.Service.Ml;
 using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web
@@ -9,6 +10,7 @@ namespace Netlyt.Web
     {
         public DomainMapProfile()
         {
+            CreateMap<Model, ModelViewModel>();
             CreateMap<ApiAuth, ApiAuthViewModel>()
                 .ForMember(x => x.AppId, opt => opt.MapFrom(src => src.AppId));
             CreateMap<User, UserViewModel>()

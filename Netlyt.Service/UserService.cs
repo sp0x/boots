@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using nvoid.Integration;
 using Netlyt.Data;
+using Netlyt.Service.Ml;
 using Netlyt.Service.Models.Account; 
 
 namespace Netlyt.Service
@@ -24,18 +25,21 @@ namespace Netlyt.Service
         private ApiService _apiService;
         private IHttpContextAccessor _contextAccessor;
         private OrganizationService _orgService;
+        private ModelService _modelService;
 
         public UserService(UserManager<User> userManager, 
             ApiService apiService,
             ILoggerFactory lfactory,
             IHttpContextAccessor contextAccessor,
-            OrganizationService orgService)
+            OrganizationService orgService,
+            ModelService modelService)
         {
             _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
             _userManager = userManager;
             _apiService = apiService;
             _contextAccessor = contextAccessor;
             _orgService = orgService;
+            _modelService = modelService;
         }
         
         public IdentityResult CreateUser(RegisterViewModel model, out User user)
@@ -139,6 +143,18 @@ namespace Netlyt.Service
             var userClaim = _contextAccessor.HttpContext.User;
             var userObj = await GetUser(userClaim);
             return userObj;
+        }
+
+        public async Task<IEnumerable<Model>> GetMyModels(int page)
+        {
+            var myuser = await this.GetCurrentUser();
+            return _modelService.GetAllForUser(myuser, page);
+        }
+
+        public async Task DeleteModel(long id)
+        {
+            var cruser = await GetCurrentUser();
+            _modelService.DeleteModel(cruser, id);
         }
     }
 }

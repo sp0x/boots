@@ -1,13 +1,16 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq; 
+using System.Linq;
+using System.Threading.Tasks;
+using AutoMapper;
 using nvoid.db.Extensions;
-using Newtonsoft.Json.Linq; 
+using Newtonsoft.Json.Linq;
 using Netlyt.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using nvoid.db;
 using Netlyt.Service.Ml;
+using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web.Controllers
 {
@@ -15,28 +18,36 @@ namespace Netlyt.Web.Controllers
     [Authorize]
     public class ModelController : Controller
     {
-        private RemoteDataSource<Model> _modelContext;
         private BehaviourContext _orionContext;
         private readonly UserManager<User> _userManager;
+        private UserService _userService;
+        private IMapper _mapper;
+        private ModelService _modelService;
 
-        public ModelController(BehaviourContext behaviourCtx,
-                               UserManager<User> userManager)
+        public ModelController(IMapper mapper,
+            BehaviourContext behaviourCtx,
+            UserManager<User> userManager,
+            UserService userService,
+            ModelService modelService)
         {
-            _modelContext = typeof(Model).GetDataSource<Model>();
+            _mapper = mapper;
+            //_modelContext = typeof(Model).GetDataSource<Model>();
             _userManager = userManager;
             _orionContext = behaviourCtx;
+            _userService = userService;
+            _modelService = modelService;
         }
 
-        [HttpGet("/all")] 
-        public IEnumerable<Model> GetAll([FromQuery] int page)
+        [HttpGet("/all")]
+        public async Task<IEnumerable<ModelViewModel>> GetAll([FromQuery] int page)
         {
-            var user = _userManager.GetUserAsync(User).Result;
-            int pageSize = 25;
-            return _modelContext.Where(x => x.User==user).Skip(page * pageSize).Take(pageSize).ToList();
+            var userModels = await _userService.GetMyModels(page);
+            var viewModels = userModels.Select(m => _mapper.Map<ModelViewModel>(m));
+            return viewModels;
         }
-        
-        [HttpGet("/paramlist")] 
-        public JsonResult  GetParamsList()
+
+        [HttpGet("/paramlist")]
+        public JsonResult GetParamsList()
         {
             JObject query = new JObject();
             query.Add("op", 104);
@@ -44,7 +55,7 @@ namespace Netlyt.Web.Controllers
             return Json(param);
         }
 
-        [HttpGet("/classlist")] 
+        [HttpGet("/classlist")]
         public JsonResult GetClassList()
         {
             JObject query = new JObject();
@@ -53,65 +64,56 @@ namespace Netlyt.Web.Controllers
             return Json(param);
         }
 
-        [HttpGet("{id}", Name = "GetModel")] 
+        [HttpGet("{id}", Name = "GetModel")]
         public IActionResult GetById(long id)
         {
-            var item = _modelContext.FirstOrDefault(t => t.Id == id);
+            var item = _modelService.GetById(id);
             if (item == null)
             {
                 return NotFound();
             }
-            return new ObjectResult(item);
+            return new ObjectResult(_mapper.Map<ModelViewModel>(item));
         }
 
-        [HttpPost] 
-        public IActionResult Create([FromBody] Model item)
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] ModelCreationViewModel item)
         {
             if (item == null)
             {
                 return BadRequest();
             }
-
-            _modelContext.Add(item);
-            _modelContext.Save(item);
-
-            return CreatedAtRoute("GetModel", new { id = item.Id }, item);
+            var user = await _userService.GetCurrentUser();
+            var newModel = await _modelService.CreateModel(user, item.ModelName);
+            return CreatedAtRoute("GetModel", new { id = newModel.Id }, item);
         }
-        [HttpPut("{id}")] 
-        public IActionResult Update(long id, [FromBody] Model item)
+        [HttpPut("{id}")]
+        public IActionResult Update(long id, [FromBody] ModelUpdateViewModel item)
         {
             if (item == null || item.Id != id)
             {
                 return BadRequest();
             }
 
-            var model = _modelContext.FirstOrDefault(t => t.Id == id);
+            var model = _modelService.GetById(id);
             if (model == null)
             {
                 return NotFound();
             }
 
             //TODO: add logic to check if we're updating integrations or what
-
-            _modelContext.Update(model);
-           // _modelContext.Save();
+            //_modelService.UpdateModel(model, item);
+            // _modelContext.Save();
             return new NoContentResult();
         }
 
-        [HttpDelete("{id}")] 
-        public IActionResult Delete(long id)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(long id)
         {
-            var item = _modelContext.FirstOrDefault(t => t.Id == id);
-            if (item == null)
-            {
-                return NotFound();
-            }
-
-            _modelContext.Remove(item);
+            await _userService.DeleteModel(id);
             return new NoContentResult();
         }
 
-        [HttpPost("{id}/[action]")] 
+        [HttpPost("{id}/[action]")]
         public IActionResult Train(long id)
         {
             var json = Request.GetRawBodyString();
@@ -125,15 +127,15 @@ namespace Netlyt.Web.Controllers
             return Accepted(m_id);
         }
 
-        [HttpPost("{id}/[action]")] 
+        [HttpPost("{id}/[action]")]
         public IActionResult Deploy(long id)
         {
             var json = Request.GetRawBodyString();
             JObject data = JObject.Parse(json.Result);
-            var m = _modelContext.FirstOrDefault(x => x.Id == id);
+            var m = _modelService.GetById(id);
             if (m == null) return NotFound();
             m.CurrentModel = data.GetValue("current_model").ToString();
-            _modelContext.Save(m);
+            _modelService.SaveChanges();
             return new NoContentResult();
         }
 
