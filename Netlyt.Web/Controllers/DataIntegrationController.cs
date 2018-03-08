@@ -37,7 +37,7 @@ namespace Netlyt.Web.Controllers
 
         public DataIntegrationController(UserManager<User> userManager,
             IUserStore<User> userStore,
-            BehaviourContext behaviourCtx,
+            OrionContext behaviourCtx,
             ManagementDbContext context,
             SocialNetworkApiManager socNetManager,
             IntegrationService integrationService,

@@ -11,12 +11,15 @@ namespace Netlyt.Service
     {
         private IHttpContextAccessor _contextAccessor;
         private ManagementDbContext _context;
+        private IntegrationService _integrationService;
 
         public ModelService(ManagementDbContext context,
-            IHttpContextAccessor ctxAccessor)
+            IHttpContextAccessor ctxAccessor,
+            IntegrationService integrationService)
         {
             _contextAccessor = ctxAccessor;
             _context = context;
+            _integrationService = integrationService;
         }
 
         public IEnumerable<Model> GetAllForUser(User user, int page)
@@ -32,12 +35,30 @@ namespace Netlyt.Service
         {
             return _context.Models.FirstOrDefault(t => t.Id == id);
         }
-
-        public Task<Model> CreateModel(User user, string Name)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="name"></param>
+        /// <param name="integrationSource"></param>
+        /// <param name="callbackUrl"></param>
+        /// <returns></returns>
+        public Task<Model> CreateModel(
+            User user, 
+            string name,
+            string integrationSource,
+            string callbackUrl)
         {
             var newModel = new Model();
             newModel.User = user;
-            newModel.ModelName = Name;
+            newModel.ModelName = name;
+            newModel.Callback = callbackUrl;
+            var integration = _integrationService.GetUserIntegration(user, integrationSource);
+            if (integration != null)
+            {
+                var newModelIntegration = new ModelIntegration(newModel, integration);
+                newModel.DataIntegrations.Add(newModelIntegration);
+            }
             _context.Models.Add(newModel);
             _context.SaveChanges();
             return Task.FromResult<Model>(newModel);
@@ -49,6 +70,7 @@ namespace Netlyt.Service
             if (targetModel != null)
             {
                 _context.Models.Remove(targetModel);
+                _context.SaveChanges();
             }
         }
 

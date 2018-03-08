@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using nvoid.db;
 using Netlyt.Service.Ml;
+using Netlyt.Service.Orion;
 using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web.Controllers
@@ -18,27 +19,25 @@ namespace Netlyt.Web.Controllers
     [Authorize]
     public class ModelController : Controller
     {
-        private BehaviourContext _orionContext;
-        private readonly UserManager<User> _userManager;
+        private OrionContext _orionContext; 
         private UserService _userService;
         private IMapper _mapper;
         private ModelService _modelService;
 
         public ModelController(IMapper mapper,
-            BehaviourContext behaviourCtx,
+            OrionContext behaviourCtx,
             UserManager<User> userManager,
             UserService userService,
             ModelService modelService)
         {
             _mapper = mapper;
-            //_modelContext = typeof(Model).GetDataSource<Model>();
-            _userManager = userManager;
+            //_modelContext = typeof(Model).GetDataSource<Model>(); 
             _orionContext = behaviourCtx;
             _userService = userService;
             _modelService = modelService;
         }
 
-        [HttpGet("/all")]
+        [HttpGet("/model/mymodels")]
         public async Task<IEnumerable<ModelViewModel>> GetAll([FromQuery] int page)
         {
             var userModels = await _userService.GetMyModels(page);
@@ -46,12 +45,12 @@ namespace Netlyt.Web.Controllers
             return viewModels;
         }
 
-        [HttpGet("/paramlist")]
-        public JsonResult GetParamsList()
+        [HttpGet("/model/paramlist")]
+        public async Task<JsonResult> GetParamsList()
         {
             JObject query = new JObject();
-            query.Add("op", 104);
-            var param = _orionContext.Query(query).Result;
+            query.Add("op", (int)OrionOp.ParamList);
+            var param = await _orionContext.Query(query);
             return Json(param);
         }
 
@@ -64,7 +63,7 @@ namespace Netlyt.Web.Controllers
             return Json(param);
         }
 
-        [HttpGet("{id}", Name = "GetModel")]
+        [HttpGet("/model/{id}", Name = "GetById")]
         public IActionResult GetById(long id)
         {
             var item = _modelService.GetById(id);
@@ -73,9 +72,14 @@ namespace Netlyt.Web.Controllers
                 return NotFound();
             }
             return new ObjectResult(_mapper.Map<ModelViewModel>(item));
-        }
+        } 
 
-        [HttpPost]
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        [HttpPost("/model")]
         public async Task<IActionResult> Create([FromBody] ModelCreationViewModel item)
         {
             if (item == null)
@@ -83,9 +87,10 @@ namespace Netlyt.Web.Controllers
                 return BadRequest();
             }
             var user = await _userService.GetCurrentUser();
-            var newModel = await _modelService.CreateModel(user, item.ModelName);
-            return CreatedAtRoute("GetModel", new { id = newModel.Id }, item);
+            var newModel = await _modelService.CreateModel(user, item.Name,item.DataSource, item.Callback);
+            return CreatedAtRoute("GetById", new { id = newModel.Id }, item);
         }
+
         [HttpPut("{id}")]
         public IActionResult Update(long id, [FromBody] ModelUpdateViewModel item)
         {
@@ -106,7 +111,7 @@ namespace Netlyt.Web.Controllers
             return new NoContentResult();
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("/model/{id}")]
         public async Task<IActionResult> Delete(long id)
         {
             await _userService.DeleteModel(id);

@@ -86,7 +86,11 @@ namespace Netlyt.Service
             collection.Trash();
             collection = null;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public DataIntegration GetById(long id)
         {
             return _context.Integrations.Find(id);
@@ -101,6 +105,17 @@ namespace Netlyt.Service
         public DataIntegration GetByName(ApiAuth contextApiAuth, string name)
         {
             var integration = _context.Integrations.FirstOrDefault(x => x.APIKey.Id == contextApiAuth.Id && x.Name == name);
+            return integration;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public DataIntegration GetUserIntegration(User user, string name)
+        {
+            var integration = _context.Integrations.FirstOrDefault(x => user.ApiKeys.Any(y=>y.Id ==x.APIKey.Id) && x.Name == name);
             return integration;
         }
     }

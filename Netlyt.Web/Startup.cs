@@ -25,13 +25,13 @@ namespace Netlyt.Web
     {
 
         public IConfiguration Configuration { get; private set; }
-        private BehaviourContext BehaviourContext { get; }
+        private OrionContext BehaviourContext { get; }
 
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
             DBConfig.Initialize(Configuration);
-            BehaviourContext = new BehaviourContext();
+            BehaviourContext = new OrionContext();
             BehaviourContext.Configure(Configuration.GetSection("behaviour"));
             BehaviourContext.Run();
         }
@@ -63,7 +63,7 @@ namespace Netlyt.Web
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<BehaviourContext>(this.BehaviourContext);
+            services.AddSingleton<OrionContext>(this.BehaviourContext);
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<User>>();
             services.AddTransient<IntegrationService>();
