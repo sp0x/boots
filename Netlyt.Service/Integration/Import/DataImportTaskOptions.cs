@@ -10,7 +10,7 @@ namespace Netlyt.Service.Integration.Import
         public uint ReadBlockSize { get; set; } = 30000;
         public InputSource Source { get; set; }
         public ApiAuth ApiKey { get; set; }
-        public string IntegrationName { get; set; }
+        public string IntegrationName { get; set; } 
         public uint ThreadCount { get; set; } = 10;
         public List<String> IndexesToCreate { get; set; }
         public uint ShardLimit { get; set; }

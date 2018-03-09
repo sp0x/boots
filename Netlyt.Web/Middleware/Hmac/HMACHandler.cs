@@ -78,14 +78,14 @@ namespace Netlyt.Web.Middleware.Hmac
             }
             else
             {
-                RefreshAuth();
+                await RefreshAuth();
                 var ticket = _userService.ValidateHmacSession();
                 return AuthenticateResult.Success(ticket);
             }
             return AuthenticateResult.Fail("Authentication failed");
         }
 
-        private void RefreshAuth()
+        private async Task RefreshAuth()
         { 
             StringValues clientVersion;
             if (_contextAccessor.HttpContext.Request.Headers.TryGetValue("ClientVersion", out clientVersion))
@@ -95,7 +95,7 @@ namespace Netlyt.Web.Middleware.Hmac
             else
             {
                 //This is a legacy version, decrypt the content. 
-                var crApi = _apiService.GetCurrentApi();
+                var crApi = await _userService.GetCurrentApi();
                 DecryptLegacyBody(crApi);
             }
 

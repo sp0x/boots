@@ -67,7 +67,7 @@ namespace Netlyt.ServiceTests.Netinfo
                 var mlist = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
                 //var altList = RemoteDataSource.GetMongoDb<BsonDocument>(importCollectionId);
 
-                var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
+                var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>() { Delimiter = ';' });
                 var harvester = new Harvester<ExpandoObject>(_apiService, _integrationService, 10);
                 var type = harvester.AddIntegrationSource(fileSource, _appId, null, true);
 
@@ -116,7 +116,7 @@ namespace Netlyt.ServiceTests.Netinfo
             Console.WriteLine($"Parsing data in: {inputDirectory}");
             var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
             {
-                Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' }),
+                Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>() { Delimiter = ';' }),
                 ApiKey = _appId,
                 IntegrationName = typeName,
                 ThreadCount = 10
@@ -167,7 +167,7 @@ events : elements };
         public async void ExtractAvgTimeBetweenVisitFeatures(string inputDirectory)
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' });
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>() { Delimiter = ';' });
             var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
             //harvester.AddPersistentType(fileSource, _appId, true);
 
@@ -213,7 +213,7 @@ events : elements };
         [InlineData(new object[] { "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced", "TestData\\Ebag\\demograpy.csv" })]
         public async void ExtractEntitiesFromReducedCollection(string collectionName, string demographySheet)
         { 
-            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter());
+            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
             source.SetProjection(x =>
             {
                 if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
@@ -282,7 +282,7 @@ events : elements };
         [InlineData(new object[] { "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced" })]
         public async void ParseEntitySessionsDumpCollection(string collectionName)
         { 
-            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter());
+            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
             source.SetProjection(x =>
             {
                 if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
@@ -344,7 +344,7 @@ events : elements };
         [InlineData(new object[] { "IntegratedDocument" })]
         public async void ConstructTrees(string reducedSource)
         {
-            MongoSource source = MongoSource.CreateFromCollection(reducedSource, new BsonFormatter()); 
+            MongoSource source = MongoSource.CreateFromCollection(reducedSource, new BsonFormatter<ExpandoObject>()); 
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20); 
             var type = harvester.AddIntegrationSource(source, _appId, "NetInfoUserSessions_7_8");
             var batchSize = 10000;
@@ -477,7 +477,7 @@ events : elements };
         public async void ExtractEntityFromDirectory(string inputDirectory, string demographySheet)
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter(){ Delimiter = ';' });
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>(){ Delimiter = ';' });
 
             var appId = "123123123";
             int threadCount = 12;

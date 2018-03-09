@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -52,7 +53,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         {
             var inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, "TestData\\Ebag\\1156");
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>()); 
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount); 
             harvester.LimitEntries((uint)limit); 
             harvester.AddIntegrationSource(fileSource, _apiAuth, null, false);

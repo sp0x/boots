@@ -32,8 +32,8 @@ namespace Netlyt.Web.Controllers
     public class DataIntegrationController : Controller
     { 
         private RemoteDataSource<IntegratedDocument> _documentStore; 
-        private ApiService _apiService; 
-        private DataIntegrationService _dataIntegrationService;
+        private ApiService _apiService;
+        private IntegrationService _integrationService;
 
         public DataIntegrationController(UserManager<User> userManager,
             IUserStore<User> userStore,
@@ -42,13 +42,11 @@ namespace Netlyt.Web.Controllers
             SocialNetworkApiManager socNetManager,
             IntegrationService integrationService,
             ApiService apiService,
-            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
-            DataIntegrationService dataIntegrationService)
+            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider)
         {  
-            _apiService = apiService;
-            //Move both of these 
-            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();  
-            _dataIntegrationService = dataIntegrationService;
+            _apiService = apiService; 
+            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
+            _integrationService = integrationService;
         }
 
 
@@ -73,7 +71,7 @@ namespace Netlyt.Web.Controllers
         public async Task<ActionResult> Entity()
         {
             //GetRoutes();
-            var result = await _dataIntegrationService.PostEntityData(Request.Body);
+            var result = await _integrationService.CreateOrFillIntegration(Request.Body, null);
             return Json(new
             {
                 success = true

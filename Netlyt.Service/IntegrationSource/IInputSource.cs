@@ -14,7 +14,7 @@ namespace Netlyt.Service.IntegrationSource
         Encoding Encoding { get; set; }
         IInputFormatter Formatter { get;  }
         IIntegration ResolveIntegrationDefinition();
-        IEnumerable<dynamic> GetIterator();
+        IEnumerable<dynamic> GetIterator(Type targetType=null);
         IEnumerable<T> GetIterator<T>()
             where T : class;
     }

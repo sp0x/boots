@@ -97,7 +97,7 @@ namespace Netlyt.Service.Integration.Import
             {
                 dstCollection.EnsureIndex(index);
             }
-            var output = new DataImportResult(result, dstCollection); 
+            var output = new DataImportResult(result, dstCollection, _integration); 
             return output;
         }
         /// <summary>

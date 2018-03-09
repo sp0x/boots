@@ -135,7 +135,8 @@ namespace Netlyt.Service
                 integration.Name = name;
             }
             if (persist)
-            { 
+            {
+                if (integration.APIKey == null) throw new Exception("Integration has no api key assigned!");
                 _integrationService.SaveOrFetchExisting(ref integration); 
             }
             AddType(integration, inputSource);

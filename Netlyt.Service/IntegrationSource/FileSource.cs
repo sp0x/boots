@@ -23,29 +23,26 @@ namespace Netlyt.Service.IntegrationSource
         private Stream _fileStream;
         private readonly object _lock;
 
-        public FileSource() : base(null)
+        public FileSource()
         {
             _lock = new object();
         }
 
-        public FileSource(string file, IInputFormatter formatter) : base(formatter)
+        public FileSource(string file) : base()
         {
             _lock = new object();
-            Path = file;
-            Formatter = formatter;
+            Path = file; 
         }
 
-        public FileSource(Stream fileStream, IInputFormatter formatter) : this()
+        public FileSource(Stream fileStream) : this()
         {
             _fileStream = fileStream;
-            Formatter = formatter;
         }
 
-        public FileSource(FileStream fileStream, IInputFormatter formatter) : this((Stream) fileStream, formatter)
+        public FileSource(FileStream fileStream) : this((Stream) fileStream)
         {
             Path = fileStream.Name;
             _fileStream = fileStream;
-            Formatter = formatter;
         }
 
         public bool IsOpen => _fileStream != null && (_fileStream.CanRead || _fileStream.CanWrite);
@@ -142,9 +139,10 @@ namespace Netlyt.Service.IntegrationSource
         /// <param name="fileName"></param>
         /// <param name="formatter"></param>
         /// <returns></returns>
-        public static FileSource CreateFromFile(string fileName, IInputFormatter formatter = null)
+        public static FileSource CreateFromFile(string fileName, IInputFormatter formatter = null) 
         {
-            var src = new FileSource(fileName, formatter);
+            var src = new FileSource(fileName);
+            src.SetFormatter(formatter);
             return src;
         }
 
@@ -156,7 +154,8 @@ namespace Netlyt.Service.IntegrationSource
         /// <returns></returns>
         public static FileSource CreateFromDirectory(string fileName, IInputFormatter formatter = null)
         {
-            var src = new FileSource(fileName, formatter);
+            var src = new FileSource(fileName);
+            src.SetFormatter(formatter);
             src.Mode = FileSourceMode.Directory;
             return src;
         }
@@ -169,7 +168,8 @@ namespace Netlyt.Service.IntegrationSource
         /// <returns></returns>
         public static FileSource Create(Stream stream, IInputFormatter formatter = null)
         {
-            var src = new FileSource(stream, formatter);
+            var src = new FileSource(stream);
+            src.SetFormatter(formatter);
             return src;
         }
 
@@ -178,18 +178,25 @@ namespace Netlyt.Service.IntegrationSource
         /// <param name="fs"></param>
         /// <param name="formatter"></param>
         /// <returns></returns>
-        public static FileSource Create(FileStream fs, JsonFormatter formatter = null)
+        public static FileSource Create<T>(FileStream fs, JsonFormatter<T> formatter = null)
+            where T : class
         {
             if (fs == null) throw new ArgumentNullException(nameof(fs));
-            var src = new FileSource(fs, formatter);
+            var src = new FileSource(fs);
+            src.SetFormatter(formatter);
             return src;
+        }
+
+        public override IEnumerable<T> GetIterator<T>()
+        {
+            return GetIterator(typeof(T)).Cast<T>();
         }
 
         /// <summary>
         ///     Gets the next instance
         /// </summary>
         /// <returns></returns>
-        public override IEnumerable<dynamic> GetIterator()
+        public override IEnumerable<dynamic> GetIterator(Type targetType = null)
         {
             lock (_lock)
             {
@@ -224,7 +231,8 @@ namespace Netlyt.Service.IntegrationSource
         {
             if (Mode == FileSourceMode.File)
             {
-                var inputSource = new FileSource(Path, Formatter);
+                var inputSource = new FileSource(Path);
+                inputSource.SetFormatter(Formatter);
                 yield return inputSource;
             }
             else if (Mode == FileSourceMode.Directory)
@@ -234,7 +242,8 @@ namespace Netlyt.Service.IntegrationSource
                     for (var i = _fileIndex; i < cache.Length; i++)
                     {
                         var file = cache[i];
-                        var source = new FileSource(file, Formatter.Clone());
+                        var source = new FileSource(file);
+                        source.SetFormatter(Formatter.Clone());
                         source.Encoding = Encoding;
                         yield return source;
                     }

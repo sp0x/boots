@@ -1,13 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
+using System.Threading.Tasks;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.Integration;
 using Netlyt.Data;
 using Netlyt.Service.Data;
+using Netlyt.Service.Exceptions;
+using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
+using Netlyt.Service.Integration.Import;
+using Netlyt.Service.IntegrationSource;
 
 namespace Netlyt.Service
 {
@@ -16,15 +24,24 @@ namespace Netlyt.Service
         //private IFactory<ManagementDbContext> _factory;
         private ManagementDbContext _context;
 
-        public IntegrationService(ManagementDbContext context)
+        private ApiService _apiService;
+        private UserService _userService;
+
+        public IntegrationService(ManagementDbContext context,
+            ApiService apiService,
+            UserService userService)
         {
             _context = context;
+            _apiService = apiService;
+            _userService = userService;
         }
 
         public void SaveOrFetchExisting(ref DataIntegration type)
         {
             DataIntegration exitingIntegration;
-            if (!IntegrationExists(type, type.APIKey.AppId, out exitingIntegration))
+            var typeApiKey = type.APIKey;
+            var appId = typeApiKey.AppId;
+            if (!IntegrationExists(type, appId, out exitingIntegration))
             {
                 _context.Integrations.Add(type);
                 _context.SaveChanges();
@@ -82,9 +99,12 @@ namespace Netlyt.Service
             _context.Integrations.Remove(importTaskIntegration);
             _context.SaveChanges();
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var collection = new MongoList(databaseConfiguration, importTaskIntegration.Collection);
-            collection.Trash();
-            collection = null;
+            if (!string.IsNullOrEmpty(importTaskIntegration.Collection))
+            {
+                var collection = new MongoList(databaseConfiguration, importTaskIntegration.Collection);
+                collection.Trash();
+                collection = null;
+            }
         }
         /// <summary>
         /// 
@@ -107,16 +127,105 @@ namespace Netlyt.Service
             var integration = _context.Integrations.FirstOrDefault(x => x.APIKey.Id == contextApiAuth.Id && x.Name == name);
             return integration;
         }
+
+
         /// <summary>
-        /// 
+        /// Creates a new integration from the stream, or adds the stream to an existing integration.
         /// </summary>
-        /// <param name="user"></param>
-        /// <param name="name"></param>
+        /// <param name="inputData">The stream containing integration data</param>
         /// <returns></returns>
-        public DataIntegration GetUserIntegration(User user, string name)
+        public async Task<DataImportResult> CreateOrFillIntegration(Stream inputData, string mime = null, string name = null)
         {
-            var integration = _context.Integrations.FirstOrDefault(x => user.ApiKeys.Any(y=>y.Id ==x.APIKey.Id) && x.Name == name);
-            return integration;
+            var options = new DataImportTaskOptions();
+            var apiKey = await _userService.GetCurrentApi();
+            if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
+            var crUser = await _userService.GetCurrentUser();
+            //TODO: Resolve the formatter..
+            var formatter = ResolveFormatter<ExpandoObject>(mime);
+            if (formatter == null)
+            {
+                throw new Exception("Could not resolve formatter for the given content type!");
+            }
+            var source = InMemorySource.Create(inputData, formatter);
+            DataIntegration integrationInfo = source.ResolveIntegrationDefinition() as DataIntegration;
+            if (integrationInfo == null)
+            {
+                throw new Exception("No integration found!");
+            }
+            integrationInfo.APIKey = apiKey;
+            integrationInfo.Owner = crUser;
+            integrationInfo.Name = name;
+
+            options.Source = source;
+            options.ApiKey = apiKey;
+            options.IntegrationName = integrationInfo.Name;
+
+            var importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
+            var result = await importTask.Import();
+            return result;
+        }
+        /// <summary>
+        /// Creates a new integration with the given name and data format.
+        /// </summary>
+        /// <param name="integrationName"></param>
+        /// <param name="formatType"></param>
+        /// <returns></returns>
+        public async Task<DataIntegration> Create(string integrationName, string formatType)
+        {
+            var apiKey = await _userService.GetCurrentApi();
+            if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
+            var crUser = await _userService.GetCurrentUser();
+            var newIntegration = new Integration.DataIntegration();
+            newIntegration.Name = integrationName;
+            newIntegration.DataEncoding = System.Text.Encoding.UTF8.CodePage;
+            newIntegration.DataFormatType = formatType;
+            newIntegration.Owner = crUser;
+            newIntegration.APIKey = apiKey;
+
+            var existingIntegration = _context.Integrations
+                .FirstOrDefault(x=>x.Name.ToLower() == integrationName.ToLower()
+                && x.Owner.Id == crUser.Id);
+            if (existingIntegration != null)
+            {
+                throw new ObjectAlreadyExists("Integration with the same name already exists!");
+            }
+            _context.Integrations.Add(newIntegration);
+            _context.SaveChanges();
+            return await Task.FromResult(newIntegration);
+        }
+
+        /// <summary>
+        /// Resolves the needed formatter to read the data.
+        /// </summary>
+        /// <param name="mimeType">The mime type of the data.</param>
+        /// <returns></returns>
+        private IInputFormatter<T> ResolveFormatter<T>(string mimeType)
+            where T : class
+        {
+            if (!string.IsNullOrEmpty(mimeType))
+            {
+                if (mimeType.Contains("ms-excel")) return new CsvFormatter<T>() { Delimiter = ',' };
+                if (mimeType== "application/json") return new JsonFormatter<T>() {  };
+            }
+            else
+            {
+                var output = new JsonFormatter<T>();
+                return output;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Checks the mime if it's allowed for integration.
+        /// </summary>
+        /// <param name="fileContentType"></param>
+        /// <returns></returns>
+        public bool MimeIsAllowed(string fileContentType)
+        {
+            if (string.IsNullOrEmpty(fileContentType)) return false;
+            if (fileContentType.EndsWith("ms-excel")) return true;
+            if (fileContentType == "application/json") return true;
+            return false;
         }
     }
 }

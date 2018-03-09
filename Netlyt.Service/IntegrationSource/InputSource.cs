@@ -31,19 +31,20 @@ namespace Netlyt.Service.IntegrationSource
             }
         }
 
-        public InputSource(IInputFormatter formatter)
+        public void SetFormatter(IInputFormatter formatter) 
         {
             this.Formatter = formatter;
         }
+//        public InputSource(IInputFormatter formatter)
+//        {
+//            this.Formatter = formatter;
+//        }
 
         public abstract IIntegration ResolveIntegrationDefinition();
-        public abstract IEnumerable<dynamic> GetIterator();
+        public abstract IEnumerable<dynamic> GetIterator(Type targetType=null);
 
-        public IEnumerable<T> GetIterator<T>()
-            where T : class
-        {
-            return GetIterator().Cast<T>();
-        }
+        public abstract IEnumerable<T> GetIterator<T>()
+            where T : class;
 
         public virtual void DoDispose()
         {

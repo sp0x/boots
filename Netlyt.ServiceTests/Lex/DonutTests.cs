@@ -78,11 +78,11 @@ namespace Netlyt.ServiceTests.Lex
         }
 
         [Theory]
-        [InlineData(new object[] { "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced", "TestData\\Ebag\\demograpy.csv" })]
-        public async void ExtractEntitiesFromReducedCollection(string collectionName, string demographySheet)
+        [InlineData(new object[] { "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced"})]
+        public async void ExtractEntitiesFromReducedCollection(string collectionName)
         {
             //Source
-            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter());
+            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
             source.SetProjection(x =>
             {
                 if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
@@ -125,7 +125,7 @@ namespace Netlyt.ServiceTests.Lex
             var inputFile = "TestData\\Ebag\\demograpy.csv";
             var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
             {
-                Source = FileSource.CreateFromFile(Path.Combine(Environment.CurrentDirectory, inputFile), new CsvFormatter()
+                Source = FileSource.CreateFromFile(Path.Combine(Environment.CurrentDirectory, inputFile), new CsvFormatter<ExpandoObject>()
                 {
                     Delimiter = ',',
                     Headers = new[] { "uuid", "time", "gender", "age" },
@@ -148,7 +148,7 @@ namespace Netlyt.ServiceTests.Lex
             uint entryLimit = 0;
             var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
             {
-                Source = FileSource.CreateFromFile(Path.Combine(Environment.CurrentDirectory, inputFile), new CsvFormatter()
+                Source = FileSource.CreateFromFile(Path.Combine(Environment.CurrentDirectory, inputFile), new CsvFormatter<ExpandoObject>()
                 {
                     Delimiter = ',', Headers = new[] { "uuid", "time", "gender", "age" }, SkipHeader = true
                 }),
@@ -189,7 +189,7 @@ namespace Netlyt.ServiceTests.Lex
             uint entryLimit = 100;
             var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
             {
-                Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' }),
+                Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>() { Delimiter = ';' }),
                 ApiKey = _appAuth,
                 IntegrationName = "TestingType",
                 ThreadCount = 1, //So that we actually get predictable results with our limit!

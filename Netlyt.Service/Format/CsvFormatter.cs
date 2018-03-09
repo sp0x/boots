@@ -7,9 +7,9 @@ using LumenWorks.Framework.IO.Csv;
 using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Format
-{
-    public class CsvFormatter 
-        : IInputFormatter, IDisposable
+{ 
+    public class CsvFormatter<T> : IInputFormatter<T>, IDisposable
+        where T : class
     {
         public string Name => "Csv";
         public char Delimiter { get; set; } = ';';
@@ -43,13 +43,12 @@ namespace Netlyt.Service.Format
         /// <param name="fs"></param>
         /// <param name="reset"></param>
         /// <returns></returns>
-        public IEnumerable<dynamic> GetIterator(Stream fs, bool reset = false)
+        public IEnumerable<dynamic> GetIterator(Stream fs, bool reset = false, Type targetType = null)
         {
-            return GetIterator<ExpandoObject>(fs, reset);
+            return GetIterator(fs, reset);
         }
 
-        public IEnumerable<T> GetIterator<T>(Stream fs, bool reset = false)
-            where T : class
+        public IEnumerable<T> GetIterator(Stream fs, bool reset = false)
         {
             if (!fs.CanRead)
             {
@@ -100,7 +99,7 @@ namespace Netlyt.Service.Format
 
         public IInputFormatter Clone()
         {
-            var formatter = new CsvFormatter();
+            var formatter = new CsvFormatter<T>();
             formatter.Delimiter = this.Delimiter;
             return formatter;
         }

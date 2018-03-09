@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -96,7 +97,7 @@ namespace Netlyt.ServiceTests
         public void ExtractEntityFromDirectory(string inputDirectory, string demographySheet)
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());   
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>());   
             var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService);
             var type = harvester.AddIntegrationSource(fileSource, _apiAuth, null, true); 
             var grouper = new GroupingBlock(_apiAuth, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);

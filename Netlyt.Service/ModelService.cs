@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Netlyt.Service.Data;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Ml;
 
 namespace Netlyt.Service
@@ -11,15 +12,12 @@ namespace Netlyt.Service
     {
         private IHttpContextAccessor _contextAccessor;
         private ManagementDbContext _context;
-        private IntegrationService _integrationService;
 
         public ModelService(ManagementDbContext context,
-            IHttpContextAccessor ctxAccessor,
-            IntegrationService integrationService)
+            IHttpContextAccessor ctxAccessor)
         {
             _contextAccessor = ctxAccessor;
             _context = context;
-            _integrationService = integrationService;
         }
 
         public IEnumerable<Model> GetAllForUser(User user, int page)
@@ -35,25 +33,25 @@ namespace Netlyt.Service
         {
             return _context.Models.FirstOrDefault(t => t.Id == id);
         }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="user"></param>
-        /// <param name="name"></param>
-        /// <param name="integrationSource"></param>
+        /// <param name="name"></param> 
+        /// <param name="integration"></param>
         /// <param name="callbackUrl"></param>
         /// <returns></returns>
         public Task<Model> CreateModel(
             User user, 
             string name,
-            string integrationSource,
+            DataIntegration integration, 
             string callbackUrl)
         {
             var newModel = new Model();
             newModel.User = user;
             newModel.ModelName = name;
-            newModel.Callback = callbackUrl;
-            var integration = _integrationService.GetUserIntegration(user, integrationSource);
+            newModel.Callback = callbackUrl; 
             if (integration != null)
             {
                 var newModelIntegration = new ModelIntegration(newModel, integration);

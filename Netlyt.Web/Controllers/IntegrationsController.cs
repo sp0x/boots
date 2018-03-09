@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq; 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -11,39 +13,68 @@ using Netlyt.Web.Models;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Extensions;
 using System.IO;
+using System.Text;
+using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using static Netlyt.Web.Attributes;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Net.Http.Headers;
+using Netlyt.Service.Data;
+using Netlyt.Service.Integration.Import;
 using Netlyt.Web.Helpers;
+using Netlyt.Web.Services;
+using Netlyt.Web.ViewModels;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Netlyt.Web.Controllers
 {
     [Route("integration")]
     public class IntegrationsController : Controller
-    {
-        private RemoteDataSource<DataIntegration> _integrationContext;
-        private readonly UserManager<User> _userManager;
+    { 
+        private ApiService _apiService;
+        private RemoteDataSource<IntegratedDocument> _documentStore;
+        private IntegrationService _integrationService;
+        private FormOptions _defaultFormOptions;
+        private UserService _userService;
+        private IMapper _mapper;
         // GET: /<controller>/
-        public IntegrationsController(UserManager<User> userManager)
+        public IntegrationsController(UserManager<User> userManager,
+            IUserStore<User> userStore,
+            OrionContext behaviourCtx,
+            ManagementDbContext context,
+            SocialNetworkApiManager socNetManager,
+            ApiService apiService,
+            UserService userService,
+            IntegrationService integrationService,
+            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
+            IMapper mapper)
         {
-            _integrationContext = typeof(DataIntegration).GetDataSource<DataIntegration>();
-            _userManager = userManager;
+            _apiService = apiService; 
+            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>(); 
+            _defaultFormOptions = new FormOptions();
+            _userService = userService;
+            _integrationService = integrationService;
+            _mapper = mapper;
         }
 
-        [HttpGet("integration/all")]
+        [HttpGet("/integrations/me")]
         [Authorize]
-        public IEnumerable<DataIntegration> GetAll([FromQuery] int page)
+        public async Task<IEnumerable<DataIntegration>> GetAll([FromQuery] int page)
         {
-            var user = _userManager.GetUserAsync(User).Result;
+            var user = await _userService.GetCurrentUser();
             int pageSize = 25;
-            return _integrationContext.Where(x => x.Owner == user).Skip(page * pageSize).Take(pageSize).ToList();
-        }
+            return await _userService.GetIntegrations(user, page, pageSize);
+        } 
 
-        [HttpGet("{id}", Name = "GetIntegration")]
+        [HttpGet("/integration/{id}", Name = "GetIntegration")]
         [Authorize]
         public IActionResult GetById(long id, string target, string attr, string script)
         {
-            var item = _integrationContext.FirstOrDefault(t => t.Id == id);
+            var item = _integrationService.GetById(id);
             if (item == null)
             {
                 return NotFound();
@@ -63,42 +94,128 @@ namespace Netlyt.Web.Controllers
         {
             return Accepted();
         }
-        [HttpPost]
+
+        [HttpPost("/integration")] 
         [Authorize]
-        [DisableFormValueModelBinding]
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> CreateIntegration([FromBody]NewIntegrationViewModel integration)
         {
-            DataIntegration integration = null;
-            if (Request.GetMultipartBoundary() == null)
+            if (string.IsNullOrEmpty(integration.Name))
             {
-                var model = JObject.Parse(await Request.GetRawBodyString());
-                //regular post do something with this?
+                return BadRequest("No integration name given.");
             }
-            else
+            var newIntegration = await _integrationService.Create(integration.Name, integration.DataFormatType);
+            return CreatedAtRoute("GetIntegration", new { id = newIntegration.Id }, _mapper.Map< DataIntegrationViewModel>(newIntegration));
+
+        }
+
+        [HttpPost("/integration/file")] 
+        [DisableFormValueModelBinding]
+        [Authorize] 
+        public async Task<IActionResult> CreateFileIntegration()
+        {
+            DataIntegration newIntegration = null; 
+            if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
-                // borrowed from https://dotnetcoretutorials.com/2017/03/12/uploading-files-asp-net-core/
-                FormValueProvider formModel;
-                var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-                using (var stream = System.IO.File.Create(path))
+                return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
+            }
+            var formAccumulator = new Dictionary<string, string>();
+            var mediaTypeHeaderValue = MediaTypeHeaderValue.Parse(Request.ContentType);
+            var boundary = MultipartRequestHelper.GetBoundary(
+                mediaTypeHeaderValue, 1242134123);
+            var reader = new MultipartReader(boundary, HttpContext.Request.Body);
+            var section = await reader.ReadNextSectionAsync();
+            NewIntegrationViewModel integrationParams = new NewIntegrationViewModel();
+            string targetFilePath = Path.GetTempFileName();
+            string fileContentType = null;
+            while (section != null)
+            {
+                ContentDispositionHeaderValue contentDisposition;
+                var hasContentDispositionHeader = ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out contentDisposition);
+                
+                if (hasContentDispositionHeader)
                 {
-                    formModel = await Request.StreamFile(stream);
-                }
-                integration = new DataIntegration();
-
-                var bindingSuccessful = await TryUpdateModelAsync(integration, prefix: "",
-                   valueProvider: formModel);
-
-                if (!bindingSuccessful)
-                {
-                    if (!ModelState.IsValid)
+                    if (MultipartRequestHelper.HasFileContentDisposition(contentDisposition))
                     {
-                        return BadRequest(ModelState);
+                        fileContentType = section.ContentType;
+                        if (fileContentType == "application/octet-stream")
+                        {
+                            fileContentType = MimeResolver.Resolve(contentDisposition);
+                        }
+                        if (!_integrationService.MimeIsAllowed(fileContentType))
+                        {
+                            return Forbid("Given mime is forbidden!");
+                        }
+                        using (var targetStream = System.IO.File.Create(targetFilePath))
+                        {
+                            await section.Body.CopyToAsync(targetStream);
+
+                            Debug.WriteLine($"Copied the uploaded file '{targetFilePath}'");
+                        }
                     }
-                }                
+                    else if (MultipartRequestHelper.HasFormDataContentDisposition(contentDisposition))
+                    {
+                        // Content-Disposition: form-data; name="key"
+                        //
+                        // value
+
+                        // Do not limit the key name length here because the 
+                        // multipart headers length limit is already in effect.
+                        var key = HeaderUtilities.RemoveQuotes(contentDisposition.Name);
+                        var encoding = GetEncoding(section);
+                        using (var streamReader = new StreamReader(
+                            section.Body,
+                            encoding,
+                            detectEncodingFromByteOrderMarks: true,
+                            bufferSize: 1024,
+                            leaveOpen: true))
+                        {
+                            // The value length limit is enforced by MultipartBodyLengthLimit
+                            var value = await streamReader.ReadToEndAsync();
+                            if (String.Equals(value, "undefined", StringComparison.OrdinalIgnoreCase))
+                            {
+                                value = String.Empty;
+                            }
+                            formAccumulator[key.ToString()] = value;
+
+                            if (formAccumulator.Keys.Count > _defaultFormOptions.ValueCountLimit)
+                            {
+                                throw new InvalidDataException($"Form key count limit {_defaultFormOptions.ValueCountLimit} exceeded.");
+                            }
+                        }
+                    }
+                }
+                // Drains any remaining section body that has not been consumed and
+                // reads the headers for the next section.
+                section = await reader.ReadNextSectionAsync();
             }
-            _integrationContext.Add(integration);
-            _integrationContext.Save(integration);
-            return CreatedAtRoute("GetIntegration", new { id = integration.Id }, integration);
+            if (!formAccumulator.ContainsKey("integration")) return BadRequest("No integration given.");
+            integrationParams = JsonConvert.DeserializeObject<NewIntegrationViewModel>(formAccumulator["integration"]);
+            DataImportResult result=null;
+            using (var targetStream = System.IO.File.OpenRead(targetFilePath))
+            {
+                try
+                {
+                    result = await _integrationService.CreateOrFillIntegration(targetStream, fileContentType,
+                        integrationParams.Name);
+                    newIntegration = result?.Integration;
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(ex.Message);
+                }
+            }
+            if (result != null)
+            {
+                System.IO.File.Delete(targetFilePath);
+                return CreatedAtRoute("GetIntegration", new { id = newIntegration.Id },
+                    _mapper.Map<DataIntegrationViewModel>(newIntegration));
+            }
+            return null; 
+        }
+
+        private Encoding GetEncoding(MultipartSection section)
+        {
+            return new UTF8Encoding(); //Todo: implement this
         }
 
         [HttpPut("{id}")]
@@ -109,14 +226,14 @@ namespace Netlyt.Web.Controllers
             {
                 return BadRequest();
             }
-            var integration = _integrationContext.FirstOrDefault(t => t.Id == id);
+            var integration = _integrationService.GetById(id);
             if (integration == null)
             {
                 return NotFound();
             }
             //TODO: add logic to check if we're updating integrations or what
 
-            _integrationContext.Update(integration);
+            //_integrationContext.Update(integration);
             // _integrationContext.Save();
             return new NoContentResult();
         }
@@ -125,25 +242,27 @@ namespace Netlyt.Web.Controllers
         [Authorize]
         public IActionResult Delete(long id)
         {
-            var item = _integrationContext.FirstOrDefault(t => t.Id == id);
+            var item = _integrationService.GetById(id);
             if (item == null)
             {
                 return NotFound();
             }
-
-            _integrationContext.Remove(item);
+            _integrationService.Remove(item);
             return new NoContentResult();
         }
 
         [HttpGet("{id}/schema")]
         public IActionResult GetSchema(long id)
         {
-            var item = _integrationContext.FindFirst(x => x.Id == id);
+            var item = _integrationService.GetById(id);
             if (item == null)
             {
                 return new NotFoundResult();
             }
-            return Ok(item.Fields);
+            var fields = item.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
+            return Ok(fields);
         }
     }
+
+    
 }

@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using nvoid.Integration;
 using Netlyt.Service;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Ml;
+using Netlyt.Service.Source;
 using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web
@@ -18,6 +20,9 @@ namespace Netlyt.Web
                 {
                     return src.Role?.Name;
                 }));
+            CreateMap<IntegrationExtra, IntegrationExtraViewModel>();
+            CreateMap<FieldDefinition, FieldDefinitionViewModel>();
+            CreateMap<DataIntegration, DataIntegrationViewModel>();
         }
     }
 }

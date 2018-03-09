@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Dynamic;
 using System.IO;
 using Netlyt.Service;
 using Netlyt.Service.Format;
@@ -37,7 +38,7 @@ namespace Netlyt.ServiceTests
         {
             var resBytes = Resources.ResourceManager.GetObject(file);
             var resStream = new MemoryStream(resBytes as byte[]);
-            var fs = FileSource.Create(resStream, new JsonFormatter()); 
+            var fs = FileSource.Create(resStream, new JsonFormatter<ExpandoObject>()); 
             var type = fs.ResolveIntegrationDefinition();
             Assert.NotNull(type);
             Assert.True(type.Fields.Count == 2); 

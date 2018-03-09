@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -64,7 +65,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         {
             inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());  
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>());  
             var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService, 20);
             var grouper = GetGrouper(_apiAuth);
             harvester.LimitEntries(10);
@@ -82,7 +83,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         {
             inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>()); 
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20);
 
             var grouper = GetGrouper(_apiAuth);

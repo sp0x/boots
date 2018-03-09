@@ -66,7 +66,6 @@ namespace Netlyt.Web
             services.AddSingleton<OrionContext>(this.BehaviourContext);
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<User>>();
-            services.AddTransient<IntegrationService>();
             services.AddTransient<SignInManager<User>>();
             
             services.AddTransient<IEmailSender, AuthMessageSender>();
@@ -83,7 +82,7 @@ namespace Netlyt.Web
             services.AddTransient<ApiService>();
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
-            services.AddTransient<DataIntegrationService>();
+            services.AddTransient<IntegrationService>();
             SetupAuthentication(services);
             services.AddAutoMapper();
             services.AddMvc();

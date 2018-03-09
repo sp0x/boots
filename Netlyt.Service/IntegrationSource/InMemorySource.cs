@@ -17,12 +17,12 @@ namespace Netlyt.Service.IntegrationSource
         private dynamic _cachedInstance;
         private DataIntegration _cachedIntegration;
 
-        public InMemorySource(string content, IInputFormatter formatter = null) : base(formatter)
+        public InMemorySource(string content) : base()
         {
             this.Content = new MemoryStream(Encoding.GetBytes(content)); 
         }
 
-        public InMemorySource(Stream stream, IInputFormatter formatter = null) : base(formatter)
+        public InMemorySource(Stream stream) : base()
         { 
             this.Content = stream;
         }
@@ -33,9 +33,11 @@ namespace Netlyt.Service.IntegrationSource
         /// <param name="fileName"></param>
         /// <param name="formatter"></param>
         /// <returns></returns>
-        public static InMemorySource Create(string payload, IInputFormatter formatter = null)
+        public static InMemorySource Create<T>(string payload, IInputFormatter<T> formatter = null)
+            where T : class
         {
-            var src = new InMemorySource(payload, formatter);
+            var src = new InMemorySource(payload);
+            src.SetFormatter(formatter);
             return src;
         }
 
@@ -45,9 +47,11 @@ namespace Netlyt.Service.IntegrationSource
         /// <param name="fileName"></param>
         /// <param name="formatter"></param>
         /// <returns></returns>
-        public static InMemorySource Create(Stream payload, IInputFormatter formatter = null)
+        public static InMemorySource Create<T>(Stream payload, IInputFormatter<T> formatter = null)
+            where T : class
         {
-            var src = new InMemorySource(payload, formatter);
+            var src = new InMemorySource(payload);
+            src.SetFormatter(formatter);
             return src;
         }
 
@@ -57,7 +61,8 @@ namespace Netlyt.Service.IntegrationSource
         /// <returns>The input files as source</returns>
         public override IEnumerable<InputSource> Shards()
         {
-            var source = new InMemorySource(Content, Formatter);
+            var source = new InMemorySource(Content);
+            source.SetFormatter(Formatter);
             source._cachedInstance = _cachedInstance;
             yield return source;
         }
@@ -78,15 +83,11 @@ namespace Netlyt.Service.IntegrationSource
             return _cachedIntegration = typeDef;
         }
 
-        /// <summary>
-        /// Gets the next object instance
-        /// </summary>
-        /// <returns></returns>
-        public override IEnumerable<dynamic> GetIterator()
+        public override IEnumerable<T> GetIterator<T>()
         {
             lock (_lock)
             {
-                dynamic lastInstance = null;
+                IEnumerable<T> iterator = null;
                 var resetNeeded = _cachedInstance != null;
                 //Probably throw?
                 if (resetNeeded && Content.CanSeek)
@@ -94,8 +95,29 @@ namespace Netlyt.Service.IntegrationSource
                     Content.Position = 0;
                     _cachedInstance = null;
                 }
-                lastInstance = Formatter.GetIterator(Content, resetNeeded);
-                return lastInstance;
+                iterator = ((IInputFormatter<T>) Formatter).GetIterator(Content, resetNeeded);
+                return iterator;
+            }
+        }
+         
+        /// <summary>
+        /// Gets the next object instance
+        /// </summary>
+        /// <returns></returns>
+        public override IEnumerable<dynamic> GetIterator(Type targetType=null)
+        {
+            lock (_lock)
+            {
+                IEnumerable<dynamic> iterator = null;
+                var resetNeeded = _cachedInstance != null;
+                //Probably throw?
+                if (resetNeeded && Content.CanSeek)
+                {
+                    Content.Position = 0;
+                    _cachedInstance = null;
+                }
+                iterator = Formatter.GetIterator(Content, resetNeeded);
+                return iterator;
             }
         }
 

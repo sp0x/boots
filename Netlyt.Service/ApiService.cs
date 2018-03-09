@@ -11,12 +11,13 @@ namespace Netlyt.Service
     public class ApiService
     { 
         private IHttpContextAccessor _contextAccessor;
-        private ManagementDbContext _context;
+        private ManagementDbContext _context; 
+
         public ApiService(ManagementDbContext context,
             IHttpContextAccessor contextAccessor)
         { 
             _context = context;
-            _contextAccessor = contextAccessor;
+            _contextAccessor = contextAccessor; 
         }
 
         public ApiAuth GetApi(long userApiId)
@@ -53,13 +54,23 @@ namespace Netlyt.Service
             var user = _context.Users.FirstOrDefault(x => x.ApiKeys.Any(a => a.Id == id));
             return user;
         }
-        public ApiAuth GetCurrentApi()
-        {
-            var appApiIdStr = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");
-            if (string.IsNullOrEmpty(appApiIdStr)) return null;
-            var id = long.Parse(appApiIdStr);
-            return GetApi(id);
-        }
+//        public async Task<ApiAuth> GetCurrentApi()
+//        {
+//            var appApiIdStr = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");
+//            if (string.IsNullOrEmpty(appApiIdStr))
+//            {
+//                var crUser = await _userService.GetCurrentUser();
+//                var userApi = crUser?.ApiKeys.FirstOrDefault();
+//                if (userApi != null)
+//                {
+//                    _contextAccessor.HttpContext.Session.SetString("APP_API_ID", userApi.Id.ToString());
+//                    return userApi;
+//                }
+//                return null;
+//            }
+//            var id = long.Parse(appApiIdStr);
+//            return GetApi(id);
+//        }
         public void SetCurrentApi(ApiAuth apiAuth)
         {
             var appApiId = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");

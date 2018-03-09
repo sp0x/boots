@@ -1,7 +1,8 @@
 using System; 
 using System.Collections.Generic; 
 using System.Diagnostics;
-using System.Dynamic; 
+using System.Dynamic;
+using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -30,7 +31,7 @@ namespace Netlyt.Service.IntegrationSource
         private double _lastProgress;
         public IMongoCollection<BsonDocument> Collection => _collection;
 
-        public MongoSource(string collectionName, IInputFormatter formatter) : base(formatter)
+        public MongoSource(string collectionName) : base()
         {
             var list = new MongoList(DBConfig.GetGeneralDatabase(), collectionName);
             _collection = list.Records;
@@ -104,8 +105,7 @@ namespace Netlyt.Service.IntegrationSource
                 return finder.Count();
             }
         }
-
-        public override IEnumerable<dynamic> GetIterator()
+        public override IEnumerable<T> GetIterator<T>()
         {
             lock (_lock)
             {
@@ -125,18 +125,19 @@ namespace Netlyt.Service.IntegrationSource
                             BatchSize = (int)BatchSize
                         };
                         _cursorSource = _collection.Find(_query, options);
-                        Size = ((IFindFluent<BsonDocument, BsonDocument>) _cursorSource).Count();
+                        Size = ((IFindFluent<BsonDocument, BsonDocument>)_cursorSource).Count();
                     }
-                } 
+                }
                 if (resetNeeded)
-                { 
+                {
                     _cachedInstance = null;
                 }
-                var formatterIterator = (Formatter as BsonFormatter)?.GetIterator(_cursorSource, resetNeeded);
+                IEnumerable<T> formatterIterator = (Formatter as BsonFormatter<T>)?.GetIterator(_cursorSource, resetNeeded);
                 foreach (var formattedItem in formatterIterator)
                 {
                     var item = formattedItem;
-                    if (_project != null) item = _project(item);
+                    //Todo: Optimize this..
+                    if (_project != null) item = BsonSerializer.Deserialize<T>(_project(item.ToBsonDocument()));
                     lastInstance = item;//BsonSerializer.Deserialize<ExpandoObject>(item);
 #if DEBUG
                     var crProgress = Progress;
@@ -149,6 +150,10 @@ namespace Netlyt.Service.IntegrationSource
                     yield return lastInstance;
                 }
             }
+        }
+        public override IEnumerable<dynamic> GetIterator(Type targetType = null)
+        {
+            return GetIterator();
         }
 
         public override void Cleanup()
@@ -177,9 +182,11 @@ namespace Netlyt.Service.IntegrationSource
             return _collection == null ? base.ToString() : _collection.CollectionNamespace.FullName;
         }
 
-        public static MongoSource CreateFromCollection(string collectionName, IInputFormatter formatter)
+        public static MongoSource CreateFromCollection<T>(string collectionName, IInputFormatter<T> formatter)
+            where T : class
         {
-            var source = new MongoSource(collectionName, formatter);
+            var source = new MongoSource(collectionName);
+            source.SetFormatter(formatter);
             return source;
         }
 

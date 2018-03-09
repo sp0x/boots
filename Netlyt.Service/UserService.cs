@@ -13,6 +13,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using nvoid.Integration;
 using Netlyt.Data;
+using Netlyt.Service.Data;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Ml;
 using Netlyt.Service.Models.Account; 
 
@@ -26,13 +28,15 @@ namespace Netlyt.Service
         private IHttpContextAccessor _contextAccessor;
         private OrganizationService _orgService;
         private ModelService _modelService;
+        private ManagementDbContext _context;
 
         public UserService(UserManager<User> userManager, 
             ApiService apiService,
             ILoggerFactory lfactory,
             IHttpContextAccessor contextAccessor,
             OrganizationService orgService,
-            ModelService modelService)
+            ModelService modelService,
+            ManagementDbContext context)
         {
             _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
             _userManager = userManager;
@@ -40,6 +44,7 @@ namespace Netlyt.Service
             _contextAccessor = contextAccessor;
             _orgService = orgService;
             _modelService = modelService;
+            _context = context;
         }
         
         public IdentityResult CreateUser(RegisterViewModel model, out User user)
@@ -155,6 +160,35 @@ namespace Netlyt.Service
         {
             var cruser = await GetCurrentUser();
             _modelService.DeleteModel(cruser, id);
+        }
+
+        /// <summary>
+        /// Gets the current user's first api key.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ApiAuth> GetCurrentApi()
+        {
+            var crUser =await GetCurrentUser();
+            return crUser?.ApiKeys?.FirstOrDefault();
+        }
+
+        public async Task<IEnumerable<DataIntegration>> GetIntegrations(User user, int page, int pageSize)
+        {
+            var integrations = _context.Integrations.Where(x => x.Owner == user).Skip(page * pageSize).Take(pageSize)
+                .ToList();
+            return await Task.FromResult(integrations);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public DataIntegration GetUserIntegration(User user, string name)
+        {
+            var integration = _context.Integrations.FirstOrDefault(x => user.ApiKeys.Any(y => y.Id == x.APIKey.Id) && x.Name == name);
+            return integration;
         }
     }
 }

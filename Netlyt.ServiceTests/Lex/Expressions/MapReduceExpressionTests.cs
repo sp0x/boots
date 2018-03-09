@@ -122,7 +122,7 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             uint entryLimit = 100;
             var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
             {
-                Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter() { Delimiter = ';' }),
+                Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>() { Delimiter = ';' }),
                 ApiKey = _appId,
                 IntegrationName = "TestingType",
                 ThreadCount = 1, //So that we actually get predictable results with our limit!

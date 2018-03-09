@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,8 +38,11 @@ namespace Netlyt.ServiceTests
         private void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<ManagementDbContext>(s => s.UseInMemoryDatabase("Testing"));
-            services.AddTransient<ApiService>(s => new ApiService(_context, null));
-            services.AddTransient<IntegrationService>(s => new IntegrationService(_context));
+            services.AddTransient<ApiService>(s => new ApiService(_context, null)); 
+            services.AddTransient<UserService>(s => new UserService(s.GetService<UserManager<User>>(), s.GetService<ApiService>(), null, null,
+                s.GetService<OrganizationService>(), s.GetService<ModelService>(), _context));
+            services.AddTransient<ModelService>(s => new ModelService(_context, null));
+            services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>()));
             services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
         }
 

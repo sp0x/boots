@@ -87,7 +87,8 @@ namespace Netlyt.Web.Controllers
                 return BadRequest();
             }
             var user = await _userService.GetCurrentUser();
-            var newModel = await _modelService.CreateModel(user, item.Name,item.DataSource, item.Callback);
+            var integration = _userService.GetUserIntegration(user, item.DataSource);
+            var newModel = await _modelService.CreateModel(user, item.Name, integration, item.Callback);
             return CreatedAtRoute("GetById", new { id = newModel.Id }, item);
         }
 

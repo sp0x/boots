@@ -4,17 +4,24 @@ using System.IO;
 
 namespace Netlyt.Service.Format
 {
-    /// <summary>
-    /// 
-    /// </summary>
     public interface IInputFormatter : IDisposable
     {
         string Name { get; }
-        IEnumerable<dynamic> GetIterator(Stream fs, bool reset);
-        IEnumerable<T> GetIterator<T>(Stream fs, bool reset) where T : class; 
-        IInputFormatter Clone();
         void Reset();
-        long Position();
+        long Position(); 
+        IEnumerable<dynamic> GetIterator(Stream fs, bool reset, Type targetType = null);
+        IInputFormatter Clone();
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public interface IInputFormatter<T> : IInputFormatter
+        where T : class
+    {
+        //TODO: Fix this generic mess 
+        IEnumerable<T> GetIterator(Stream fs, bool reset); 
+
         //double Progress { get; }
     }
 }

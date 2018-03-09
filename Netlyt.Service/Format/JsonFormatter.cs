@@ -2,13 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Format
-{
-    public class JsonFormatter : IInputFormatter
+{ 
+    public class JsonFormatter<T> : IInputFormatter<T>
+        where T : class
     {
         public LineMode LineMode { get; set; }
         public string Name => "Json";
@@ -33,9 +35,9 @@ namespace Netlyt.Service.Format
         /// </summary>
         /// <param name="fs"></param>
         /// <returns></returns>
-        public IEnumerable<dynamic> GetIterator(Stream fs, bool resetRead = false)
+        public IEnumerable<dynamic> GetIterator(Stream fs, bool resetRead = false, Type targetType = null)
         {
-            return GetIterator<dynamic>(fs, resetRead);
+            return GetIterator(fs, resetRead);
         }
 
         /// <summary>
@@ -45,8 +47,7 @@ namespace Netlyt.Service.Format
         /// <typeparam name="T">The type to which to cast the input object</typeparam>
         /// <param name="fs"></param>
         /// <returns></returns>
-        public IEnumerable<T> GetIterator<T>(Stream fs, bool resetRead = false)
-            where T : class
+        public IEnumerable<T> GetIterator(Stream fs, bool resetRead = false)
         {
             while (true)
             {
@@ -101,7 +102,7 @@ namespace Netlyt.Service.Format
 
         public IInputFormatter Clone()
         {
-            var jsf = new JsonFormatter();
+            var jsf = new JsonFormatter<T>();
             return jsf;
         }
 

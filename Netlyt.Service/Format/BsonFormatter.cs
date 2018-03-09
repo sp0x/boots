@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using MongoDB.Bson; 
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver; 
 
 namespace Netlyt.Service.Format
 {
-    public class BsonFormatter
-        : IInputFormatter
+    public class BsonFormatter<T> : IInputFormatter<T>
+        where T : class
     {
         IAsyncCursorSource<BsonDocument> _finder = null;
         IAsyncCursor<BsonDocument> _cursor;
@@ -48,15 +49,15 @@ namespace Netlyt.Service.Format
             return _passedElements + _position;
         }
 
-        public IEnumerable<dynamic> GetIterator(Stream fs, bool reset)
+        public IEnumerable<dynamic> GetIterator(Stream fs, bool reset, Type targetType = null)
         {
             throw new NotImplementedException();
         }
-        public IEnumerable<T> GetIterator<T>(Stream fs, bool reset) where T : class
+        public IEnumerable<T> GetIterator(Stream fs, bool reset)
         {
             throw new NotImplementedException();
         }
-        public IEnumerable<dynamic> GetIterator(IAsyncCursorSource<BsonDocument> cursorSource, bool reset)
+        public IEnumerable<T> GetIterator(IAsyncCursorSource<BsonDocument> cursorSource, bool reset,Type targetType = null)
         {
             _finder = cursorSource;
 //            if (_size == 0 || reset)
@@ -72,7 +73,7 @@ namespace Netlyt.Service.Format
                 {
                     foreach (var element in _elementCache)
                     { 
-                        yield return element;
+                        yield return BsonSerializer.Deserialize<T>(element);
                         Interlocked.Increment(ref _position);
                     }
                     GetCache(false); 
@@ -109,7 +110,7 @@ namespace Netlyt.Service.Format
 
         public IInputFormatter Clone()
         {
-            var formatter = new BsonFormatter();
+            var formatter = new BsonFormatter<T>();
             formatter._finder = _finder;
             formatter._cursor = null;
             return formatter;

@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using Netlyt.Service;
 using Netlyt.Service.Data;
@@ -39,7 +40,8 @@ namespace Netlyt.ServiceTests
         {
             var threadCount = (uint)8;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>());
+
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
             var harvester = new Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
@@ -63,7 +65,7 @@ namespace Netlyt.ServiceTests
         {
             var threadCount = (uint)8;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter()); 
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>()); 
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
             var harvester = new Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
@@ -84,7 +86,7 @@ namespace Netlyt.ServiceTests
         {
             var threadCount = (uint)20;
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
-            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter());
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>());
             var type = fileSource.ResolveIntegrationDefinition() as DataIntegration;
             
             Assert.NotNull(type);
