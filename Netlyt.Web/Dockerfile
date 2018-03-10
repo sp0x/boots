@@ -18,5 +18,5 @@ RUN LIBUV_VERSION=1.11.0 \
 
 EXPOSE 5000
 EXPOSE 80
-
-ENTRYPOINT ["dotnet", "Netlyt.Web.dll"]
+ENTRYPOINT [ "dotnet" ]
+CMD ["dotnet"]

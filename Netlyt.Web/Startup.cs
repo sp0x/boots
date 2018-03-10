@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -45,7 +46,9 @@ namespace Netlyt.Web
             if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!"); 
             var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection"); 
             services.AddDbContext<ManagementDbContext>(options =>
-                options.UseNpgsql(postgresConnectionString)
+                {
+                    options.UseNpgsql(postgresConnectionString);
+                }
             );
             //services.AddScoped<IDataAccessProvider, DataAccessPostgreSqlProvider.DataAccessPostgreSqlProvider>();
              
@@ -141,12 +144,22 @@ namespace Netlyt.Web
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
+            InitializeDatabase(app);
             //            app.UseMvc(routes =>
             //            {
             //                routes.MapRoute(
             //                    name: "default",
             //                    template: "{controller=Home}/{action=Index}/{id?}");
             //            });
+        }
+
+        private void InitializeDatabase(IApplicationBuilder app)
+        {
+            using (var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+            {
+                var managementDbContext = scope.ServiceProvider.GetRequiredService<ManagementDbContext>();
+                managementDbContext.Database.Migrate();
+            }
         }
 
         /// <summary>

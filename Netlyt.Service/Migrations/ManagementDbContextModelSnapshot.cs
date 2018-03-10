@@ -138,7 +138,7 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<long>("APIKeyId");
+                    b.Property<long?>("APIKeyId");
 
                     b.Property<string>("Collection");
 
@@ -215,13 +215,11 @@ namespace Netlyt.Service.Migrations
                 {
                     b.Property<long>("ModelId");
 
-                    b.Property<string>("IntegrationId");
-
-                    b.Property<long?>("IntegrationId1");
+                    b.Property<long>("IntegrationId");
 
                     b.HasKey("ModelId", "IntegrationId");
 
-                    b.HasIndex("IntegrationId1");
+                    b.HasIndex("IntegrationId");
 
                     b.ToTable("ModelIntegration");
                 });
@@ -510,8 +508,7 @@ namespace Netlyt.Service.Migrations
                 {
                     b.HasOne("nvoid.Integration.ApiAuth", "APIKey")
                         .WithMany()
-                        .HasForeignKey("APIKeyId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("APIKeyId");
 
                     b.HasOne("Netlyt.Service.User", "Owner")
                         .WithMany()
@@ -540,7 +537,8 @@ namespace Netlyt.Service.Migrations
                 {
                     b.HasOne("Netlyt.Service.Integration.DataIntegration", "Integration")
                         .WithMany("Models")
-                        .HasForeignKey("IntegrationId1");
+                        .HasForeignKey("IntegrationId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Netlyt.Service.Ml.Model", "Model")
                         .WithMany("DataIntegrations")
