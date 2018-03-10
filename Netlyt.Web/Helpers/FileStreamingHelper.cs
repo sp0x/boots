@@ -10,13 +10,20 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using Netlyt.Service;
+using Netlyt.Service.Integration;
 
 namespace Netlyt.Web.Helpers
 {
     public static class FileStreamingHelper
     {
         private static readonly FormOptions _defaultFormOptions = new FormOptions();
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="targetStream"></param>
+        /// <returns></returns>
         public static async Task<FormValueProvider> StreamFile(this HttpRequest request, Stream targetStream)
         {
             if (!MultipartRequestHelper.IsMultipartContentType(request.ContentType))
@@ -34,6 +41,7 @@ namespace Netlyt.Web.Helpers
             var reader = new MultipartReader(boundary, request.Body);
 
             var section = await reader.ReadNextSectionAsync();
+            string mimeType = null;
             while (section != null)
             {
                 ContentDispositionHeaderValue contentDisposition;
@@ -43,6 +51,16 @@ namespace Netlyt.Web.Helpers
                 {
                     if (MultipartRequestHelper.HasFileContentDisposition(contentDisposition))
                     {
+                        mimeType = section.ContentType;
+                        if (mimeType == "application/octet-stream")
+                        {
+                            mimeType = MimeResolver.Resolve(contentDisposition);
+                        }
+                        if (!IntegrationService.MimeIsAllowed(mimeType))
+                        {
+                            throw new ForbiddenException("Mime type is forbidden!");
+                        }
+
                         await section.Body.CopyToAsync(targetStream);
                     }
                     else if (MultipartRequestHelper.HasFormDataContentDisposition(contentDisposition))
@@ -82,13 +100,13 @@ namespace Netlyt.Web.Helpers
                 // reads the headers for the next section.
                 section = await reader.ReadNextSectionAsync();
             }
-
+            formAccumulator.Append("mime-type", mimeType);
             // Bind form data to a model
             var formValueProvider = new FormValueProvider(
                 BindingSource.Form,
                 new FormCollection(formAccumulator.GetResults()),
                 CultureInfo.CurrentCulture);
-
+            
             return formValueProvider;
         }
 

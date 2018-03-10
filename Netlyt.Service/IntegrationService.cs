@@ -220,7 +220,7 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="fileContentType"></param>
         /// <returns></returns>
-        public bool MimeIsAllowed(string fileContentType)
+        public static bool MimeIsAllowed(string fileContentType)
         {
             if (string.IsNullOrEmpty(fileContentType)) return false;
             if (fileContentType.EndsWith("ms-excel")) return true;

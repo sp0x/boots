@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq; 
+using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using nvoid.db; 
+using nvoid.db;
 using nvoid.db.Extensions;
 using Netlyt.Service;
 using Netlyt.Service.Integration;
@@ -34,7 +34,7 @@ namespace Netlyt.Web.Controllers
 {
     [Route("integration")]
     public class IntegrationsController : Controller
-    { 
+    {
         private ApiService _apiService;
         private RemoteDataSource<IntegratedDocument> _documentStore;
         private IntegrationService _integrationService;
@@ -53,8 +53,8 @@ namespace Netlyt.Web.Controllers
             IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
             IMapper mapper)
         {
-            _apiService = apiService; 
-            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>(); 
+            _apiService = apiService;
+            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
             _defaultFormOptions = new FormOptions();
             _userService = userService;
             _integrationService = integrationService;
@@ -68,7 +68,7 @@ namespace Netlyt.Web.Controllers
             var user = await _userService.GetCurrentUser();
             int pageSize = 25;
             return await _userService.GetIntegrations(user, page, pageSize);
-        } 
+        }
 
         [HttpGet("/integration/{id}", Name = "GetIntegration")]
         [Authorize]
@@ -79,8 +79,10 @@ namespace Netlyt.Web.Controllers
             {
                 return NotFound();
             }
-            if (target!=null) {
-                if (script==null || attr==null) {
+            if (target != null)
+            {
+                if (script == null || attr == null)
+                {
                     return BadRequest();
                 }
                 //kick the async
@@ -95,7 +97,7 @@ namespace Netlyt.Web.Controllers
             return Accepted();
         }
 
-        [HttpPost("/integration")] 
+        [HttpPost("/integration")]
         [Authorize]
         public async Task<IActionResult> CreateIntegration([FromBody]NewIntegrationViewModel integration)
         {
@@ -104,95 +106,34 @@ namespace Netlyt.Web.Controllers
                 return BadRequest("No integration name given.");
             }
             var newIntegration = await _integrationService.Create(integration.Name, integration.DataFormatType);
-            return CreatedAtRoute("GetIntegration", new { id = newIntegration.Id }, _mapper.Map< DataIntegrationViewModel>(newIntegration));
+            return CreatedAtRoute("GetIntegration", new { id = newIntegration.Id }, _mapper.Map<DataIntegrationViewModel>(newIntegration));
 
         }
 
-        [HttpPost("/integration/file")] 
+
+
+        [HttpPost("/integration/file")]
         [DisableFormValueModelBinding]
-        [Authorize] 
+        [Authorize]
         public async Task<IActionResult> CreateFileIntegration()
         {
-            DataIntegration newIntegration = null; 
+            DataIntegration newIntegration = null;
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
                 return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
             }
-            var formAccumulator = new Dictionary<string, string>();
-            var mediaTypeHeaderValue = MediaTypeHeaderValue.Parse(Request.ContentType);
-            var boundary = MultipartRequestHelper.GetBoundary(
-                mediaTypeHeaderValue, 1242134123);
-            var reader = new MultipartReader(boundary, HttpContext.Request.Body);
-            var section = await reader.ReadNextSectionAsync();
             NewIntegrationViewModel integrationParams = new NewIntegrationViewModel();
             string targetFilePath = Path.GetTempFileName();
             string fileContentType = null;
-            while (section != null)
+            DataImportResult result = null;
+            using (var targetStream = System.IO.File.Create(targetFilePath))
             {
-                ContentDispositionHeaderValue contentDisposition;
-                var hasContentDispositionHeader = ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out contentDisposition);
-                
-                if (hasContentDispositionHeader)
-                {
-                    if (MultipartRequestHelper.HasFileContentDisposition(contentDisposition))
-                    {
-                        fileContentType = section.ContentType;
-                        if (fileContentType == "application/octet-stream")
-                        {
-                            fileContentType = MimeResolver.Resolve(contentDisposition);
-                        }
-                        if (!_integrationService.MimeIsAllowed(fileContentType))
-                        {
-                            return Forbid("Given mime is forbidden!");
-                        }
-                        using (var targetStream = System.IO.File.Create(targetFilePath))
-                        {
-                            await section.Body.CopyToAsync(targetStream);
-
-                            Debug.WriteLine($"Copied the uploaded file '{targetFilePath}'");
-                        }
-                    }
-                    else if (MultipartRequestHelper.HasFormDataContentDisposition(contentDisposition))
-                    {
-                        // Content-Disposition: form-data; name="key"
-                        //
-                        // value
-
-                        // Do not limit the key name length here because the 
-                        // multipart headers length limit is already in effect.
-                        var key = HeaderUtilities.RemoveQuotes(contentDisposition.Name);
-                        var encoding = GetEncoding(section);
-                        using (var streamReader = new StreamReader(
-                            section.Body,
-                            encoding,
-                            detectEncodingFromByteOrderMarks: true,
-                            bufferSize: 1024,
-                            leaveOpen: true))
-                        {
-                            // The value length limit is enforced by MultipartBodyLengthLimit
-                            var value = await streamReader.ReadToEndAsync();
-                            if (String.Equals(value, "undefined", StringComparison.OrdinalIgnoreCase))
-                            {
-                                value = String.Empty;
-                            }
-                            formAccumulator[key.ToString()] = value;
-
-                            if (formAccumulator.Keys.Count > _defaultFormOptions.ValueCountLimit)
-                            {
-                                throw new InvalidDataException($"Form key count limit {_defaultFormOptions.ValueCountLimit} exceeded.");
-                            }
-                        }
-                    }
-                }
-                // Drains any remaining section body that has not been consumed and
-                // reads the headers for the next section.
-                section = await reader.ReadNextSectionAsync();
-            }
-            if (!formAccumulator.ContainsKey("integration")) return BadRequest("No integration given.");
-            integrationParams = JsonConvert.DeserializeObject<NewIntegrationViewModel>(formAccumulator["integration"]);
-            DataImportResult result=null;
-            using (var targetStream = System.IO.File.OpenRead(targetFilePath))
-            {
+                var form = await Request.StreamFile(targetStream);
+                fileContentType = form.GetValue("mime-type").ToString();
+                var valueProviderResult = form.GetValue("integration");
+                if (valueProviderResult == null) return BadRequest("No integration given.");
+                integrationParams = JsonConvert.DeserializeObject<NewIntegrationViewModel>(valueProviderResult.ToString());
+                targetStream.Position = 0;
                 try
                 {
                     result = await _integrationService.CreateOrFillIntegration(targetStream, fileContentType,
@@ -210,7 +151,7 @@ namespace Netlyt.Web.Controllers
                 return CreatedAtRoute("GetIntegration", new { id = newIntegration.Id },
                     _mapper.Map<DataIntegrationViewModel>(newIntegration));
             }
-            return null; 
+            return null;
         }
 
         private Encoding GetEncoding(MultipartSection section)
@@ -264,5 +205,5 @@ namespace Netlyt.Web.Controllers
         }
     }
 
-    
+
 }
