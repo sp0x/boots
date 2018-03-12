@@ -52,6 +52,12 @@ namespace Netlyt.Service.Build
             return this;
         }
 
+        public CsCompiler AddReference(Assembly assembly)
+        {
+            var peReference = MetadataReference.CreateFromFile(assembly.Location);
+            References.Add(peReference);
+            return this;
+        }
         public CsCompiler AddReferenceFromType(Type type)
         {
             AddReference(type.Assembly.Location);
@@ -125,5 +131,6 @@ namespace Netlyt.Service.Build
                 return assembly;
             }
         }
+
     }
 }

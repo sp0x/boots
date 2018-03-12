@@ -1,1 +1,38 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using MongoDB.Bson;
+using nvoid.db.Caching;
+using nvoid.db.DB;
+using nvoid.extensions;
+using Netlyt.Service.Donut;
+using Netlyt.Service.Integration; 
+using Netlyt.Service.Time;
+
+namespace $Namespace
+{
+    public class $ClassName : Donutfile<$ContextTypeName>
+    { 
+
+        public $ClassName(RedisCacher cacher, IServiceProvider serviceProvider) : base(cacher, serviceProvider)
+        {
+            //ReplayInputOnFeatures = true;
+        }
+		 
+        protected override void OnCreated()
+        {
+            base.OnCreated(); 
+			//Perform any initial cleanup
+        }
+
+        protected override void OnMetaComplete()
+        {
+        } 
+
+		public override void ProcessRecord(IntegratedDocument intDoc){
+			//Extraction goes in here
+			$ExtractionBody
+		}
+
+	}
+}

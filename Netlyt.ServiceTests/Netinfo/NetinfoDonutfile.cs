@@ -6,15 +6,12 @@ using nvoid.db.Caching;
 using nvoid.db.DB;
 using nvoid.extensions;
 using Netlyt.Service.Donut;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Blocks;
-using Netlyt.Service.Models;
+using Netlyt.Service.Integration; 
 using Netlyt.Service.Time;
 
 namespace Netlyt.ServiceTests.Netinfo
 {
-    public class NetinfoDonutfile
-        : Donutfile<NetinfoDonutContext>
+    public class NetinfoDonutfile : Donutfile<NetinfoDonutContext>
     {
         private string TargetHost { get; set; } = "ebag.bg";
         

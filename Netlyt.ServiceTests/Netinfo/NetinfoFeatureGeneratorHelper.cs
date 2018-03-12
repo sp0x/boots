@@ -5,8 +5,7 @@ using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using nvoid.extensions;
 using Netlyt.Service;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Blocks;
+using Netlyt.Service.Integration; 
 using Netlyt.Service.Time;
 
 namespace Netlyt.ServiceTests.Netinfo
@@ -60,7 +59,7 @@ namespace Netlyt.ServiceTests.Netinfo
             yield return new KeyValuePair<string, object>("prob_buy_is_holiday", prob_buy_is_holiday);
             yield return new KeyValuePair<string, object>("prob_buy_is_before_holiday", prob_buy_is_before_holiday);
             yield return new KeyValuePair<string, object>("prop_buy_is_weekend", prop_buy_is_weekend);
-
+            
             doc["events"] = ((BsonArray)doc["events"]);
 
             Func<double, double> mx1 = (x) => Math.Max(1, x);

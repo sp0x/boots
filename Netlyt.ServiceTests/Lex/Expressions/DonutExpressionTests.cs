@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.Loader;
 using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Build;
+using Netlyt.Service.Donut;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Generation;
@@ -70,11 +72,20 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             var parser = new TokenParser(tokenizer.Tokenize(txt));
             DonutScript dscript = parser.ParseDonutScript();  
             var compiler = new DonutCompiler(dscript);
-            var assembly = compiler.Compile("someAssembly");
-            var xtype = assembly.GetType("someAssembly.modelName");
-            var types = assembly.GetExportedTypes();
-            var xtypes = assembly.GetTypes();
-            assembly = assembly;
+            Type donutType;
+            Type donutContextType;
+            Type donutFGen;
+            var assembly = compiler.Compile("someAssembly", out donutType, out donutContextType, out donutFGen);
+            Assert.NotNull(donutType);
+            Assert.NotNull(donutContextType);
+            Assert.NotNull(donutFGen);
+            Assert.True(typeof(DonutContext).IsAssignableFrom(donutContextType));
+            var genericDonutfileRoot = typeof(Donutfile<>).MakeGenericType(donutContextType);
+            Assert.True(genericDonutfileRoot.IsAssignableFrom(donutType));
+            var fgenDonutProperty = donutFGen.GetProperty("Donut");
+            Assert.NotNull(fgenDonutProperty);
+            Assert.True(fgenDonutProperty.PropertyType == donutType);
+            //TODO: Add assembly unloading whenever coreclr implements it..
             //Comple the context 
             //Assert.True(emittedBlob.Length > 100);
             //Generate the code for a map reduce with mongo
