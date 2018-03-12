@@ -339,7 +339,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
 
             var tokenizer = new PrecedenceTokenizer();
             var parser = new TokenParser(tokenizer.Tokenize(txt));
-            var model = parser.ParseModel();
+            var model = parser.ParseDonutScript();
             Assert.NotNull(model);
             Assert.NotNull(model.Features);
             Assert.NotNull(model.Type);

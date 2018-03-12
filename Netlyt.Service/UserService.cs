@@ -38,7 +38,7 @@ namespace Netlyt.Service
             ModelService modelService,
             ManagementDbContext context)
         {
-            _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
+            if(lfactory!=null) _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
             _userManager = userManager;
             _apiService = apiService;
             _contextAccessor = contextAccessor;

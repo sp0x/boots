@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic; 
 using System.Dynamic; 
 using System.Linq.Expressions;
 using Dynamitey; 
@@ -11,7 +10,6 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Integration
 {
-    
     public partial class DataIntegration
         : Entity, IIntegration
     { 

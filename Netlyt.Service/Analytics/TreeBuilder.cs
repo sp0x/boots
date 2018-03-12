@@ -29,16 +29,17 @@ namespace Netlyt.Service.Analytics
 //            batchDest.LinkTo(builder.GetInputBlock(), new DataflowLinkOptions { PropagateCompletion = true });
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="tree"></param>
-        /// <param name="daySessions"></param>
-        private void AddTreeSessions(BehaviourTree tree, IEnumerable<DomainUserSession> daySessions)
-        {
-            var pairs = daySessions.Select(x => new KeyValuePair<string,double>(x.Domain, x.Duration.TotalSeconds)).ToList();
-            tree.Build(pairs);
-        }
+//        /// <summary>
+//        /// 
+//        /// </summary>
+//        /// <param name="tree"></param>
+//        /// <param name="daySessions"></param>
+//        private void AddTreeSessions(BehaviourTree tree, IEnumerable<DomainUserSession> daySessions)
+//        {
+//            var pairs = daySessions.Select(x => new KeyValuePair<string,double>(x.Domain, x.Duration.TotalSeconds)).ToList();
+//            tree.Build(pairs);
+//        }
+
         /// <summary>
         /// 
         /// </summary>

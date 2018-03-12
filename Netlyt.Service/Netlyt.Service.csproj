@@ -7,9 +7,11 @@
     <Compile Remove="Integration\IntegrationTypeDefinition.Factory.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Lex\Templates\DonutContext.txt" />
     <None Remove="Lex\Templates\Donutfile.txt" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Lex\Templates\DonutContext.txt" />
     <EmbeddedResource Include="Lex\Templates\Donutfile.txt" />
     <EmbeddedResource Include="Lex\Templates\MapReduceMapper.txt" />
     <EmbeddedResource Include="Lex\Templates\MapReduceAggregate.txt" />

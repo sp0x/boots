@@ -14,7 +14,7 @@ namespace Netlyt.Service.Lex.Parsing
 
     public class TokenParser
     { 
-        private List<string> _sourceCollections;
+        private List<string> _sourceIntegrations;
         //private MatchCondition _currentMatchCondition;
 
         private const string ExpectedObjectErrorText = "Expected =, !=, IN or NOT IN but found: ";
@@ -24,7 +24,7 @@ namespace Netlyt.Service.Lex.Parsing
 
         public TokenParser()
         {
-            _sourceCollections = new List<string>();
+            _sourceIntegrations = new List<string>();
         }
 
         public TokenParser(IEnumerable<DslToken> tokens)
@@ -41,27 +41,33 @@ namespace Netlyt.Service.Lex.Parsing
         {
             Reader = new TokenReader(tokens); 
         }
-
-        public DslFeatureModel ParseModel()
-        { 
-            DslFeatureModel model  = new DslFeatureModel();
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public DonutScript ParseDonutScript()
+        {
+            _sourceIntegrations.Clear();
+            DonutScript model  = new DonutScript();
             Reader.DiscardToken(TokenType.Define);
             var newSymbolName = Reader.DiscardToken(TokenType.Symbol);
-            model.Type = new FeatureTypeModel()
+            model.Type = new ScriptTypeInfo()
             {
                 Name = newSymbolName.Value
             }; 
-            _sourceCollections = ReadFrom();
+            _sourceIntegrations = ReadFrom();
             var orderBy = ReadOrderBy(); 
             var expressions = ReadExpressions();
             model.StartingOrderBy = orderBy ;
             foreach (var expression in expressions)
             {
-                if (expression.GetType() == typeof(AssignmentExpression))
+                var expressionType = expression.GetType();
+                if (expressionType == typeof(AssignmentExpression))
                 {
                     model.Features.Add(expression as AssignmentExpression);
                 }
             }
+            model.AddIntegrations(_sourceIntegrations);
             return model;
         }
 

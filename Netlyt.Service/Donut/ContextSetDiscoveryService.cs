@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Linq;
-using MongoDB.Driver;
-using nvoid.db.Caching;
-using nvoid.db.DB.Configuration;
-using nvoid.db.DB.MongoDB;
-using nvoid.Integration;
+using System.Linq; 
+using nvoid.db.Caching; 
+using Netlyt.Service.Integration;
 
 namespace Netlyt.Service.Donut
 {
@@ -28,22 +25,20 @@ namespace Netlyt.Service.Donut
 
         public void Initialize()
         {
-            var config = DBConfig.GetGeneralDatabase();
-            foreach (var setInfo in _setFinder.FindSets(_context).Where(p => p.Setter != null))
+            InitializeCacheSets();
+            InitializeDataSets();
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        private void InitializeDataSets()
+        {
+            foreach (var dataSetInfo in _setFinder.FindDataSets(_context).Where(p => p.Setter != null))
             {
-                var newSet = ((ISetCollection)_context).GetOrAddSet(_setSource, setInfo.ClrType);
-                newSet.Name = setInfo.Name;
-                if (setInfo.Attributes.FirstOrDefault(x => x.GetType() == typeof(CacheBacking)) is CacheBacking backing)
-                {
-                    newSet.SetType(backing.Type);
-                }
-                setInfo.Setter.SetClrValue(_context, newSet);
-            }
-            foreach(var dataSetInfo in _setFinder.FindDataSets(_context).Where(p => p.Setter != null))
-            {
-                var newSet = ((ISetCollection)_context).GetOrAddDataSet(_setSource, dataSetInfo.ClrType);
+                var newSet = ((ISetCollection) _context).GetOrAddDataSet(_setSource, dataSetInfo.ClrType);
                 //newSet.Name = dataSetInfo.Name;
-                if (dataSetInfo.Attributes.FirstOrDefault(x => x.GetType() == typeof(SourceFromIntegration)) is SourceFromIntegration integrationSource)
+                if (dataSetInfo.Attributes.FirstOrDefault(x => x.GetType() == typeof(SourceFromIntegration)) is
+                    SourceFromIntegration integrationSource)
                 {
                     var integration = _integrationService.GetByName(_context.ApiAuth, integrationSource.IntegrationName);
                     if (integration == null)
@@ -56,6 +51,33 @@ namespace Netlyt.Service.Donut
                     //newSet.SetSource(integrationSource.IntegrationName);
                 }
                 dataSetInfo.Setter.SetClrValue(_context, newSet);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void InitializeCacheSets()
+        {
+            foreach (var setInfo in _setFinder.FindSets(_context).Where(p => p.Setter != null))
+            {
+                var newSet = ((ISetCollection) _context).GetOrAddSet(_setSource, setInfo.ClrType);
+                newSet.Name = setInfo.Name;
+                if (setInfo.Attributes.FirstOrDefault(x => x.GetType() == typeof(CacheBacking)) is CacheBacking backing)
+                {
+                    newSet.SetType(backing.Type);
+                }
+                else
+                {
+                    //No cache backing specified, evaluate the best type of cache type for the generic parameter of the set.
+                    var gType = setInfo.ClrType;
+                    var isHash = !(gType.IsPrimitive || gType.Name.ToLower()=="string") && gType.IsClass;
+                    if (isHash)
+                    {
+                        newSet.SetType(CacheType.Hash);
+                    }
+                }
+                setInfo.Setter.SetClrValue(_context, newSet);
             }
         }
     }

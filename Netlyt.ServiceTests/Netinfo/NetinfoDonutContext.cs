@@ -1,25 +1,17 @@
 ﻿using System;
 using MongoDB.Bson;
 using nvoid.db;
-using nvoid.db.Caching;
-using nvoid.Integration;
+using nvoid.db.Caching; 
 using Netlyt.Service.Donut;
 using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Blocks;
-using Netlyt.Service.Models; 
-using DomainUserSessionMap = Netlyt.ServiceTests.Netinfo.Maps.DomainUserSessionMap;
-using NetinfoUserCookeMap = Netlyt.ServiceTests.Netinfo.Maps.NetinfoUserCookeMap;
-using PageStatsMap = Netlyt.ServiceTests.Netinfo.Maps.PageStatsMap;
-using UserBrowsingStatsMap = Netlyt.ServiceTests.Netinfo.Maps.UserBrowsingStatsMap;
 
+using Netlyt.ServiceTests.Netinfo.Maps;
 namespace Netlyt.ServiceTests.Netinfo
 { 
     public class NetinfoDonutContext : DonutContext
     {
-        /// Donutfile meta key (page stats in this case)
-        [CacheBacking(CacheType.Hash)]
-        public CacheSet<PageStats> PageStats { get; set; }
-        [CacheBacking(CacheType.Hash)]
+        /// Donutfile meta key (page stats in this case) 
+        public CacheSet<PageStats> PageStats { get; set; } 
         public CacheSet<UserBrowsingStats> UserBrowsingStats { get; set; } 
         public CacheSet<string> Purchases { get; set; }
         public CacheSet<string> PayingUsers { get; set; }

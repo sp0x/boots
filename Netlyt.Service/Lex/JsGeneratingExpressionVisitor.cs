@@ -7,6 +7,9 @@ using Netlyt.Service.Lex.Expressions;
 
 namespace Netlyt.Service.Lex
 {
+    /// <summary>
+    /// An expression visitor that generates JS
+    /// </summary>
     public class JsGeneratingExpressionVisitor
         : ExpressionVisitor
     { 

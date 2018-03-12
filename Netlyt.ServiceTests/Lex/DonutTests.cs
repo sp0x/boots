@@ -102,7 +102,7 @@ namespace Netlyt.ServiceTests.Lex
 
             //Donut
             //hehe
-            var donutMachine = new DonutfileGenerator<NetinfoDonutfile, NetinfoDonutContext>(integration, _cacher, _serviceProvider);
+            var donutMachine = new DonutBuilder<NetinfoDonutfile, NetinfoDonutContext>(integration, _cacher, _serviceProvider);
             var donut = donutMachine.Generate(); 
             donut.SetupCacheInterval(source.Size);
             //Create our donut block. 

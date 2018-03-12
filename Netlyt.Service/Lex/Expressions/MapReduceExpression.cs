@@ -6,8 +6,7 @@ namespace Netlyt.Service.Lex.Expressions
     ///
     /// <remarks>   Vasko, 05-Dec-17. </remarks>
 
-    public class MapReduceExpression
-        : Expression
+    public class MapReduceExpression : Expression
     {
         public IEnumerable<AssignmentExpression> Keys { get; set; }
         public IEnumerable<AssignmentExpression> ValueMembers { get; set; }
