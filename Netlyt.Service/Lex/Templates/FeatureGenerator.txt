@@ -1,0 +1,37 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;  
+using System.Linq;
+using System.Threading.Tasks.Dataflow;
+using MongoDB.Bson;
+using nvoid.extensions;
+using Netlyt.Service;
+using Netlyt.Service.Integration; 
+using Netlyt.Service.Time;
+
+namespace $Namespace
+{
+    public class FeatureGenerator
+    {
+	    public $DonutType Donut { get; set; }
+
+		public TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> GetBlock()
+        {
+            var block = new TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>((doc) =>
+            {
+                return GetFeatures(doc);
+            });
+            return block;
+        }
+
+		public IEnumerable<KeyValuePair<string, object>> GetFeatures(IntegratedDocument intDoc)
+		{
+			BsonDocument intDocDocument = intDoc.GetDocument();
+            var doc = intDocDocument;
+
+			$FeatureYields
+
+			yield break;
+		}
+    }
+}
