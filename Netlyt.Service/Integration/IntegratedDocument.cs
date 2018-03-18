@@ -27,6 +27,12 @@ namespace Netlyt.Service.Integration
         {
             Reserved = new BsonDocument();
         }
+
+        public IntegratedDocument(BsonDocument doc)
+        {
+            Document = new Lazy<BsonDocument>(() => doc);
+
+        }
         public BsonValue this[string key]
         {
             get

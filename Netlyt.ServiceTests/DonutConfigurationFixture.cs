@@ -44,6 +44,7 @@ namespace Netlyt.ServiceTests
             services.AddTransient<ModelService>(s => new ModelService(_context, null));
             services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>()));
             services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
+            services.AddTransient<CompilerService>();
         }
 
         public ManagementDbContext CreateContext()

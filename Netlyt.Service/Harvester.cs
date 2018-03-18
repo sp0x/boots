@@ -29,11 +29,16 @@ namespace Netlyt.Service
         }
     }
 
+    public interface IHarvester<T>
+    {
+
+    }
     /// <summary>
     /// Data integration handler.
     /// Handles type, sourse and destination piping, to control the integration data flow with multiple block scenarios.
     /// </summary>
-    public class Harvester<TDocument> : Entity
+    public class Harvester<TDocument> : Entity, IHarvester<TDocument>
+        where TDocument : class
     {
         private Stopwatch _stopwatch;
         private uint _shardLimit;
@@ -317,6 +322,9 @@ namespace Netlyt.Service
             {
                 throw new Exception("No sets to process!");
             }
+
+            Type targetType = typeof(TDocument);
+            Type intDocType = typeof(IntegratedDocument);
             //Go through all type sets
             Parallel.ForEach(IntegrationSets, parallelOptions,
                 (IntegrationSet itemSet, ParallelLoopState itemSetState) =>
@@ -382,19 +390,20 @@ namespace Netlyt.Service
                             else
                             {
                                 //dynamic entry;
-                                var iterator = sourceShard.GetIterator();
+                                //var iterator = sourceShard.GetIterator<TDocument>();
+                                var iterator = sourceShard.GetIterator<ExpandoObject>();
                                 foreach (var entry in iterator)
                                 {
                                     if (entry == null) break;
                                     if (TotalEntryLimit != 0 && totalItemsUsed >= TotalEntryLimit) break;
                                     TDocument valueToSend;
-                                    if (typeof(TDocument) == typeof(IntegratedDocument))
+                                    if (targetType == intDocType)
                                     {
-                                        valueToSend = itemSet.Wrap(entry);
+                                        valueToSend = itemSet.Wrap(entry) as TDocument;
                                     }
                                     else
                                     {
-                                        valueToSend = entry;
+                                        valueToSend = entry as TDocument; //Or deserialize it in some way
                                     }
                                     Task<bool> sendTask = null;
                                     if (Destination == null)

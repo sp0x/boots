@@ -25,7 +25,7 @@ namespace Netlyt.Service.Integration.Import
     ///
     /// <typeparam name="T">    Generic type parameter for that data that will be read. Use ExpandoObject if not sure. </typeparam>
 
-    public class DataImportTask<T>
+    public class DataImportTask<T> where T : class
     {
         private DataImportTaskOptions _options;
         private Harvester<T> _harvester;

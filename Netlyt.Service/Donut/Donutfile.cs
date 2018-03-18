@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks.Dataflow;
 using nvoid.db.Caching;
 using nvoid.exec.Blocks;
+using Netlyt.Service.FeatureGeneration;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.Models;
@@ -10,7 +11,7 @@ using StackExchange.Redis;
 
 namespace Netlyt.Service.Donut
 {
-    public abstract class Donutfile<TContext> : IDisposable
+    public abstract class Donutfile<TContext> : IDonutfile, IDisposable
         where TContext : DonutContext
     {
         public TContext Context
@@ -31,7 +32,7 @@ namespace Netlyt.Service.Donut
         /// <summary>
         /// If true, all initial input is replayed in the feature extraction step.
         /// </summary>
-        public bool ReplayInputOnFeatures { get; protected set; }
+        public bool ReplayInputOnFeatures { get; set; }
 
         /// <summary>
         /// 

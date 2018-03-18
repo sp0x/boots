@@ -17,6 +17,7 @@ using nvoid.exec.Blocks;
 using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
+using Netlyt.Service.FeatureGeneration;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;

@@ -19,6 +19,7 @@ using Netlyt.Service;
 using Netlyt.Service.Analytics;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
+using Netlyt.Service.FeatureGeneration;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
@@ -213,11 +214,11 @@ events : elements };
         [InlineData(new object[] { "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced", "TestData\\Ebag\\demograpy.csv" })]
         public async void ExtractEntitiesFromReducedCollection(string collectionName, string demographySheet)
         { 
-            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
+            MongoSource<ExpandoObject> source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
             source.SetProjection(x =>
             {
-                if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
-                return x["value"] as BsonDocument;
+                if (!((IDictionary<string, object>)x).ContainsKey("value")) ((dynamic)x).value.day = ((dynamic)x)._id.day;
+                return ((dynamic)x).value as ExpandoObject;
             });
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
             var type = harvester.AddIntegrationSource(source, _appId, "NetInfoUserFeatures_7_8_1"); 
@@ -282,11 +283,11 @@ events : elements };
         [InlineData(new object[] { "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced" })]
         public async void ParseEntitySessionsDumpCollection(string collectionName)
         { 
-            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
+            MongoSource<ExpandoObject> source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
             source.SetProjection(x =>
             {
-                if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
-                return x["value"] as BsonDocument;
+                if (!((IDictionary<string, object>)x).ContainsKey("value")) ((dynamic)x).value.day = ((dynamic)x)._id.day;
+                return ((dynamic)x).value as ExpandoObject;
             });
 
             var appId = "123123123";
@@ -344,7 +345,7 @@ events : elements };
         [InlineData(new object[] { "IntegratedDocument" })]
         public async void ConstructTrees(string reducedSource)
         {
-            MongoSource source = MongoSource.CreateFromCollection(reducedSource, new BsonFormatter<ExpandoObject>()); 
+            MongoSource< ExpandoObject> source = MongoSource.CreateFromCollection(reducedSource, new BsonFormatter<ExpandoObject>()); 
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20); 
             var type = harvester.AddIntegrationSource(source, _appId, "NetInfoUserSessions_7_8");
             var batchSize = 10000;

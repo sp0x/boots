@@ -79,6 +79,7 @@ namespace Netlyt.Service.Lex.Generators
                 if (string.IsNullOrEmpty(fgenTemplate)) throw new Exception("Template empty!");
                 fgenTemplate = fgenTemplate.Replace("$Namespace", @namespace);
                 fgenTemplate = fgenTemplate.Replace("$DonutType", donutName);
+                fgenTemplate = fgenTemplate.Replace("$DonutContextType", conutextName);
                 fgenTemplate = fgenTemplate.Replace("$ContextTypeName", conutextName);
                 fgenTemplate = fgenTemplate.Replace("$FeatureYields", GetFeatureYieldsContent(script));
                 //Items: $Namespace, $DonutType, $FeatureYields

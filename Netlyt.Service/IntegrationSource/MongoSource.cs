@@ -14,14 +14,24 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.IntegrationSource
 {
-    public class MongoSource : InputSource
+    public sealed class MongoSource
+    {
+        public static MongoSource<T> CreateFromCollection<T>(string collectionName, IInputFormatter<T> formatter)
+            where T : class
+        {
+            var source = new MongoSource<T>(collectionName);
+            source.SetFormatter(formatter);
+            return source;
+        }
+    }
+    public class MongoSource<T> : InputSource where T : class
     {
         private IMongoCollection<BsonDocument> _collection;
-        private BsonDocument _cachedInstance;
+        private T _cachedInstance;
         private object _lock; 
         private FilterDefinition<BsonDocument> _query;
         private IAsyncCursorSource<BsonDocument> _cursorSource;
-        private Func<BsonDocument, BsonDocument> _project;
+        private Func<T, T> _project;
         private IAggregateFluent<BsonDocument> _aggregate;
         /// <summary>
         /// The amount of elements in each bson chunk
@@ -40,7 +50,7 @@ namespace Netlyt.Service.IntegrationSource
             Size = GetSize();
         }
 
-        public MongoSource SetProjection(Func<BsonDocument, BsonDocument> project)
+        public MongoSource<T> SetProjection(Func<T, T> project)
         {
             _project = project;
             return this;
@@ -48,14 +58,16 @@ namespace Netlyt.Service.IntegrationSource
 
         public override IIntegration ResolveIntegrationDefinition()
         {
-            BsonDocument firstElement = null;
+            T firstElement = default(T);
             if (_aggregate != null)
             {
-                firstElement = _aggregate.First() ;
+                var bsonDocument = _aggregate.First();
+                firstElement = BsonSerializer.Deserialize<T>(bsonDocument);
             }
             else
             {
-                firstElement = _collection.Find(Builders<BsonDocument>.Filter.Empty).First();
+                var bsonDocument = _collection.Find(Builders<BsonDocument>.Filter.Empty).First();
+                firstElement = BsonSerializer.Deserialize<T>(bsonDocument);
             }
             try
             {
@@ -67,7 +79,7 @@ namespace Netlyt.Service.IntegrationSource
                     typedef = new Integration.DataIntegration(_collection.CollectionNamespace.CollectionName);
                     typedef.DataEncoding = Encoding.CodePage;
                     typedef.DataFormatType = Formatter.Name;
-                    var instanceExpandoObj = BsonSerializer.Deserialize<ExpandoObject>(firstInstance);
+                    var instanceExpandoObj = firstInstance;///BsonSerializer.Deserialize<T>(firstInstance);
                     typedef.SetFieldsFromType(instanceExpandoObj);
                 }
                 return typedef;
@@ -105,7 +117,7 @@ namespace Netlyt.Service.IntegrationSource
                 return finder.Count();
             }
         }
-        public override IEnumerable<T> GetIterator<T>()
+        public override IEnumerable<TX> GetIterator<TX>()
         {
             lock (_lock)
             {
@@ -130,14 +142,24 @@ namespace Netlyt.Service.IntegrationSource
                 }
                 if (resetNeeded)
                 {
-                    _cachedInstance = null;
+                    _cachedInstance = default(T);
                 }
-                IEnumerable<T> formatterIterator = (Formatter as BsonFormatter<T>)?.GetIterator(_cursorSource, resetNeeded);
+                
+                var bsonFormatter = (Formatter as BsonFormatter<T>);
+                if (bsonFormatter == null)
+                {
+                    throw new Exception("Formatter could not be used with the given type!");
+                }
+                IEnumerable<T> formatterIterator = bsonFormatter?.GetIterator(_cursorSource, resetNeeded);
                 foreach (var formattedItem in formatterIterator)
                 {
-                    var item = formattedItem;
-                    //Todo: Optimize this..
-                    if (_project != null) item = BsonSerializer.Deserialize<T>(_project(item.ToBsonDocument()));
+                    var item = formattedItem; 
+                    if (_project != null)
+                    {
+                        //TODO Fix this..
+                        var projection = _project(item as T);
+                        item = projection as T;
+                    }
                     lastInstance = item;//BsonSerializer.Deserialize<ExpandoObject>(item);
 #if DEBUG
                     var crProgress = Progress;
@@ -153,7 +175,7 @@ namespace Netlyt.Service.IntegrationSource
         }
         public override IEnumerable<dynamic> GetIterator(Type targetType = null)
         {
-            return GetIterator();
+            return GetIterator<ExpandoObject>();
         }
 
         public override void Cleanup()
@@ -180,15 +202,7 @@ namespace Netlyt.Service.IntegrationSource
         public override string ToString()
         {
             return _collection == null ? base.ToString() : _collection.CollectionNamespace.FullName;
-        }
-
-        public static MongoSource CreateFromCollection<T>(string collectionName, IInputFormatter<T> formatter)
-            where T : class
-        {
-            var source = new MongoSource(collectionName);
-            source.SetFormatter(formatter);
-            return source;
-        }
+        } 
 
         /// <summary>
         /// Filters input from a given type

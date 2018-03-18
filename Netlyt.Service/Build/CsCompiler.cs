@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Emit;
+
 
 namespace Netlyt.Service.Build
 {
@@ -19,6 +20,7 @@ namespace Netlyt.Service.Build
     {
         private List<MetadataReference> References { get; set; } 
         private string _assemblyName;
+        private string _directory;
 
         /// <summary>   The filepath of the output assembly. </summary> 
         public string Filepath
@@ -26,7 +28,9 @@ namespace Netlyt.Service.Build
             get
             {
                 var filename = $"{AssemblyName}.dll";
-                var path = System.IO.Path.GetFullPath(filename);
+                var path = string.IsNullOrEmpty(_directory) ?
+                    Path.GetFullPath(filename) :
+                    Path.Combine(_directory, filename);
                 return path;
             }
         }
@@ -43,6 +47,23 @@ namespace Netlyt.Service.Build
                 //TODO: Filter
                 _assemblyName = value;
             }
+        }
+
+        /// <summary>   Constructor. </summary>
+        ///
+        /// <remarks>   vasko, 09-Dec-17. </remarks>
+        ///
+        /// <param name="assemblyName"> Name of the assembly to generate. </param>
+
+        public CsCompiler(string assemblyName, string directory)
+        {
+            References = new List<MetadataReference>();
+            AddReference(Assembly.Load("System.Runtime").Location);
+            AddReference(typeof(object).GetTypeInfo().Assembly.Location);
+            AddReference(typeof(Hashtable).GetTypeInfo().Assembly.Location);
+            AddReference(typeof(Console).GetTypeInfo().Assembly.Location);
+            _directory = directory;
+            _assemblyName = assemblyName;
         }
 
         public CsCompiler AddReference(string filePath)
@@ -63,21 +84,7 @@ namespace Netlyt.Service.Build
             AddReference(type.Assembly.Location);
             return this;
         }
-        /// <summary>   Constructor. </summary>
-        ///
-        /// <remarks>   vasko, 09-Dec-17. </remarks>
-        ///
-        /// <param name="assemblyName"> Name of the assembly to generate. </param>
 
-        public CsCompiler(string assemblyName)
-        {
-            References = new List<MetadataReference>();
-            AddReference(Assembly.Load("System.Runtime").Location);
-            AddReference(typeof(object).GetTypeInfo().Assembly.Location);
-            AddReference(typeof(Hashtable).GetTypeInfo().Assembly.Location);
-            AddReference(typeof(Console).GetTypeInfo().Assembly.Location); 
-            _assemblyName = assemblyName;
-        }
 
         /// <summary>   Compiles the given sources. </summary>
         ///
@@ -87,16 +94,29 @@ namespace Netlyt.Service.Build
         ///
         /// <returns>   An EmitResult. </returns>
 
-        public EmitResult Compile(params string[] sources)
+        public EmitResultAssembly Compile(params string[] sources)
         {
             var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
             var trees = sources.Select(x => CSharpSyntaxTree.ParseText(x));
             var compilation = CSharpCompilation.Create(_assemblyName,
                 syntaxTrees : trees,
                 options : options,
-                references: References); 
-            var result = compilation.Emit(Filepath);
-            return result;
+                references: References);
+            if (!Directory.Exists(_directory))
+            {
+                Directory.CreateDirectory(_directory);
+            }
+            if (File.Exists(Filepath))
+            {
+                File.Delete(Filepath);
+            }
+            var result = compilation.Emit(Filepath); 
+            return new EmitResultAssembly()
+            {
+                AssemblySymbol = compilation.Assembly,
+                FilePath = Filepath,
+                Result = result
+            };
         }
 
         /// <summary>   Compile and get assembly. </summary>
@@ -113,9 +133,9 @@ namespace Netlyt.Service.Build
         public Assembly CompileAndGetAssembly(params string[] sources)
         {
             var result = Compile(sources);
-            if (!result.Success)
+            if (!result.Result.Success)
             {
-                IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                IEnumerable<Diagnostic> failures = result.Result.Diagnostics.Where(diagnostic =>
                     diagnostic.IsWarningAsError ||
                     diagnostic.Severity == DiagnosticSeverity.Error);
                 var message = new StringBuilder();
@@ -127,8 +147,7 @@ namespace Netlyt.Service.Build
             }
             else
             {
-                var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Filepath);
-                return assembly;
+                return result.GetAssembly();
             }
         }
 

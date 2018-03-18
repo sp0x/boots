@@ -4,10 +4,8 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
-using MongoDB.Driver;
-using nvoid.db.Batching;
+using MongoDB.Driver; 
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
@@ -16,13 +14,11 @@ using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
+using Netlyt.Service.FeatureGeneration;
 using Netlyt.Service.Format;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Blocks;
+using Netlyt.Service.Integration; 
 using Netlyt.Service.Integration.Import;
-using Netlyt.Service.IntegrationSource;
-using Netlyt.Service.Lex.Generation;
-using Netlyt.Service.Models;
+using Netlyt.Service.IntegrationSource; 
 using Netlyt.Service.Time;
 using Netlyt.ServiceTests.Netinfo;
 using Xunit;
@@ -65,16 +61,17 @@ namespace Netlyt.ServiceTests.Lex
             _serviceProvider = fixture.GetService<IServiceProvider>();
         }
 
-        public FeatureGenerator<IntegratedDocument> GetFeatureGenerator(NetinfoDonutfile donut)
+        public FeatureGenerator<IntegratedDocument> GetFeatureGenerator(IDonutfile donut)
         {
-            var featureHelper = new NetinfoFeatureGeneratorHelper() { Donut = donut, TargetDomain = "ebag.bg" };
-            var featureGenerator = new FeatureGenerator<IntegratedDocument>(
-                new Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>[]
-                {
-                    featureHelper.GetFeatures,
-                    featureHelper.GetAvgTimeBetweenSessionFeatures
-                }, 16);
-            return featureGenerator;
+            throw new NotImplementedException();
+//            var featureHelper = new NetinfoFeatureGeneratorHelper() { Donut = donut, TargetDomain = "ebag.bg" };
+//            var featureGenerator = new FeatureGenerator<IntegratedDocument>(
+//                new Func<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>[]
+//                {
+//                    featureHelper.GetFeatures,
+//                    featureHelper.GetAvgTimeBetweenSessionFeatures
+//                }, 16);
+//            return featureGenerator;
         }
 
         [Theory]
@@ -82,11 +79,11 @@ namespace Netlyt.ServiceTests.Lex
         public async void ExtractEntitiesFromReducedCollection(string collectionName)
         {
             //Source
-            MongoSource source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
+            MongoSource<ExpandoObject> source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
             source.SetProjection(x =>
             {
-                if (!x["value"].AsBsonDocument.Contains("day")) x["value"]["day"] = x["_id"]["day"];
-                return x["value"] as BsonDocument;
+                if (!((IDictionary<string, object>)x).ContainsKey("value")) ((dynamic)x).value.day = ((dynamic)x)._id.day;
+                return ((dynamic)x).value as ExpandoObject;
             });
             source.ProgressInterval = 0.05;
 

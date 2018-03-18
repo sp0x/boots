@@ -11,9 +11,12 @@ using Netlyt.Service.Time;
 
 namespace $Namespace
 {
-    public class FeatureGenerator
+    public class FeatureGenerator : DonutFeatureEmitter<$DonutType, $DonutContextType>
     {
-	    public $DonutType Donut { get; set; }
+		public FeatureGenerator($DonutType donut) : base(donut)
+		{
+			
+		}
 
 		public TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> GetBlock()
         {
@@ -24,7 +27,7 @@ namespace $Namespace
             return block;
         }
 
-		public IEnumerable<KeyValuePair<string, object>> GetFeatures(IntegratedDocument intDoc)
+		public override IEnumerable<KeyValuePair<string, object>> GetFeatures(IntegratedDocument intDoc)
 		{
 			BsonDocument intDocDocument = intDoc.GetDocument();
             var doc = intDocDocument;

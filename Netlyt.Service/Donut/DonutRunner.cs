@@ -4,14 +4,25 @@ using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.Batching;
+using nvoid.db.Caching;
 using nvoid.db.Extensions;
+using Netlyt.Service.FeatureGeneration;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.Models;
 
 namespace Netlyt.Service.Donut
 {
-    public class DonutRunner<TDonut, TContext>
+    public interface IDonutRunner
+    {
+        Task<HarvesterResult> Run(IDonutfile donut, FeatureGenerator<IntegratedDocument> featureGenerator);
+    }
+    public interface IDonutRunner<TDonut>  : IDonutRunner
+    {
+        Task<HarvesterResult> Run(TDonut donut, FeatureGenerator<IntegratedDocument> getFeatureGenerator);
+    }
+
+    public class DonutRunner<TDonut, TContext> : IDonutRunner<TDonut>
         where TContext: DonutContext
         where TDonut : Donutfile<TContext>
     {
@@ -25,30 +36,36 @@ namespace Netlyt.Service.Donut
             _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().AsMongoDbQueryable();
         }
 
-        public async Task<HarvesterResult> Run(TDonut donut, FeatureGenerator<IntegratedDocument> ftrGenerator)
+        public async Task<HarvesterResult> Run(IDonutfile donut, FeatureGenerator<IntegratedDocument> featureGenerator)
+        {
+            return await Run(donut as TDonut, featureGenerator);
+        }
+        public async Task<HarvesterResult> Run(TDonut donut, FeatureGenerator<IntegratedDocument> getFeatureGenerator)
         {
             var integration = donut.Context.Integration;
-            var donutBlock = donut.CreateDataflowBlock(ftrGenerator);
+            var donutBlock = donut.CreateDataflowBlock(getFeatureGenerator);
             var flowBlock = donutBlock.FlowBlock;
             _featuresBlock = donutBlock.FeaturePropagator;
 
             var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, IntegratedDocument>((x) =>
-            {
-                var doc = x.Document;
-                //Cleanup
-                doc.Document.Value.Remove("events");
-                doc.Document.Value.Remove("browsing_statistics");
+            { 
+                var rawFeatures = new BsonDocument();
+                var featuresDocument = new IntegratedDocument(rawFeatures);
+                //add some cleanup, or feature document definition, because right now the original document is used
+                //either clean  it up or create a new one with just the features.
+                //if (doc.Document.Value.Contains("events")) doc.Document.Value.Remove("events");
+                //if (doc.Document.Value.Contains("browsing_statistics")) doc.Document.Value.Remove("browsing_statistics");
                 foreach (var featurePair in x.Features)
                 {
                     var name = featurePair.Key;
                     if (string.IsNullOrEmpty(name)) continue;
                     var featureval = featurePair.Value;
-                    doc.Document.Value.Set(name, BsonValue.Create(featureval));
-                }
-                //Cleanup
-                doc.IntegrationId = integration.Id; doc.APIId = integration.APIKey.Id;
+                    rawFeatures.Set(name, BsonValue.Create(featureval));
+                } 
+                featuresDocument.IntegrationId = integration.Id;
+                featuresDocument.APIId = integration.APIKey.Id;
                 x.Features = null;
-                return doc;
+                return featuresDocument;
             });
             var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 3000);
             insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
@@ -80,8 +97,7 @@ namespace Netlyt.Service.Donut
             {
                 throw new NotImplementedException();
             }
-            var x = 3;
-            x++;
         }
+
     }
 }
