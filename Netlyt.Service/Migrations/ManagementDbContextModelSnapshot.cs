@@ -148,6 +148,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("FeatureScript");
 
+                    b.Property<string>("FeaturesCollection");
+
                     b.Property<string>("Name");
 
                     b.Property<string>("OwnerId");

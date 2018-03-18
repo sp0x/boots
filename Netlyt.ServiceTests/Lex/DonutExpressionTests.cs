@@ -18,12 +18,13 @@ using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Parsing;
 using Netlyt.Service.Lex.Parsing.Tokenizers;
+using Netlyt.ServiceTests.Fixtures;
 using Netlyt.ServiceTests.Netinfo;
 using Xunit;
 
 namespace Netlyt.ServiceTests.Lex
 {
-    [Collection("Entity Parsers")]
+    [Collection("DonutTests")]
     public class DonutExpressionTests : IDisposable
     {
         private ApiService _apiService;
@@ -32,15 +33,17 @@ namespace Netlyt.ServiceTests.Lex
         private CompilerService _compiler;
         private RedisCacher _cacher;
         private IServiceProvider _serviceProvider;
+        private DatabaseConfiguration _dbConfig;
 
-        public DonutExpressionTests(ConfigurationFixture fixture)
+        public DonutExpressionTests(DonutConfigurationFixture fixture)
         {
             _compiler = fixture.GetService<CompilerService>();
             _apiService = fixture.GetService<ApiService>();
             _integrationService = fixture.GetService<IntegrationService>();
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
-            _cacher = fixture.GetService<RedisCacher>(); 
+            _cacher = fixture.GetService<RedisCacher>();
+            _dbConfig = DBConfig.GetGeneralDatabase();
             _serviceProvider = fixture.GetService<IServiceProvider>();
 
         }
@@ -114,7 +117,6 @@ namespace Netlyt.ServiceTests.Lex
         {
             @"define modelName
             from events
-            set id = this.id
             set uuid = this.uuid
             ", "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced"
         })]
@@ -136,13 +138,14 @@ namespace Netlyt.ServiceTests.Lex
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
             var entryLimit = (uint)10000;
             harvester.LimitEntries(entryLimit);
-            var integration = harvester.AddIntegrationSource(source, _appAuth, "SomeIntegrationName2"); 
+            var integration = harvester.AddIntegrationSource(source, _appAuth, "SomeIntegrationName2");
+            
             var donutMachine = DonutBuilderFactory.Create(donutType, donutContextType, integration, _cacher, _serviceProvider);
             IDonutfile donut = donutMachine.Generate();
             donut.SetupCacheInterval(source.Size);
             donut.ReplayInputOnFeatures = true;
 
-            IDonutRunner donutRunner = DonutRunnerFactory.Create(donutType, donutContextType, harvester); 
+            IDonutRunner donutRunner = DonutRunnerFactory.CreateByType(donutType, donutContextType, harvester, _dbConfig, integration.FeaturesCollection); 
             var featureGenerator = FeatureGeneratorFactory.Create(donut, donutFEmitterType);
              
             var result = await donutRunner.Run(donut, featureGenerator);

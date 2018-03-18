@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Models;
 
 namespace Netlyt.Service.FeatureGeneration
@@ -79,6 +80,8 @@ namespace Netlyt.Service.FeatureGeneration
                 var queue = new Queue<KeyValuePair<string, object>>();
                 Parallel.ForEach(_generators, (generator) =>
                 {
+                    //var docVal = (doc as IntegratedDocument).GetDocument();
+                    //docVal = docVal;
                     var features = generator(doc);
                     foreach (var feature in features)
                     {

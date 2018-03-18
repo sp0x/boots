@@ -7,11 +7,13 @@
     <Compile Remove="Integration\IntegrationTypeDefinition.Factory.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Build\Templates\Project.txt" />
     <None Remove="Lex\Templates\DonutContext.txt" />
     <None Remove="Lex\Templates\Donutfile.txt" />
     <None Remove="Lex\Templates\FeatureGenerator.txt" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Build\Templates\Project.txt" />
     <EmbeddedResource Include="Lex\Templates\DonutContext.txt" />
     <EmbeddedResource Include="Lex\Templates\Donutfile.txt" />
     <EmbeddedResource Include="Lex\Templates\FeatureGenerator.txt" />

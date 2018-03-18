@@ -5,6 +5,8 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.Batching;
 using nvoid.db.Caching;
+using nvoid.db.DB.Configuration;
+using nvoid.db.DB.MongoDB;
 using nvoid.db.Extensions;
 using Netlyt.Service.FeatureGeneration;
 using Netlyt.Service.Integration;
@@ -27,13 +29,18 @@ namespace Netlyt.Service.Donut
         where TDonut : Donutfile<TContext>
     {
         private Harvester<IntegratedDocument> _harvester;
-        private IMongoCollection<IntegratedDocument> _documentStore;
+        private IMongoCollection<IntegratedDocument> _featuresCollection;
         private IPropagatorBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>> _featuresBlock;
 
-        public DonutRunner(Harvester<IntegratedDocument> harvester)
+        public DonutRunner(Harvester<IntegratedDocument> harvester, DatabaseConfiguration db, string featuresCollection)
         {
+            if (string.IsNullOrEmpty(featuresCollection))
+            {
+                throw new ArgumentNullException(nameof(featuresCollection));
+            }
             _harvester = harvester;
-            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().AsMongoDbQueryable();
+            var mlist = new MongoList<IntegratedDocument>(db, featuresCollection);
+            _featuresCollection = mlist.Records;
         }
 
         public async Task<HarvesterResult> Run(IDonutfile donut, FeatureGenerator<IntegratedDocument> featureGenerator)
@@ -67,7 +74,7 @@ namespace Netlyt.Service.Donut
                 x.Features = null;
                 return featuresDocument;
             });
-            var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_documentStore, 3000);
+            var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_featuresCollection, 3000);
             insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
             _featuresBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
@@ -88,7 +95,8 @@ namespace Netlyt.Service.Donut
             donut.Complete();
             if (donut.ReplayInputOnFeatures)
             {
-                var featuresFlow = new InternalFlowBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>(_featuresBlock);
+                var featuresFlow = new InternalFlowBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>
+                    (_featuresBlock);
                 _harvester.Reset();
                 _harvester.SetDestination(featuresFlow);
                 var featuresResult = await _harvester.Run(); 

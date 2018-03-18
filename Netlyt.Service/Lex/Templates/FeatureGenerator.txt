@@ -18,17 +18,9 @@ namespace $Namespace
 			
 		}
 
-		public TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> GetBlock()
-        {
-            var block = new TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>((doc) =>
-            {
-                return GetFeatures(doc);
-            });
-            return block;
-        }
-
 		public override IEnumerable<KeyValuePair<string, object>> GetFeatures(IntegratedDocument intDoc)
 		{
+			Func<string, object, KeyValuePair<string, object>> pair = (x, y) => new KeyValuePair<string, object>(x, y);
 			BsonDocument intDocDocument = intDoc.GetDocument();
             var doc = intDocDocument;
 

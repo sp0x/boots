@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using Netlyt.ServiceTests.Fixtures;
+using Xunit;
 
 namespace Netlyt.ServiceTests.IntegrationSource
 {

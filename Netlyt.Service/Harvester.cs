@@ -134,7 +134,11 @@ namespace Netlyt.Service
                 throw new InvalidOperationException("Integration needs to have at least 1 field.");
             }
             integration.APIKey = appAuth;
-            integration.Collection = outputCollection;
+            if (!string.IsNullOrEmpty(outputCollection))
+            {
+                integration.Collection = outputCollection;
+            }
+            integration.FeaturesCollection = $"{integration.Collection}_features";
             if (!string.IsNullOrEmpty(name))
             {
                 integration.Name = name;

@@ -20,6 +20,7 @@ using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Import;
 using Netlyt.Service.IntegrationSource; 
 using Netlyt.Service.Time;
+using Netlyt.ServiceTests.Fixtures;
 using Netlyt.ServiceTests.Netinfo;
 using Xunit;
 
@@ -110,7 +111,8 @@ namespace Netlyt.ServiceTests.Lex
             //->pass each event through AccumulateUserDocument to collect stats
             //->bing in demographic data to the already grouped userbase
             //->pass the day_user document through FeatureGenerator to create it's features
-            var donutRunner = new DonutRunner<NetinfoDonutfile, NetinfoDonutContext>(harvester);
+            var featuresCollection = collectionName + "_features";
+            var donutRunner = new DonutRunner<NetinfoDonutfile, NetinfoDonutContext>(harvester, _dbConfig, featuresCollection);
             var result = await donutRunner.Run(donut, GetFeatureGenerator(donut)); 
             
             Debug.WriteLine(result.ProcessedEntries);

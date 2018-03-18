@@ -79,6 +79,7 @@ namespace Netlyt.Service.IntegrationSource
                     typedef = new Integration.DataIntegration(_collection.CollectionNamespace.CollectionName);
                     typedef.DataEncoding = Encoding.CodePage;
                     typedef.DataFormatType = Formatter.Name;
+                    typedef.Collection = _collection.CollectionNamespace.CollectionName;
                     var instanceExpandoObj = firstInstance;///BsonSerializer.Deserialize<T>(firstInstance);
                     typedef.SetFieldsFromType(instanceExpandoObj);
                 }

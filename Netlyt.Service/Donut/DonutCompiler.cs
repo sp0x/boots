@@ -30,11 +30,24 @@ namespace Netlyt.Service.Donut
             _assembliesDir = Path.Combine(Environment.CurrentDirectory, "donutAssemblies");
         }
 
+        private void WriteDonutCode(string assemblyName, string fileName, string content)
+        {
+            var dir = Path.Combine(_assembliesDir, assemblyName);
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            var filepath = Path.Combine(dir, fileName);
+            File.WriteAllText(filepath, content);
+        }
+
         public EmitResultAssembly Compile(string assemblyName, out string filePath)
         {
             var generatedContext = _codeGen.GenerateContext(assemblyName, _script);
             var generatedDonut = _codeGen.GenerateDonut(assemblyName, _script);
             var generatedFeatureGen = _codeGen.GenerateFeatureGenerator(assemblyName, _script);
+#if DEBUG
+            WriteDonutCode(assemblyName, "DonutContext.cs", generatedContext);
+            WriteDonutCode(assemblyName, "DonutFile.cs", generatedDonut);
+            WriteDonutCode(assemblyName, "FeatureEmitter.cs", generatedFeatureGen); 
+#endif
             var builder = new CsCompiler(assemblyName, _assembliesDir);
             //Add our reference libs
             builder.AddReferenceFromType(typeof(BsonDocument));
@@ -47,6 +60,10 @@ namespace Netlyt.Service.Donut
             var clrDep =
                 Assembly.Load("netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
             builder.AddReference(clrDep);
+#if DEBUG
+            var projectDefinition = builder.GenerateProjectDefinition(assemblyName, _script);
+            WriteDonutCode(assemblyName, $"{assemblyName}.csproj", projectDefinition);
+#endif
             var emitResult = builder.Compile(generatedContext, generatedDonut, generatedFeatureGen);
             filePath = builder.Filepath;
             return emitResult;

@@ -32,11 +32,14 @@ namespace Netlyt.Service.Integration
         /// </summary>
         public string Source { get; set; }
         public string Collection { get; set; }
-        
+
+        public string FeaturesCollection { get; set; }
+
         public ICollection<FieldDefinition> Fields { get; set; }
         public ICollection<IntegrationExtra> Extras { get; set; }
 
         public static DataIntegration Empty { get; set; } = new DataIntegration("Empty");
+        
 
         public DataIntegration()
         { 
@@ -47,7 +50,8 @@ namespace Netlyt.Service.Integration
         public DataIntegration(string name)
             : this()
         { 
-            this.Name = name;
+            this.Name = name; 
+            this.PublicKey = ApiAuth.Generate();
         }
 
         /// <summary>

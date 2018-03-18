@@ -88,7 +88,24 @@ namespace Netlyt.Service.Lex.Generators
         }
         private string GetFeatureYieldsContent(DonutScript script)
         {
-            return "";
+            var fBuilder = new StringBuilder();
+            foreach (var feature in script.Features)
+            {
+                IExpression accessor = feature.Value;
+                string fName = feature.Member.ToString();
+                string featureContent = "";
+                if (accessor.GetType() == typeof(VariableExpression))
+                {
+                    var member = (accessor as VariableExpression).Member.ToString();
+                    featureContent = $"yield return pair(\"{fName}\", doc[\"{member}\"]);";
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+                fBuilder.AppendLine(featureContent);
+            }
+            return fBuilder.ToString();
         }
 
         private string GetFeaturePrepContent(DonutScript script)

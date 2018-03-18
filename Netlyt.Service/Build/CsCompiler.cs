@@ -8,6 +8,7 @@ using System.Runtime.Loader;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Netlyt.Service.Lex.Data;
 
 
 namespace Netlyt.Service.Build
@@ -21,6 +22,7 @@ namespace Netlyt.Service.Build
         private List<MetadataReference> References { get; set; } 
         private string _assemblyName;
         private string _directory;
+        private static Assembly _assembly;
 
         /// <summary>   The filepath of the output assembly. </summary> 
         public string Filepath
@@ -151,5 +153,45 @@ namespace Netlyt.Service.Build
             }
         }
 
+        public string GenerateProjectDefinition(string assemblyName, DonutScript script)
+        { 
+            using (var template = new StreamReader(GetTemplate("Project.txt")))
+            {
+                var content = template.ReadToEnd();
+                var referenceBuilder = new StringBuilder();
+                foreach (var reference in References)
+                {
+                    var referenceTemplate = $"<PackageReference Incude=\"{reference.Display}\" />\n";
+                    referenceBuilder.Append(referenceTemplate);
+                    //<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="2.0.1" />
+                }
+
+                content = content.Replace("$References", referenceBuilder.ToString());
+                return content;
+            }
+        }
+
+        /// <summary>   Gets the contents of a template. </summary>
+        ///
+        /// <remarks>   Vasko, 14-Dec-17. </remarks>
+        ///
+        /// <exception cref="Exception">    Thrown when an exception error condition occurs. </exception>
+        ///
+        /// <param name="name"> The name of the template file. </param>
+        ///
+        /// <returns>   A stream for the template. </returns>
+
+        protected static Stream GetTemplate(string name)
+        {
+            if (_assembly == null) _assembly = Assembly.GetExecutingAssembly();
+            var resourceName = $"Netlyt.Service.Build.Templates.{name}";
+            Stream stream = _assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+            {
+                throw new Exception("Template not found!");
+            }
+            //StreamReader reader = new StreamReader(stream);
+            return stream;
+        }
     }
 }

@@ -9,7 +9,7 @@ using nvoid.db.DB.Configuration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 
-namespace Netlyt.ServiceTests
+namespace Netlyt.ServiceTests.Fixtures
 {
     public class DonutConfigurationFixture : IDisposable
     {
