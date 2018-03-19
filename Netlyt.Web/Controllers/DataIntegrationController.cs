@@ -24,7 +24,7 @@ using Newtonsoft.Json.Linq;
 namespace Netlyt.Web.Controllers
 {
     /// <summary>
-    /// TODO: Create a service for the actions performed in this controller.
+    /// To be deprecated..
     /// </summary>
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = Netlyt.Data.AuthenticationSchemes.ApiSchemes)]

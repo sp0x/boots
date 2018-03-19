@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
+using nvoid.db.DB.MongoDB;
 using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Donut;
@@ -111,7 +112,8 @@ namespace Netlyt.ServiceTests.Lex
 
         /// <summary>
         /// </summary>
-        /// <param name="txt"></param> 
+        /// <param name="script">THe donut script to execute</param>
+        /// <param name="collectionName">The source collection</param> 
         [Theory]
         [InlineData(new object[]
         {
@@ -120,10 +122,10 @@ namespace Netlyt.ServiceTests.Lex
             set uuid = this.uuid
             ", "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced"
         })]
-        public async Task TestGeneratedDonutContext(string txt, string collectionName)
+        public async Task TestGeneratedDonutContext(string script, string collectionName)
         {
             var tokenizer = new PrecedenceTokenizer();
-            var parser = new TokenParser(tokenizer.Tokenize(txt));
+            var parser = new TokenParser(tokenizer.Tokenize(script));
             DonutScript dscript = parser.ParseDonutScript();
             Type donutType, donutContextType, donutFEmitterType;
             var assembly = _compiler.Compile(dscript, "someAssembly2", out donutType, out donutContextType, out donutFEmitterType); 
@@ -139,24 +141,22 @@ namespace Netlyt.ServiceTests.Lex
             var entryLimit = (uint)10000;
             harvester.LimitEntries(entryLimit);
             var integration = harvester.AddIntegrationSource(source, _appAuth, "SomeIntegrationName2");
-            
+
+            //Create a donut and a donutRunner
             var donutMachine = DonutBuilderFactory.Create(donutType, donutContextType, integration, _cacher, _serviceProvider);
             IDonutfile donut = donutMachine.Generate();
             donut.SetupCacheInterval(source.Size);
             donut.ReplayInputOnFeatures = true;
-
             IDonutRunner donutRunner = DonutRunnerFactory.CreateByType(donutType, donutContextType, harvester, _dbConfig, integration.FeaturesCollection); 
             var featureGenerator = FeatureGeneratorFactory.Create(donut, donutFEmitterType);
              
-            var result = await donutRunner.Run(donut, featureGenerator);
+            var result = await donutRunner.Run(donut, featureGenerator); 
+            var ftCol = new MongoList(_dbConfig,integration.FeaturesCollection);
+            ftCol.Truncate();
+
             Assert.NotNull(result);
             Assert.Equal((int)entryLimit, (int)result.ProcessedEntries);
-            Debug.WriteLine(result.ProcessedEntries); 
-
-            //TODO: Add assembly unloading whenever coreclr implements it..
-            //Comple the context 
-            //Assert.True(emittedBlob.Length > 100);
-            //Generate the code for a map reduce with mongo
+            Debug.WriteLine(result.ProcessedEntries);
         }
 
         public void Dispose()

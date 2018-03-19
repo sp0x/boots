@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -10,25 +9,20 @@ using nvoid.db.Extensions;
 using Netlyt.Service;
 using Netlyt.Service.Integration;
 using Netlyt.Web.Models;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http.Extensions;
+using System.Threading.Tasks; 
 using System.IO;
 using System.Text;
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using static Netlyt.Web.Attributes;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Net.Http.Headers;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration.Import;
 using Netlyt.Web.Helpers;
 using Netlyt.Web.Services;
 using Netlyt.Web.ViewModels;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Netlyt.Web.Controllers
 {

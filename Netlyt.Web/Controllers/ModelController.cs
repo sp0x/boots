@@ -48,18 +48,16 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/model/paramlist")]
         public async Task<JsonResult> GetParamsList()
         {
-            JObject query = new JObject();
-            query.Add("op", (int)OrionOp.ParamList);
-            var param = await _orionContext.Query(query);
+            var orionQuery = new OrionQuery(OrionOp.ParamList);
+            var param = await _orionContext.Query(orionQuery);
             return Json(param);
         }
 
-        [HttpGet("/classlist")]
-        public JsonResult GetClassList()
+        [HttpGet("/model/classlist")]
+        public async Task<JsonResult> GetClassList()
         {
-            JObject query = new JObject();
-            query.Add("op", 105);
-            var param = _orionContext.Query(query).Result;
+            var query = new OrionQuery(OrionOp.GetModelList);
+            var param = await _orionContext.Query(query);
             return Json(param);
         }
 
@@ -92,7 +90,7 @@ namespace Netlyt.Web.Controllers
             return CreatedAtRoute("GetById", new { id = newModel.Id }, item);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("/model/{id}")]
         public IActionResult Update(long id, [FromBody] ModelUpdateViewModel item)
         {
             if (item == null || item.Id != id)
@@ -119,8 +117,8 @@ namespace Netlyt.Web.Controllers
             return new NoContentResult();
         }
 
-        [HttpPost("{id}/[action]")]
-        public IActionResult Train(long id)
+        [HttpPost("/model/{id}/[action]")]
+        public async Task<IActionResult> Train(long id)
         {
             var json = Request.GetRawBodyString();
             JObject query = JObject.Parse(json.Result);
@@ -129,11 +127,11 @@ namespace Netlyt.Web.Controllers
             //async task
             // do training
             // set current model to the id of whatever came back
-            var m_id = _orionContext.Query(query).Result;
+            var m_id = await _orionContext.Query(query);
             return Accepted(m_id);
         }
 
-        [HttpPost("{id}/[action]")]
+        [HttpPost("/model/{id}/[action]")]
         public IActionResult Deploy(long id)
         {
             var json = Request.GetRawBodyString();

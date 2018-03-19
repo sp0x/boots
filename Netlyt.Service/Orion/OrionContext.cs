@@ -86,5 +86,15 @@ namespace Netlyt.Service
         {
             return _actionBlock;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="orionQuery"></param>
+        /// <returns></returns>
+        public async Task<JToken> Query(OrionQuery orionQuery)
+        {
+            var token = orionQuery.Serialize();
+            return await Query(token);
+        }
     }
 }
