@@ -6,6 +6,7 @@
         MakePrediction = 102,
         Train = 103,
         ParamList = 104,
-        GetModelList = 105
+        GetModelList = 105,
+        GenerateFeatures = 107
     }
 }

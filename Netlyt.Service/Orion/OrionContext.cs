@@ -3,13 +3,11 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Microsoft.Extensions.Configuration;
-using MongoDB.Bson;
 using nvoid.db.DB.Configuration;
+using Netlyt.Service.Integration;
 using Newtonsoft.Json.Linq;
-using Netlyt.Service.Integration; 
-using Netlyt.Service.Orion;
 
-namespace Netlyt.Service
+namespace Netlyt.Service.Orion
 {
     public class OrionContext
     {

@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Ml;
+using Netlyt.Service.Models;
+using Netlyt.Service.Orion;
 
 namespace Netlyt.Service
 {
@@ -12,12 +14,15 @@ namespace Netlyt.Service
     {
         private IHttpContextAccessor _contextAccessor;
         private ManagementDbContext _context;
+        private OrionContext _orion;
 
         public ModelService(ManagementDbContext context,
+            OrionContext orionContext,
             IHttpContextAccessor ctxAccessor)
         {
             _contextAccessor = ctxAccessor;
             _context = context;
+            _orion = orionContext;
         }
 
         public IEnumerable<Model> GetAllForUser(User user, int page)
@@ -39,27 +44,59 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="user"></param>
         /// <param name="name"></param> 
-        /// <param name="integration"></param>
+        /// <param name="integrations"></param>
         /// <param name="callbackUrl"></param>
+        /// <param name="generateFeatures">If feature generation should be ran. This is only done if there are any existing integrations for this model.</param>
+        /// <param name="relations"></param>
         /// <returns></returns>
-        public Task<Model> CreateModel(
+        public async Task<Model> CreateModel(
             User user, 
             string name,
-            DataIntegration integration, 
-            string callbackUrl)
+            IEnumerable<DataIntegration> integrations, 
+            string callbackUrl,
+            bool generateFeatures,
+            IEnumerable<FeatureGenerationRelation> relations, 
+            string targetAttribute
+            )
         {
             var newModel = new Model();
             newModel.User = user;
             newModel.ModelName = name;
             newModel.Callback = callbackUrl; 
-            if (integration != null)
+            if (integrations != null)
             {
-                var newModelIntegration = new ModelIntegration(newModel, integration);
-                newModel.DataIntegrations.Add(newModelIntegration);
+                newModel.DataIntegrations = integrations.Select(x => new ModelIntegration(newModel, x)).ToList(); 
             }
             _context.Models.Add(newModel);
             _context.SaveChanges();
-            return Task.FromResult<Model>(newModel);
+            if (generateFeatures)
+            {
+                await GenerateFeatures(newModel, relations, targetAttribute);
+            }
+            return newModel;
+        }
+
+        public async Task<FeatureGenerationTask> GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, string targetAttribute)
+        {
+            var collections = new List<FeatureGenerationCollectionOptions>();  
+            foreach (var integration in newModel.DataIntegrations)
+            {
+                var ign = integration.Integration;
+                var colOptions = new FeatureGenerationCollectionOptions()
+                {
+                    Collection = ign.Collection,
+                    Name = ign.Name,
+                    //Other parameters are ignored for now
+                };
+                collections.Add(colOptions);
+            }
+
+            var query = OrionQuery.Factory.CreateFeatureGenerationQuery(newModel, collections, relations, targetAttribute);
+            var result = await _orion.Query(query);
+            var newTask = new FeatureGenerationTask();
+            newTask.OrionTaskId = result["task_id"].ToString();
+            newTask.Model = newModel;
+            return newTask;
         }
 
         public void DeleteModel(User cruser, long id)

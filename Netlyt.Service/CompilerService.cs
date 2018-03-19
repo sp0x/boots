@@ -12,11 +12,11 @@ namespace Netlyt.Service
 {
     public class CompilerService
     {
-        private AssemblyLoadContext _context;
+        //private AssemblyLoadContext _context;
         public CompilerService()
         {
             var asmDir = Environment.CurrentDirectory;
-            _context = null;
+            //_context = null;
             //_context = AssemblyLoadContext.Default; //new DonutAssemblyLoadContext(asmDir); 
         }
 

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using nvoid.Integration;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Ml;
+using Netlyt.Service.Models;
 using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Data
@@ -18,7 +19,7 @@ namespace Netlyt.Service.Data
         public DbSet<FieldDefinition> Fields { get; set; }
         public DbSet<FieldExtras> FieldExtras { get; set; }
         public DbSet<ApiAuth> ApiKeys { get; set; }
-
+        public DbSet<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
 
         public ManagementDbContext(DbContextOptions<ManagementDbContext> options)
             : base(options)

@@ -8,6 +8,7 @@ using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
+using Netlyt.Service.Orion;
 
 namespace Netlyt.ServiceTests.Fixtures
 {
@@ -16,6 +17,7 @@ namespace Netlyt.ServiceTests.Fixtures
         private ManagementDbContext _context;
         public DbContextOptionsBuilder<ManagementDbContext> DbOptionsBuilder { get; private set; }
         public ServiceProvider ServiceProvider { get; set; }
+        private OrionContext BehaviourContext { get; }
 
         public DonutConfigurationFixture()
         {
@@ -30,6 +32,11 @@ namespace Netlyt.ServiceTests.Fixtures
             var services = new ServiceCollection();
             _context = CreateContext();
             DBConfig.Initialize(config);
+
+            BehaviourContext = new OrionContext();
+            BehaviourContext.Configure(config.GetSection("behaviour"));
+            BehaviourContext.Run();
+
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider();
         }
@@ -41,7 +48,7 @@ namespace Netlyt.ServiceTests.Fixtures
             services.AddTransient<ApiService>(s => new ApiService(_context, null)); 
             services.AddTransient<UserService>(s => new UserService(s.GetService<UserManager<User>>(), s.GetService<ApiService>(), null, null,
                 s.GetService<OrganizationService>(), s.GetService<ModelService>(), _context));
-            services.AddTransient<ModelService>(s => new ModelService(_context, null));
+            services.AddTransient<ModelService>(s => new ModelService(_context, s.GetService<OrionContext>(), null));
             services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>()));
             services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
             services.AddTransient<CompilerService>();

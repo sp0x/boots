@@ -9,6 +9,7 @@ using Netlyt.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using nvoid.db;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Ml;
 using Netlyt.Service.Orion;
 using Netlyt.Web.ViewModels;
@@ -86,7 +87,15 @@ namespace Netlyt.Web.Controllers
             }
             var user = await _userService.GetCurrentUser();
             var integration = _userService.GetUserIntegration(user, item.DataSource);
-            var newModel = await _modelService.CreateModel(user, item.Name, integration, item.Callback);
+            var relations = item.Relations?.Select(x => new FeatureGenerationRelation(x[0], x[1]));
+            //This really needs a builder..
+            var newModel = await _modelService.CreateModel(user,
+                item.Name,
+                new List<DataIntegration>(new []{integration}),
+                item.Callback,
+                item.GenerateFeatures,
+                relations,
+                item.TargetAttribute);
             return CreatedAtRoute("GetById", new { id = newModel.Id }, item);
         }
 
@@ -142,6 +151,7 @@ namespace Netlyt.Web.Controllers
             _modelService.SaveChanges();
             return new NoContentResult();
         }
+
 
     }
 }
