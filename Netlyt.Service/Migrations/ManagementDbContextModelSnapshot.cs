@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.Internal;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
 using Netlyt.Service.Data;
+using Netlyt.Service.Models;
 using System;
 
 namespace Netlyt.Service.Migrations
@@ -187,6 +188,25 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("IntegrationExtra");
                 });
 
+            modelBuilder.Entity("Netlyt.Service.Lex.Data.DonutScriptInfo", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("AssemblyPath");
+
+                    b.Property<string>("DonutScriptContent");
+
+                    b.Property<long?>("ModelId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModelId")
+                        .IsUnique();
+
+                    b.ToTable("DonutScripts");
+                });
+
             modelBuilder.Entity("Netlyt.Service.Ml.Model", b =>
                 {
                     b.Property<long>("Id")
@@ -239,6 +259,24 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("ModelRule");
                 });
 
+            modelBuilder.Entity("Netlyt.Service.Models.FeatureGenerationTask", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<long>("ModelId");
+
+                    b.Property<string>("OrionTaskId");
+
+                    b.Property<int>("Status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModelId");
+
+                    b.ToTable("FeatureGenerationTasks");
+                });
+
             modelBuilder.Entity("Netlyt.Service.Organization", b =>
                 {
                     b.Property<long>("Id")
@@ -280,6 +318,8 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
+                    b.Property<long?>("ExtrasId");
+
                     b.Property<long>("IntegrationId");
 
                     b.Property<string>("Name");
@@ -287,6 +327,9 @@ namespace Netlyt.Service.Migrations
                     b.Property<string>("Type");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ExtrasId")
+                        .IsUnique();
 
                     b.HasIndex("IntegrationId");
 
@@ -320,16 +363,11 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<long?>("FieldId");
-
                     b.Property<bool>("Nullable");
 
                     b.Property<bool>("Unique");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("FieldId")
-                        .IsUnique();
 
                     b.ToTable("FieldExtras");
                 });
@@ -528,6 +566,13 @@ namespace Netlyt.Service.Migrations
                         .HasForeignKey("DataIntegrationId");
                 });
 
+            modelBuilder.Entity("Netlyt.Service.Lex.Data.DonutScriptInfo", b =>
+                {
+                    b.HasOne("Netlyt.Service.Ml.Model", "Model")
+                        .WithOne("DonutScript")
+                        .HasForeignKey("Netlyt.Service.Lex.Data.DonutScriptInfo", "ModelId");
+                });
+
             modelBuilder.Entity("Netlyt.Service.Ml.Model", b =>
                 {
                     b.HasOne("Netlyt.Service.User", "User")
@@ -561,6 +606,14 @@ namespace Netlyt.Service.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
+            modelBuilder.Entity("Netlyt.Service.Models.FeatureGenerationTask", b =>
+                {
+                    b.HasOne("Netlyt.Service.Ml.Model", "Model")
+                        .WithMany("FeatureGenerationTasks")
+                        .HasForeignKey("ModelId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
             modelBuilder.Entity("Netlyt.Service.Organization", b =>
                 {
                     b.HasOne("nvoid.Integration.ApiAuth", "ApiKey")
@@ -577,6 +630,10 @@ namespace Netlyt.Service.Migrations
 
             modelBuilder.Entity("Netlyt.Service.Source.FieldDefinition", b =>
                 {
+                    b.HasOne("Netlyt.Service.Source.FieldExtras", "Extras")
+                        .WithOne("Field")
+                        .HasForeignKey("Netlyt.Service.Source.FieldDefinition", "ExtrasId");
+
                     b.HasOne("Netlyt.Service.Integration.DataIntegration", "Integration")
                         .WithMany("Fields")
                         .HasForeignKey("IntegrationId")
@@ -592,13 +649,6 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Service.Source.FieldDefinition", "Field")
                         .WithMany()
                         .HasForeignKey("FieldId");
-                });
-
-            modelBuilder.Entity("Netlyt.Service.Source.FieldExtras", b =>
-                {
-                    b.HasOne("Netlyt.Service.Source.FieldDefinition", "Field")
-                        .WithOne("Extras")
-                        .HasForeignKey("Netlyt.Service.Source.FieldExtras", "FieldId");
                 });
 
             modelBuilder.Entity("Netlyt.Service.User", b =>

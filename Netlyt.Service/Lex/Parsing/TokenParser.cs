@@ -48,27 +48,31 @@ namespace Netlyt.Service.Lex.Parsing
         public DonutScript ParseDonutScript()
         {
             _sourceIntegrations.Clear();
-            DonutScript model  = new DonutScript();
+            DonutScript newScript  = new DonutScript();
             Reader.DiscardToken(TokenType.Define);
             var newSymbolName = Reader.DiscardToken(TokenType.Symbol);
-            model.Type = new ScriptTypeInfo()
+            newScript.Type = new ScriptTypeInfo()
             {
                 Name = newSymbolName.Value
             }; 
             _sourceIntegrations = ReadFrom();
             var orderBy = ReadOrderBy(); 
             var expressions = ReadExpressions();
-            model.StartingOrderBy = orderBy ;
+            newScript.StartingOrderBy = orderBy ;
             foreach (var expression in expressions)
             {
                 var expressionType = expression.GetType();
                 if (expressionType == typeof(AssignmentExpression))
                 {
-                    model.Features.Add(expression as AssignmentExpression);
+                    newScript.Features.Add(expression as AssignmentExpression);
+                }
+                else
+                {
+                    throw new NotImplementedException();
                 }
             }
-            model.AddIntegrations(_sourceIntegrations);
-            return model;
+            newScript.AddIntegrations(_sourceIntegrations.ToArray());
+            return newScript;
         }
 
         /// <summary>

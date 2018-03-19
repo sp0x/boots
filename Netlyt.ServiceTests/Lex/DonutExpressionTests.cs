@@ -110,6 +110,44 @@ namespace Netlyt.ServiceTests.Lex
             //Generate the code for a map reduce with mongo
         }
 
+        [Theory]
+        [InlineData("this.uuid", "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced")]
+        public async Task TestGeneratedDonutContextForFeature(string feature, string collectionName)
+        {
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures("SomeDonut1", new[] {feature});
+            dscript.AddIntegrations("events");
+            //parser.ParseDonutScript();
+            Type donutType, donutContextType, donutFEmitterType;
+            var assembly = _compiler.Compile(dscript, "someAssembly3", out donutType, out donutContextType, out donutFEmitterType);
+            //Source
+            MongoSource<ExpandoObject> source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
+            source.SetProjection(x =>
+            {
+                if (!((IDictionary<string, object>)x).ContainsKey("value")) ((dynamic)x).value.day = ((dynamic)x)._id.day;
+                return ((dynamic)x).value as ExpandoObject;
+            });
+            source.ProgressInterval = 0.05;
+            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
+            var entryLimit = (uint)10000;
+            harvester.LimitEntries(entryLimit);
+            var integration = harvester.AddIntegrationSource(source, _appAuth, "SomeIntegrationName3");
+
+            //Create a donut and a donutRunner
+            var donutMachine = DonutBuilderFactory.Create(donutType, donutContextType, integration, _cacher, _serviceProvider);
+            IDonutfile donut = donutMachine.Generate();
+            donut.SetupCacheInterval(source.Size);
+            donut.ReplayInputOnFeatures = true;
+            IDonutRunner donutRunner = DonutRunnerFactory.CreateByType(donutType, donutContextType, harvester, _dbConfig, integration.FeaturesCollection);
+            var featureGenerator = FeatureGeneratorFactory.Create(donut, donutFEmitterType);
+
+            var result = await donutRunner.Run(donut, featureGenerator);
+            var ftCol = new MongoList(_dbConfig, integration.FeaturesCollection);
+            ftCol.Truncate();
+
+            Assert.NotNull(result);
+            Assert.Equal((int)entryLimit, (int)result.ProcessedEntries);
+            Debug.WriteLine(result.ProcessedEntries);
+        }
         /// <summary>
         /// </summary>
         /// <param name="script">THe donut script to execute</param>

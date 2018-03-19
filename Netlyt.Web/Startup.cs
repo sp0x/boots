@@ -22,18 +22,17 @@ using Newtonsoft.Json;
 namespace Netlyt.Web
 {
     public class Startup
-    {
-
+    { 
         public IConfiguration Configuration { get; private set; }
-        private OrionContext BehaviourContext { get; }
+        private OrionContext OrionContext { get; }
 
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
             DBConfig.Initialize(Configuration);
-            BehaviourContext = new OrionContext();
-            BehaviourContext.Configure(Configuration.GetSection("behaviour"));
-            BehaviourContext.Run();
+            OrionContext = new OrionContext();
+            OrionContext.Configure(Configuration.GetSection("behaviour"));
+            OrionContext.Run();
         }
 
 
@@ -65,7 +64,8 @@ namespace Netlyt.Web
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<OrionContext>(this.BehaviourContext);
+            services.AddSingleton<OrionContext>(this.OrionContext);
+            services.AddSingleton<DonutOrionHandler>();
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();
@@ -86,6 +86,7 @@ namespace Netlyt.Web
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
             services.AddTransient<IntegrationService>();
+
             SetupAuthentication(services);
             services.AddAutoMapper();
             services.AddMvc();

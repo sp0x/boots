@@ -9,24 +9,50 @@ using Newtonsoft.Json.Linq;
 
 namespace Netlyt.Service.Orion
 {
+    public delegate void FeaturesGenerated(JObject featureResult);
     public class OrionContext
     {
         private OrionClient _client;
+        private OrionEventsListener _eventListener;
         private string _destinationIp;
         private int _inputPort;
         private int _outputPort;
         private ITargetBlock<IntegratedDocument> _actionBlock;
+        private int _eventsPort;
+        public event OrionEventsListener.OrionEventHandler NewMessage;
+        public event FeaturesGenerated FeaturesGenerated;
 
         public OrionContext()
         {
             _client = new OrionClient();
+            _eventListener = new OrionEventsListener();
+            _eventListener.NewMessage += HandleNewEventMessage;
             _actionBlock = new ActionBlock<IntegratedDocument>((doc) =>
             {
                 _client.SendDocument(doc);
             });
         }
-         
-        
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="message"></param>
+        private void HandleNewEventMessage(JObject message)
+        {
+            NewMessage?.Invoke(message);
+            var type = (OrionEvent)int.Parse(message["type"].ToString());
+            switch (type)
+            {
+                case OrionEvent.GeneratedFeature:
+                    FeaturesGenerated?.Invoke(message);
+                    break;
+                default:
+                    throw new NotImplementedException();
+                    break;
+            }
+        }
+
+
         /// <summary>
         /// Configure the context
         /// </summary>
@@ -53,12 +79,15 @@ namespace Netlyt.Service.Orion
 
             _inputPort = mqConfig.InputPort; 
             _outputPort = mqConfig.OutputPort;
+            _eventsPort = mqConfig.EventsPort;
             _destinationIp = mqConfig.Destination;
+            
         }
 
         public void Run()
         {
             _client.ConnectAsync(_destinationIp, _inputPort, _outputPort);
+            _eventListener.ConnectAsync(_destinationIp, _eventsPort);
         }
 
         /// <summary>   Sends a raw string message. </summary>

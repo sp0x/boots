@@ -1,16 +1,21 @@
 using System.Collections.Generic;
 using nvoid.db.DB;
 using Netlyt.Service.Integration;
+using Netlyt.Service.Lex.Data;
+using Netlyt.Service.Models;
 
 namespace Netlyt.Service.Ml
 {
+    
     public class Model
         : Entity
     {
         public long Id { get; set; }
         public User User { get; set; }
         public virtual ICollection<ModelIntegration> DataIntegrations { get; set; }
-        public ICollection<ModelRule> Rules { get; set; }
+        public virtual ICollection<ModelRule> Rules { get; set; }
+        public virtual ICollection<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
+        public DonutScriptInfo DonutScript {get; set;}
         public string ModelName { get; set; }
         public string ClassifierType { get; set; }
         public string CurrentModel { get; set; }
@@ -22,6 +27,7 @@ namespace Netlyt.Service.Ml
         {
             Rules = new List<ModelRule>();
             DataIntegrations = new HashSet<ModelIntegration>();
+            FeatureGenerationTasks = new List<FeatureGenerationTask>();
         }
 
     }

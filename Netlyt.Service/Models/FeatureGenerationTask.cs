@@ -10,5 +10,6 @@ namespace Netlyt.Service.Models
         [ForeignKey("Model")]
         public long ModelId { get; set; }
         public Model Model { get; set; }
+        public FeatureGenerationTaskStatus Status { get; set; }
     }
 }

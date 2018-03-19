@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using nvoid.Integration;
 using Netlyt.Service.Integration;
+using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Ml;
 using Netlyt.Service.Models;
 using Netlyt.Service.Source;
@@ -20,6 +21,7 @@ namespace Netlyt.Service.Data
         public DbSet<FieldExtras> FieldExtras { get; set; }
         public DbSet<ApiAuth> ApiKeys { get; set; }
         public DbSet<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
+        public DbSet<DonutScriptInfo> DonutScripts { get; set; }
 
         public ManagementDbContext(DbContextOptions<ManagementDbContext> options)
             : base(options)

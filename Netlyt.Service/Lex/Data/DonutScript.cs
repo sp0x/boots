@@ -1,7 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 using Netlyt.Service.Lex.Expressions;
+using Netlyt.Service.Lex.Parsing;
+using Netlyt.Service.Lex.Parsing.Tokenizers;
 
 namespace Netlyt.Service.Lex.Data
 {
@@ -22,9 +23,39 @@ namespace Netlyt.Service.Lex.Data
         public OrderByExpression StartingOrderBy { get; set; }
         public List<string> Integrations { get; set; }
 
-        public void AddIntegrations(List<string> sourceIntegrations)
+        public void AddIntegrations(params string[] sourceIntegrations)
         {
-            this.Integrations = new List<string>(sourceIntegrations.ToArray());
+            if (this.Integrations == null)
+            {
+                this.Integrations = new List<string>(sourceIntegrations);
+            }
+            else
+            {
+                this.Integrations.AddRange(sourceIntegrations);
+            }
+        }
+
+        public class Factory
+        {
+            public static DonutScript CreateWithFeatures(string donutName, params string[] featureBodies)
+            {
+                var ds = new DonutScript();
+                ds.Type = new ScriptTypeInfo()
+                {
+                    Name = donutName
+                };
+                var tokenizer = new PrecedenceTokenizer();
+                int i = 0;
+                foreach (var fstring in featureBodies)
+                {
+                    var parser = new TokenParser(tokenizer.Tokenize(fstring));
+                    IExpression expFeatureBody = parser.ReadExpression();
+                    var expFeature = new AssignmentExpression(new VariableExpression($"f_{i}"), expFeatureBody);
+                    ds.Features.Add(expFeature);
+                    i++;
+                }
+                return ds;
+            }
         }
     }
 }

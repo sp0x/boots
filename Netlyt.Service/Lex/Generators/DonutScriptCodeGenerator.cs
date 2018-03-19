@@ -25,6 +25,7 @@ namespace Netlyt.Service.Lex.Generators
         public string GenerateContext(string @namespace, DonutScript script)
         {
             string ctxTemplate;
+            if (script.Type == null) throw new ArgumentException("Script type is null!");
             var baseName = script.Type.GetContextName();
             using (StreamReader reader = new StreamReader(GetTemplate("DonutContext.txt")))
             {
