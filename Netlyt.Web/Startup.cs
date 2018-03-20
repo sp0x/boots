@@ -156,6 +156,7 @@ namespace Netlyt.Web
 
         private void InitializeDatabase(IApplicationBuilder app)
         {
+            app.ApplicationServices.GetService<DonutOrionHandler>();
             using (var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
             {
                 var managementDbContext = scope.ServiceProvider.GetRequiredService<ManagementDbContext>();

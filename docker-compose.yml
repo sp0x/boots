@@ -105,4 +105,6 @@ services:
     ports:
       - "5556:5556"
       - "5557:5557"
+    env_file:
+      - orion.env
  

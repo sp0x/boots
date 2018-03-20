@@ -77,6 +77,8 @@ namespace Netlyt.ServiceTests.FeatureGeneration
                 relations,
                 targetAttribute);
             Assert.NotNull(newModel);
+
+            Console.ReadLine();//We hang on here, waiting for the features to be generated ..
         }
     }
 }

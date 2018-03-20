@@ -39,7 +39,8 @@ namespace Netlyt.ServiceTests.Fixtures
             BehaviourContext.Run();
 
             ConfigureServices(services);
-            ServiceProvider = services.BuildServiceProvider();
+            ServiceProvider = services.BuildServiceProvider(); 
+            ServiceProvider.GetService<DonutOrionHandler>();
         }
 
 

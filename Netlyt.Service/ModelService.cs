@@ -71,7 +71,10 @@ namespace Netlyt.Service
             _context.SaveChanges();
             if (generateFeatures)
             {
-                await GenerateFeatures(newModel, relations, targetAttribute);
+                var newTask = await GenerateFeatures(newModel, relations, targetAttribute);
+                newModel.FeatureGenerationTasks.Add(newTask);
+                //_context.FeatureGenerationTasks.Add(newTask);
+                _context.SaveChanges();
             }
             return newModel;
         }

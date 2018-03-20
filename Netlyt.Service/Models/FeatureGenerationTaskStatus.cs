@@ -3,7 +3,6 @@
     public enum FeatureGenerationTaskStatus
     {
         Running,
-        Done,
-        Stopped
+        Done
     }
 }

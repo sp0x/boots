@@ -38,7 +38,7 @@ namespace Netlyt.Service.Orion
         {
             string frame = e.Socket.ReceiveFrameString();
             //var inpuMessage = e.Socket.ReceiveMultipartMessage(); 
-            Debug.WriteLine("Received frame: " + frame);
+            //Debug.WriteLine("Received frame: " + frame);
             OnMessage?.Invoke(this, frame); 
         }
 

@@ -16,7 +16,7 @@ using Netlyt.Data;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Ml;
-using Netlyt.Service.Models.Account; 
+using Netlyt.Service.Models.Account;
 
 namespace Netlyt.Service
 {
@@ -30,7 +30,7 @@ namespace Netlyt.Service
         private ModelService _modelService;
         private ManagementDbContext _context;
 
-        public UserService(UserManager<User> userManager, 
+        public UserService(UserManager<User> userManager,
             ApiService apiService,
             ILoggerFactory lfactory,
             IHttpContextAccessor contextAccessor,
@@ -38,7 +38,7 @@ namespace Netlyt.Service
             ModelService modelService,
             ManagementDbContext context)
         {
-            if(lfactory!=null) _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
+            if (lfactory != null) _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
             _userManager = userManager;
             _apiService = apiService;
             _contextAccessor = contextAccessor;
@@ -46,13 +46,14 @@ namespace Netlyt.Service
             _modelService = modelService;
             _context = context;
         }
-        
+
         public IdentityResult CreateUser(RegisterViewModel model, out User user)
         {
             var username = model.Email.Substring(0, model.Email.IndexOf("@"));
             user = new User
             {
-                UserName = username, Email = model.Email,
+                UserName = username,
+                Email = model.Email,
                 FirstName = model.FirstName,
                 LastName = model.LastName
             };
@@ -77,7 +78,7 @@ namespace Netlyt.Service
             var principal = new ClaimsPrincipal(identity);
             // you could add any custom claims here
             //var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), null, "apikey"); 
-             
+
             var authProps = new AuthenticationProperties();
             var ticket = new AuthenticationTicket(principal, authProps, AuthenticationSchemes.DataSchemes);
             return ticket;
@@ -138,7 +139,7 @@ namespace Netlyt.Service
             if (userModel != null)
             {
                 var keys = _apiService.GetUserKeys(userModel);
-                if (keys!=null) userModel.ApiKeys = keys?.ToList();
+                if (keys != null) userModel.ApiKeys = keys?.ToList();
             }
             return userModel;
         }
@@ -168,7 +169,7 @@ namespace Netlyt.Service
         /// <returns></returns>
         public async Task<ApiAuth> GetCurrentApi()
         {
-            var crUser =await GetCurrentUser();
+            var crUser = await GetCurrentUser();
             return crUser?.ApiKeys?.FirstOrDefault();
         }
 
@@ -188,7 +189,10 @@ namespace Netlyt.Service
         public DataIntegration GetUserIntegration(User user, string name)
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
-            var integration = _context.Integrations.FirstOrDefault(x => x.APIKey!=null && user.ApiKeys.Any(y => y.Id == x.APIKey.Id) && x.Name == name);
+            var integration = _context.Integrations.FirstOrDefault(x => x.APIKey != null
+                                                                        && (user.ApiKeys.Any(y => y.Id == x.APIKey.Id)
+                                                                            || user.ApiKeys.Any(y => y.Id == x.PublicKeyId))
+                                                                        && x.Name == name);
             return integration;
         }
     }
