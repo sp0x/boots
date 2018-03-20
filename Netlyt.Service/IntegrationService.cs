@@ -64,6 +64,7 @@ namespace Netlyt.Service
             var localFields = type.Fields; 
             existingDefinition = (from x in _context.Integrations
                                   where x.APIKey.AppId == appId
+                                        && x.Name == type.Name
                                         && x.Fields.All(f => localFields.Any(lf => lf.Name == f.Name))
                                   select x).FirstOrDefault();
             return existingDefinition != null;

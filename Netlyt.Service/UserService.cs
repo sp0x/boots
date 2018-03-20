@@ -187,7 +187,8 @@ namespace Netlyt.Service
         /// <returns></returns>
         public DataIntegration GetUserIntegration(User user, string name)
         {
-            var integration = _context.Integrations.FirstOrDefault(x => user.ApiKeys.Any(y => y.Id == x.APIKey.Id) && x.Name == name);
+            if (user == null) throw new ArgumentNullException(nameof(user));
+            var integration = _context.Integrations.FirstOrDefault(x => x.APIKey!=null && user.ApiKeys.Any(y => y.Id == x.APIKey.Id) && x.Name == name);
             return integration;
         }
     }

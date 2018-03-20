@@ -17,7 +17,13 @@ namespace Netlyt.Service.Ml
         public virtual ICollection<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
         public DonutScriptInfo DonutScript {get; set;}
         public string ModelName { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public string ClassifierType { get; set; }
+        /// <summary>
+        /// A pickled scikit model's name
+        /// </summary>
         public string CurrentModel { get; set; }
         public string Callback { get; set; }
         public string TrainingParams { get; set; }

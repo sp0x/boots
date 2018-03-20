@@ -109,6 +109,7 @@ namespace Netlyt.Web.Controllers
 
         [HttpPost("/integration/file")]
         [DisableFormValueModelBinding]
+        [RequestSizeLimit(100_000_000)]
         [Authorize]
         public async Task<IActionResult> CreateFileIntegration()
         {

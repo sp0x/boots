@@ -100,7 +100,7 @@ services:
       context: ./orion
       dockerfile: Dockerfile
     volumes:
-      - ./orion/src:/app
+      - ./orion/app:/app
       - experiments:/experiments
     ports:
       - "5556:5556"

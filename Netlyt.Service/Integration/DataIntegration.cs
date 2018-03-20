@@ -46,12 +46,12 @@ namespace Netlyt.Service.Integration
             Fields = new HashSet<FieldDefinition>();
             Models = new HashSet<ModelIntegration>();
             Extras = new HashSet<IntegrationExtra>();
+            this.PublicKey = ApiAuth.Generate();
         }
         public DataIntegration(string name)
             : this()
         { 
             this.Name = name; 
-            this.PublicKey = ApiAuth.Generate();
         }
 
         /// <summary>

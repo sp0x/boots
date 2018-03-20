@@ -8,6 +8,7 @@ using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
+using Netlyt.Service.Donut;
 using Netlyt.Service.Orion;
 
 namespace Netlyt.ServiceTests.Fixtures
@@ -51,6 +52,8 @@ namespace Netlyt.ServiceTests.Fixtures
             services.AddTransient<ModelService>(s => new ModelService(_context, s.GetService<OrionContext>(), null));
             services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>()));
             services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
+            services.AddSingleton(BehaviourContext);
+            services.AddSingleton<DonutOrionHandler>();
             services.AddTransient<CompilerService>();
         }
 
