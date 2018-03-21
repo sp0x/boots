@@ -14,6 +14,7 @@ namespace Netlyt.Service.Ml
         [ForeignKey("User")]
         public string UserId { get; set; }
         public User User { get; set; }
+        public ModelTrainingPerformance Performance { get; set; }
         public virtual ICollection<ModelIntegration> DataIntegrations { get; set; }
         public virtual ICollection<ModelRule> Rules { get; set; }
         public virtual ICollection<FeatureGenerationTask> FeatureGenerationTasks { get; set; }

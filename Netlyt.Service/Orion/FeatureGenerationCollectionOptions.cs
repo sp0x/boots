@@ -9,6 +9,7 @@ namespace Netlyt.Service.Orion
         public DateTime? Start { get; set; }
         public DateTime? End { get; set; }
         public string IndexBy { get; set; }
-        public string Timestamp { get; set; }
+        public string TimestampField { get; set; }
+        public InternalEntity InternalEntity { get; set; }
     }
 }

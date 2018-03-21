@@ -28,9 +28,10 @@ namespace Netlyt.Service.Orion
                 parameters["model_name"] = model.ModelName;
                 parameters["model_id"] = model.Id;
                 var collectionsArray = new JArray();
+                var internalEntities = new JArray();
                 foreach (var cl in collections)
                 {
-                    if (string.IsNullOrEmpty(cl.Timestamp))
+                    if (string.IsNullOrEmpty(cl.TimestampField))
                     {
                         throw new InvalidOperationException("Collections with timestamp columns are allowed only!");
                     }
@@ -40,7 +41,18 @@ namespace Netlyt.Service.Orion
                     collection["start"] = cl.Start;
                     collection["end"] = cl.End;
                     collection["index"] = cl.IndexBy;
-                    collection["timestamp"] = cl.Timestamp;
+                    collection["timestamp"] = cl.TimestampField;
+                    collection["internal_entity_keys"] = null;
+                    if (cl.InternalEntity != null)
+                    {
+                        var intEntity = new JObject();
+                        intEntity["collection"] = cl.Collection;
+                        intEntity["name"] = cl.InternalEntity.Name;
+                        intEntity["index"] = $"{cl.InternalEntity.Name}_id";
+                        intEntity["fields"] = new JArray(new string[] { "_id", cl.InternalEntity.Name });
+                        collection["internal_entity_keys"] = new JArray(new string[]{ intEntity["index"].ToString() });
+                        internalEntities.Add(intEntity);
+                    }
                     collectionsArray.Add(collection);
                 }
                 parameters["collections"] = collectionsArray;
@@ -51,6 +63,7 @@ namespace Netlyt.Service.Orion
                 }
                 parameters["relations"] = relationsArray;
                 parameters["target"] = targetAttribute;
+                parameters["internal_entities"] = internalEntities; 
                 qr["params"] = parameters;
                 return qr;
             }

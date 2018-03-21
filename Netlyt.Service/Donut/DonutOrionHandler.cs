@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Service.Data;
 using Netlyt.Service.Lex.Data;
+using Netlyt.Service.Ml;
 using Netlyt.Service.Orion;
 using Newtonsoft.Json.Linq;
 
@@ -25,15 +26,16 @@ namespace Netlyt.Service.Donut
             _compiler = compilerService;
         }
 
-        private async Task _orion_FeaturesGenerated(Newtonsoft.Json.Linq.JObject featureResult)
+        private async Task _orion_FeaturesGenerated(JObject featureResult)
         {
-            JArray features = featureResult["result"] as JArray;
-            string taskId = featureResult["task_id"].ToString();
-            if (string.IsNullOrEmpty(taskId)) return;
-            var task = _db.FeatureGenerationTasks.FirstOrDefault(x => x.OrionTaskId == taskId);
-            if (task == null) return;
-            task.Status = Models.FeatureGenerationTaskStatus.Done;
-            var model = task.Model;
+            var fscript = featureResult["result"]?.ToString();
+            if (string.IsNullOrEmpty(fscript)) return;
+            var features = fscript.Split('\n');
+            var parameters = featureResult["params"];
+            string taskId = parameters["task_id"].ToString();
+            long modelId = long.Parse(parameters["model_id"].ToString()); 
+            Model model = _db.Models.FirstOrDefault(x => x.Id == modelId);
+            if (model == null) return;
             var featureBodies = features.Select(x => x.ToString()).ToArray();
             string donutName = $"{model.ModelName}Donut";
             DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, featureBodies);

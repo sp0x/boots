@@ -40,10 +40,12 @@ namespace Netlyt.Service.Orion
         private void HandleNewEventMessage(JObject message)
         {
             NewMessage?.Invoke(message);
-            var type = (OrionEvent)int.Parse(message["type"].ToString());
+            var eventParams = message["params"];
+            if (eventParams == null) return;
+            var type = (OrionOp)int.Parse(eventParams["command"].ToString());
             switch (type)
             {
-                case OrionEvent.GeneratedFeature:
+                case OrionOp.GenerateFeatures:
                     FeaturesGenerated?.Invoke(message);
                     break;
                 default:

@@ -97,7 +97,24 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
             //var tokenMatches = new List<TokenMatch>();
             string line;
             uint iLine = 1;
+            int foundTokens = 0; 
             while (null != (line = lqlText.ReadLine()))
+            {
+                
+                foreach (var tokenDefinition in _tokenDefinitions)
+                {
+                    var tokenMatches = tokenDefinition.FindMatches(line).ToList();
+                    foreach (var match in tokenMatches)
+                    {
+                        match.Line = iLine;
+                        yield return match;
+                        foundTokens++;
+                    }
+                    //tokenMatches.AddRange(collection);
+                }
+                iLine++;
+            }
+            if (foundTokens == 0)
             {
                 foreach (var tokenDefinition in _tokenDefinitions)
                 {
@@ -106,11 +123,11 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
                     {
                         match.Line = iLine;
                         yield return match;
+                        foundTokens++;
                     }
                     //tokenMatches.AddRange(collection);
                 }
-                iLine++;
-            } 
+            }
             //return tokenMatches;
         }
 

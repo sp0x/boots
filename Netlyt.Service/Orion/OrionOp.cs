@@ -9,9 +9,5 @@
         GetModelList = 105,
         GenerateFeatures = 107
     }
-
-    public enum OrionEvent
-    {
-        GeneratedFeature
-    }
+     
 }

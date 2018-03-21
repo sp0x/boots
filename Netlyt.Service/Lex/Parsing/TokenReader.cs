@@ -67,8 +67,21 @@ namespace Netlyt.Service.Lex.Parsing
 
         private void PrepareLookaheads()
         {
+            if (_tokenSequence.Count == 0)
+            {
+                _lookaheadFirst = new DslToken(TokenType.EOF, string.Empty, 0);
+                return;
+            } 
             _lookaheadFirst = _tokenSequence.Pop();
-            _lookaheadSecond = _tokenSequence.Pop();
+            if (_tokenSequence.Count > 0)
+            {
+                _lookaheadSecond = _tokenSequence.Pop();
+            }
+            else
+            {
+                _lookaheadSecond = new DslToken(TokenType.EOF, string.Empty, _lookaheadFirst.Line);
+            }
+            
         }
 
         public DslObject GetObject()

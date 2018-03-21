@@ -278,6 +278,27 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("ModelIntegration");
                 });
 
+            modelBuilder.Entity("Netlyt.Service.Ml.ModelTrainingPerformance", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<double>("Accuracy");
+
+                    b.Property<string>("FeatureImportance");
+
+                    b.Property<long>("ModelId");
+
+                    b.Property<DateTime>("TrainedTs");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModelId")
+                        .IsUnique();
+
+                    b.ToTable("ModelPerformance");
+                });
+
             modelBuilder.Entity("Netlyt.Service.ModelRule", b =>
                 {
                     b.Property<long>("ModelId");
@@ -297,8 +318,6 @@ namespace Netlyt.Service.Migrations
                         .ValueGeneratedOnAdd();
 
                     b.Property<long>("ModelId");
-
-                    b.Property<string>("OrionTaskId");
 
                     b.Property<int>("Status");
 
@@ -612,6 +631,14 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Service.Ml.Model", "Model")
                         .WithMany("DataIntegrations")
                         .HasForeignKey("ModelId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Netlyt.Service.Ml.ModelTrainingPerformance", b =>
+                {
+                    b.HasOne("Netlyt.Service.Ml.Model", "Model")
+                        .WithOne("Performance")
+                        .HasForeignKey("Netlyt.Service.Ml.ModelTrainingPerformance", "ModelId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 

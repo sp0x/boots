@@ -19,6 +19,7 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
 
         public IEnumerable<TokenMatch> FindMatches(string inputString)
         {
+            if(string.IsNullOrEmpty(inputString)) yield break;
             var matches = _regex.Matches(inputString);
             for (int i = 0; i < matches.Count; i++)
             {

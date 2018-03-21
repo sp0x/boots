@@ -48,8 +48,10 @@ namespace Netlyt.Service.Lex.Data
                 int i = 0;
                 foreach (var fstring in featureBodies)
                 {
+                    if (string.IsNullOrEmpty(fstring)) continue;
                     var parser = new TokenParser(tokenizer.Tokenize(fstring));
                     IExpression expFeatureBody = parser.ReadExpression();
+                    if (expFeatureBody == null) continue;
                     var expFeature = new AssignmentExpression(new VariableExpression($"f_{i}"), expFeatureBody);
                     ds.Features.Add(expFeature);
                     i++;
