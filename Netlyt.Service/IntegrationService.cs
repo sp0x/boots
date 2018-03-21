@@ -144,7 +144,7 @@ namespace Netlyt.Service
             //TODO: Resolve the formatter..
             var formatter = ResolveFormatter<ExpandoObject>(mime);
             if (formatter == null)
-            {
+            { 
                 throw new Exception("Could not resolve formatter for the given content type!");
             }
             var source = InMemorySource.Create(inputData, formatter);

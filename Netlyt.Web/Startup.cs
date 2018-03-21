@@ -65,11 +65,10 @@ namespace Netlyt.Web
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<OrionContext>(this.OrionContext);
-            services.AddSingleton<DonutOrionHandler>();
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();
-            services.AddTransient<DonutCompiler>();
+            services.AddTransient<CompilerService>();
             
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
@@ -83,9 +82,11 @@ namespace Netlyt.Web
             services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
             services.AddTransient<UserService>();
             services.AddTransient<ApiService>();
+            services.AddTransient<TimestampService>();
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
             services.AddTransient<IntegrationService>();
+            services.AddSingleton<DonutOrionHandler>();
 
             SetupAuthentication(services);
             services.AddAutoMapper();

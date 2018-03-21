@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Netlyt.Service.Data;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Orion;
@@ -14,12 +15,14 @@ namespace Netlyt.Service.Donut
         private ManagementDbContext _db;
         private CompilerService _compiler;
 
-        public DonutOrionHandler(OrionContext orionContext, ManagementDbContext db, CompilerService compiler)
+        public DonutOrionHandler(IFactory<ManagementDbContext> contextFactory, OrionContext orion, CompilerService compilerService)
         {
-            _db = db;
-            _orion = orionContext;
+            _db = contextFactory.Create();
+            _orion = orion;
+#pragma warning disable 4014
             _orion.FeaturesGenerated += (x)=> _orion_FeaturesGenerated(x);
-            _compiler = compiler;
+#pragma warning restore 4014
+            _compiler = compilerService;
         }
 
         private async Task _orion_FeaturesGenerated(Newtonsoft.Json.Linq.JObject featureResult)

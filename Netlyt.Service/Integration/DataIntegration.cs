@@ -10,6 +10,29 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Integration
 {
+    public class DateParser
+    {
+        public bool TryParse(string value, out DateTime timeValue, out double? doubleValue)
+        {
+            double doubleValueTmp;
+            if (Double.TryParse(value, out doubleValueTmp))
+            {
+                doubleValue = doubleValueTmp;
+                timeValue = DateTime.MinValue;
+                return false;
+            }
+            doubleValue = null;
+            if (DateTime.TryParse(value, out timeValue))
+            {
+                return true;
+            }
+            else
+            {
+                timeValue = DateTime.MinValue;
+            } 
+            return false;
+        }
+    }
     public partial class DataIntegration
         : Entity, IIntegration
     { 
@@ -65,6 +88,7 @@ namespace Netlyt.Service.Integration
             Fields = new List<FieldDefinition>();
             var type = typeof(T);
             ExpandoObject xpObj = instance as ExpandoObject;
+            var dateParser = new DateParser();
             if (xpObj !=null)
             {
                 var fields = xpObj as IDictionary<string, object>;
@@ -72,6 +96,11 @@ namespace Netlyt.Service.Integration
                 {
                     var value = fields[memberName];
                     if (value == null) continue;
+                    DateTime timeValue;
+                    double? doubleValue;
+                    var isDateTime = dateParser.TryParse(value.ToString(), out timeValue, out doubleValue);
+                    if (doubleValue != null) value = doubleValue;
+                    else if (isDateTime) value = timeValue;
                     Type memberType = value.GetType();
                     var fieldDefinition = new FieldDefinition(memberName, memberType);
                     Fields.Add(fieldDefinition);

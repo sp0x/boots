@@ -22,7 +22,7 @@ namespace Netlyt.Web
                 }));
             CreateMap<IntegrationExtra, IntegrationExtraViewModel>();
             CreateMap<FieldDefinition, FieldDefinitionViewModel>();
-            CreateMap<DataIntegration, DataIntegrationViewModel>();
+            CreateMap<DataIntegration, DataIntegrationViewModel>(); 
         }
     }
 }

@@ -24,26 +24,34 @@ namespace Netlyt.Service.Orion
                 string targetAttribute)
             {
                 var qr = new OrionQuery(OrionOp.GenerateFeatures);
-                qr["model_name"] = model.ModelName;
+                var parameters = new JObject();
+                parameters["model_name"] = model.ModelName;
+                parameters["model_id"] = model.Id;
                 var collectionsArray = new JArray();
                 foreach (var cl in collections)
                 {
+                    if (string.IsNullOrEmpty(cl.Timestamp))
+                    {
+                        throw new InvalidOperationException("Collections with timestamp columns are allowed only!");
+                    }
                     var collection = new JObject();
                     collection["name"] = cl.Name;
-                    collection["key"] = cl.Collection; ;
+                    collection["key"] = cl.Collection;
                     collection["start"] = cl.Start;
                     collection["end"] = cl.End;
                     collection["index"] = cl.IndexBy;
+                    collection["timestamp"] = cl.Timestamp;
                     collectionsArray.Add(collection);
                 }
-                qr["collections"] = collectionsArray;
+                parameters["collections"] = collectionsArray;
                 var relationsArray = new JArray();
                 foreach (var relation in relations)
                 {
                     relationsArray.Add(new JArray(new object[] { relation.Attribute1, relation.Attribute2 }));
                 }
-                qr["relations"] = relationsArray;
-                qr["target"] = targetAttribute;
+                parameters["relations"] = relationsArray;
+                parameters["target"] = targetAttribute;
+                qr["params"] = parameters;
                 return qr;
             }
         }

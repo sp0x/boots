@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using LumenWorks.Framework.IO.Csv;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Format
@@ -34,7 +35,7 @@ namespace Netlyt.Service.Format
 
         public CsvFormatter()
         {
-
+            _dateTimeParser = new DateParser();
         }
 
         /// <summary>
@@ -73,9 +74,11 @@ namespace Netlyt.Service.Format
                     {
                         continue;
                     }
-                    double dValue;
+                    double? dValue;
+                    DateTime tmValue;
                     fldValue = fldValue.Trim('"', '\t', '\n', '\r', '\'');
-                    if (double.TryParse(fldValue, out dValue))
+                    bool isDate = _dateTimeParser.TryParse(fldValue, out tmValue, out dValue);
+                    if (dValue!=null)
                     {
                         if (fldValue.Contains(".") || fldValue.Contains(","))
                         {
@@ -85,6 +88,10 @@ namespace Netlyt.Service.Format
                         {
                             outputObject.Add(fldName, (long)dValue);
                         }
+                    } 
+                    else if (isDate)
+                    {
+                        outputObject.Add(fldName, tmValue);
                     }
                     else
                     {
@@ -124,6 +131,8 @@ namespace Netlyt.Service.Format
         }
 
         private bool _disposed;
+        private DateParser _dateTimeParser;
+
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed && disposing)

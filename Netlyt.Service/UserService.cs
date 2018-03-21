@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using nvoid.Integration;
 using Netlyt.Data;
@@ -64,9 +65,17 @@ namespace Netlyt.Service
                     Name = model.Org
                 };
             var apiKey = _apiService.Generate();
-            user.ApiKeys.Add(apiKey);
+            user.ApiKeys.Add(new ApiUser(user, apiKey));
             var result = _userManager.CreateAsync(user, model.Password).Result;
             return result;
+        }
+        public async Task CreateUser(User model, string password, ApiAuth appAuth)
+        {
+            var apiKey = _apiService.Generate();
+            model.ApiKeys.Add(new ApiUser(model, apiKey));
+            model.ApiKeys.Add(new ApiUser(model, appAuth));
+            _context.Users.Add(model);
+            _context.SaveChanges();
         }
 
         public AuthenticationTicket ValidateHmacSession()
@@ -170,7 +179,11 @@ namespace Netlyt.Service
         public async Task<ApiAuth> GetCurrentApi()
         {
             var crUser = await GetCurrentUser();
-            return crUser?.ApiKeys?.FirstOrDefault();
+            if (crUser == null) return null;
+            var api = crUser.ApiKeys.ToList().FirstOrDefault();
+            if (api == null) return null;
+            var apiObj = _context.ApiKeys.FirstOrDefault(x=>x.Id == api.ApiId);
+            return apiObj;
         }
 
         public async Task<IEnumerable<DataIntegration>> GetIntegrations(User user, int page, int pageSize)
@@ -190,10 +203,18 @@ namespace Netlyt.Service
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
             var integration = _context.Integrations.FirstOrDefault(x => x.APIKey != null
-                                                                        && (user.ApiKeys.Any(y => y.Id == x.APIKey.Id)
-                                                                            || user.ApiKeys.Any(y => y.Id == x.PublicKeyId))
+                                                                        && (user.ApiKeys.Any(y => y.ApiId == x.APIKey.Id)
+                                                                            || user.ApiKeys.Any(y => y.ApiId == x.PublicKeyId))
                                                                         && x.Name == name);
             return integration;
+        }
+
+
+        public User GetByApiKey(ApiAuth appAuth)
+        {
+            return _context.Users
+                .Include(x => x.ApiKeys)
+                .FirstOrDefault(u => u.ApiKeys.Any(x => x.ApiId == appAuth.Id));
         }
     }
 }

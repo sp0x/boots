@@ -134,6 +134,25 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
+            modelBuilder.Entity("Netlyt.Service.ApiAuth", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("AppId")
+                        .IsRequired();
+
+                    b.Property<string>("AppSecret");
+
+                    b.Property<string>("Endpoint");
+
+                    b.Property<string>("Type");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ApiKeys");
+                });
+
             modelBuilder.Entity("Netlyt.Service.Integration.DataIntegration", b =>
                 {
                     b.Property<long>("Id")
@@ -205,6 +224,19 @@ namespace Netlyt.Service.Migrations
                         .IsUnique();
 
                     b.ToTable("DonutScripts");
+                });
+
+            modelBuilder.Entity("Netlyt.Service.Ml.ApiUser", b =>
+                {
+                    b.Property<long>("ApiId");
+
+                    b.Property<string>("UserId");
+
+                    b.HasKey("ApiId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ApiUsers");
                 });
 
             modelBuilder.Entity("Netlyt.Service.Ml.Model", b =>
@@ -434,29 +466,6 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("AspNetUsers");
                 });
 
-            modelBuilder.Entity("nvoid.Integration.ApiAuth", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd();
-
-                    b.Property<string>("AppId")
-                        .IsRequired();
-
-                    b.Property<string>("AppSecret");
-
-                    b.Property<string>("Endpoint");
-
-                    b.Property<string>("Type");
-
-                    b.Property<string>("UserId");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ApiKeys");
-                });
-
             modelBuilder.Entity("nvoid.Integration.ApiPermission", b =>
                 {
                     b.Property<long>("Id")
@@ -546,7 +555,7 @@ namespace Netlyt.Service.Migrations
 
             modelBuilder.Entity("Netlyt.Service.Integration.DataIntegration", b =>
                 {
-                    b.HasOne("nvoid.Integration.ApiAuth", "APIKey")
+                    b.HasOne("Netlyt.Service.ApiAuth", "APIKey")
                         .WithMany()
                         .HasForeignKey("APIKeyId");
 
@@ -554,7 +563,7 @@ namespace Netlyt.Service.Migrations
                         .WithMany()
                         .HasForeignKey("OwnerId");
 
-                    b.HasOne("nvoid.Integration.ApiAuth", "PublicKey")
+                    b.HasOne("Netlyt.Service.ApiAuth", "PublicKey")
                         .WithMany()
                         .HasForeignKey("PublicKeyId");
                 });
@@ -571,6 +580,19 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Service.Ml.Model", "Model")
                         .WithOne("DonutScript")
                         .HasForeignKey("Netlyt.Service.Lex.Data.DonutScriptInfo", "ModelId");
+                });
+
+            modelBuilder.Entity("Netlyt.Service.Ml.ApiUser", b =>
+                {
+                    b.HasOne("Netlyt.Service.ApiAuth", "Api")
+                        .WithMany("Users")
+                        .HasForeignKey("ApiId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Netlyt.Service.User", "User")
+                        .WithMany("ApiKeys")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Netlyt.Service.Ml.Model", b =>
@@ -616,7 +638,7 @@ namespace Netlyt.Service.Migrations
 
             modelBuilder.Entity("Netlyt.Service.Organization", b =>
                 {
-                    b.HasOne("nvoid.Integration.ApiAuth", "ApiKey")
+                    b.HasOne("Netlyt.Service.ApiAuth", "ApiKey")
                         .WithMany()
                         .HasForeignKey("ApiKeyId");
                 });
@@ -662,13 +684,6 @@ namespace Netlyt.Service.Migrations
                         .HasForeignKey("RoleId");
                 });
 
-            modelBuilder.Entity("nvoid.Integration.ApiAuth", b =>
-                {
-                    b.HasOne("Netlyt.Service.User")
-                        .WithMany("ApiKeys")
-                        .HasForeignKey("UserId");
-                });
-
             modelBuilder.Entity("nvoid.Integration.ApiPermission", b =>
                 {
                     b.HasOne("nvoid.Integration.ApiPermissionsSet")
@@ -678,7 +693,7 @@ namespace Netlyt.Service.Migrations
 
             modelBuilder.Entity("nvoid.Integration.ApiPermissionsSet", b =>
                 {
-                    b.HasOne("nvoid.Integration.ApiAuth")
+                    b.HasOne("Netlyt.Service.ApiAuth")
                         .WithMany("Permissions")
                         .HasForeignKey("ApiAuthId");
                 });

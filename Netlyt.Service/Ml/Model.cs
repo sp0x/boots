@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using nvoid.db.DB;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Lex.Data;
@@ -6,11 +7,12 @@ using Netlyt.Service.Models;
 
 namespace Netlyt.Service.Ml
 {
-    
     public class Model
         : Entity
     {
         public long Id { get; set; }
+        [ForeignKey("User")]
+        public string UserId { get; set; }
         public User User { get; set; }
         public virtual ICollection<ModelIntegration> DataIntegrations { get; set; }
         public virtual ICollection<ModelRule> Rules { get; set; }

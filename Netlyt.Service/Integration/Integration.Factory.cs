@@ -49,7 +49,7 @@ namespace Netlyt.Service.Integration
             public static Service.Integration.DataIntegration CreateNamed(string key, string name)
             {
                 var typedef = new Service.Integration.DataIntegration(name);
-                typedef.APIKey = new nvoid.Integration.ApiAuth() { AppId = key };
+                typedef.APIKey = new ApiAuth() { AppId = key };
                 return typedef;
             }
         }

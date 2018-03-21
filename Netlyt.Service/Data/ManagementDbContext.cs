@@ -20,6 +20,7 @@ namespace Netlyt.Service.Data
         public DbSet<FieldDefinition> Fields { get; set; }
         public DbSet<FieldExtras> FieldExtras { get; set; }
         public DbSet<ApiAuth> ApiKeys { get; set; }
+        public DbSet<ApiUser> ApiUsers { get; set; }
         public DbSet<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
         public DbSet<DonutScriptInfo> DonutScripts { get; set; }
 
@@ -39,6 +40,7 @@ namespace Netlyt.Service.Data
             //            builder.Entity<SourceInfo>().Property<DateTime>("UpdatedTimestamp");
             builder.Entity<ModelRule>().HasKey(t => new {t.ModelId, t.RuleId});
             builder.Entity<ModelIntegration>().HasKey(t => new {t.ModelId, t.IntegrationId});
+            builder.Entity<ApiUser>().HasKey(t => new {t.ApiId, t.UserId});
             base.OnModelCreating(builder);
         }
 

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -15,14 +17,17 @@ namespace Netlyt.Service
         private IHttpContextAccessor _contextAccessor;
         private ManagementDbContext _context;
         private OrionContext _orion;
+        private TimestampService _timestampService;
 
         public ModelService(ManagementDbContext context,
             OrionContext orionContext,
-            IHttpContextAccessor ctxAccessor)
+            IHttpContextAccessor ctxAccessor,
+            TimestampService timestampService)
         {
             _contextAccessor = ctxAccessor;
             _context = context;
             _orion = orionContext;
+            _timestampService = timestampService;
         }
 
         public IEnumerable<Model> GetAllForUser(User user, int page)
@@ -60,7 +65,7 @@ namespace Netlyt.Service
             )
         {
             var newModel = new Model();
-            newModel.User = user;
+            newModel.UserId = user.Id;
             newModel.ModelName = name;
             newModel.Callback = callbackUrl; 
             if (integrations != null)
@@ -68,27 +73,37 @@ namespace Netlyt.Service
                 newModel.DataIntegrations = integrations.Select(x => new ModelIntegration(newModel, x)).ToList(); 
             }
             _context.Models.Add(newModel);
-            _context.SaveChanges();
+            try
+            {
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                throw new Exception("Could not create a new model!");
+            }
             if (generateFeatures)
             {
-                var newTask = await GenerateFeatures(newModel, relations, targetAttribute);
-                newModel.FeatureGenerationTasks.Add(newTask);
+                await GenerateFeatures(newModel, relations, targetAttribute);
+                //newModel.FeatureGenerationTasks.Add(newTask);
                 //_context.FeatureGenerationTasks.Add(newTask);
-                _context.SaveChanges();
+                //_context.SaveChanges();
             }
             return newModel;
         }
 
-        public async Task<FeatureGenerationTask> GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, string targetAttribute)
+        public async Task GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, string targetAttribute)
         {
-            var collections = new List<FeatureGenerationCollectionOptions>();  
+            var collections = new List<FeatureGenerationCollectionOptions>();
             foreach (var integration in newModel.DataIntegrations)
             {
                 var ign = integration.Integration;
+                var ignTimestampColumn = _timestampService.Discover(ign); 
                 var colOptions = new FeatureGenerationCollectionOptions()
                 {
                     Collection = ign.Collection,
                     Name = ign.Name,
+                    Timestamp = ignTimestampColumn
                     //Other parameters are ignored for now
                 };
                 collections.Add(colOptions);
@@ -96,10 +111,10 @@ namespace Netlyt.Service
 
             var query = OrionQuery.Factory.CreateFeatureGenerationQuery(newModel, collections, relations, targetAttribute);
             var result = await _orion.Query(query);
-            var newTask = new FeatureGenerationTask();
-            newTask.OrionTaskId = result["task_id"].ToString();
-            newTask.Model = newModel;
-            return newTask;
+//            var newTask = new FeatureGenerationTask();
+//            newTask.OrionTaskId = result["task_id"].ToString();
+//            newTask.Model = newModel;
+//            return newTask;
         }
 
         public void DeleteModel(User cruser, long id)

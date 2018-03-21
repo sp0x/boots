@@ -58,11 +58,12 @@ namespace Netlyt.Web.Controllers
 
         [HttpGet("/integrations/me")]
         [Authorize]
-        public async Task<IEnumerable<DataIntegration>> GetAll([FromQuery] int page)
+        public async Task<IEnumerable<DataIntegrationViewModel>> GetAll([FromQuery] int page)
         {
             var user = await _userService.GetCurrentUser();
             int pageSize = 25;
-            return await _userService.GetIntegrations(user, page, pageSize);
+            var dataIntegrations = await _userService.GetIntegrations(user, page, pageSize);
+            return dataIntegrations.Select(x => _mapper.Map<DataIntegrationViewModel>(x));
         }
 
         [HttpGet("/integration/{id}", Name = "GetIntegration")]

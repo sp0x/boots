@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using nvoid.Integration;
+using Netlyt.Service.Ml;
 
 namespace Netlyt.Service
 {
@@ -12,12 +13,12 @@ namespace Netlyt.Service
 
         public string LastName { get; set; }
         public Organization Organization { get; set; }
-        public virtual ICollection<ApiAuth> ApiKeys { get; set; }
+        public virtual ICollection<ApiUser> ApiKeys { get; set; }
         public UserRole Role { get; set; }
 
         public User()
         {
-            ApiKeys = new HashSet<ApiAuth>();
+            ApiKeys = new HashSet<ApiUser>();
         }
 
 //        public async Task<ClaimsIdentity> GenerateUserIdentityAsync(UserManager<User> manager)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.Integration;
@@ -35,41 +36,38 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             _compiler = fixture.GetService<CompilerService>();
             _apiService = fixture.GetService<ApiService>();
             _integrationService = fixture.GetService<IntegrationService>();
+            _userService = fixture.GetService<UserService>();
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
             _db = fixture.GetService<ManagementDbContext>();
-            _user = _db.Users.FirstOrDefault(u => u.ApiKeys.Any(x => x.Id == _appAuth.Id));
+            _user = _userService.GetByApiKey(_appAuth);
             if (_user == null)
             {
                 _user = new User() { FirstName = "tester1231", Email = "mail@lol.co" };
-                _user.ApiKeys.Add(_appAuth);
-                _db.Users.Add(_user);
-                _db.SaveChanges();
+                _userService.CreateUser(_user, "Password-IsStrong!", _appAuth); 
             }
             _cacher = fixture.GetService<RedisCacher>();
             _dbConfig = DBConfig.GetGeneralDatabase();
-            _userService = fixture.GetService<UserService>();
             _serviceProvider = fixture.GetService<IServiceProvider>();
             _modelService = fixture.GetService<ModelService>();
         }
         [Fact]
         public async Task IntegrationTest()
         {
-            var user = _db.Users.FirstOrDefault(x => x.ApiKeys.Any(y => y.Id == _appAuth.Id));
-            string dataSource = "Events";
-            var integration = _userService.GetUserIntegration(user, dataSource);
+            string dataSource = "Romanian";
+            var integration = _userService.GetUserIntegration(_user, dataSource);
             var relations = new List<FeatureGenerationRelation>();
 //            for (var i = 0; i < 1; i++)
 //            {
 //                var nr = new FeatureGenerationRelation("Events.uuid", "Demography.uuid");
 //                relations.Add(nr);
 //            }
-            string modelName = "EventsDphy";
+            string modelName = "Rommol1";
             string modelCallback = "http://localhost:9999";
-            string targetAttribute = "finished"; //"Events.is_paying";
+            string targetAttribute = "pm10"; //"Events.is_paying";
             //item.Relations?.Select(x => new FeatureGenerationRelation(x[0], x[1]));
             //This really needs a builder..
-            var newModel = await _modelService.CreateModel(user,
+            var newModel = await _modelService.CreateModel(_user,
                 modelName,
                 new List<DataIntegration>(new[] { integration }),
                 modelCallback,

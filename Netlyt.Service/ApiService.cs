@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using nvoid.Integration;
 using Netlyt.Service.Data;
+using Netlyt.Service.Ml;
 
 namespace Netlyt.Service
 {
@@ -51,7 +52,7 @@ namespace Netlyt.Service
             var appApiIdStr = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");
             if (string.IsNullOrEmpty(appApiIdStr)) return null;
             var id = long.Parse(appApiIdStr);
-            var user = _context.Users.FirstOrDefault(x => x.ApiKeys.Any(a => a.Id == id));
+            var user = _context.Users.FirstOrDefault(x => x.ApiKeys.Any(a => a.ApiId == id));
             return user;
         }
 //        public async Task<ApiAuth> GetCurrentApi()
@@ -83,7 +84,7 @@ namespace Netlyt.Service
 
         public User GetApiUser(ApiAuth api)
         {
-            var user = _context.Users.FirstOrDefault(x => x.ApiKeys.Any(a=> a.Id == api.Id));
+            var user = _context.Users.FirstOrDefault(x => x.ApiKeys.Any(a=> a.ApiId == api.Id));
             return user;
         }
 
@@ -111,7 +112,7 @@ namespace Netlyt.Service
             _context.SaveChanges();
         }
 
-        public IQueryable<ApiAuth> GetUserKeys(User user)
+        public IQueryable<ApiUser> GetUserKeys(User user)
         {
             return _context.Users.Where(x => x.Id == user.Id).SelectMany(x => x.ApiKeys);
         }
