@@ -10,6 +10,10 @@ namespace Netlyt.Service.Ml
         public long IntegrationId { get; set; }
         public DataIntegration Integration { get; set; }
 
+        public ModelIntegration()
+        {
+
+        }
         public ModelIntegration(Model model, DataIntegration integration)
         {
             this.Model = model;

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Parsing;
 using Netlyt.Service.Lex.Parsing.Tokenizers;
@@ -12,7 +13,7 @@ namespace Netlyt.Service.Lex.Data
         {
             Filters = new List<MatchCondition>();
             Features = new List<AssignmentExpression>();
-            Integrations = new List<string>();
+            Integrations = new List<DataIntegration>();
         }
         /// <summary>
         /// 
@@ -21,13 +22,13 @@ namespace Netlyt.Service.Lex.Data
         public IList<MatchCondition> Filters { get; set; }
         public List<AssignmentExpression> Features { get; set; }
         public OrderByExpression StartingOrderBy { get; set; }
-        public List<string> Integrations { get; set; }
+        public List<DataIntegration> Integrations { get; set; }
 
-        public void AddIntegrations(params string[] sourceIntegrations)
+        public void AddIntegrations(params DataIntegration[] sourceIntegrations)
         {
             if (this.Integrations == null)
             {
-                this.Integrations = new List<string>(sourceIntegrations);
+                this.Integrations = new List<DataIntegration>(sourceIntegrations);
             }
             else
             {

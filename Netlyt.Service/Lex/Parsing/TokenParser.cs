@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Parsing.Tokens;
@@ -71,7 +72,7 @@ namespace Netlyt.Service.Lex.Parsing
                     throw new NotImplementedException();
                 }
             }
-            newScript.AddIntegrations(_sourceIntegrations.ToArray());
+            newScript.AddIntegrations(_sourceIntegrations.Select(i=> new DataIntegration(i)).ToArray());
             return newScript;
         }
 

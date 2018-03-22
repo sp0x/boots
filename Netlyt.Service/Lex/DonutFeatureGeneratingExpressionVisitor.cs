@@ -34,12 +34,14 @@ namespace Netlyt.Service.Lex
                 var aggregateResult = donutFn.GetAggregateValue();
                 if (aggregateResult == null)
                 {
-                    aggregateResult = aggregateResult;
+                    resultObj = null;
+                    return "";
                 }
                 for(int i=0; i<exp.Parameters.Count; i++)
                 {
                     var parameter = exp.Parameters[i];
-                    var paramStr = Visit(parameter);
+                    object paramOutputObj;
+                    var paramStr = Visit(parameter, out paramOutputObj);
                     aggregateResult = aggregateResult.Replace("{" + i + "}", paramStr);
                 }
                 donutFn.Content = aggregateResult;
@@ -114,6 +116,44 @@ namespace Netlyt.Service.Lex
                 object donutFn;
                 var value = VisitFunctionCall(paramValue as CallExpression, out donutFn);
                 sb.Append(value);
+            }
+            else if (paramValueType == typeof(VariableExpression))
+            {
+                var subExpression = (paramValue as VariableExpression).Member;
+                CallExpression foundCallExpression = null;
+                while (subExpression!=null)
+                {
+                    var memberExp = subExpression.Parent;
+                    if (memberExp == null) break;
+                    var memberExpType = memberExp.GetType();
+                    if (memberExpType == typeof(CallExpression))
+                    {
+                        foundCallExpression = memberExp as CallExpression;
+                        break;
+                    }
+                    else
+                    {
+                        if (memberExpType == typeof(MemberExpression))
+                        {
+                            subExpression = memberExp as MemberExpression;
+                        }
+                        else
+                        {
+                            //sb.Append(exp.ToString());
+                            break;
+                        }
+                    }
+                }
+                if (foundCallExpression != null)
+                {
+                    object donutFn;
+                    var value = VisitFunctionCall(foundCallExpression, out donutFn);
+                    sb.Append(value);
+                }
+                else
+                {
+                    sb.Append(exp.ToString());
+                }
             }
             else
             {

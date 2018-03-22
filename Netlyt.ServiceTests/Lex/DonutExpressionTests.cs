@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
-using System.Threading.Tasks;
-using MongoDB.Bson;
+using System.Threading.Tasks; 
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
-using nvoid.Integration;
 using Netlyt.Service;
+using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
 using Netlyt.Service.FeatureGeneration;
 using Netlyt.Service.Format;
@@ -20,7 +19,6 @@ using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Parsing;
 using Netlyt.Service.Lex.Parsing.Tokenizers;
 using Netlyt.ServiceTests.Fixtures;
-using Netlyt.ServiceTests.Netinfo;
 using Xunit;
 
 namespace Netlyt.ServiceTests.Lex
@@ -35,6 +33,7 @@ namespace Netlyt.ServiceTests.Lex
         private RedisCacher _cacher;
         private IServiceProvider _serviceProvider;
         private DatabaseConfiguration _dbConfig;
+        private ManagementDbContext _context;
 
         public DonutExpressionTests(DonutConfigurationFixture fixture)
         {
@@ -46,6 +45,7 @@ namespace Netlyt.ServiceTests.Lex
             _cacher = fixture.GetService<RedisCacher>();
             _dbConfig = DBConfig.GetGeneralDatabase();
             _serviceProvider = fixture.GetService<IServiceProvider>();
+            _context = fixture.GetService<ManagementDbContext>();
 
         }
         /// <summary>
@@ -65,7 +65,7 @@ namespace Netlyt.ServiceTests.Lex
             var tokenizer = new PrecedenceTokenizer();
             var parser = new TokenParser(tokenizer.Tokenize(txt));
             DonutScript dscript = parser.ParseDonutScript();
-            Assert.Equal("events", dscript.Integrations.FirstOrDefault());
+            Assert.Equal("events", dscript.Integrations.FirstOrDefault().Name);
             AssignmentExpression f1 = dscript.Features[0];
             AssignmentExpression f2 = dscript.Features[1];
             Assert.Equal("id", f1.Member.Name);
@@ -114,11 +114,7 @@ namespace Netlyt.ServiceTests.Lex
         [InlineData("this.uuid", "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced")]
         public async Task TestGeneratedDonutContextForFeature(string feature, string collectionName)
         {
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures("SomeDonut1", new[] {feature});
-            dscript.AddIntegrations("events");
-            //parser.ParseDonutScript();
-            Type donutType, donutContextType, donutFEmitterType;
-            var assembly = _compiler.Compile(dscript, "someAssembly3", out donutType, out donutContextType, out donutFEmitterType);
+            
             //Source
             MongoSource<ExpandoObject> source = MongoSource.CreateFromCollection(collectionName, new BsonFormatter<ExpandoObject>());
             source.SetProjection(x =>
@@ -131,6 +127,12 @@ namespace Netlyt.ServiceTests.Lex
             var entryLimit = (uint)10000;
             harvester.LimitEntries(entryLimit);
             var integration = harvester.AddIntegrationSource(source, _appAuth, "SomeIntegrationName3");
+
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures("SomeDonut1", new[] { feature });
+            dscript.AddIntegrations(integration);
+            //parser.ParseDonutScript();
+            Type donutType, donutContextType, donutFEmitterType;
+            var assembly = _compiler.Compile(dscript, "someAssembly3", out donutType, out donutContextType, out donutFEmitterType);
 
             //Create a donut and a donutRunner
             var donutMachine = DonutBuilderFactory.Create(donutType, donutContextType, integration, _cacher, _serviceProvider);

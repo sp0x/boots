@@ -92,7 +92,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         public async Task TestGeneratedFeatures()
         {
             long modelId = 117;
-            var model = _db.Models.FirstOrDefault(x => x.Id == modelId);
+            var model = _db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
             string features = @"pm10
 SUM(Romanian.humidity)
 SUM(Romanian.latitude)
@@ -136,14 +136,6 @@ MEAN(Romanian.pm25)
 MEAN(Romanian.pressure)
 MEAN(Romanian.rssi)
 MEAN(Romanian.temperature)
-DAY(first_Romanian_time)
-YEAR(first_Romanian_time)
-MONTH(first_Romanian_time)
-WEEKDAY(first_Romanian_time)
-NUM_UNIQUE(Romanian.DAY(timestamp))
-NUM_UNIQUE(Romanian.YEAR(timestamp))
-NUM_UNIQUE(Romanian.MONTH(timestamp))
-NUM_UNIQUE(Romanian.WEEKDAY(timestamp))
 MODE(Romanian.DAY(timestamp))
 MODE(Romanian.YEAR(timestamp))
 MODE(Romanian.MONTH(timestamp))
@@ -152,9 +144,10 @@ MODE(Romanian.WEEKDAY(timestamp))
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
             DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, featureBodies);
-            foreach (var integration in model.DataIntegrations)
+            foreach (var modelIgn in model.DataIntegrations)
             {
-                dscript.AddIntegrations(integration.Integration.Collection);
+                var integration = _db.Integrations.FirstOrDefault(x => x.Id == modelIgn.IntegrationId);
+                dscript.AddIntegrations(integration);
             }
             Type donutType, donutContextType, donutFEmitterType;
             var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType, out donutFEmitterType);
@@ -229,7 +222,7 @@ MODE(Romanian.WEEKDAY(timestamp))
             var ign = new DataIntegration() {  Name = "Romanian" };
             var tsField = new FieldDefinition("timestamp", typeof(DateTime));
             ign.Fields.Add(tsField);
-            script.Integrations.Add(ign.Name);
+            script.Integrations.Add(ign);
             var parser = new DonutScriptCodeGenerator(ign);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;

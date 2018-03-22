@@ -8,6 +8,7 @@ using nvoid.extensions;
 using Netlyt.Service.Donut;
 using Netlyt.Service.Integration; 
 using Netlyt.Service.Time;
+using System.Threading.Tasks; 
 
 namespace $Namespace
 {
@@ -27,7 +28,17 @@ namespace $Namespace
 
         protected override void OnMetaComplete()
         {
-        } 
+        }
+
+		public override async Task OnFinished()
+		{
+			var groupKeys = new BsonDocument();
+			var groupFields = new BsonDocument();
+			var projections = new BsonDocument();
+
+			$OnFinished
+
+		}
 
 		public override void ProcessRecord(IntegratedDocument intDoc){
 			//Extraction goes in here

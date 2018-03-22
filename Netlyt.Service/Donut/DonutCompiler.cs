@@ -14,6 +14,8 @@ using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Generation;
 using Netlyt.Service.Lex.Generators;
 using System.Linq;
+using MongoDB.Driver;
+using Netlyt.Service.Ml;
 
 namespace Netlyt.Service.Donut
 {
@@ -53,13 +55,17 @@ namespace Netlyt.Service.Donut
             builder.AddReferenceFromType(typeof(BsonDocument));
             builder.AddReferenceFromType(typeof(DonutContext));
             builder.AddReferenceFromType(typeof(CacheSet<>));
+            builder.AddReferenceFromType(typeof(Dictionary<,>));
             builder.AddReferenceFromType(typeof(IServiceProvider));
             builder.AddReferenceFromType(typeof(nvoid.extensions.Arrays));
             builder.AddReferenceFromType(typeof(System.Linq.Enumerable));
             builder.AddReferenceFromType(typeof(TransformBlock<,>));
+            builder.AddReferenceFromType(typeof(IMongoCollection<>));
             var clrDep =
                 Assembly.Load("netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
+            var asmCollections = Assembly.Load("System.Collections");
             builder.AddReference(clrDep);
+            builder.AddReference(asmCollections);
 #if DEBUG
             var projectDefinition = builder.GenerateProjectDefinition(assemblyName, _script);
             WriteDonutCode(assemblyName, $"{assemblyName}.csproj", projectDefinition);

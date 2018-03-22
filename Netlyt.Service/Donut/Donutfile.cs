@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using nvoid.db.Caching;
 using nvoid.exec.Blocks;
@@ -28,12 +29,12 @@ namespace Netlyt.Service.Donut
         }
         private TContext _context;
         private IntegrationService _integrationService;
-
+        
         /// <summary>
         /// If true, all initial input is replayed in the feature extraction step.
         /// </summary>
         public bool ReplayInputOnFeatures { get; set; }
-
+        public bool SkipFeatureExtraction { get; set; }
         /// <summary>
         /// 
         /// </summary>
@@ -80,6 +81,10 @@ namespace Netlyt.Service.Donut
             OnMetaComplete();
         }
 
+        public async virtual Task OnFinished()
+        {
+
+        }
         protected virtual void OnCreated()
         {
 

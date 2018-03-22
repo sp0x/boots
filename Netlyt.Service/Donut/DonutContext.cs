@@ -10,6 +10,7 @@ using StackExchange.Redis;
 
 namespace Netlyt.Service.Donut
 {
+ 
     /// <summary>
     /// 
     /// </summary>
@@ -20,8 +21,7 @@ namespace Netlyt.Service.Donut
         public DataIntegration Integration { get; set; }
         private ConcurrentDictionary<string, List<HashEntry>> CurrentCache { get; set; }
         private readonly IDictionary<Type, ICacheSet> _sets = new Dictionary<Type, ICacheSet>();
-        private readonly IDictionary<Type, IDataSet> _dataSets = new Dictionary<Type, IDataSet>();
- 
+        private readonly IDictionary<Type, IDataSet> _dataSets = new Dictionary<Type, IDataSet>(); 
 
         public string Prefix { get; set; }
         public ApiAuth ApiAuth { get; private set; }

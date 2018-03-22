@@ -40,7 +40,7 @@ namespace Netlyt.Service.Donut
             DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, featureBodies);
             foreach (var integration in model.DataIntegrations)
             {
-                dscript.AddIntegrations(integration.Integration.Collection);
+                dscript.AddIntegrations(integration.Integration);
             }
             Type donutType, donutContextType, donutFEmitterType;
             var assembly = _compiler.Compile(dscript, model.ModelName , out donutType, out donutContextType, out donutFEmitterType);

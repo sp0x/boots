@@ -49,7 +49,7 @@ namespace Netlyt.Service.Lex.Generators
                 ctxTemplate = ctxTemplate.Replace("$ClassName", baseName);
                 var cacheSetMembers = GetCacheSetMembers(script);
                 ctxTemplate = ctxTemplate.Replace("$CacheMembers", cacheSetMembers);
-                var dataSetMembers = GetDataSetmembers(script);
+                var dataSetMembers = GetDataSetMembers(script);
                 ctxTemplate = ctxTemplate.Replace("$DataSetMembers", dataSetMembers);
                 var mappers = GetContextTypeMappers(script);
                 ctxTemplate = ctxTemplate.Replace("$Mappers", mappers);
@@ -80,9 +80,108 @@ namespace Netlyt.Service.Lex.Generators
                 donutTemplate = donutTemplate.Replace("$ClassName", baseName);
                 donutTemplate = donutTemplate.Replace("$ContextTypeName", conutextName);
                 donutTemplate = donutTemplate.Replace("$ExtractionBody", GetFeaturePrepContent(script));
-                //Items: $ClassName, $ContextTypeName, $ExtractionBody
+                donutTemplate = donutTemplate.Replace("$OnFinished", GenerateOnDonutFinishedContent(script));
+                //Items: $ClassName, $ContextTypeName, $ExtractionBody, $OnFinished
             }
             return donutTemplate;
+        }
+
+        private string GenerateOnDonutFinishedContent(DonutScript script)
+        {
+            var fBuilder = new StringBuilder();
+            var donutFnResolver = new DonutFunctionParser();
+            var rootCollection = script.Integrations.FirstOrDefault().Name;
+            foreach (var integration in script.Integrations)
+            {
+                var iName = integration.Name.Replace(" ", "_");
+                var record = $"var rec{iName} = this.Context.{iName}.Records;";
+                fBuilder.AppendLine(record);
+            }
+            //Update this to work with multiple collections later on
+            foreach (var feature in script.Features)
+            {
+                IExpression accessor = feature.Value;
+                string fName = feature.Member.ToString();
+                string featureContent = "";
+                var featureFType = accessor.GetType();
+                if (featureFType == typeof(VariableExpression))
+                {
+                    var member = (accessor as VariableExpression).Member?.ToString();
+                    //In some cases we might just use the field
+                    if (string.IsNullOrEmpty(member)) member = accessor.ToString();
+                    featureContent = $"groupFields[\"{fName}\"] = \"${member}\";";
+                }
+                else if (featureFType == typeof(CallExpression))
+                {
+                    if (donutFnResolver.IsAggregate(accessor as CallExpression))
+                    {
+                        //We're dealing with an aggregate call 
+                        var aggregateContent = GenerateFeatureFunctionCall(accessor as CallExpression);
+                        var functionType = donutFnResolver.GetFunctionType(accessor as CallExpression);
+                        var aggregateValue = aggregateContent?.GetValue().Replace("$"+rootCollection+".","$");
+                        if (aggregateValue != null) aggregateValue = aggregateValue.Replace("\"", "\\\"");
+                        switch (functionType)
+                        {
+                            case DonutFunctionType.Group:
+                                featureContent = $"groupFields[\"{fName}\"] = \"{aggregateValue}\";";
+                                break;
+                            case DonutFunctionType.Project:
+                                featureContent = $"projections[\"{fName}\"] = \"{aggregateValue}\";";
+                                break;
+                            case DonutFunctionType.GroupKey:
+                                featureContent = $"groupKeys[\"{fName}\"] = \"{aggregateValue}\";";
+                                break;
+                            case DonutFunctionType.Standard:
+                                var variableName = GetFeatureVariableName(feature);
+                                featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", \"$" + variableName  + "\" }};";
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        //We're dealing with a function call 
+                        featureContent = featureContent;
+                        //featureContent = GenerateFeatureFunctionCall(accessor as CallExpression, feature).Content;
+                    }
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+                if(!string.IsNullOrEmpty(featureContent)) fBuilder.AppendLine(featureContent);
+            }
+            return fBuilder.ToString();
+        }
+
+        /// <summary>
+        /// Gets the name of the field from feature assignment.
+        /// </summary>
+        /// <param name="feature"></param>
+        /// <returns></returns>
+        private string GetFeatureVariableName(AssignmentExpression feature)
+        {
+            var seed = feature.Value;
+            var itemQueue = new Queue<IExpression>();
+            itemQueue.Enqueue(seed);
+            while (itemQueue.Count>0)
+            {
+                var item = itemQueue.Dequeue();
+                var memberInfo = item.GetType();
+                if (memberInfo == typeof(CallExpression))
+                {
+                    var subItems = (item as CallExpression).Parameters;
+                    foreach (var param in subItems) itemQueue.Enqueue(param);
+                } else if (memberInfo == typeof(VariableExpression))
+                {
+                    var member = (item as VariableExpression).Member?.ToString();
+                    string memberName = !string.IsNullOrEmpty(member) ? member : (item as VariableExpression).Name;
+                    return memberName;
+                } else if (memberInfo == typeof(ParameterExpression))
+                {
+                    itemQueue.Enqueue((item as ParameterExpression).Value);
+                }
+            }
+            return null;
         }
 
         public string GenerateFeatureGenerator(string @namespace, DonutScript script)
@@ -127,13 +226,13 @@ namespace Netlyt.Service.Lex.Generators
                     if (donutFnResolver.IsAggregate(accessor as CallExpression))
                     {
                         //We're dealing with an aggregate call 
-                        var aggregateContent = GenerateFeatureFunctionCall(accessor as CallExpression, feature);
+                        //var aggregateContent = GenerateFeatureFunctionCall(accessor as CallExpression, feature);
 
                     }
                     else
                     {
                         //We're dealing with a function call 
-                        featureContent = GenerateFeatureFunctionCall(accessor as CallExpression, feature).Content;
+                        //featureContent = GenerateFeatureFunctionCall(accessor as CallExpression, feature).Content;
                     }
                 }
                 else
@@ -145,17 +244,28 @@ namespace Netlyt.Service.Lex.Generators
             return fBuilder.ToString();
         }
 
-        public GeneratedFeatureFunctionsCodeResult GenerateFeatureFunctionCall(CallExpression callExpression, AssignmentExpression feature)
+        public GeneratedFeatureFunctionsCodeResult GenerateFeatureFunctionCall(CallExpression callExpression, AssignmentExpression feature=null)
         {
             var cshGenerator = new DonutCSharpGenerator();
             var donutFnResolver = new DonutFunctionParser();
             var isAggregate = donutFnResolver.IsAggregate(callExpression);
             var functionType = donutFnResolver.GetFunctionType(callExpression);
             var output = cshGenerator.ProcessCall(callExpression, _expVisitor);
+            if (string.IsNullOrEmpty(output))
+            {
+                return null;
+            }
             if (isAggregate)
             {
                 var aggregateField = new BsonDocument();
-                aggregateField[feature.Member.ToString()] = BsonDocument.Parse(output);
+                if (feature == null)
+                {
+                    aggregateField = BsonDocument.Parse(output);
+                }
+                else
+                {
+                    aggregateField[feature.Member.ToString()] = BsonDocument.Parse(output);
+                }
                 output = aggregateField.ToString();
                 var result = new GeneratedFeatureFunctionsCodeResult(null);
                 if (functionType == DonutFunctionType.Group)
@@ -203,14 +313,14 @@ namespace Netlyt.Service.Lex.Generators
             return sb.ToString();
         }
 
-        private string GetDataSetmembers(DonutScript dscript)
+        private string GetDataSetMembers(DonutScript dscript)
         {
-            var secondarySources = dscript.Integrations.Skip(1);
+            var secondarySources = dscript.Integrations;//.Skip(1);
             var content = new StringBuilder();
             foreach (var source in secondarySources)
             {
-                var sName = source.Replace(' ', '_');
-                var sourceProperty = $"[SourceFromIntegration(\"{source}\")]\n" +
+                var sName = source.Name.Replace(' ', '_');
+                var sourceProperty = $"[SourceFromIntegration(\"{source.Name}\")]\n" +
                                      "public DataSet<BsonDocument> " + sName + " { get; set; }";
                 content.AppendLine(sourceProperty);
             }

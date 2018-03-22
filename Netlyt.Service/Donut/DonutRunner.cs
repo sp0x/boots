@@ -24,12 +24,17 @@ namespace Netlyt.Service.Donut
         Task<HarvesterResult> Run(TDonut donut, FeatureGenerator<IntegratedDocument> getFeatureGenerator);
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="TDonut"></typeparam>
+    /// <typeparam name="TContext"></typeparam>
     public class DonutRunner<TDonut, TContext> : IDonutRunner<TDonut>
         where TContext: DonutContext
         where TDonut : Donutfile<TContext>
     {
         private Harvester<IntegratedDocument> _harvester;
-        private IMongoCollection<IntegratedDocument> _featuresCollection;
+        private IMongoCollection<BsonDocument> _featuresCollection;
         private IPropagatorBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>> _featuresBlock;
 
         public DonutRunner(Harvester<IntegratedDocument> harvester, DatabaseConfiguration db, string featuresCollection)
@@ -39,7 +44,7 @@ namespace Netlyt.Service.Donut
                 throw new ArgumentNullException(nameof(featuresCollection));
             }
             _harvester = harvester;
-            var mlist = new MongoList<IntegratedDocument>(db, featuresCollection);
+            var mlist = new MongoList(db, featuresCollection);
             _featuresCollection = mlist.Records;
         }
 
@@ -54,7 +59,7 @@ namespace Netlyt.Service.Donut
             var flowBlock = donutBlock.FlowBlock;
             _featuresBlock = donutBlock.FeaturePropagator;
 
-            var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, IntegratedDocument>((x) =>
+            var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, BsonDocument>((x) =>
             { 
                 var rawFeatures = new BsonDocument();
                 var featuresDocument = new IntegratedDocument(rawFeatures);
@@ -72,9 +77,9 @@ namespace Netlyt.Service.Donut
                 featuresDocument.IntegrationId = integration.Id;
                 featuresDocument.APIId = integration.APIKey.Id;
                 x.Features = null;
-                return featuresDocument;
+                return rawFeatures;
             });
-            var insertBatcher = new MongoInsertBatch<IntegratedDocument>(_featuresCollection, 3000);
+            var insertBatcher = new MongoInsertBatch<BsonDocument>(_featuresCollection, 3000);
             insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
             _featuresBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
@@ -93,7 +98,7 @@ namespace Netlyt.Service.Donut
         private async Task RunFeatureExtraction(TDonut donut)
         {
             donut.Complete();
-            if (donut.ReplayInputOnFeatures)
+            if (donut.ReplayInputOnFeatures && !donut.SkipFeatureExtraction)
             {
                 var featuresFlow = new InternalFlowBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>
                     (_featuresBlock);
@@ -103,8 +108,14 @@ namespace Netlyt.Service.Donut
             }
             else
             {
+                if (!donut.SkipFeatureExtraction)
+                {
+
+                }
                 throw new NotImplementedException();
             }
+
+            await donut.OnFinished();
         }
 
     }
