@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis.Emit;
+using MongoDB.Bson;
+using Netlyt.Service.Donut;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Generation;
@@ -11,10 +15,18 @@ namespace Netlyt.Service.Lex.Generators
 {
     public class DonutScriptCodeGenerator : CodeGenerator
     {
+        private DonutFeatureGeneratingExpressionVisitor _expVisitor;
+        private DataIntegration _integration;
+
+        public DonutScriptCodeGenerator(DataIntegration integration)
+        {
+            _expVisitor = new DonutFeatureGeneratingExpressionVisitor(null);
+            _integration = integration;
+        }
         public override string GenerateFromExpression(Expression contextExpressionInfo)
         {
             return null;
-        } 
+        }
 
         /// <summary>
         /// Generates a donutfile context
@@ -25,6 +37,8 @@ namespace Netlyt.Service.Lex.Generators
         public string GenerateContext(string @namespace, DonutScript script)
         {
             string ctxTemplate;
+            _expVisitor.Clear();
+            _expVisitor.SetScript(script);
             if (script.Type == null) throw new ArgumentException("Script type is null!");
             var baseName = script.Type.GetContextName();
             using (StreamReader reader = new StreamReader(GetTemplate("DonutContext.txt")))
@@ -44,7 +58,7 @@ namespace Netlyt.Service.Lex.Generators
             }
             return ctxTemplate;
         }
-         
+
         /// <summary>
         /// Generates a donutfile
         /// </summary>
@@ -56,13 +70,15 @@ namespace Netlyt.Service.Lex.Generators
             string donutTemplate;
             var baseName = script.Type.GetClassName();
             var conutextName = script.Type.GetContextName();
+            _expVisitor.Clear();
+            _expVisitor.SetScript(script);
             using (StreamReader reader = new StreamReader(GetTemplate("Donutfile.txt")))
             {
                 donutTemplate = reader.ReadToEnd();
                 if (string.IsNullOrEmpty(donutTemplate)) throw new Exception("Template empty!");
                 donutTemplate = donutTemplate.Replace("$Namespace", @namespace);
                 donutTemplate = donutTemplate.Replace("$ClassName", baseName);
-                donutTemplate = donutTemplate.Replace("$ContextTypeName", conutextName);  
+                donutTemplate = donutTemplate.Replace("$ContextTypeName", conutextName);
                 donutTemplate = donutTemplate.Replace("$ExtractionBody", GetFeaturePrepContent(script));
                 //Items: $ClassName, $ContextTypeName, $ExtractionBody
             }
@@ -74,6 +90,8 @@ namespace Netlyt.Service.Lex.Generators
             string fgenTemplate;
             var donutName = script.Type.GetClassName();
             var conutextName = script.Type.GetContextName();
+            _expVisitor.Clear();
+            _expVisitor.SetScript(script);
             using (StreamReader reader = new StreamReader(GetTemplate("FeatureGenerator.txt")))
             {
                 fgenTemplate = reader.ReadToEnd();
@@ -90,15 +108,33 @@ namespace Netlyt.Service.Lex.Generators
         private string GetFeatureYieldsContent(DonutScript script)
         {
             var fBuilder = new StringBuilder();
+            var donutFnResolver = new DonutFunctionParser();
             foreach (var feature in script.Features)
             {
                 IExpression accessor = feature.Value;
                 string fName = feature.Member.ToString();
                 string featureContent = "";
-                if (accessor.GetType() == typeof(VariableExpression))
+                var featureFType = accessor.GetType();
+                if (featureFType == typeof(VariableExpression))
                 {
-                    var member = (accessor as VariableExpression).Member.ToString();
+                    var member = (accessor as VariableExpression).Member?.ToString();
+                    //In some cases we might just use the field
+                    if (string.IsNullOrEmpty(member)) member = accessor.ToString();
                     featureContent = $"yield return pair(\"{fName}\", doc[\"{member}\"]);";
+                }
+                else if (featureFType == typeof(CallExpression))
+                {
+                    if (donutFnResolver.IsAggregate(accessor as CallExpression))
+                    {
+                        //We're dealing with an aggregate call 
+                        var aggregateContent = GenerateFeatureFunctionCall(accessor as CallExpression, feature);
+
+                    }
+                    else
+                    {
+                        //We're dealing with a function call 
+                        featureContent = GenerateFeatureFunctionCall(accessor as CallExpression, feature).Content;
+                    }
                 }
                 else
                 {
@@ -107,6 +143,51 @@ namespace Netlyt.Service.Lex.Generators
                 fBuilder.AppendLine(featureContent);
             }
             return fBuilder.ToString();
+        }
+
+        public GeneratedFeatureFunctionsCodeResult GenerateFeatureFunctionCall(CallExpression callExpression, AssignmentExpression feature)
+        {
+            var cshGenerator = new DonutCSharpGenerator();
+            var donutFnResolver = new DonutFunctionParser();
+            var isAggregate = donutFnResolver.IsAggregate(callExpression);
+            var functionType = donutFnResolver.GetFunctionType(callExpression);
+            var output = cshGenerator.ProcessCall(callExpression, _expVisitor);
+            if (isAggregate)
+            {
+                var aggregateField = new BsonDocument();
+                aggregateField[feature.Member.ToString()] = BsonDocument.Parse(output);
+                output = aggregateField.ToString();
+                var result = new GeneratedFeatureFunctionsCodeResult(null);
+                if (functionType == DonutFunctionType.Group)
+                {
+                    result.GroupFields = output;
+                }
+                else if(functionType==DonutFunctionType.Project)
+                {
+                    result.Projections = output;
+                }
+                else if (functionType == DonutFunctionType.GroupKey)
+                {
+                    result.GroupKeys = output;
+                }
+                return result;
+            }
+            else
+            {
+                return new GeneratedFeatureFunctionsCodeResult(output);
+            }
+        }
+
+        public string GetAggregates(DonutFunctionType? typeFilter = null)
+        {
+            var sb = new StringBuilder();
+            foreach (var aggregate in _expVisitor.Aggregates)
+            {
+                if (typeFilter != null && aggregate.Type != typeFilter.Value) continue;
+                var str = aggregate.Content;
+                sb.AppendLine(str);
+            }
+            return sb.ToString();
         }
 
         private string GetFeaturePrepContent(DonutScript script)
@@ -130,7 +211,7 @@ namespace Netlyt.Service.Lex.Generators
             {
                 var sName = source.Replace(' ', '_');
                 var sourceProperty = $"[SourceFromIntegration(\"{source}\")]\n" +
-                                     "public DataSet<BsonDocument> " + sName  + " { get; set; }";
+                                     "public DataSet<BsonDocument> " + sName + " { get; set; }";
                 content.AppendLine(sourceProperty);
             }
             return content.ToString();

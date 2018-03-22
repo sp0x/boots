@@ -367,11 +367,19 @@ namespace Netlyt.Service.Lex.Parsing
         public MemberExpression ReadMemberExpression()
         {
             Reader.DiscardToken(TokenType.MemberAccess);
-            var memberSymbol = Reader.DiscardToken(TokenType.Symbol);
-            var variableExp = new VariableExpression(memberSymbol.Value);
-            MemberExpression member = new MemberExpression(variableExp);
-            return member;
-
+            if (IsFunctionCall(Reader.Current, Reader.NextToken))
+            {
+                var function = ReadFunctionCall();
+                var fnMember = new MemberExpression(function);
+                return fnMember;
+            }
+            else
+            {
+                var memberSymbol = Reader.DiscardToken(TokenType.Symbol);
+                var variableExp = new VariableExpression(memberSymbol.Value);
+                MemberExpression member = new MemberExpression(variableExp);
+                return member;
+            }
             //ExpressionNode currentNode = null;
             //            while (true)
             //            {

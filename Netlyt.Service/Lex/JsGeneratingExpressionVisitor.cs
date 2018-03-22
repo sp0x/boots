@@ -10,8 +10,7 @@ namespace Netlyt.Service.Lex
     /// <summary>
     /// An expression visitor that generates JS
     /// </summary>
-    public class JsGeneratingExpressionVisitor
-        : ExpressionVisitor
+    public class JsGeneratingExpressionVisitor : ExpressionVisitor
     { 
         public Dictionary<VariableExpression, string> Variables { get; private set; }
         public JsGeneratingExpressionVisitor()
@@ -62,7 +61,7 @@ namespace Netlyt.Service.Lex
             Variables.Add(expMember, expValue);
         }
 
-        protected override string VisitFunctionCall(CallExpression exp)
+        protected override string VisitFunctionCall(CallExpression exp, out object resultObj)
         {
             var function = exp.Name;
             var paramBuilder = new StringBuilder();
@@ -78,6 +77,7 @@ namespace Netlyt.Service.Lex
                 iParam++;
             }
             var jsFunction = JsFunctions.Resolve(function, exp.Parameters);
+            resultObj = null;
             var result = $"{jsFunction}({paramBuilder})";
             return result;
         }
@@ -94,7 +94,8 @@ namespace Netlyt.Service.Lex
             }
             else if (paramValueType == typeof(CallExpression))
             {
-                var value = VisitFunctionCall(paramValue as CallExpression);
+                object jsout;
+                var value = VisitFunctionCall(paramValue as CallExpression, out jsout);
                 sb.Append(value);
             }
             else

@@ -4,14 +4,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
+using nvoid.db.DB.MongoDB;
 using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
+using Netlyt.Service.Donut;
 using Netlyt.Service.Integration;
+using Netlyt.Service.Lex;
 using Netlyt.Service.Lex.Data;
+using Netlyt.Service.Lex.Expressions;
+using Netlyt.Service.Lex.Generators;
 using Netlyt.Service.Orion;
+using Netlyt.Service.Source;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
@@ -154,6 +162,107 @@ MODE(Romanian.WEEKDAY(timestamp))
             model.DonutScript.AssemblyPath = assembly.Location;
             model.DonutScript.Model = model;
             _db.SaveChanges();
+        }
+
+        [Theory]
+        [InlineData("max(someint)", "{ \"f_0\" : { \"$max\" : \"$someint\" } }")]
+        [InlineData("min(someint)", "{ \"f_0\" : { \"$min\" : \"$someint\" } }")]
+        [InlineData("sum(someint)", "{ \"f_0\" : { \"$sum\" : \"$someint\" } }")]
+        [InlineData("std(someint)", "{ \"f_0\" : { \"$stdDevSamp\" : \"$someint\" } }")]
+        [InlineData("mean(someint)", "{ \"f_0\" : { \"$avg\" : \"$someint\" } }")]
+        [InlineData("avg(someint)", "{ \"f_0\" : { \"$avg\" : \"$someint\" } }")]
+        public void TestDonutAggregateFunction(string featureBody, string expectedAggregateValue)
+        {
+            var collection = GetTestingCollection();
+//            var validProjection = new BsonDocument();
+//            validProjection[ "_id"] = "$_id";
+//            validProjection[fieldName + "_v"] = new BsonDocument {{ "$max", "$" + fieldName }};
+//            var validResult = collection.Aggregate().Group(validProjection).ToList();
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", featureBody);
+            var parser = new DonutScriptCodeGenerator(null);
+            var firstFeature = script.Features.FirstOrDefault();
+            var maxCall = firstFeature?.Value as CallExpression;
+            var maxFeature = parser.GenerateFeatureFunctionCall(maxCall, firstFeature);
+            Assert.Equal(expectedAggregateValue, maxFeature.GetValue());
+
+            var query = BsonDocument.Parse(maxFeature.GetValue());
+            query["_id"] = "$_id";
+            var result = collection.Aggregate().Group(query).ToList();
+            Assert.Equal(100, result.Count);
+        }
+
+        [Theory]
+        [InlineData("day(timestamp)", "{ \"f_0\" : { \"$dayOfMonth\" : \"$timestamp\" } }")]
+        [InlineData("year(timestamp)", "{ \"f_0\" : { \"$year\" : \"$timestamp\" } }")]
+        [InlineData("month(timestamp)", "{ \"f_0\" : { \"$month\" : \"$timestamp\" } }")]
+        public void TestDonutTimeAggregateFunction(string featureBody, string expectedAggregateValue)
+        {
+            var collection = GetTestingCollection();
+            //            var validProjection = new BsonDocument();
+            //            validProjection[ "_id"] = "$_id";
+            //            validProjection[fieldName + "_v"] = new BsonDocument {{ "$max", "$" + fieldName }};
+            //            var validResult = collection.Aggregate().Group(validProjection).ToList();
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", featureBody);
+            var parser = new DonutScriptCodeGenerator(null);
+            var firstFeature = script.Features.FirstOrDefault();
+            var maxCall = firstFeature?.Value as CallExpression;
+            var maxFeatureStr = parser.GenerateFeatureFunctionCall(maxCall, firstFeature);
+            //var groupings = parser.GetAggregates(DonutFunctionType.Group);
+            //var projections = parser.GetAggregates(DonutFunctionType.Project);
+            Assert.Equal(expectedAggregateValue, maxFeatureStr.GetValue());
+
+            var projectionsDoc = BsonDocument.Parse(maxFeatureStr.Projections);
+            var result = collection.Aggregate().Project(projectionsDoc).ToList();
+            Assert.Equal(100, result.Count);
+        }
+
+        [Theory]
+        [InlineData("NUM_UNIQUE(Romanian.DAY(timestamp))", "{ \"f_0\" : { \"$max\" : \"$someint\" } }")] 
+        public void TestDonutNestedAggregateFunction(string featureBody, string expectedAggregateValue)
+        { 
+            var collection = GetTestingCollection();
+            //            var validProjection = new BsonDocument();
+            //            validProjection[ "_id"] = "$_id";
+            //            validProjection[fieldName + "_v"] = new BsonDocument {{ "$max", "$" + fieldName }};
+            //            var validResult = collection.Aggregate().Group(validProjection).ToList();
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", featureBody);
+            var ign = new DataIntegration() {  Name = "Romanian" };
+            var tsField = new FieldDefinition("timestamp", typeof(DateTime));
+            ign.Fields.Add(tsField);
+            script.Integrations.Add(ign.Name);
+            var parser = new DonutScriptCodeGenerator(ign);
+            var firstFeature = script.Features.FirstOrDefault();
+            var maxCall = firstFeature?.Value as CallExpression;
+            var maxFeatureStr = parser.GenerateFeatureFunctionCall(maxCall, firstFeature);
+            Assert.Equal(expectedAggregateValue, maxFeatureStr.GetValue());
+
+            var query = BsonDocument.Parse(maxFeatureStr.GetValue());
+            query["_id"] = "$_id";
+            var result = collection.Aggregate().Group(query).ToList();
+            Assert.Equal(100, result.Count);
+        }
+
+
+        private IMongoCollection<BsonDocument> GetTestingCollection()
+        {
+            var mongoList = new MongoList(_dbConfig, "_testing_collection");
+            mongoList.Truncate();
+            IMongoCollection<BsonDocument> collection = mongoList.Records;
+            int i = 0;
+            FillCollection(collection,  () => new BsonDocument
+            {
+                {"someint", i++ },
+                {"timestamp", DateTime.Today.AddDays(i) }
+            }, 100);
+            return collection;
+        }
+        private void FillCollection(IMongoCollection<BsonDocument> collection, Func<BsonDocument> generator, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var doc = generator();
+                collection.InsertOne(doc);
+            }
         }
     }
 }

@@ -129,8 +129,8 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/model/{id}/[action]")]
         public async Task<IActionResult> Train(long id)
         {
-            var json = Request.GetRawBodyString();
-            JObject query = JObject.Parse(json.Result);
+            var json = await Request.GetRawBodyString();
+            JObject query = JObject.Parse(json);
             //kick off background async task to train
             // return 202 with wait at endpoint
             //async task

@@ -32,7 +32,6 @@ namespace Netlyt.Service.Donut
             if (string.IsNullOrEmpty(fscript)) return;
             var features = fscript.Split('\n');
             var parameters = featureResult["params"];
-            string taskId = parameters["task_id"].ToString();
             long modelId = long.Parse(parameters["model_id"].ToString()); 
             Model model = _db.Models.FirstOrDefault(x => x.Id == modelId);
             if (model == null) return;

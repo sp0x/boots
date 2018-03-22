@@ -53,6 +53,17 @@ namespace Netlyt.Service.Lex.Generation
         }
 
 
+        /// <summary>
+        /// Generates variables from the given assignent expressions.
+        /// </summary>
+        /// <param name="expressions"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static string VisitCall(CallExpression expression, StringBuilder value, ExpressionVisitor visitor)
+        {
+            var visitResult = visitor.Visit(expression);
+            return visitResult;
+        }
 
         /// <summary>
         /// Generates variables from the given assignent expressions.

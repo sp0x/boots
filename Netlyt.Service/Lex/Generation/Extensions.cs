@@ -15,7 +15,7 @@ namespace Netlyt.Service.Lex.Generation
             _generators = new Dictionary<Type, Func<CodeGenerator>>();
             _generators.Add(typeof(MapReduceExpression), () => new MapReduceMapGenerator());
             _generators.Add(typeof(MapAggregateExpression), () => new MapReduceAggregateGenerator());
-            _generators.Add(typeof(DonutScript), () => new DonutScriptCodeGenerator());
+            _generators.Add(typeof(DonutScript), () => new DonutScriptCodeGenerator(null));
         }
 
         /// <summary>

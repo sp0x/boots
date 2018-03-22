@@ -21,7 +21,19 @@ namespace Netlyt.Service.Lex
 
         public virtual string Visit(IExpression expression)
         {
+            object outputObj;
+            return Visit(expression, out outputObj);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <param name="visitObjResult">The resulting object from the visit</param>
+        /// <returns></returns>
+        public virtual string Visit(IExpression expression, out object visitObjResult)
+        {
             var expType = expression.GetType();
+            visitObjResult = null;
             if (expType == typeof(ParameterExpression))
             {
                 return VisitParameter(expression as ParameterExpression);
@@ -32,7 +44,7 @@ namespace Netlyt.Service.Lex
             }
             else if (expType == typeof(CallExpression))
             {
-                return VisitFunctionCall(expression as CallExpression);
+                return VisitFunctionCall(expression as CallExpression, out visitObjResult);
             }
             else if (expType == typeof(BinaryExpression))
             {
@@ -68,8 +80,9 @@ namespace Netlyt.Service.Lex
             return null;
         }
 
-        protected virtual string VisitFunctionCall(CallExpression exp)
+        protected virtual string VisitFunctionCall(CallExpression exp, out object resultObj)
         {
+            resultObj = null;
             return null;
         }
 
