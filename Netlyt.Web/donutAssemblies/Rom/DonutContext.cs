@@ -60,10 +60,6 @@ public CacheSet<string> f_47 { get; set; }
 public CacheSet<string> f_48 { get; set; }
 public CacheSet<string> f_49 { get; set; }
 public CacheSet<string> f_50 { get; set; }
-public CacheSet<string> f_51 { get; set; }
-public CacheSet<string> f_52 { get; set; }
-public CacheSet<string> f_53 { get; set; }
-public CacheSet<string> f_54 { get; set; }
 
 
 		[SourceFromIntegration("Rom")]

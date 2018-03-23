@@ -95,6 +95,7 @@ namespace Netlyt.Service.Donut
             catch (Exception ex)
             {
                 Trace.WriteLine("Could not compile donut or error during training.");
+                Console.WriteLine("Could not compile donut or error during training.");
             }
         }
 

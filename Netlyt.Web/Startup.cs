@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
@@ -37,8 +38,9 @@ namespace Netlyt.Web
             OrionContext.Configure(Configuration.GetSection("behaviour"));
             OrionContext.Run();
 //            var dbConfig = DBConfig.GetGeneralDatabase();
-//            var recRom = new MongoList(dbConfig, "481752ea-114e-4057-89c5-a6adb7ef3ac0").Records;
-  
+//            var mongoList = new MongoList(dbConfig, "cda43bc9-ae8f-4374-b8be-79de9ca5d9a8"); 
+//            var recRom = mongoList.Records;
+//             
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.

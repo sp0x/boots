@@ -112,7 +112,7 @@ namespace Netlyt.Service.Lex.Generators
                     var member = (accessor as VariableExpression).Member?.ToString();
                     //In some cases we might just use the field
                     if (string.IsNullOrEmpty(member)) member = accessor.ToString();
-                    featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"${member}\" } };";
+                    featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"$" + member + "\" } };";
                 }
                 else if (featureFType == typeof(CallExpression))
                 {
@@ -172,7 +172,7 @@ namespace Netlyt.Service.Lex.Generators
                                 $"groupKeys.Merge(idSubKey2);\n" +
                                 $"var grouping = new BsonDocument();\n" +
                                 $"grouping[\"_id\"] = groupKeys;\n" +
-                                $"grouping = grouping.Merge(groupingFields);";
+                                $"grouping = grouping.Merge(groupFields);";
                 }
                 else
                 {
@@ -238,9 +238,18 @@ namespace Netlyt.Service.Lex.Generators
                     foreach (var param in subItems) itemQueue.Enqueue(param);
                 } else if (memberInfo == typeof(VariableExpression))
                 {
-                    var member = (item as VariableExpression).Member?.ToString();
-                    string memberName = !string.IsNullOrEmpty(member) ? member : (item as VariableExpression).Name;
-                    return memberName;
+                    var mInfo = (item as VariableExpression).Member;
+                    if (mInfo != null && mInfo.Parent != null && mInfo.Parent.GetType() == typeof(CallExpression))
+                    {
+                        var callExpParams = (mInfo.Parent as CallExpression).Parameters;
+                        foreach (var param in callExpParams) itemQueue.Enqueue(param);
+                    }
+                    else
+                    {
+                        var member = mInfo?.ToString();
+                        string memberName = !string.IsNullOrEmpty(member) ? member : (item as VariableExpression).Name;
+                        return memberName;
+                    }
                 } else if (memberInfo == typeof(ParameterExpression))
                 {
                     itemQueue.Enqueue((item as ParameterExpression).Value);
