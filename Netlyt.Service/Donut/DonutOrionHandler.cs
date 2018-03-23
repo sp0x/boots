@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Service.Data;
@@ -25,6 +26,7 @@ namespace Netlyt.Service.Donut
 #pragma warning restore 4014
             _compiler = compilerService;
         }
+
         /// <summary>
         /// Handle the features that orion generated, and assign them.
         /// </summary>
@@ -53,6 +55,22 @@ namespace Netlyt.Service.Donut
             model.DonutScript.AssemblyPath = assembly.Location;
             model.DonutScript.Model = model;
             _db.SaveChanges();
+            //We got the model
+            //Start training
+            var trainingResult = await TrainGeneratedFeatures(model,dscript,  assembly, donutType, donutContextType, donutFEmitterType);
+            trainingResult = trainingResult;
+        }
+
+        private async Task<object> TrainGeneratedFeatures(Model model,
+            DonutScript ds,
+            Assembly assembly,
+            Type donutType,
+            Type donutContextType,
+            Type donutFEmitterType)
+        {
+            var query = OrionQuery.Factory.CreateTrainQuery(model);
+            var m_id = await _orion.Query(query);
+            return null;
         }
     }
 }

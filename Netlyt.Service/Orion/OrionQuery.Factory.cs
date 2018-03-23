@@ -67,6 +67,16 @@ namespace Netlyt.Service.Orion
                 qr["params"] = parameters;
                 return qr;
             }
+
+            public static OrionQuery CreateTrainQuery(Model model)
+            {
+                var qr = new OrionQuery(OrionOp.GenerateFeatures);
+                var parameters = new JObject();
+                parameters["model_name"] = model.ModelName;
+                parameters["model_id"] = model.Id;
+                var collectionsArray = new JArray();
+                return qr;
+            }
         }
     }
 }

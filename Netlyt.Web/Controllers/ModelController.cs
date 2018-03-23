@@ -189,9 +189,10 @@ namespace Netlyt.Web.Controllers
             return Json(new { status = generationTask.Status.ToString().ToLower() });
         }
 
-        [HttpGet("/model/id/trainingStatus")]
+        [HttpGet("/model/{id}/trainingStatus")]
         public IActionResult GetTrainingStatus(long id)
         {
+
             return null;
         }
 

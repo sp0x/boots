@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -90,6 +91,7 @@ namespace Netlyt.Service.Lex.Generators
         {
             var fBuilder = new StringBuilder();
             var donutFnResolver = new DonutFunctionParser();
+            
             var rootIntegration = script.Integrations.FirstOrDefault();
             var rootCollection = rootIntegration.Name;
             var outputCollection = rootIntegration.FeaturesCollection;
@@ -156,7 +158,20 @@ namespace Netlyt.Service.Lex.Generators
             }
             if (!hasGroupKeys && hasGroupFields)
             {
-                var groupKey = $"groupKeys[\"_id\"] = \"$_id\";";
+                var groupKey = "";
+                if (rootIntegration != null && !string.IsNullOrEmpty(rootIntegration.DataTimestampColumn))
+                {
+                    groupKey += "var idSubKey1 = new BsonDocument { { \"idKey\", \"_$id\" } };\n";
+                    groupKey += "var idSubKey2 = new BsonDocument { { \"tsKey\", new BsonDocument{" +
+                                "{ \"$dayOfYear\", \"" + rootIntegration.DataTimestampColumn + "\"}" +
+                                "} } };\n"; 
+                    groupKey += $"groupKeys.Merge(idSubKey1);\n" +
+                                $"groupKeys.Merge(idSubKey2);";
+                }
+                else
+                {
+                    groupKey = $"groupKeys[\"_id\"] = \"$_id\";\n";
+                }
                 fBuilder.AppendLine(groupKey);
             }
 
@@ -312,6 +327,7 @@ namespace Netlyt.Service.Lex.Generators
                     }
                     catch (Exception ex)
                     {
+                        Trace.WriteLine(ex.Message);
                         return null;
                     }
                 }

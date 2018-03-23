@@ -26,14 +26,17 @@ namespace Netlyt.Service
 
         private ApiService _apiService;
         private UserService _userService;
+        private TimestampService _timestampService;
 
         public IntegrationService(ManagementDbContext context,
             ApiService apiService,
-            UserService userService)
+            UserService userService,
+            TimestampService tsService)
         {
             _context = context;
             _apiService = apiService;
             _userService = userService;
+            _timestampService = tsService;
         }
 
         public void SaveOrFetchExisting(ref DataIntegration type)
@@ -149,6 +152,12 @@ namespace Netlyt.Service
             }
             var source = InMemorySource.Create(inputData, formatter);
             DataIntegration integrationInfo = source.ResolveIntegrationDefinition() as DataIntegration;
+            var timestampCol = _timestampService.Discover(integrationInfo);
+            if (!string.IsNullOrEmpty(timestampCol) && integrationInfo!=null)
+            {
+                integrationInfo.DataTimestampColumn = timestampCol;
+            }
+
             if (integrationInfo == null)
             {
                 throw new Exception("No integration found!");

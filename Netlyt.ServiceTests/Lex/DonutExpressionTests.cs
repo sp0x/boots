@@ -110,6 +110,35 @@ namespace Netlyt.ServiceTests.Lex
             //Generate the code for a map reduce with mongo
         }
 
+        /// <summary>
+        /// </summary>
+        /// <param name="txt"></param> 
+        [Theory]
+        [InlineData(new object[]
+        {
+            @"define modelName
+            from events
+            set id = this.id
+            set uuid = this.uuid
+            "
+        })]
+        public void DonutRecompilation(string txt)
+        {
+            var tokenizer = new PrecedenceTokenizer();
+            var parser = new TokenParser(tokenizer.Tokenize(txt));
+            DonutScript dscript = parser.ParseDonutScript();
+            Type donutType;
+            Type donutContextType;
+            Type donutFGen;
+            var asmName = "someAssembly";
+            var assembly = _compiler.Compile(dscript, asmName, out donutType, out donutContextType, out donutFGen); 
+            var memberInfo = typeof(DonutContext); 
+            var genericDonutfileRoot = typeof(Donutfile<>).MakeGenericType(donutContextType); 
+            var fgenDonutProperty = donutFGen.GetProperty("Donut");
+            var asm2 = _compiler.Compile(dscript, asmName, out donutType, out donutContextType, out donutFGen);
+            asm2 = asm2;
+        }
+
         [Theory]
         [InlineData("this.uuid", "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced")]
         public async Task TestGeneratedDonutContextForFeature(string feature, string collectionName)

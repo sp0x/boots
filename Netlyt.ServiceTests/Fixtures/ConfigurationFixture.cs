@@ -35,9 +35,11 @@ namespace Netlyt.ServiceTests
 
         private void ConfigureServices(IServiceCollection services)
         {
+            services.AddTransient<TimestampService>();
             services.AddDbContext<ManagementDbContext>(s => s.UseInMemoryDatabase("Testing"));
             services.AddTransient<ApiService>(s => new ApiService(_context, null));
-            services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>()));
+            services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>(),
+                s.GetService<TimestampService>()));
             services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
             services.AddTransient<CompilerService>();
         }

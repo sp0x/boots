@@ -83,6 +83,12 @@ namespace Netlyt.Service.Lex
                 IsAggregate = true,
                 Projection = (new BsonDocument { { "$dayOfWeek", "${0}" } }).ToString()
             };
+            Functions["yearday"] = new DonutFunction("day")
+            {
+                Type = DonutFunctionType.Project,
+                IsAggregate = true,
+                Projection = (new BsonDocument { { "$dayOfYear", "${0}" } }).ToString()
+            };
             Functions["mode"] = new DonutFunction("mode")
             { IsAggregate = false };
             //Functions["time"] = "(function(timeElem){ return timeElem.getTime() })";

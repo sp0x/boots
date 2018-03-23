@@ -55,7 +55,8 @@ namespace Netlyt.Service.Integration
         /// </summary>
         public string Source { get; set; }
         public string Collection { get; set; }
-
+        public string DataIndexColumn { get; set; }
+        public string DataTimestampColumn { get; set; }
         public string FeaturesCollection { get; set; }
 
         public ICollection<FieldDefinition> Fields { get; set; }

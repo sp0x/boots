@@ -166,6 +166,10 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("DataFormatType");
 
+                    b.Property<string>("DataIndexColumn");
+
+                    b.Property<string>("DataTimestampColumn");
+
                     b.Property<string>("FeatureScript");
 
                     b.Property<string>("FeaturesCollection");
@@ -290,6 +294,14 @@ namespace Netlyt.Service.Migrations
                     b.Property<string>("FeatureImportance");
 
                     b.Property<long>("ModelId");
+
+                    b.Property<string>("ReportUrl")
+                        .HasColumnType("VARCHAR")
+                        .HasMaxLength(255);
+
+                    b.Property<string>("TestResultsUrl")
+                        .HasColumnType("VARCHAR")
+                        .HasMaxLength(255);
 
                     b.Property<DateTime>("TrainedTs");
 

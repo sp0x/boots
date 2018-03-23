@@ -63,7 +63,7 @@ namespace Netlyt.ServiceTests.Fixtures
             services.AddTransient<UserService>(s => new UserService(s.GetService<UserManager<User>>(), s.GetService<ApiService>(), null, null,
                 s.GetService<OrganizationService>(), s.GetService<ModelService>(), _context));
             services.AddTransient<ModelService>(s => new ModelService(_context, s.GetService<OrionContext>(), null, new TimestampService(_context)));
-            services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>()));
+            services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>(), new TimestampService(_context)));
             services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
             services.AddSingleton(BehaviourContext);
             services.AddSingleton<DonutOrionHandler>();

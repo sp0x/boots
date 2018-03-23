@@ -3,7 +3,14 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <DependsOnNETStandard>true</DependsOnNETStandard>
-  </PropertyGroup> 
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="donutAssemblies\**" />
+    <Content Remove="donutAssemblies\**" />
+    <EmbeddedResource Remove="donutAssemblies\**" />
+    <None Remove="donutAssemblies\**" />
+  </ItemGroup> 
 
 
   <ItemGroup>

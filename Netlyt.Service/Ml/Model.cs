@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using nvoid.db.DB;
-using Netlyt.Service.Integration;
+using nvoid.db.DB; 
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Models;
 
