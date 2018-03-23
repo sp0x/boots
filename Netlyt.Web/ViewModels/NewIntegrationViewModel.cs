@@ -1,5 +1,11 @@
 namespace Netlyt.Web.ViewModels
 {
+    public class NewModelIntegrationViewmodel
+    {
+        public string Target { get; set; }
+        public string Name { get; set; }
+
+    }
     public class NewIntegrationViewModel
     {
         public string Name { get; set; }

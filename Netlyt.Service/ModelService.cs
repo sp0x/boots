@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Ml;
@@ -67,7 +68,8 @@ namespace Netlyt.Service
             var newModel = new Model();
             newModel.UserId = user.Id;
             newModel.ModelName = name;
-            newModel.Callback = callbackUrl; 
+            newModel.Callback = callbackUrl;
+            newModel.TargetAttribute = targetAttribute;
             if (integrations != null)
             {
                 newModel.DataIntegrations = integrations.Select(x => new ModelIntegration(newModel, x)).ToList(); 
@@ -140,6 +142,14 @@ namespace Netlyt.Service
         public void SaveChanges()
         {
             _context.SaveChanges();
+        }
+
+        public FeatureGenerationTask GetFeatureGenerationTask(long id)
+        {
+            var model = _context.Models.Include(x => x.FeatureGenerationTasks)
+                .FirstOrDefault(x=>x.Id == id);
+            if (model == null) return null;
+            return model.FeatureGenerationTasks.FirstOrDefault();
         }
     }
 }

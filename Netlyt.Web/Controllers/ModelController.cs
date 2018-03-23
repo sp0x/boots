@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,9 +12,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using nvoid.db;
 using Netlyt.Service.Integration;
+using Netlyt.Service.Integration.Import;
 using Netlyt.Service.Ml;
 using Netlyt.Service.Orion;
+using Netlyt.Web.Helpers;
 using Netlyt.Web.ViewModels;
+using Newtonsoft.Json;
 
 namespace Netlyt.Web.Controllers
 {
@@ -20,22 +25,28 @@ namespace Netlyt.Web.Controllers
     [Authorize]
     public class ModelController : Controller
     {
-        private OrionContext _orionContext; 
+        private OrionContext _orionContext;
         private UserService _userService;
         private IMapper _mapper;
         private ModelService _modelService;
+        private IntegrationService _integrationService;
+        private SignInManager<User> _signInManager;
 
         public ModelController(IMapper mapper,
             OrionContext behaviourCtx,
             UserManager<User> userManager,
             UserService userService,
-            ModelService modelService)
+            ModelService modelService,
+            IntegrationService integrationService,
+            SignInManager<User> signInManager)
         {
             _mapper = mapper;
             //_modelContext = typeof(Model).GetDataSource<Model>(); 
             _orionContext = behaviourCtx;
             _userService = userService;
             _modelService = modelService;
+            _integrationService = integrationService;
+            _signInManager = signInManager;
         }
 
         [HttpGet("/model/mymodels")]
@@ -71,7 +82,7 @@ namespace Netlyt.Web.Controllers
                 return NotFound();
             }
             return new ObjectResult(_mapper.Map<ModelViewModel>(item));
-        } 
+        }
 
         /// <summary>
         /// 
@@ -91,12 +102,97 @@ namespace Netlyt.Web.Controllers
             //This really needs a builder..
             var newModel = await _modelService.CreateModel(user,
                 item.Name,
-                new List<DataIntegration>(new []{integration}),
+                new List<DataIntegration>(new[] { integration }),
                 item.Callback,
                 item.GenerateFeatures,
                 relations,
                 item.TargetAttribute);
             return CreatedAtRoute("GetById", new { id = newModel.Id }, item);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        [Attributes.DisableFormValueModelBinding]
+        [RequestSizeLimit(100_000_000)]
+        [AllowAnonymous]
+        [HttpPost("/model/integrate")]
+        public async Task<IActionResult> CreateAndIntegrate()
+        {
+            DataIntegration newIntegration = null;
+            NewModelIntegrationViewmodel modelParams = new NewModelIntegrationViewmodel();
+            string targetFilePath = Path.GetTempFileName();
+            string fileContentType = null;
+            var user = await _userService.GetCurrentUser();
+            var rnd = new Random();
+            if (user == null)
+            {
+                var newRegistration = new Service.Models.Account.RegisterViewModel();
+                newRegistration.Password = "ComplexP4ssword!";
+                var randomInt = rnd.Next(100000, 9000000);
+                newRegistration.Email = "somemail" + randomInt + "@mail.com";
+                newRegistration.FirstName = "Userx";
+                newRegistration.LastName = "Lastnamex";
+                newRegistration.Org = "Lol";
+                var newUserCreated = _userService.CreateUser(newRegistration, out user);
+                if (newUserCreated.Succeeded)
+                {
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+                }
+            }
+            if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
+            {
+                return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
+            }
+            DataImportResult result = null;
+            using (var targetStream = System.IO.File.Create(targetFilePath))
+            {
+                var form = await Request.StreamFile(targetStream);
+                fileContentType = form.GetValue("mime-type").ToString();
+                var valueProviderResult = form.GetValue("modelData");
+                if (valueProviderResult == null) return BadRequest("No integration given.");
+                modelParams = JsonConvert.DeserializeObject<NewModelIntegrationViewmodel>(valueProviderResult.ToString());
+                targetStream.Position = 0;
+                try
+                {
+                    result = await _integrationService.CreateOrFillIntegration(targetStream, fileContentType,
+                        modelParams.Name);
+                    newIntegration = result?.Integration;
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(ex.Message);
+                }
+            }
+            if (result != null)
+            {
+                System.IO.File.Delete(targetFilePath);
+                var relations = new List<FeatureGenerationRelation>();
+                var newModel = await _modelService.CreateModel(user,
+                    modelParams.Name,
+                    new List<DataIntegration>(new[] { newIntegration }),
+                    "",
+                    true,
+                    relations,
+                    modelParams.Target);
+                return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
+            }
+            return null;
+        }
+
+        [HttpGet("/model/{id}/featureGenerationStatus")]
+        public IActionResult GetFeatureGenerationStatus(long id)
+        {
+            var generationTask = _modelService.GetFeatureGenerationTask(id);
+            if (generationTask == null) return NotFound();
+            return Json(new { status = generationTask.Status.ToString().ToLower() });
+        }
+
+        [HttpGet("/model/id/trainingStatus")]
+        public IActionResult GetTrainingStatus(long id)
+        {
+            return null;
         }
 
         [HttpPut("/model/{id}")]

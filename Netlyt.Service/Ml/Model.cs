@@ -31,6 +31,7 @@ namespace Netlyt.Service.Ml
         public string Callback { get; set; }
         public string TrainingParams { get; set; }
         public string HyperParams { get; set; }
+        public string TargetAttribute { get; set; }
 
         public Model()
         {

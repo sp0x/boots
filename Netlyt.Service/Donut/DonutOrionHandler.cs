@@ -25,7 +25,11 @@ namespace Netlyt.Service.Donut
 #pragma warning restore 4014
             _compiler = compilerService;
         }
-
+        /// <summary>
+        /// Handle the features that orion generated, and assign them.
+        /// </summary>
+        /// <param name="featureResult"></param>
+        /// <returns></returns>
         private async Task _orion_FeaturesGenerated(JObject featureResult)
         {
             var fscript = featureResult["result"]?.ToString();
@@ -33,14 +37,15 @@ namespace Netlyt.Service.Donut
             var features = fscript.Split('\n');
             var parameters = featureResult["params"];
             long modelId = long.Parse(parameters["model_id"].ToString()); 
-            Model model = _db.Models.FirstOrDefault(x => x.Id == modelId);
+            Model model = _db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
             if (model == null) return;
             var featureBodies = features.Select(x => x.ToString()).ToArray();
             string donutName = $"{model.ModelName}Donut";
             DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, featureBodies);
             foreach (var integration in model.DataIntegrations)
             {
-                dscript.AddIntegrations(integration.Integration);
+                var ign = _db.Integrations.FirstOrDefault(x => x.Id == integration.IntegrationId);
+                dscript.AddIntegrations(ign);
             }
             Type donutType, donutContextType, donutFEmitterType;
             var assembly = _compiler.Compile(dscript, model.ModelName , out donutType, out donutContextType, out donutFEmitterType);

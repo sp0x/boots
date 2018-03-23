@@ -2,7 +2,7 @@
 {
     public enum FeatureGenerationTaskStatus
     {
-        Running,
+        InProgress,
         Done
     }
 }

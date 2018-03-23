@@ -254,6 +254,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("ModelName");
 
+                    b.Property<string>("TargetAttribute");
+
                     b.Property<string>("TrainingParams");
 
                     b.Property<string>("UserId");
