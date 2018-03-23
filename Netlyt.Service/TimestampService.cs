@@ -16,11 +16,12 @@ namespace Netlyt.Service
             _possibleColumns = new List<string>(new string[]{ "timestamp", "on_date", "added_on" });
             _db = db;
         }
-        public string Discover(DataIntegration ign)
+
+        public string DiscoverByIntegrationId(long ignId)
         {
             var fields = _db.Integrations
-                    .Include(x=>x.Fields)
-                    .FirstOrDefault(x => x.Id == ign.Id)?.Fields;
+                .Include(x => x.Fields)
+                .FirstOrDefault(x => x.Id == ignId)?.Fields;
             if (fields != null)
             {
                 foreach (var field in fields)
@@ -31,6 +32,24 @@ namespace Netlyt.Service
                         return field.Name;
                     }
                 }
+            }
+            return null;
+        }
+        public string Discover(DataIntegration ign)
+        {
+            if (ign!=null && ign.Fields != null)
+            {
+                foreach (var field in ign.Fields)
+                {
+                    bool isTs = _possibleColumns.Any(x => x == field.Name);
+                    if (isTs)
+                    {
+                        return field.Name;
+                    }
+                }
+            }else if (ign != null && ign.Fields == null)
+            {
+                return DiscoverByIntegrationId(ign.Id);
             }
             return null;
         }

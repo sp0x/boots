@@ -342,6 +342,22 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("FeatureGenerationTasks");
                 });
 
+            modelBuilder.Entity("Netlyt.Service.Models.TrainingTask", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<long>("ModelId");
+
+                    b.Property<int>("Status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModelId");
+
+                    b.ToTable("TrainingTasks");
+                });
+
             modelBuilder.Entity("Netlyt.Service.Organization", b =>
                 {
                     b.Property<long>("Id")
@@ -673,6 +689,14 @@ namespace Netlyt.Service.Migrations
                 {
                     b.HasOne("Netlyt.Service.Ml.Model", "Model")
                         .WithMany("FeatureGenerationTasks")
+                        .HasForeignKey("ModelId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Netlyt.Service.Models.TrainingTask", b =>
+                {
+                    b.HasOne("Netlyt.Service.Ml.Model", "Model")
+                        .WithMany("TrainingTasks")
                         .HasForeignKey("ModelId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });

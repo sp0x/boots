@@ -100,7 +100,7 @@ namespace Netlyt.Service
             foreach (var integration in newModel.DataIntegrations)
             {
                 var ign = integration.Integration;
-                var ignTimestampColumn = _timestampService.Discover(ign);
+                var ignTimestampColumn = !string.IsNullOrEmpty(ign.DataTimestampColumn) ? ign.DataTimestampColumn : _timestampService.Discover(ign);
                 var fields = ign.Fields;
                 InternalEntity intEntity = null;
                 if (fields.Any(x => x.Name == targetAttribute))
@@ -149,7 +149,15 @@ namespace Netlyt.Service
             var model = _context.Models.Include(x => x.FeatureGenerationTasks)
                 .FirstOrDefault(x=>x.Id == id);
             if (model == null) return null;
-            return model.FeatureGenerationTasks.FirstOrDefault();
+            return model.FeatureGenerationTasks.LastOrDefault();
+        }
+
+        public TrainingTask GetTrainingStatus(long id)
+        {
+            var model = _context.Models.Include(x => x.TrainingTasks)
+                .FirstOrDefault(x => x.Id == id);
+            if (model == null) return null;
+            return model.TrainingTasks.LastOrDefault();
         }
     }
 }

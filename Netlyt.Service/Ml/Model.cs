@@ -17,6 +17,7 @@ namespace Netlyt.Service.Ml
         public virtual ICollection<ModelIntegration> DataIntegrations { get; set; }
         public virtual ICollection<ModelRule> Rules { get; set; }
         public virtual ICollection<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
+        public virtual ICollection<TrainingTask> TrainingTasks { get; set; }
         public DonutScriptInfo DonutScript {get; set;}
         public string ModelName { get; set; }
         /// <summary>
@@ -37,6 +38,7 @@ namespace Netlyt.Service.Ml
             Rules = new List<ModelRule>();
             DataIntegrations = new HashSet<ModelIntegration>();
             FeatureGenerationTasks = new List<FeatureGenerationTask>();
+            TrainingTasks = new List<TrainingTask>();
         }
 
     }

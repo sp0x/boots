@@ -21,7 +21,7 @@ using Newtonsoft.Json;
 
 namespace Netlyt.Web
 {
-    public class Startup
+    public partial class Startup
     { 
         public IConfiguration Configuration { get; private set; }
         private OrionContext OrionContext { get; }
@@ -33,8 +33,7 @@ namespace Netlyt.Web
             OrionContext = new OrionContext();
             OrionContext.Configure(Configuration.GetSection("behaviour"));
             OrionContext.Run();
-        }
-
+        } 
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -86,11 +85,12 @@ namespace Netlyt.Web
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
             services.AddTransient<IntegrationService>();
-            services.AddSingleton<DonutOrionHandler>();
+            //services.AddSingleton<DonutOrionHandler>();
 
             SetupAuthentication(services);
             services.AddAutoMapper();
             services.AddMvc();
+            ConfigureBackgroundServices();
             //Enable for 100% auth coverage by default
             //            services.AddMvc(options =>
             //            {

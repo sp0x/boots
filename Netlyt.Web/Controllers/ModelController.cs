@@ -192,8 +192,9 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/model/{id}/trainingStatus")]
         public IActionResult GetTrainingStatus(long id)
         {
-
-            return null;
+            var trainingTask = _modelService.GetTrainingStatus(id);
+            if (trainingTask == null) return NotFound();
+            return Json(new {status = trainingTask.Status.ToString().ToLower()});
         }
 
         [HttpPut("/model/{id}")]

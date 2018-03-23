@@ -95,7 +95,7 @@ pipeline.Add(new BsonDocument{
 pipeline.Add(new BsonDocument{
                                         {"$project", projections} });
 pipeline.Add(new BsonDocument{
-                                {"$out", "2c19b89d-a052-4701-9f8d-d7d9c4a77a75_features"}});
+                                {"$out", "77f06111-c3b3-431f-93d4-e0f97a65ae94_features"}});
 var aggregateResult = recRom.Aggregate<BsonDocument>(pipeline);
 
 
