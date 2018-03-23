@@ -90,13 +90,14 @@ namespace Netlyt.Service.Lex.Generators
         {
             var fBuilder = new StringBuilder();
             var donutFnResolver = new DonutFunctionParser();
-            var rootCollection = script.Integrations.FirstOrDefault().Name;
-            foreach (var integration in script.Integrations)
-            {
-                var iName = integration.Name.Replace(" ", "_");
-                var record = $"var rec{iName} = this.Context.{iName}.Records;";
-                fBuilder.AppendLine(record);
-            }
+            var rootIntegration = script.Integrations.FirstOrDefault();
+            var rootCollection = rootIntegration.Name;
+            var outputCollection = rootIntegration.FeaturesCollection;
+            GetIntegrationRecordVars(script, fBuilder);
+            bool hasGroupFields = false,
+                hasProjection = false,
+                hasGroupKeys = false;
+
             //Update this to work with multiple collections later on
             foreach (var feature in script.Features)
             {
@@ -124,12 +125,15 @@ namespace Netlyt.Service.Lex.Generators
                         {
                             case DonutFunctionType.Group:
                                 featureContent = $"groupFields[\"{fName}\"] = \"{aggregateValue}\";";
+                                hasGroupFields = true;
                                 break;
                             case DonutFunctionType.Project:
                                 featureContent = $"projections[\"{fName}\"] = \"{aggregateValue}\";";
+                                hasProjection = true;
                                 break;
                             case DonutFunctionType.GroupKey:
                                 featureContent = $"groupKeys[\"{fName}\"] = \"{aggregateValue}\";";
+                                hasGroupKeys = true;
                                 break;
                             case DonutFunctionType.Standard:
                                 var variableName = GetFeatureVariableName(feature);
@@ -150,7 +154,49 @@ namespace Netlyt.Service.Lex.Generators
                 }
                 if(!string.IsNullOrEmpty(featureContent)) fBuilder.AppendLine(featureContent);
             }
+            if (!hasGroupKeys && hasGroupFields)
+            {
+                var groupKey = $"groupKeys[\"_id\"] = \"$_id\";";
+                fBuilder.AppendLine(groupKey);
+            }
+
+            if (hasGroupFields || hasProjection)
+            {
+                if (hasGroupFields)
+                {
+                    var groupStep = @"pipeline.Add(new BsonDocument{
+                                        {" + "\"$group\", new BsonDocument{" +
+                                            " groupKeys , groupFields" +
+                                        @"}}
+                                        });";
+                    fBuilder.AppendLine(groupStep);
+                }
+                if (hasProjection)
+                {
+                    var projectStep = @"pipeline.Add(new BsonDocument{
+                                        {" + "\"$project\", projections} " +
+                                        "});";
+                    fBuilder.AppendLine(projectStep);
+                }
+                var outputStep = @"pipeline.Add(new BsonDocument{
+                                {" + "\"$out\", \"" + outputCollection + "\"" + "}" +
+                                "});";
+                fBuilder.AppendLine(outputStep);
+                var record = $"var aggregateResult = rec{rootCollection}.Aggregate<BsonDocument>(pipeline);";
+                fBuilder.AppendLine(record);
+            }
+
             return fBuilder.ToString();
+        }
+
+        private static void GetIntegrationRecordVars(DonutScript script, StringBuilder fBuilder)
+        {
+            foreach (var integration in script.Integrations)
+            {
+                var iName = integration.Name.Replace(" ", "_");
+                var record = $"var rec{iName} = this.Context.{iName}.Records;";
+                fBuilder.AppendLine(record);
+            }
         }
 
         /// <summary>
@@ -239,7 +285,7 @@ namespace Netlyt.Service.Lex.Generators
                 {
                     throw new NotImplementedException();
                 }
-                fBuilder.AppendLine(featureContent);
+                if(!string.IsNullOrEmpty(featureContent)) fBuilder.AppendLine(featureContent);
             }
             return fBuilder.ToString();
         }
@@ -260,7 +306,14 @@ namespace Netlyt.Service.Lex.Generators
                 var aggregateField = new BsonDocument();
                 if (feature == null)
                 {
-                    aggregateField = BsonDocument.Parse(output);
+                    try
+                    {
+                        aggregateField = BsonDocument.Parse(output);
+                    }
+                    catch (Exception ex)
+                    {
+                        return null;
+                    }
                 }
                 else
                 {

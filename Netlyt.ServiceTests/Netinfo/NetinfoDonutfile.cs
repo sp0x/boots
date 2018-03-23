@@ -23,6 +23,7 @@ namespace Netlyt.ServiceTests.Netinfo
         public NetinfoDonutfile(RedisCacher cacher, IServiceProvider serviceProvider) : base(cacher, serviceProvider)
         {
             ReplayInputOnFeatures = true;
+
         }
 
         #region Overrides

@@ -35,6 +35,7 @@ namespace $Namespace
 			var groupKeys = new BsonDocument();
 			var groupFields = new BsonDocument();
 			var projections = new BsonDocument();
+			var pipeline = new BsonDocument[] {}; 
 
 			$OnFinished
 

@@ -136,11 +136,18 @@ MEAN(Romanian.pm25)
 MEAN(Romanian.pressure)
 MEAN(Romanian.rssi)
 MEAN(Romanian.temperature)
+DAY(first_Romanian_time)
+YEAR(first_Romanian_time)
+MONTH(first_Romanian_time)
+WEEKDAY(first_Romanian_time)
+NUM_UNIQUE(Romanian.DAY(timestamp))
+NUM_UNIQUE(Romanian.YEAR(timestamp))
+NUM_UNIQUE(Romanian.MONTH(timestamp))
+NUM_UNIQUE(Romanian.WEEKDAY(timestamp))
 MODE(Romanian.DAY(timestamp))
 MODE(Romanian.YEAR(timestamp))
 MODE(Romanian.MONTH(timestamp))
-MODE(Romanian.WEEKDAY(timestamp))
-";
+MODE(Romanian.WEEKDAY(timestamp))";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
             DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, featureBodies);

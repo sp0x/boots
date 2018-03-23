@@ -64,8 +64,12 @@ namespace Netlyt.Service.Donut
             var clrDep =
                 Assembly.Load("netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
             var asmCollections = Assembly.Load("System.Collections");
+            var asmMongo = Assembly.Load("MongoDB.Driver.Core");
+            var asmTasks = Assembly.Load("System.Threading.Tasks");
             builder.AddReference(clrDep);
             builder.AddReference(asmCollections);
+            builder.AddReference(asmMongo);
+            builder.AddReference(asmTasks);
 #if DEBUG
             var projectDefinition = builder.GenerateProjectDefinition(assemblyName, _script);
             WriteDonutCode(assemblyName, $"{assemblyName}.csproj", projectDefinition);

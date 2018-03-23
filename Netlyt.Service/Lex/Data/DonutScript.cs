@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Lex.Expressions;
@@ -34,6 +36,19 @@ namespace Netlyt.Service.Lex.Data
             {
                 this.Integrations.AddRange(sourceIntegrations);
             }
+        }
+
+        public override string ToString()
+        {
+            var output = $"define {Type.Name}\n";
+            var strIntegrations = string.Join(", ", Integrations.Select(x => x.Name).ToArray());
+            output += "from " + strIntegrations + Environment.NewLine;
+            foreach (var feature in Features)
+            {
+                var strFtr = $"set {feature.Member} = {feature.Value}\n";
+                output += strFtr;
+            }
+            return output;
         }
 
         public class Factory
