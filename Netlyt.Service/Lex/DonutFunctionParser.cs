@@ -51,12 +51,12 @@ namespace Netlyt.Service.Lex
                 IsAggregate = true,
                 GroupValue = (new BsonDocument { { "$avg", "${0}" } }).ToString()
             };
-            Functions["num_unique"] = new DonutFunction("num_unique")
-            {
-                Type = DonutFunctionType.GroupKey,
-                IsAggregate = true,
-                GroupValue = (new BsonDocument { { "{0}", "{1}"} }).ToString()
-            };
+//            Functions["num_unique"] = new DonutFunction("num_unique")
+//            {
+//                Type = DonutFunctionType.GroupKey,
+//                IsAggregate = true,
+//                GroupValue = (new BsonDocument { { "{0}", "{1}"} }).ToString()
+//            };
             Functions["skew"] = new DonutFunction("skew")
             { IsAggregate = true };
             Functions["day"] = new DonutFunction("day")

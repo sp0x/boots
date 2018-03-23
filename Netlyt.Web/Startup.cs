@@ -1,4 +1,5 @@
-﻿using System; 
+﻿using System;
+using System.Collections.Generic;
 using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -8,8 +9,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
+using nvoid.db.DB.MongoDB;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
@@ -33,13 +36,16 @@ namespace Netlyt.Web
             OrionContext = new OrionContext();
             OrionContext.Configure(Configuration.GetSection("behaviour"));
             OrionContext.Run();
-        } 
+//            var dbConfig = DBConfig.GetGeneralDatabase();
+//            var recRom = new MongoList(dbConfig, "481752ea-114e-4057-89c5-a6adb7ef3ac0").Records;
+  
+        }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             // Register identity framework services and also Mongo storage. 
-            var databaseConfiguration = DBConfig.GetGeneralDatabase();
+            var databaseConfiguration = DBConfig.GetGeneralDatabase(); 
             if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!"); 
             var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection"); 
             services.AddDbContext<ManagementDbContext>(options =>

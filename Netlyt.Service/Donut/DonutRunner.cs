@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
@@ -112,10 +113,16 @@ namespace Netlyt.Service.Donut
                 {
 
                 }
-                throw new NotImplementedException();
             }
 
-            await donut.OnFinished();
+            try
+            {
+                await donut.OnFinished();
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("Donut error: " + ex.Message);
+            }
         }
 
     }

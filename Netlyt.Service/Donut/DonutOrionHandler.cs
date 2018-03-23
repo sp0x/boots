@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Reflection;
@@ -75,16 +76,26 @@ namespace Netlyt.Service.Donut
                 var ign = _db.Integrations.FirstOrDefault(x => x.Id == integration.IntegrationId);
                 dscript.AddIntegrations(ign);
             }
-            Type donutType, donutContextType, donutFEmitterType;
-            var assembly = _compiler.Compile(dscript, model.ModelName , out donutType, out donutContextType, out donutFEmitterType);
-            model.DonutScript = new DonutScriptInfo(dscript);
-            model.DonutScript.AssemblyPath = assembly.Location;
-            model.DonutScript.Model = model;
-            _db.SaveChanges();
-            //We got the model
-            //Start training
-            var trainingResult = await TrainGeneratedFeatures(model,dscript,  assembly, donutType, donutContextType, donutFEmitterType);
-            trainingResult = trainingResult;
+
+            try
+            {
+                Type donutType, donutContextType, donutFEmitterType;
+                var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType,
+                    out donutFEmitterType);
+                model.DonutScript = new DonutScriptInfo(dscript);
+                model.DonutScript.AssemblyPath = assembly.Location;
+                model.DonutScript.Model = model;
+                _db.SaveChanges();
+                //We got the model
+                //Start training
+                var trainingResult = await TrainGeneratedFeatures(model, dscript, assembly, donutType, donutContextType,
+                    donutFEmitterType);
+                trainingResult = trainingResult;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("Could not compile donut or error during training.");
+            }
         }
 
         private async Task<object> TrainGeneratedFeatures(Model model,
@@ -95,23 +106,26 @@ namespace Netlyt.Service.Donut
             Type donutFEmitterType)
         {
             var sourceIntegration = ds.Integrations.FirstOrDefault();
+            sourceIntegration = _db.Integrations
+                .Include(x=>x.Fields)
+                .Include(x=>x.Extras)
+                .Include(x=>x.Models)
+                .Include(x=>x.APIKey)
+                .FirstOrDefault(x => x.Id == sourceIntegration.Id);
+            var appAuth = sourceIntegration.APIKey;
+            if (appAuth == null) appAuth = sourceIntegration.PublicKey;
+
             var collectioName = sourceIntegration.Collection;
             MongoSource<ExpandoObject> source = MongoSource.CreateFromCollection(collectioName, new BsonFormatter<ExpandoObject>());
-            source.SetProjection(x =>
-            {
-                if (!((IDictionary<string, object>)x).ContainsKey("value")) ((dynamic)x).value.day = ((dynamic)x)._id.day;
-                return ((dynamic)x).value as ExpandoObject;
-            });
-            source.ProgressInterval = 0.05;
+            //source.ProgressInterval = 0.05;
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
-            var entryLimit = (uint)10000;
-            harvester.LimitEntries(entryLimit);
-
             //Create a donut and a donutRunner
             var donutMachine = DonutBuilderFactory.Create(donutType, donutContextType, sourceIntegration, _cacher, _serviceProvider);
+            harvester.AddIntegrationSource(source, sourceIntegration);//source, appAuth, "SomeIntegrationName3");
             IDonutfile donut = donutMachine.Generate();
             donut.SetupCacheInterval(source.Size);
             donut.ReplayInputOnFeatures = true;
+            donut.SkipFeatureExtraction = true;
             IDonutRunner donutRunner = DonutRunnerFactory.CreateByType(donutType, donutContextType, harvester, _dbConfig, sourceIntegration.FeaturesCollection);
             var featureGenerator = FeatureGeneratorFactory.Create(donut, donutFEmitterType);
 

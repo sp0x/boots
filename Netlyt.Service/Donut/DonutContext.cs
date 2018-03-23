@@ -1,9 +1,12 @@
 ﻿using System; 
 using System.Collections.Concurrent;
 using System.Collections.Generic; 
-using System.Linq; 
+using System.Linq;
+using MongoDB.Driver;
 using nvoid.db;
-using nvoid.db.Caching; 
+using nvoid.db.Caching;
+using nvoid.db.DB.Configuration;
+using nvoid.db.DB.MongoDB;
 using nvoid.Integration;
 using Netlyt.Service.Integration; 
 using StackExchange.Redis;
@@ -43,7 +46,13 @@ namespace Netlyt.Service.Donut
             CurrentCache = new ConcurrentDictionary<string, List<HashEntry>>();
             ConfigureCacheMap();
             Prefix = $"integration_context:{Integration.Id}";
-            new ContextSetDiscoveryService(this, serviceProvider).Initialize(); 
+            new ContextSetDiscoveryService(this, serviceProvider).Initialize();
+            if (integration != null && !string.IsNullOrEmpty(integration.FeaturesCollection))
+            {
+                var dbConfig = DBConfig.GetGeneralDatabase();
+                var mongoList = new MongoList(dbConfig, integration.FeaturesCollection);//Make sure the collection exists
+                mongoList.Database.CreateCollection(integration.FeaturesCollection);
+            }
             _cachingService = new CachingPersistеnceService(this);
         }
 

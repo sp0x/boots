@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.Integration;
@@ -128,7 +129,9 @@ namespace Netlyt.Service
         /// <returns></returns>
         public DataIntegration GetByName(ApiAuth contextApiAuth, string name)
         {
-            var integration = _context.Integrations.FirstOrDefault(x => x.APIKey.Id == contextApiAuth.Id && x.Name == name);
+            var integration = _context.Integrations
+                .Include(x=>x.APIKey)
+                .FirstOrDefault(x => x.APIKey.Id == contextApiAuth.Id && x.Name == name);
             return integration;
         }
 

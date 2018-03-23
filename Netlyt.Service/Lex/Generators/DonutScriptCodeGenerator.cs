@@ -112,7 +112,7 @@ namespace Netlyt.Service.Lex.Generators
                     var member = (accessor as VariableExpression).Member?.ToString();
                     //In some cases we might just use the field
                     if (string.IsNullOrEmpty(member)) member = accessor.ToString();
-                    featureContent = $"groupFields[\"{fName}\"] = \"${member}\";";
+                    featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"${member}\" } };";
                 }
                 else if (featureFType == typeof(CallExpression))
                 {
@@ -126,7 +126,7 @@ namespace Netlyt.Service.Lex.Generators
                         switch (functionType)
                         {
                             case DonutFunctionType.Group:
-                                featureContent = $"groupFields[\"{fName}\"] = \"{aggregateValue}\";";
+                                featureContent = $"groupFields[\"{fName}\"] = BsonDocument.Parse(\"{aggregateValue}\");";
                                 hasGroupFields = true;
                                 break;
                             case DonutFunctionType.Project:
@@ -134,8 +134,11 @@ namespace Netlyt.Service.Lex.Generators
                                 hasProjection = true;
                                 break;
                             case DonutFunctionType.GroupKey:
-                                featureContent = $"groupKeys[\"{fName}\"] = \"{aggregateValue}\";";
-                                hasGroupKeys = true;
+                                if (!string.IsNullOrEmpty(aggregateValue))
+                                { 
+                                    featureContent = $"groupKeys[\"{fName}\"] = \"{aggregateValue}\";";
+                                    hasGroupKeys = true;
+                                }
                                 break;
                             case DonutFunctionType.Standard:
                                 var variableName = GetFeatureVariableName(feature);
@@ -161,12 +164,15 @@ namespace Netlyt.Service.Lex.Generators
                 var groupKey = "";
                 if (rootIntegration != null && !string.IsNullOrEmpty(rootIntegration.DataTimestampColumn))
                 {
-                    groupKey += "var idSubKey1 = new BsonDocument { { \"idKey\", \"_$id\" } };\n";
+                    groupKey += "var idSubKey1 = new BsonDocument { { \"idKey\", \"$_id\" } };\n";
                     groupKey += "var idSubKey2 = new BsonDocument { { \"tsKey\", new BsonDocument{" +
-                                "{ \"$dayOfYear\", \"" + rootIntegration.DataTimestampColumn + "\"}" +
+                                "{ \"$dayOfYear\", \"$" + rootIntegration.DataTimestampColumn + "\"}" +
                                 "} } };\n"; 
                     groupKey += $"groupKeys.Merge(idSubKey1);\n" +
-                                $"groupKeys.Merge(idSubKey2);";
+                                $"groupKeys.Merge(idSubKey2);\n" +
+                                $"var grouping = new BsonDocument();\n" +
+                                $"grouping[\"_id\"] = groupKeys;\n" +
+                                $"grouping = grouping.Merge(groupingFields);";
                 }
                 else
                 {
@@ -180,10 +186,8 @@ namespace Netlyt.Service.Lex.Generators
                 if (hasGroupFields)
                 {
                     var groupStep = @"pipeline.Add(new BsonDocument{
-                                        {" + "\"$group\", new BsonDocument{" +
-                                            " groupKeys , groupFields" +
-                                        @"}}
-                                        });";
+                                        {" + "\"$group\", grouping}"+
+                                        "});";
                     fBuilder.AppendLine(groupStep);
                 }
                 if (hasProjection)

@@ -93,22 +93,40 @@ namespace Netlyt.Service
             return this;
         }
 
-//        /// <summary>
-//        /// 
-//        /// </summary>
-//        /// <param name="name">The name of the integration</param>
-//        /// <param name="appId">AppId key</param>
-//        /// <param name="source">The input source</param>
-//        /// <returns></returns>
-//        public DataIntegration AddIntegrationSource(string name, string appId, InputSource source)
-//        {
-//
-//            DataIntegration type = Integration.DataIntegration.Factory.CreateNamed(appId, name);
-//            _integrationService.SaveOrFetchExisting(ref type);  
-//            this.AddType(type, source); 
-//            return type;
-//        }
+        //        /// <summary>
+        //        /// 
+        //        /// </summary>
+        //        /// <param name="name">The name of the integration</param>
+        //        /// <param name="appId">AppId key</param>
+        //        /// <param name="source">The input source</param>
+        //        /// <returns></returns>
+        //        public DataIntegration AddIntegrationSource(string name, string appId, InputSource source)
+        //        {
+        //
+        //            DataIntegration type = Integration.DataIntegration.Factory.CreateNamed(appId, name);
+        //            _integrationService.SaveOrFetchExisting(ref type);  
+        //            this.AddType(type, source); 
+        //            return type;
+        //        }
 
+        /// <summary>
+        /// Resolves the integration type from the input, persists it to the DB, and adds it as an integration set from the given source.
+        /// </summary>
+        /// <param name="inputSource">The input to use for reading. It's registered to the api auth.</param>
+        /// <param name="integration"></param>
+        /// <returns></returns>
+        public void AddIntegrationSource(InputSource inputSource, IIntegration integration)
+        {
+            if (integration == null)
+            {
+                throw new Exception("Could not resolve type!");
+            }
+            if (integration.Fields.Count == 0)
+            {
+                throw new InvalidOperationException("Integration needs to have at least 1 field.");
+            }
+            AddType(integration, inputSource);
+        }
         /// <summary>
         /// Resolves the integration type from the input, persists it to the DB, and adds it as an integration set from the given source.
         /// </summary>

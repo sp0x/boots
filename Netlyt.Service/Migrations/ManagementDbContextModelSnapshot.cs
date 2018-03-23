@@ -158,7 +158,7 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<long?>("APIKeyId");
+                    b.Property<long>("APIKeyId");
 
                     b.Property<string>("Collection");
 
@@ -606,7 +606,8 @@ namespace Netlyt.Service.Migrations
                 {
                     b.HasOne("Netlyt.Service.ApiAuth", "APIKey")
                         .WithMany()
-                        .HasForeignKey("APIKeyId");
+                        .HasForeignKey("APIKeyId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Netlyt.Service.User", "Owner")
                         .WithMany()

@@ -65,6 +65,7 @@ namespace Netlyt.Service.Lex.Data
                 foreach (var fstring in featureBodies)
                 {
                     if (string.IsNullOrEmpty(fstring)) continue;
+                    if (fstring.Contains("(first_")) continue;
                     var parser = new TokenParser(tokenizer.Tokenize(fstring));
                     IExpression expFeatureBody = parser.ReadExpression();
                     if (expFeatureBody == null) continue;
