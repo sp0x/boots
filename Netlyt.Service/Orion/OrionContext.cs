@@ -10,6 +10,9 @@ using Newtonsoft.Json.Linq;
 namespace Netlyt.Service.Orion
 {
     public delegate void FeaturesGenerated(JObject featureResult);
+    public delegate void TrainingComplete(JObject featureResult);
+    public delegate void PredictionReady(JObject featureResult);
+
     public class OrionContext
     {
         private OrionClient _client;
@@ -21,6 +24,8 @@ namespace Netlyt.Service.Orion
         private int _eventsPort;
         public event OrionEventsListener.OrionEventHandler NewMessage;
         public event FeaturesGenerated FeaturesGenerated;
+        public event TrainingComplete TrainingComplete;
+        public event TrainingComplete PredictionReady;
 
         public OrionContext()
         {
@@ -48,8 +53,13 @@ namespace Netlyt.Service.Orion
                 case OrionOp.GenerateFeatures:
                     FeaturesGenerated?.Invoke(message);
                     break;
+                case OrionOp.Train:
+                    TrainingComplete?.Invoke(message);
+                    break;
+                case OrionOp.MakePrediction:
+                    PredictionReady?.Invoke(message);
+                    break;
                 default:
-                    throw new NotImplementedException();
                     break;
             }
         }

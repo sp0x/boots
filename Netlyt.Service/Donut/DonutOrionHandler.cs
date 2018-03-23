@@ -66,7 +66,15 @@ namespace Netlyt.Service.Donut
             var features = fscript.Split('\n');
             var parameters = featureResult["params"];
             long modelId = long.Parse(parameters["model_id"].ToString()); 
-            Model model = _db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
+            Model model = _db.Models
+                .Include(x=>x.DataIntegrations)
+                .Include(x=>x.User)
+                .FirstOrDefault(x => x.Id == modelId);
+            if (model.User == null)
+            {
+                model.User = _db.Users.FirstOrDefault(x => x.Id == model.UserId);
+            }
+
             if (model == null) return;
             var featureBodies = features.Select(x => x.ToString()).ToArray();
             string donutName = $"{model.ModelName}Donut";

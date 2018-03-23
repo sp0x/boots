@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Netlyt.Service.Ml;
 using Newtonsoft.Json.Linq;
@@ -70,11 +71,27 @@ namespace Netlyt.Service.Orion
 
             public static OrionQuery CreateTrainQuery(Model model)
             {
-                var qr = new OrionQuery(OrionOp.GenerateFeatures);
+                var rootIntegration = model.DataIntegrations.FirstOrDefault()?.Integration;
+                var qr = new OrionQuery(OrionOp.Train);
                 var parameters = new JObject();
-                parameters["model_name"] = model.ModelName;
+                var models = new JObject();
+                var dataOptions = new JObject();
+                var autoModel = new JObject();
+                parameters["client"] = model.User.UserName;
+                parameters["target"] = model.TargetAttribute;
+                models["auto"] = autoModel; // GridSearchCV - param_grid, scoring
+                
+                dataOptions["db"] = rootIntegration.FeaturesCollection;
+                dataOptions["start"] = DateTime.MinValue;
+                dataOptions["end"] = DateTime.MaxValue;
+                dataOptions["scoring"] = "";
+
+
+                parameters["models"] = models;
+                parameters["options"] = dataOptions;
                 parameters["model_id"] = model.Id;
-                var collectionsArray = new JArray();
+
+                qr["params"] = parameters;  
                 return qr;
             }
         }
