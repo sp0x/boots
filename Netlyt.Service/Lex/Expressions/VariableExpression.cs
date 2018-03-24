@@ -4,8 +4,8 @@ using System.Text;
 
 namespace Netlyt.Service.Lex.Expressions
 {
-    public class VariableExpression
-        : Expression
+    
+    public class VariableExpression : Expression
     {
 
         public string Name { get; private set; }

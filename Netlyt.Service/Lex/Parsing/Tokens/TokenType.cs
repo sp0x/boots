@@ -31,6 +31,7 @@
         ReduceMap,
         ReduceAggregate,
         Semicolon,
+        Target,
         NewLine
     }
 }

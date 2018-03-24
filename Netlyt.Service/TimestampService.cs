@@ -13,7 +13,7 @@ namespace Netlyt.Service
 
         public TimestampService(ManagementDbContext db)
         {
-            _possibleColumns = new List<string>(new string[]{ "timestamp", "on_date", "added_on" });
+            _possibleColumns = new List<string>(new string[]{ "timestamp", "on_date", "added_on", "time" });
             _db = db;
         }
 

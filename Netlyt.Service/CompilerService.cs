@@ -7,11 +7,14 @@ using Microsoft.CodeAnalysis;
 using Netlyt.Service.Build;
 using Netlyt.Service.Donut;
 using Netlyt.Service.Lex.Data;
+using Netlyt.Service.Ml;
 
 namespace Netlyt.Service
 {
     public class CompilerService
     {
+        private Model _model;
+
         //private AssemblyLoadContext _context;
         public CompilerService()
         {
@@ -46,6 +49,11 @@ namespace Netlyt.Service
                 featureGenerator = null;
             }
             return asm;
+        }
+
+        public void SetModel(Model model)
+        {
+            _model = model;
         }
     }
 }

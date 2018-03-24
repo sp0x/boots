@@ -67,12 +67,17 @@ namespace Netlyt.Service.Lex.Parsing
                 {
                     newScript.Features.Add(expression as AssignmentExpression);
                 }
+                else if (expressionType == typeof(TargetExpression))
+                {
+                    newScript.TargetAttribute = (expression as TargetExpression).Attribute;
+                }
                 else
                 {
                     throw new NotImplementedException();
                 }
             }
             newScript.AddIntegrations(_sourceIntegrations.Select(i=> new DataIntegration(i)).ToArray());
+
             return newScript;
         }
 
@@ -135,6 +140,10 @@ namespace Netlyt.Service.Lex.Parsing
                             var member = ReadMemberChainExpression();
                             lvlExpressions.Add(member);
                         }
+                        break;
+                    case TokenType.Target:
+                        var target = ReadTarget();
+                        lvlExpressions.Add(target);
                         break;
                     case TokenType.NumberValue:
                         lvlExpressions.Add(ReadConstant());
@@ -336,6 +345,14 @@ namespace Netlyt.Service.Lex.Parsing
                 var memberChain = ReadMemberChainExpression();
                 exp.Member = memberChain;
             }
+            return exp;
+        }
+
+        public TargetExpression ReadTarget()
+        {
+            TargetExpression exp = null;
+            var token = Reader.DiscardToken(TokenType.Target);
+            exp = new TargetExpression(token.Value.Replace("target ", ""));
             return exp;
         }
 
@@ -852,7 +869,8 @@ namespace Netlyt.Service.Lex.Parsing
                        || token.TokenType == TokenType.Set
                        || token.TokenType == TokenType.Reduce
                        || token.TokenType == TokenType.ReduceMap
-                       || token.TokenType == TokenType.ReduceAggregate;
+                       || token.TokenType == TokenType.ReduceAggregate
+                        || token.TokenType == TokenType.Target;
             }
             public static Predicate<TokenMarker> Keyword(TokenMarker currentMarker)
             {

@@ -78,7 +78,8 @@ namespace Netlyt.Service.Donut
             if (model == null) return;
             var featureBodies = features.Select(x => x.ToString()).ToArray();
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, featureBodies);
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.TargetAttribute, featureBodies);
+            dscript.TargetAttribute = model.TargetAttribute;
             foreach (var integration in model.DataIntegrations)
             {
                 var ign = _db.Integrations.FirstOrDefault(x => x.Id == integration.IntegrationId);
@@ -88,6 +89,7 @@ namespace Netlyt.Service.Donut
             try
             {
                 Type donutType, donutContextType, donutFEmitterType;
+                _compiler.SetModel(model);
                 var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType,
                     out donutFEmitterType);
                 model.DonutScript = new DonutScriptInfo(dscript);
@@ -140,7 +142,7 @@ namespace Netlyt.Service.Donut
 
             var result = await donutRunner.Run(donut, featureGenerator);
 
-            var query = OrionQuery.Factory.CreateTrainQuery(model);
+            var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration);
             var m_id = await _orion.Query(query);
             return null;
         }

@@ -18,6 +18,7 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Or, "(^|\\W)or(?=[\\s\\t])", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Not, "(^|\\W)not(?=[\\s\\t])", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.Between, "between", 1));
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.Target, "target\\s[\\w-_\\d]{1,100}", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.OpenParenthesis, "\\(", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.OpenBracket, "\\[", 1));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.OpenCurlyBracket, "\\{", 1));

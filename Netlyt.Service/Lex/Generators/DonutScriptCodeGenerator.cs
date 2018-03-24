@@ -112,6 +112,10 @@ namespace Netlyt.Service.Lex.Generators
                     var member = (accessor as VariableExpression).Member?.ToString();
                     //In some cases we might just use the field
                     if (string.IsNullOrEmpty(member)) member = accessor.ToString();
+                    if (member == script.TargetAttribute)
+                    {
+                        fName = member;
+                    }
                     featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"$" + member + "\" } };";
                 }
                 else if (featureFType == typeof(CallExpression))

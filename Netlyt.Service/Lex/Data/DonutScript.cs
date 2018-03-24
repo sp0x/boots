@@ -25,6 +25,7 @@ namespace Netlyt.Service.Lex.Data
         public List<AssignmentExpression> Features { get; set; }
         public OrderByExpression StartingOrderBy { get; set; }
         public List<DataIntegration> Integrations { get; set; }
+        public string TargetAttribute { get; set; }
 
         public void AddIntegrations(params DataIntegration[] sourceIntegrations)
         {
@@ -48,12 +49,17 @@ namespace Netlyt.Service.Lex.Data
                 var strFtr = $"set {feature.Member} = {feature.Value}\n";
                 output += strFtr;
             }
+
+            if (!string.IsNullOrEmpty(TargetAttribute))
+            {
+                output += "target " + TargetAttribute + "\n";
+            }
             return output;
         }
 
         public class Factory
         {
-            public static DonutScript CreateWithFeatures(string donutName, params string[] featureBodies)
+            public static DonutScript CreateWithFeatures(string donutName, string target, params string[] featureBodies)
             {
                 var ds = new DonutScript();
                 ds.Type = new ScriptTypeInfo()
@@ -72,7 +78,8 @@ namespace Netlyt.Service.Lex.Data
                     var expFeature = new AssignmentExpression(new VariableExpression($"f_{i}"), expFeatureBody);
                     ds.Features.Add(expFeature);
                     i++;
-                }
+                } 
+                ds.TargetAttribute = target;
                 return ds;
             }
         }

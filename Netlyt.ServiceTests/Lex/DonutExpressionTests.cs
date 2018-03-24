@@ -83,6 +83,7 @@ namespace Netlyt.ServiceTests.Lex
             from events
             set id = this.id
             set uuid = this.uuid
+            target uuid
             "
         })]
         public void GenerateDonutContext(string txt)
@@ -93,7 +94,7 @@ namespace Netlyt.ServiceTests.Lex
             Type donutType;
             Type donutContextType;
             Type donutFGen;
-            var assembly = _compiler.Compile(dscript, "someAssembly", out donutType, out donutContextType, out donutFGen);
+            var assembly = _compiler.Compile(dscript, "someAssembly4", out donutType, out donutContextType, out donutFGen);
             Assert.NotNull(donutType);
             Assert.NotNull(donutContextType);
             Assert.NotNull(donutFGen);
@@ -130,7 +131,7 @@ namespace Netlyt.ServiceTests.Lex
             Type donutType;
             Type donutContextType;
             Type donutFGen;
-            var asmName = "someAssembly";
+            var asmName = "someAssembly5";
             var assembly = _compiler.Compile(dscript, asmName, out donutType, out donutContextType, out donutFGen); 
             var memberInfo = typeof(DonutContext); 
             var genericDonutfileRoot = typeof(Donutfile<>).MakeGenericType(donutContextType); 
@@ -157,7 +158,7 @@ namespace Netlyt.ServiceTests.Lex
             harvester.LimitEntries(entryLimit);
             var integration = harvester.AddIntegrationSource(source, _appAuth, "SomeIntegrationName3");
 
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures("SomeDonut1", new[] { feature });
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures("SomeDonut1", null, new[] { feature });
             dscript.AddIntegrations(integration);
             //parser.ParseDonutScript();
             Type donutType, donutContextType, donutFEmitterType;

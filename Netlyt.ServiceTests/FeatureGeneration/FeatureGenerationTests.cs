@@ -18,6 +18,7 @@ using Netlyt.Service.Lex;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Generators;
+using Netlyt.Service.Ml;
 using Netlyt.Service.Orion;
 using Netlyt.Service.Source;
 using Netlyt.ServiceTests.Fixtures;
@@ -39,6 +40,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         private UserService _userService;
         private ModelService _modelService;
         private User _user;
+        private OrionContext _orion;
 
         public FeatureGenerationTests(DonutConfigurationFixture fixture)
         {
@@ -49,6 +51,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
             _db = fixture.GetService<ManagementDbContext>();
+            _orion = fixture.GetService<OrionContext>();
             _user = _userService.GetByApiKey(_appAuth);
             if (_user == null)
             {
@@ -60,6 +63,20 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             _serviceProvider = fixture.GetService<IServiceProvider>();
             _modelService = fixture.GetService<ModelService>();
         }
+
+        [Fact]
+        public async Task TraingeneratedFeatures()
+        {
+            Model model = _db.Models
+                .Include(x => x.DataIntegrations)
+                .Include(x => x.User)
+                .FirstOrDefault(x => x.Id == 176);
+            DataIntegration ign = _db.Integrations.FirstOrDefault(x=> x.Id == model.DataIntegrations.FirstOrDefault().IntegrationId);
+            var query = OrionQuery.Factory.CreateTrainQuery(model, ign);
+            var m_id = await _orion.Query(query);
+            m_id = m_id;
+        }
+
         [Fact]
         public async Task IntegrationTest()
         {
@@ -150,7 +167,7 @@ MODE(Romanian.MONTH(timestamp))
 MODE(Romanian.WEEKDAY(timestamp))";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, featureBodies);
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", featureBodies);
             foreach (var modelIgn in model.DataIntegrations)
             {
                 var integration = _db.Integrations.FirstOrDefault(x => x.Id == modelIgn.IntegrationId);

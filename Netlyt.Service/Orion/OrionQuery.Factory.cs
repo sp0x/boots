@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Ml;
 using Newtonsoft.Json.Linq;
 
@@ -69,9 +70,9 @@ namespace Netlyt.Service.Orion
                 return qr;
             }
 
-            public static OrionQuery CreateTrainQuery(Model model)
+            public static OrionQuery CreateTrainQuery(Model model, DataIntegration ign)
             {
-                var rootIntegration = model.DataIntegrations.FirstOrDefault()?.Integration;
+                var rootIntegration = ign;
                 var qr = new OrionQuery(OrionOp.Train);
                 var parameters = new JObject();
                 var models = new JObject();
@@ -79,11 +80,11 @@ namespace Netlyt.Service.Orion
                 var autoModel = new JObject();
                 parameters["client"] = model.User.UserName;
                 parameters["target"] = model.TargetAttribute;
-                models["auto"] = autoModel; // GridSearchCV - param_grid, scoring
+                models["auto"] = autoModel; // GridSearchCV - param_grid
                 
                 dataOptions["db"] = rootIntegration.FeaturesCollection;
-                dataOptions["start"] = DateTime.MinValue;
-                dataOptions["end"] = DateTime.MaxValue;
+                dataOptions["start"] = null; //DateTime.MinValue;
+                dataOptions["end"] = null;// DateTime.MaxValue;
                 dataOptions["scoring"] = "";
 
 

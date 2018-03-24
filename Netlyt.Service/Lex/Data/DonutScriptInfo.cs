@@ -1,4 +1,6 @@
 ﻿using System;
+using Netlyt.Service.Lex.Parsing;
+using Netlyt.Service.Lex.Parsing.Tokenizers;
 using Netlyt.Service.Ml;
 
 namespace Netlyt.Service.Lex.Data
@@ -21,7 +23,10 @@ namespace Netlyt.Service.Lex.Data
         
         public DonutScript GetScript()
         {
-            throw new NotImplementedException();
+            var tokenizer = new PrecedenceTokenizer();
+            var parser = new TokenParser(tokenizer.Tokenize(DonutScriptContent));
+            DonutScript dscript = parser.ParseDonutScript();
+            return dscript;
         }
     }
 }
