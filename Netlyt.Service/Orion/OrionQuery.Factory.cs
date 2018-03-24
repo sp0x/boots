@@ -70,6 +70,11 @@ namespace Netlyt.Service.Orion
                 return qr;
             }
 
+            public static string GetDefaultScoring()
+            {
+                return "roc_auc";
+            }
+
             public static OrionQuery CreateTrainQuery(Model model, DataIntegration ign)
             {
                 var rootIntegration = ign;
@@ -78,6 +83,7 @@ namespace Netlyt.Service.Orion
                 var models = new JObject();
                 var dataOptions = new JObject();
                 var autoModel = new JObject();
+                var scoring = GetDefaultScoring();
                 parameters["client"] = model.User.UserName;
                 parameters["target"] = model.TargetAttribute;
                 models["auto"] = autoModel; // GridSearchCV - param_grid
@@ -85,7 +91,7 @@ namespace Netlyt.Service.Orion
                 dataOptions["db"] = rootIntegration.FeaturesCollection;
                 dataOptions["start"] = null; //DateTime.MinValue;
                 dataOptions["end"] = null;// DateTime.MaxValue;
-                dataOptions["scoring"] = "";
+                dataOptions["scoring"] = scoring;
 
 
                 parameters["models"] = models;

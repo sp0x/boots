@@ -146,7 +146,22 @@ namespace Netlyt.Service.Lex.Generators
                                 break;
                             case DonutFunctionType.Standard:
                                 var variableName = GetFeatureVariableName(feature);
-                                featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", \"$" + variableName  + "\" }};";
+                                if (!string.IsNullOrEmpty(variableName))
+                                {
+                                    var fieldInfo = rootIntegration.Fields?.FirstOrDefault(x=>x.Name == variableName);
+                                    var dttype = typeof(DateTime);
+                                    if (fieldInfo.Type == dttype.FullName)
+                                    {
+                                        featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", " +
+                                                         "new BsonDocument { { \"$dayOfYear\" , \"$" + variableName + "\" } }" +
+                                                         " }};";
+                                    }
+                                    else
+                                    {
+                                        featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", \"$" + variableName + "\" }};";
+                                    }
+                                    
+                                }
                                 break;
                         }
                     }

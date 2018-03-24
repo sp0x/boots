@@ -70,7 +70,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             Model model = _db.Models
                 .Include(x => x.DataIntegrations)
                 .Include(x => x.User)
-                .FirstOrDefault(x => x.Id == 176);
+                .FirstOrDefault(x => x.Id == 182);
             DataIntegration ign = _db.Integrations.FirstOrDefault(x=> x.Id == model.DataIntegrations.FirstOrDefault().IntegrationId);
             var query = OrionQuery.Factory.CreateTrainQuery(model, ign);
             var m_id = await _orion.Query(query);

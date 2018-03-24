@@ -82,7 +82,12 @@ namespace Netlyt.Service.Donut
             dscript.TargetAttribute = model.TargetAttribute;
             foreach (var integration in model.DataIntegrations)
             {
-                var ign = _db.Integrations.FirstOrDefault(x => x.Id == integration.IntegrationId);
+                var ign = _db.Integrations
+                    .Include(x=>x.Fields)
+                    .Include(x=>x.Extras)
+                    .Include(x=>x.APIKey)
+                    .Include(x=>x.PublicKey)
+                    .FirstOrDefault(x => x.Id == integration.IntegrationId);
                 dscript.AddIntegrations(ign);
             }
 
