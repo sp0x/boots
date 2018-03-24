@@ -75,7 +75,12 @@ namespace Netlyt.Service.Lex.Data
                     var parser = new TokenParser(tokenizer.Tokenize(fstring));
                     IExpression expFeatureBody = parser.ReadExpression();
                     if (expFeatureBody == null) continue;
-                    var expFeature = new AssignmentExpression(new VariableExpression($"f_{i}"), expFeatureBody);
+                    var featureName = $"f_{i}";
+                    if (!string.IsNullOrEmpty(target) && expFeatureBody.ToString() == target)
+                    {
+                        featureName = target;
+                    }
+                    var expFeature = new AssignmentExpression(new VariableExpression(featureName), expFeatureBody);
                     ds.Features.Add(expFeature);
                     i++;
                 } 
