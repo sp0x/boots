@@ -101,7 +101,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./orion/app:/app
-      - experiments:/experiments
+      - ./orion/experiments:/experiments
     ports:
       - "5556:5556"
       - "5557:5557"

@@ -72,7 +72,7 @@ namespace Netlyt.Service.Orion
 
             public static string GetDefaultScoring()
             {
-                return "roc_auc";
+                return "r2";
             }
 
             public static OrionQuery CreateTrainQuery(Model model, DataIntegration ign)
