@@ -104,8 +104,8 @@ namespace Netlyt.Web.Controllers
             if (item.Performance != null)
             {
                 mapped.Performance.IsRegression = true;
-                mapped.Performance.ReportUrl = $"/model/getAsset?path={mapped.Performance.ReportUrl}";
-                mapped.Performance.TestResultsUrl = $"/model/getAsset?path={mapped.Performance.TestResultsUrl}";
+                mapped.Performance.ReportUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.ReportUrl}";
+                mapped.Performance.TestResultsUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.TestResultsUrl}";
             }
             return new ObjectResult(mapped);
         }
@@ -133,7 +133,7 @@ namespace Netlyt.Web.Controllers
             }
             else
             {
-                var assetName = Path.GetExtension(assetPath);
+                var assetName = Path.GetFileName(assetPath);
                 var bytes = System.IO.File.Open(assetPath, FileMode.Open);
                 return File(bytes, "application/force-download", assetName);
             }
