@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Dynamic;
-using System.Globalization;
 using System.Linq.Expressions;
 using Dynamitey; 
 using nvoid.db.DB; 
@@ -12,33 +11,6 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Integration
 {
-    public class DateParser
-    {
-        public bool TryParse(string value, out DateTime timeValue, out double? doubleValue)
-        {
-            double doubleValueTmp;
-            if (Double.TryParse(value, out doubleValueTmp))
-            {
-                doubleValue = doubleValueTmp;
-                timeValue = DateTime.MinValue;
-                return false;
-            }
-            doubleValue = null;
-            var pvd = CultureInfo.InvariantCulture;
-            if (DateTime.TryParse(value, pvd, DateTimeStyles.AssumeUniversal, out timeValue))
-            {
-                return true;
-            } else if (DateTime.TryParseExact(value, "dd-MM-yy HH:mm", pvd, DateTimeStyles.AssumeUniversal, out timeValue))
-            {
-                return true;
-            }
-            else
-            {
-                timeValue = DateTime.MinValue;
-            } 
-            return false;
-        }
-    }
     public partial class DataIntegration
         : Entity, IIntegration
     { 

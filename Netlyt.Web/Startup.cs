@@ -38,9 +38,27 @@ namespace Netlyt.Web
             OrionContext.Configure(Configuration.GetSection("behaviour"));
             OrionContext.Run();
 //            var dbConfig = DBConfig.GetGeneralDatabase();
-//            var mongoList = new MongoList(dbConfig, "cda43bc9-ae8f-4374-b8be-79de9ca5d9a8"); 
+//            var mongoList = new MongoList(dbConfig, "1c2fd942-b9fa-401d-bff8-0597b5339260");
 //            var recRom = mongoList.Records;
-//             
+//            var groupKeys = new BsonDocument();
+//            var groupFields = new BsonDocument();
+//            var projections = new BsonDocument();
+//            var pipeline = new List<BsonDocument>();
+//
+//            groupFields["pm10"] = new BsonDocument { { "$first", "$pm10" } };
+//            var idSubKey1 = new BsonDocument { { "idKey", "$_id" } };
+//            var idSubKey2 = new BsonDocument { { "tsKey", new BsonDocument { { "$dayOfYear", "$timestamp" } } } };
+//            groupKeys.Merge(idSubKey1);
+//            groupKeys.Merge(idSubKey2);
+//            var grouping = new BsonDocument();
+//            grouping["_id"] = groupKeys;
+//            grouping = grouping.Merge(groupFields);
+//            pipeline.Add(new BsonDocument{
+//                                        {"$group", grouping}});
+//            pipeline.Add(new BsonDocument{
+//                                {"$out", "1c2fd942-b9fa-401d-bff8-0597b5339260_features"}});
+//            var aggregateResult = recRom.Aggregate<BsonDocument>(pipeline);
+            //             
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
