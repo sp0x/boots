@@ -1,3 +1,5 @@
+using Netlyt.Service.Ml;
+
 namespace Netlyt.Web.ViewModels
 {
     public class ModelCreationViewModel
@@ -32,6 +34,7 @@ namespace Netlyt.Web.ViewModels
         public string Callback { get; set; }
         public string TrainingParams { get; set; }
         public string HyperParams { get; set; }
+        public ModelTrainingPerformanceViewModel Performance { get; set; }
 
     }
 }

@@ -42,7 +42,11 @@ namespace Netlyt.Service
 
         public Model GetById(long id)
         {
-            return _context.Models.FirstOrDefault(t => t.Id == id);
+            return _context.Models
+                .Include(x=>x.DataIntegrations)
+                .Include(x=>x.DonutScript)
+                .Include(x=>x.Performance)
+                .FirstOrDefault(t => t.Id == id);
         }
 
         /// <summary>

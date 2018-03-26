@@ -12,7 +12,9 @@ namespace Netlyt.Web
     {
         public DomainMapProfile()
         {
-            CreateMap<Model, ModelViewModel>();
+            CreateMap<ModelTrainingPerformance, ModelTrainingPerformanceViewModel>();
+            CreateMap<Model, ModelViewModel>()
+                .ForMember(x => x.Performance, opt => opt.MapFrom(src => src.Performance));
             CreateMap<ApiAuth, ApiAuthViewModel>()
                 .ForMember(x => x.AppId, opt => opt.MapFrom(src => src.AppId));
             CreateMap<User, UserViewModel>()

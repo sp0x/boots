@@ -66,6 +66,7 @@ namespace Netlyt.Web
 
             services.AddMemoryCache();
             services.AddSession();
+            services.AddSingleton(Configuration);
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
             services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
             // Add application services.

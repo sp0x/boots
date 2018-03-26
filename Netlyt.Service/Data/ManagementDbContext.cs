@@ -23,7 +23,7 @@ namespace Netlyt.Service.Data
         public DbSet<ApiUser> ApiUsers { get; set; }
         public DbSet<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
         public DbSet<DonutScriptInfo> DonutScripts { get; set; }
-        public DbSet<ModelTrainingPerformance> ModelPerformance { get; set; }
+        public DbSet<ModelTrainingPerformance> ModelTrainingPerformance { get; set; }
         public DbSet<TrainingTask> TrainingTasks { get; set; }
 
         public ManagementDbContext(DbContextOptions<ManagementDbContext> options)

@@ -310,7 +310,7 @@ namespace Netlyt.Service.Migrations
                     b.HasIndex("ModelId")
                         .IsUnique();
 
-                    b.ToTable("ModelPerformance");
+                    b.ToTable("ModelTrainingPerformance");
                 });
 
             modelBuilder.Entity("Netlyt.Service.ModelRule", b =>

@@ -109,12 +109,12 @@ namespace Netlyt.Service.Donut
             }
             catch (Exception ex)
             {
-                Trace.WriteLine("Could not compile donut or error during training.");
-                Console.WriteLine("Could not compile donut or error during training.");
+                Trace.WriteLine("Could not compile donut or error during training." + ex.Message);
+                Console.WriteLine("Could not compile donut or error during training." + ex.Message);
             }
         }
 
-        private async Task<object> TrainGeneratedFeatures(Model model,
+        private async Task<JToken> TrainGeneratedFeatures(Model model,
             DonutScript ds,
             Assembly assembly,
             Type donutType,
@@ -149,7 +149,7 @@ namespace Netlyt.Service.Donut
 
             var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration);
             var m_id = await _orion.Query(query);
-            return null;
+            return m_id;
         }
          
 

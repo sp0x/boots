@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
@@ -10,6 +11,7 @@ using Newtonsoft.Json.Linq;
 using Netlyt.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
 using nvoid.db;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Import;
@@ -31,6 +33,7 @@ namespace Netlyt.Web.Controllers
         private ModelService _modelService;
         private IntegrationService _integrationService;
         private SignInManager<User> _signInManager;
+        private IConfiguration _configuration;
 
         public ModelController(IMapper mapper,
             OrionContext behaviourCtx,
@@ -38,7 +41,8 @@ namespace Netlyt.Web.Controllers
             UserService userService,
             ModelService modelService,
             IntegrationService integrationService,
-            SignInManager<User> signInManager)
+            SignInManager<User> signInManager,
+            IConfiguration configuration)
         {
             _mapper = mapper;
             //_modelContext = typeof(Model).GetDataSource<Model>(); 
@@ -47,6 +51,7 @@ namespace Netlyt.Web.Controllers
             _modelService = modelService;
             _integrationService = integrationService;
             _signInManager = signInManager;
+            _configuration = configuration;
         }
 
         [HttpGet("/model/mymodels")]
@@ -74,6 +79,7 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpGet("/model/{id}", Name = "GetById")]
+        [AllowAnonymous]
         public IActionResult GetById(long id)
         {
             var item = _modelService.GetById(id);
@@ -81,7 +87,43 @@ namespace Netlyt.Web.Controllers
             {
                 return NotFound();
             }
-            return new ObjectResult(_mapper.Map<ModelViewModel>(item));
+            var mapped = _mapper.Map<ModelViewModel>(item);
+            if (item.Performance != null)
+            {
+                mapped.Performance.IsRegression = true;
+                mapped.Performance.ReportUrl = $"/model/getAsset?path={mapped.Performance.ReportUrl}";
+                mapped.Performance.TestResultsUrl = $"/model/getAsset?path={mapped.Performance.TestResultsUrl}";
+            }
+            return new ObjectResult(mapped);
+        }
+
+        [HttpGet("/model/getAsset")]
+        [AllowAnonymous]
+        public IActionResult GetAsset(string path)
+        {
+            var expPath = _configuration["experiments_path"];
+            var osNameAndVersion = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+            var isWindows = osNameAndVersion.Contains("Windows");
+            if (isWindows)
+            {
+                path = path.Replace("/", "\\");
+                expPath = expPath.Replace("/", "\\");
+            }
+            var cwd = Environment.CurrentDirectory;
+            var fullExpPath = Path.Combine(cwd, expPath);
+            Trace.WriteLine(fullExpPath);
+            Console.WriteLine(fullExpPath);
+            var assetPath = fullExpPath + path;
+            if (!System.IO.File.Exists(assetPath))
+            {
+                return NotFound();
+            }
+            else
+            {
+                var assetName = Path.GetExtension(assetPath);
+                var bytes = System.IO.File.Open(assetPath, FileMode.Open);
+                return File(bytes, "application/force-download", assetName);
+            }
         }
 
         /// <summary>
