@@ -176,7 +176,7 @@ namespace Netlyt.Service
         /// Gets the current user's first api key.
         /// </summary>
         /// <returns></returns>
-        public async Task<ApiAuth> GetCurrentApi()
+        public async Task<ApiAuth> GetCurrentApi() 
         {
             var crUser = await GetCurrentUser();
             if (crUser == null) return null;

@@ -164,6 +164,30 @@ namespace Netlyt.Web.Controllers
                 item.TargetAttribute);
             return CreatedAtRoute("GetById", new { id = newModel.Id }, item);
         }
+        [AllowAnonymous]
+        [HttpPost("/model/createUser")]
+        public async Task<IActionResult> CreateUser()
+        {
+            var user = await _userService.GetCurrentUser();
+            var rnd = new Random();
+            if (user == null)
+            {
+                var newRegistration = new Service.Models.Account.RegisterViewModel();
+                newRegistration.Password = "ComplexP4ssword!";
+                var randomInt = rnd.Next(100000, 9000000);
+                newRegistration.Email = "somemail" + randomInt + "@mail.com";
+                newRegistration.FirstName = "Userx";
+                newRegistration.LastName = "Lastnamex";
+                newRegistration.Org = "Lol";
+                var newUserCreated = _userService.CreateUser(newRegistration, out user);
+                if (newUserCreated.Succeeded)
+                {
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+                }
+
+            }
+            return Json(new { status = true });
+        }
 
         /// <summary>
         /// 
@@ -195,6 +219,7 @@ namespace Netlyt.Web.Controllers
                 {
                     await _signInManager.SignInAsync(user, isPersistent: false);
                 }
+
             }
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {

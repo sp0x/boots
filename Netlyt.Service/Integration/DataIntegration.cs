@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Dynamic; 
+using System.Dynamic;
+using System.Globalization;
 using System.Linq.Expressions;
 using Dynamitey; 
 using nvoid.db.DB; 
@@ -23,7 +24,11 @@ namespace Netlyt.Service.Integration
                 return false;
             }
             doubleValue = null;
-            if (DateTime.TryParse(value, out timeValue))
+            var pvd = CultureInfo.InvariantCulture;
+            if (DateTime.TryParse(value, pvd, DateTimeStyles.AssumeUniversal, out timeValue))
+            {
+                return true;
+            } else if (DateTime.TryParseExact(value, "dd-MM-yy HH:mm", pvd, DateTimeStyles.AssumeUniversal, out timeValue))
             {
                 return true;
             }
