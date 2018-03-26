@@ -34,6 +34,9 @@ namespace Netlyt.Web.ViewModels
         public string Callback { get; set; }
         public string TrainingParams { get; set; }
         public string HyperParams { get; set; }
+        public string ApiKey { get; set; }
+        public string ApiSecret { get; set; }
+        public string Endpoint { get; set; }
         public ModelTrainingPerformanceViewModel Performance { get; set; }
 
     }

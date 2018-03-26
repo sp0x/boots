@@ -11,8 +11,10 @@ using Newtonsoft.Json.Linq;
 using Netlyt.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using nvoid.db;
+using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Import;
 using Netlyt.Service.Ml;
@@ -34,6 +36,7 @@ namespace Netlyt.Web.Controllers
         private IntegrationService _integrationService;
         private SignInManager<User> _signInManager;
         private IConfiguration _configuration;
+        private ManagementDbContext _db;
 
         public ModelController(IMapper mapper,
             OrionContext behaviourCtx,
@@ -42,7 +45,8 @@ namespace Netlyt.Web.Controllers
             ModelService modelService,
             IntegrationService integrationService,
             SignInManager<User> signInManager,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ManagementDbContext db)
         {
             _mapper = mapper;
             //_modelContext = typeof(Model).GetDataSource<Model>(); 
@@ -52,6 +56,7 @@ namespace Netlyt.Web.Controllers
             _integrationService = integrationService;
             _signInManager = signInManager;
             _configuration = configuration;
+            _db = db;
         }
 
         [HttpGet("/model/mymodels")]
@@ -87,7 +92,15 @@ namespace Netlyt.Web.Controllers
             {
                 return NotFound();
             }
+            var fmi = item.DataIntegrations.FirstOrDefault();
+            var fIntegration = _db.Integrations
+                .Include(x=>x.APIKey)
+                .FirstOrDefault(x => x.Id == fmi.IntegrationId);
+
             var mapped = _mapper.Map<ModelViewModel>(item);
+            mapped.ApiKey = fIntegration.APIKey.AppId;
+            mapped.ApiSecret = fIntegration.APIKey.AppSecret;
+            mapped.Endpoint = "http://dev.netlyt.com/model/infer/" + item.Id;
             if (item.Performance != null)
             {
                 mapped.Performance.IsRegression = true;
