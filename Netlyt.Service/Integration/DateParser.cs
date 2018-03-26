@@ -24,7 +24,15 @@ namespace Netlyt.Service.Integration
             {
                 return true;
             }
+            else if (DateTime.TryParseExact(value, "dd/MM/yyyy H:mm", pvd, DateTimeStyles.AssumeUniversal, out timeValue))
+            {
+                return true;
+            }
             else if (DateTime.TryParseExact(value, "dd/MM/yy H:mm:ss", pvd, DateTimeStyles.AssumeUniversal, out timeValue))
+            {
+                return true;
+            }
+            else if (DateTime.TryParseExact(value, "dd/MM/yy H:mm", pvd, DateTimeStyles.AssumeUniversal, out timeValue))
             {
                 return true;
             }
@@ -33,6 +41,10 @@ namespace Netlyt.Service.Integration
                 return true;
             }
             else if (DateTime.TryParseExact(value, "dd-MM-yy H:mm:ss", pvd, DateTimeStyles.AssumeUniversal, out timeValue))
+            {
+                return true;
+            }
+            else if (DateTime.TryParseExact(value, "dd-MM-yy H:mm", pvd, DateTimeStyles.AssumeUniversal, out timeValue))
             {
                 return true;
             }
