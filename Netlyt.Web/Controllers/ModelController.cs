@@ -100,7 +100,7 @@ namespace Netlyt.Web.Controllers
             var mapped = _mapper.Map<ModelViewModel>(item);
             mapped.ApiKey = fIntegration.APIKey.AppId;
             mapped.ApiSecret = fIntegration.APIKey.AppSecret;
-            mapped.Endpoint = "http://dev.netlyt.com/model/infer/" + item.Id;
+            mapped.Endpoint = "http://api.netlyt.com/model/infer/" + item.Id;
             if (item.Performance != null)
             {
                 mapped.Performance.IsRegression = true;
@@ -226,17 +226,17 @@ namespace Netlyt.Web.Controllers
                 return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
             }
             DataImportResult result = null;
-            using (var targetStream = System.IO.File.Create(targetFilePath))
+            using (var sourceStream = System.IO.File.Create(targetFilePath))
             {
-                var form = await Request.StreamFile(targetStream);
+                var form = await Request.StreamFile(sourceStream);
                 fileContentType = form.GetValue("mime-type").ToString();
                 var valueProviderResult = form.GetValue("modelData");
                 if (valueProviderResult == null) return BadRequest("No integration given.");
                 modelParams = JsonConvert.DeserializeObject<NewModelIntegrationViewmodel>(valueProviderResult.ToString());
-                targetStream.Position = 0;
+                sourceStream.Position = 0;
                 try
                 {
-                    result = await _integrationService.CreateOrFillIntegration(targetStream, fileContentType,
+                    result = await _integrationService.CreateOrFillIntegration(sourceStream, fileContentType,
                         modelParams.Name);
                     newIntegration = result?.Integration;
                 }

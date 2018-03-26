@@ -135,7 +135,25 @@ namespace Netlyt.Service
             return integration;
         }
 
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
+        public async Task<DataImportResult> CreateOrFillIntegration(string filePath, ApiAuth apiKey, User user,string name=null)
+        {
+            //Must be relative
+            if (filePath[0] != '/' && filePath[1] != ':')
+            {
+                var relativePath = Environment.CurrentDirectory;
+                filePath = System.IO.Path.Combine(relativePath, filePath);
+            }
+            var mime = MimeResolver.Resolve(filePath); 
+            using (var fsStream = System.IO.File.Open(filePath, FileMode.Open))
+            {
+                return await CreateOrFillIntegration(fsStream, apiKey, user, mime, name);
+            }
+        }
         /// <summary>
         /// Creates a new integration from the stream, or adds the stream to an existing integration.
         /// </summary>
@@ -145,18 +163,29 @@ namespace Netlyt.Service
         {
             var options = new DataImportTaskOptions();
             var apiKey = await _userService.GetCurrentApi();
-            if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
             var crUser = await _userService.GetCurrentUser();
-            //TODO: Resolve the formatter..
+            return await CreateOrFillIntegration(inputData, apiKey, crUser, mime, name);
+        }
+
+        /// <summary>
+        /// Creates a new integration from the stream, or adds the stream to an existing integration.
+        /// </summary>
+        /// <param name="inputData">The stream containing integration data</param>
+        /// <param name="apiKey"></param>
+        /// <returns></returns>
+        public async Task<DataImportResult> CreateOrFillIntegration(Stream inputData, ApiAuth apiKey, User owner, string mime = null, string name = null)
+        {
+            var options = new DataImportTaskOptions();
+            if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
             var formatter = ResolveFormatter<ExpandoObject>(mime);
             if (formatter == null)
-            { 
+            {
                 throw new Exception("Could not resolve formatter for the given content type!");
             }
             var source = InMemorySource.Create(inputData, formatter);
             DataIntegration integrationInfo = source.ResolveIntegrationDefinition() as DataIntegration;
             var timestampCol = _timestampService.Discover(integrationInfo);
-            if (!string.IsNullOrEmpty(timestampCol) && integrationInfo!=null)
+            if (!string.IsNullOrEmpty(timestampCol) && integrationInfo != null)
             {
                 integrationInfo.DataTimestampColumn = timestampCol;
             }
@@ -166,7 +195,7 @@ namespace Netlyt.Service
                 throw new Exception("No integration found!");
             }
             integrationInfo.APIKey = apiKey;
-            integrationInfo.Owner = crUser;
+            integrationInfo.Owner = owner;
             integrationInfo.Name = name;
 
             options.Source = source;
@@ -177,6 +206,7 @@ namespace Netlyt.Service
             var result = await importTask.Import();
             return result;
         }
+
         /// <summary>
         /// Creates a new integration with the given name and data format.
         /// </summary>
@@ -218,6 +248,7 @@ namespace Netlyt.Service
             if (!string.IsNullOrEmpty(mimeType))
             {
                 if (mimeType.Contains("ms-excel")) return new CsvFormatter<T>() { Delimiter = ',' };
+                if (mimeType=="text/csv") return new CsvFormatter<T>() { Delimiter = ',' };
                 if (mimeType== "application/json") return new JsonFormatter<T>() {  };
             }
             else

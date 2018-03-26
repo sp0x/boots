@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +15,8 @@ using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
+using Netlyt.Service.FeatureGeneration;
+using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Lex;
 using Netlyt.Service.Lex.Data;
@@ -65,7 +69,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         }
 
         [Fact]
-        public async Task TraingeneratedFeatures()
+        public async Task TrainGeneratedFeatures()
         {
             Model model = _db.Models
                 .Include(x => x.DataIntegrations)
@@ -75,6 +79,26 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             var query = OrionQuery.Factory.CreateTrainQuery(model, ign);
             var m_id = await _orion.Query(query);
             m_id = m_id;
+        }
+
+        [Theory]
+        [InlineData("TestData\\big_set.csv")]
+        public async Task TestFileIntegration(string sourceFile)
+        {
+            //Source
+            var modelName = "FunModel";
+            var integrationResult = await _integrationService.CreateOrFillIntegration(sourceFile, _appAuth, _user, modelName);
+            var newIntegration = integrationResult?.Integration;
+            string modelCallback = "http://localhost:9999";
+            var relations = new List<FeatureGenerationRelation>();
+            string targetAttribute = "pm10"; //"Events.is_paying";
+            var newModel = await _modelService.CreateModel(_user, modelName,
+                new List<DataIntegration>(new[] {newIntegration}),
+                modelCallback,
+                true,
+                relations,
+                targetAttribute);
+            integrationResult.Collection.Truncate();
         }
 
         [Fact]

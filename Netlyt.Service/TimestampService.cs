@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
+using Netlyt.Service.Source;
 
 namespace Netlyt.Service
 {
@@ -10,7 +12,7 @@ namespace Netlyt.Service
     {
         private List<string> _possibleColumns;
         private ManagementDbContext _db;
-
+        private Type _tmType = typeof(DateTime);
         public TimestampService(ManagementDbContext db)
         {
             _possibleColumns = new List<string>(new string[]{ "timestamp", "on_date", "added_on", "time" });
@@ -41,7 +43,7 @@ namespace Netlyt.Service
             {
                 foreach (var field in ign.Fields)
                 {
-                    bool isTs = _possibleColumns.Any(x => x == field.Name);
+                    bool isTs = IsTimestamp(field);
                     if (isTs)
                     {
                         return field.Name;
@@ -52,6 +54,11 @@ namespace Netlyt.Service
                 return DiscoverByIntegrationId(ign.Id);
             }
             return null;
+        }
+
+        private bool IsTimestamp(FieldDefinition field)
+        {
+            return field.Type == _tmType.FullName;//_possibleColumns.Any(x => x == field.Name);
         }
     }
 }
