@@ -23,8 +23,8 @@ namespace Netlyt.Service.Lex.Data
         
         public DonutScript GetScript()
         {
-            var tokenizer = new PrecedenceTokenizer();
-            var parser = new TokenParser(tokenizer.Tokenize(DonutScriptContent));
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+            var parser = new DonutSyntaxReader(tokenizer.Tokenize(DonutScriptContent));
             DonutScript dscript = parser.ParseDonutScript();
             return dscript;
         }

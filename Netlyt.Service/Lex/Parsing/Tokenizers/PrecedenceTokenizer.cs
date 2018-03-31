@@ -6,63 +6,34 @@ using Netlyt.Service.Lex.Parsing.Tokens;
 
 namespace Netlyt.Service.Lex.Parsing.Tokenizers
 {
+    /// <summary>
+    /// Tokenizes text based on precedence
+    /// </summary>
     public class PrecedenceTokenizer : ITokenizer
     {
         private List<TokenDefinition> _tokenDefinitions;
 
-        public PrecedenceTokenizer()
+        public PrecedenceTokenizer(TokenDefinitionCollection toks)
         {
             _tokenDefinitions = new List<TokenDefinition>();
-
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.And, "(^|\\W)and(?=[\\s\\t])", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Or, "(^|\\W)or(?=[\\s\\t])", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Not, "(^|\\W)not(?=[\\s\\t])", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Between, "between", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Target, "target\\s[\\w-_\\d]{1,100}", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.OpenParenthesis, "\\(", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.OpenBracket, "\\[", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.OpenCurlyBracket, "\\{", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.CloseParenthesis, "\\)", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.CloseBracket, "\\]", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.CloseCurlyBracket, "\\}", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Comma, ",", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.MemberAccess, "\\.", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Lambda, "=>", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Assign, "=", 2));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Equals, "==", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.NotEquals, "!=", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Semicolon, ";", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.NewLine, "\n", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Add, "\\+", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Subtract, "-", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Multiply, "\\*", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Divide, "/", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Define, "define", 1)); //(?<=define\\s)([\\w\\d_]+)
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.ReduceAggregate, "(^|\\W)reduce aggregate(?=[\\s\\t])", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Reduce, "(^|\\W)reduce(?=[\\s\\t])", 2)); 
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.ReduceMap, "(^|\\W)reduce_map(?=[\\s\\t])", 1));  
-            
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.NotIn, "not\\sin", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.In, "(^|\\W)in(?=[\\s\\t])", 1));
-            //_tokenDefinitions.Add(new TokenDefinition(TokenType.Like, "like", 1));
-            //_tokenDefinitions.Add(new TokenDefinition(TokenType.Limit, "limit", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.From, "(^|\\W)from(?=[\\s\\t])", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.OrderBy, "(^|\\W)order\\sby", 1));
-            //_tokenDefinitions.Add(new TokenDefinition(TokenType.Message, "msg|message", 1));
-            //_tokenDefinitions.Add(new TokenDefinition(TokenType.NotLike, "not like", 1)); 
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.DateTimeValue, "\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.StringValue, "('|\")([^']*)('|\")", 1));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.NumberValue, "(-?)\\d+", 2));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.FloatValue, "(-?)\\d+\\.\\d+", 2));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Set, "(^|\\s)(set)(?=[\\s\t])", 2));
-            _tokenDefinitions.Add(new TokenDefinition(TokenType.Symbol, "[\\w\\d_]+", 3));
+            _tokenDefinitions.AddRange(toks.GetAll());
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
         public IEnumerable<DslToken> Tokenize(string text)
         {
             var reader = new StringReader(text);
             return Tokenize(reader);
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="strReader"></param>
+        /// <returns></returns>
         public IEnumerable<DslToken> Tokenize(StringReader strReader)
         {
             var tokenMatches = FindTokenMatches(strReader);
@@ -92,7 +63,11 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
                 lastMatch = bestMatch;
             } 
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="lqlText"></param>
+        /// <returns></returns>
         private IEnumerable<TokenMatch> FindTokenMatches(StringReader lqlText)
         {
             //var tokenMatches = new List<TokenMatch>();
@@ -101,7 +76,6 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
             int foundTokens = 0; 
             while (null != (line = lqlText.ReadLine()))
             {
-                
                 foreach (var tokenDefinition in _tokenDefinitions)
                 {
                     var tokenMatches = tokenDefinition.FindMatches(line).ToList();

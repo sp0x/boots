@@ -76,9 +76,14 @@ namespace Netlyt.Service.Donut
             }
 
             if (model == null) return;
+            var sourceIntegration = model.DataIntegrations.FirstOrDefault()?.Integration;
+            if (sourceIntegration == null)
+            {
+                throw new InvalidOperationException("Model has no integrations!");
+            }
             var featureBodies = features.Select(x => x.ToString()).ToArray();
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.TargetAttribute, featureBodies);
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.TargetAttribute, sourceIntegration, featureBodies);
             dscript.TargetAttribute = model.TargetAttribute;
             foreach (var integration in model.DataIntegrations)
             {

@@ -109,7 +109,8 @@ namespace Netlyt.Service.Integration.Import
         /// <returns></returns>
         public async Task Reduce(string donutScript, uint inputDocumentsLimit = 0, SortDefinition<BsonDocument> orderBy = null)
         {
-            MapReduceExpression mapReduce = new TokenParser(new PrecedenceTokenizer().Tokenize(donutScript)).ReadMapReduce();
+            MapReduceExpression mapReduce = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions())
+                .Tokenize(donutScript)).ReadMapReduce();
             MapReduceJsScript script = MapReduceJsScript.Create(mapReduce);
             var targetCollection = OutputDestinationCollection.ReducedOutputCollection; 
             var mapReduceOptions = new MapReduceOptions<BsonDocument, BsonDocument>

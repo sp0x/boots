@@ -102,6 +102,7 @@ services:
     volumes:
       - ./orion/app:/app
       - ./orion/experiments:/experiments
+        #      - ./orion/automl:/opt/conda/lib/python3.6/site-packages/autosklearn
     ports:
       - "5556:5556"
       - "5557:5557"

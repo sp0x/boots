@@ -74,7 +74,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             Model model = _db.Models
                 .Include(x => x.DataIntegrations)
                 .Include(x => x.User) 
-                .FirstOrDefault(x => x.Id == 182);
+                .FirstOrDefault(x => x.Id == 198);
             DataIntegration ign = _db.Integrations.FirstOrDefault(x=> x.Id == model.DataIntegrations.FirstOrDefault().IntegrationId);
             var query = OrionQuery.Factory.CreateTrainQuery(model, ign);
             var m_id = await _orion.Query(query);
@@ -132,8 +132,20 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         [Fact]
         public async Task TestGeneratedFeatures()
         {
-            long modelId = 117;
-            var model = _db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
+            long modelId = 198;
+            var ignName = "Romanian";//Must match the features
+            var model = new Model()
+            {
+                ModelName = "Namex"
+            };//_db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
+            var xintegration = new DataIntegration()
+            {
+                APIKey = _appAuth, APIKeyId = _appAuth.Id, Name= ignName
+            };
+            var modelIntegration = new ModelIntegration() { Model = model, Integration = xintegration };
+
+            model.DataIntegrations.Add(modelIntegration);
+
             string features = @"pm10
 SUM(Romanian.humidity)
 SUM(Romanian.latitude)
@@ -191,7 +203,7 @@ MODE(Romanian.MONTH(timestamp))
 MODE(Romanian.WEEKDAY(timestamp))";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", featureBodies);
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", xintegration, featureBodies);
             foreach (var modelIgn in model.DataIntegrations)
             {
                 var integration = _db.Integrations.FirstOrDefault(x => x.Id == modelIgn.IntegrationId);
@@ -215,11 +227,14 @@ MODE(Romanian.WEEKDAY(timestamp))";
         public void TestDonutAggregateFunction(string featureBody, string expectedAggregateValue)
         {
             var collection = GetTestingCollection();
-//            var validProjection = new BsonDocument();
-//            validProjection[ "_id"] = "$_id";
-//            validProjection[fieldName + "_v"] = new BsonDocument {{ "$max", "$" + fieldName }};
-//            var validResult = collection.Aggregate().Group(validProjection).ToList();
-            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", featureBody);
+            //            var validProjection = new BsonDocument();
+            //            validProjection[ "_id"] = "$_id";
+            //            validProjection[fieldName + "_v"] = new BsonDocument {{ "$max", "$" + fieldName }};
+            //            var validResult = collection.Aggregate().Group(validProjection).ToList();
+            var ign = new DataIntegration() { Name = "Romanian" };
+            var tsField = new FieldDefinition("timestamp", typeof(DateTime));
+            ign.Fields.Add(tsField);
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", featureBody, ign);
             var parser = new DonutScriptCodeGenerator(null);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;
@@ -243,7 +258,10 @@ MODE(Romanian.WEEKDAY(timestamp))";
             //            validProjection[ "_id"] = "$_id";
             //            validProjection[fieldName + "_v"] = new BsonDocument {{ "$max", "$" + fieldName }};
             //            var validResult = collection.Aggregate().Group(validProjection).ToList();
-            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", featureBody);
+            var ign = new DataIntegration() { Name = "Romanian" };
+            var tsField = new FieldDefinition("timestamp", typeof(DateTime));
+            ign.Fields.Add(tsField);
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", featureBody, ign);
             var parser = new DonutScriptCodeGenerator(null);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;
@@ -266,10 +284,11 @@ MODE(Romanian.WEEKDAY(timestamp))";
             //            validProjection[ "_id"] = "$_id";
             //            validProjection[fieldName + "_v"] = new BsonDocument {{ "$max", "$" + fieldName }};
             //            var validResult = collection.Aggregate().Group(validProjection).ToList();
-            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", featureBody);
-            var ign = new DataIntegration() {  Name = "Romanian" };
+            var ign = new DataIntegration() { Name = "Romanian" };
             var tsField = new FieldDefinition("timestamp", typeof(DateTime));
             ign.Fields.Add(tsField);
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut",featureBody, ign);
+            
             script.Integrations.Add(ign);
             var parser = new DonutScriptCodeGenerator(ign);
             var firstFeature = script.Features.FirstOrDefault();

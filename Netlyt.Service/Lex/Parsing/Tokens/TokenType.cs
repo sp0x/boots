@@ -32,6 +32,10 @@
         ReduceAggregate,
         Semicolon,
         Target,
-        NewLine
+        NewLine,
+        First,
+        Last,
+        DatasetTime,
+        Underscore
     }
 }

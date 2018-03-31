@@ -16,9 +16,9 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[]{ "f(a)" })]
         public void TokenizeFunction1(string fc)
         {
-            var tokenizer = new PrecedenceTokenizer();
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
             var tokens = tokenizer.Tokenize(fc).ToList();
-            var parser = new Netlyt.Service.Lex.Parsing.TokenParser();
+            var parser = new Netlyt.Service.Lex.Parsing.DonutSyntaxReader();
             parser.Load(tokens);
             var x = parser.ReadFunctionCall();
             Assert.Equal("f", x.Name);
@@ -35,9 +35,9 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         })]
         public void TokenizeLambda(string fc, string expectedLambda)
         {
-            var tokenizer = new PrecedenceTokenizer();
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
             var tokens = tokenizer.Tokenize(fc).ToList();
-            var parser = new Netlyt.Service.Lex.Parsing.TokenParser();
+            var parser = new Netlyt.Service.Lex.Parsing.DonutSyntaxReader();
             parser.Load(tokens);
             var parsedLambda = parser.ReadExpression();
             Assert.Equal(expectedLambda, parsedLambda.ToString());
@@ -50,9 +50,9 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[]{ "fna((a, b, c, d) => max(a+1, b, c, d))", "fna((a, b, c, d) => max(a + 1, b, c, d))"})] 
         public void TokenizeLambda2(string fc, string expectedLambda)
         { 
-            var tokenizer = new PrecedenceTokenizer();
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
             var tokens = tokenizer.Tokenize(fc).ToList();
-            var parser = new Netlyt.Service.Lex.Parsing.TokenParser();
+            var parser = new Netlyt.Service.Lex.Parsing.DonutSyntaxReader();
             parser.Load(tokens);
             var parsedLambda = parser.ReadExpression();
             Assert.Equal(expectedLambda, parsedLambda.ToString());
@@ -66,9 +66,9 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[]{ "events[0].ondate", "events[0].ondate" })]
         public void TestArrayAccess(string code, string expOutcome)
         {
-            var tokenizer = new PrecedenceTokenizer();
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
             var tokens = tokenizer.Tokenize(code).ToList();
-            var parser = new Netlyt.Service.Lex.Parsing.TokenParser();
+            var parser = new Netlyt.Service.Lex.Parsing.DonutSyntaxReader();
             parser.Load(tokens);
             var exp = parser.ReadExpressions().FirstOrDefault();
             Assert.NotNull(exp);
@@ -81,9 +81,9 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
                                   "abc1 = a[0, c[1]] }", "{\na = 3\nabc1 = a[0, c[1]]\n}"})]
         public void TestBlock(string code, string expOutcome)
         {
-            var tokenizer = new PrecedenceTokenizer();
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
             var tokens = tokenizer.Tokenize(code).ToList();
-            var parser = new Netlyt.Service.Lex.Parsing.TokenParser();
+            var parser = new Netlyt.Service.Lex.Parsing.DonutSyntaxReader();
             parser.Load(tokens);
             var exp = parser.ReadExpressions().FirstOrDefault();
             Assert.NotNull(exp);
@@ -100,7 +100,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[]{ "a + b + c"})]
         public void ParseMultipleBinaryOps(string content)
         {  
-            var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(content));
+            var parser = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(content));
             var exps = parser.ReadExpressions().ToList();
             Assert.True(exps.Count == 1);
             Assert.IsType<BinaryExpression>(exps.FirstOrDefault());
@@ -117,7 +117,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[] { "order by a, b", "a, b" })]
         public void ReadOrderByTest(string content, string expected)
         { 
-            var expression = new TokenParser(new PrecedenceTokenizer().Tokenize(content)).ReadOrderBy();
+            var expression = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(content)).ReadOrderBy();
             Assert.Equal(expected, expression.ByClause.ConcatExpressions());
         }
 
@@ -127,7 +127,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[] { "(max(a + b))", "max(a + b)" })]
         public void ReadParenthesisContentTest(string content, string expected)
         {
-            var expressions = new TokenParser(new PrecedenceTokenizer().Tokenize(content)).ReadParenthesisContent(); 
+            var expressions = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(content)).ReadParenthesisContent(); 
             var expString = String.Join(", ", expressions);
             Assert.Equal(expected, expString);
         }
@@ -139,7 +139,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[] { "f(a,b,c)" })]
         public void TokenizeFunction2(string fc)
         {
-            var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(fc));   
+            var parser = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(fc));   
             var x = parser.ReadFunctionCall();
             Assert.Equal("f", x.Name);
             Assert.True(x.Parameters.Count >= 2);
@@ -155,7 +155,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[] { "f(a.one,b)" })] 
         public void TokenizeFunction3(string fc)
         {
-            var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(fc));
+            var parser = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(fc));
             var x = parser.ReadFunctionCall();
             Assert.Equal("f", x.Name);
             Assert.True(x.Parameters.Count >= 2);
@@ -171,7 +171,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[] { "f(g(a.one, c),b)" })]
         public void TokenizeFunction4(string fc)
         {
-            var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(fc));
+            var parser = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(fc));
             var x = parser.ReadFunctionCall();
             Assert.Equal("f", x.Name);
             Assert.True(x.Parameters.Count >= 2);
@@ -192,7 +192,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[] { "max(c, 1 + a.b) / b + d" })]
         public void TokenizeBinaryOp1(string strExpression)
         {
-            var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(strExpression));
+            var parser = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(strExpression));
             var expressions = parser.ReadExpressions().ToList();
             Assert.True(expressions.Count == 1);
             BinaryExpression firstExp = expressions.First() as BinaryExpression;
@@ -212,7 +212,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[] { "a.b.c", "a.b.c" })]
         public void TokenizeVariableWithMember(string content, string expected)
         {
-            var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(content));
+            var parser = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(content));
             var expression = parser.ReadVariable();
             Assert.Equal(expected, expression.ToString());
         }
@@ -222,7 +222,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[] { "a.b.c", "b" })]
         public void TokenizeFirstMemberAccess(string content, string expected)
         {
-            var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(content));
+            var parser = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(content));
             var expression = parser.ReadVariable();
             MemberExpression member = expression.Member;
             Assert.Equal(expected, member.Parent.ToString());
@@ -234,7 +234,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[] { "a.b.c.d", "d" })]
         public void TokenizeLastMemberAccess(string content, string expected)
         {
-            var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(content));
+            var parser = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(content));
             var expression = parser.ReadVariable();
             Assert.NotNull(expression.Member);
             var root = expression.Member;
@@ -252,7 +252,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         [InlineData(new object[] { "a = time(now()) / 1000, 10", "time(now()) / 1000" })]
         public void TokenizeAssignment(string content, string expectedValue)
         {
-            var parser = new TokenParser(new PrecedenceTokenizer().Tokenize(content));
+            var parser = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(content));
             var expression = parser.ReadAssign();
             Assert.Equal(expectedValue, expression.Value.ToString()); 
         }
@@ -271,7 +271,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         public void TokenizeSimpleFeatureDefinition(string txt)
         { 
             var count = 30;
-            var tokens = new PrecedenceTokenizer().Tokenize(txt).ToList();
+            var tokens = new PrecedenceTokenizer(new DonutTokenDefinitions()).Tokenize(txt).ToList();
             Assert.True(tokens.Any(), "No tokens found");
             Assert.True(tokens.Count == count, $"Incorrect token count, they must be {count}");
         }
@@ -302,8 +302,8 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             string expectedValues)
         {
 
-            var tokenizer = new PrecedenceTokenizer();
-            var parser = new TokenParser(tokenizer.Tokenize(txt));
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+            var parser = new DonutSyntaxReader(tokenizer.Tokenize(txt));
             var mapReduce = parser.ReadMapReduce();
             var values = mapReduce.ValueMembers.ConcatExpressions();
             var keys = mapReduce.Keys.ConcatExpressions();
@@ -337,8 +337,8 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             string[] expectedFeatureKVP)
         {
 
-            var tokenizer = new PrecedenceTokenizer();
-            var parser = new TokenParser(tokenizer.Tokenize(txt));
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+            var parser = new DonutSyntaxReader(tokenizer.Tokenize(txt));
             var model = parser.ParseDonutScript();
             Assert.NotNull(model);
             Assert.NotNull(model.Features);

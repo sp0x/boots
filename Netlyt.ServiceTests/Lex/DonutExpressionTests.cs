@@ -62,8 +62,8 @@ namespace Netlyt.ServiceTests.Lex
         })]
         public void ParseSimpleDScript1(string txt)
         {
-            var tokenizer = new PrecedenceTokenizer();
-            var parser = new TokenParser(tokenizer.Tokenize(txt));
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+            var parser = new DonutSyntaxReader(tokenizer.Tokenize(txt));
             DonutScript dscript = parser.ParseDonutScript();
             Assert.Equal("events", dscript.Integrations.FirstOrDefault().Name);
             AssignmentExpression f1 = dscript.Features[0];
@@ -88,8 +88,8 @@ namespace Netlyt.ServiceTests.Lex
         })]
         public void GenerateDonutContext(string txt)
         {
-            var tokenizer = new PrecedenceTokenizer();
-            var parser = new TokenParser(tokenizer.Tokenize(txt));
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+            var parser = new DonutSyntaxReader(tokenizer.Tokenize(txt));
             DonutScript dscript = parser.ParseDonutScript();   
             Type donutType;
             Type donutContextType;
@@ -125,8 +125,8 @@ namespace Netlyt.ServiceTests.Lex
         })]
         public void DonutRecompilation(string txt)
         {
-            var tokenizer = new PrecedenceTokenizer();
-            var parser = new TokenParser(tokenizer.Tokenize(txt));
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+            var parser = new DonutSyntaxReader(tokenizer.Tokenize(txt));
             DonutScript dscript = parser.ParseDonutScript();
             Type donutType;
             Type donutContextType;
@@ -158,7 +158,7 @@ namespace Netlyt.ServiceTests.Lex
             harvester.LimitEntries(entryLimit);
             var integration = harvester.AddIntegrationSource(source, _appAuth, "SomeIntegrationName3");
 
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures("SomeDonut1", null, new[] { feature });
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures("SomeDonut1", null, integration, new[] { feature });
             dscript.AddIntegrations(integration);
             //parser.ParseDonutScript();
             Type donutType, donutContextType, donutFEmitterType;
@@ -194,8 +194,8 @@ namespace Netlyt.ServiceTests.Lex
         })]
         public async Task TestGeneratedDonutContext(string script, string collectionName)
         {
-            var tokenizer = new PrecedenceTokenizer();
-            var parser = new TokenParser(tokenizer.Tokenize(script));
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+            var parser = new DonutSyntaxReader(tokenizer.Tokenize(script));
             DonutScript dscript = parser.ParseDonutScript();
             Type donutType, donutContextType, donutFEmitterType;
             var assembly = _compiler.Compile(dscript, "someAssembly2", out donutType, out donutContextType, out donutFEmitterType); 

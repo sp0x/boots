@@ -60,8 +60,8 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             string expectedValues
            )
         {
-            var tokenizer = new PrecedenceTokenizer();
-            var parser = new TokenParser(tokenizer.Tokenize(txt));
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+            var parser = new DonutSyntaxReader(tokenizer.Tokenize(txt));
             var mapReduce = parser.ReadMapReduce();
             var values = mapReduce.ValueMembers.ConcatExpressions();
             var keys = mapReduce.Keys.ConcatExpressions();
@@ -88,8 +88,8 @@ namespace Netlyt.ServiceTests.Lex.Expressions
         })]
         public void ParseMapReduceAggregate(string code)
         {
-            var tokenizer = new PrecedenceTokenizer();
-            var parser = new TokenParser(tokenizer.Tokenize(code));
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+            var parser = new DonutSyntaxReader(tokenizer.Tokenize(code));
             var mapReduce = parser.ReadMapReduce();
             var values = mapReduce.ValueMembers.ConcatExpressions();
             var keys = mapReduce.Keys.ConcatExpressions();

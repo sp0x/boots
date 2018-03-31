@@ -416,7 +416,7 @@ namespace Netlyt.Service.Lex.Generators
 
         private string GetDataSetMembers(DonutScript dscript)
         {
-            var secondarySources = dscript.Integrations;//.Skip(1);
+            var secondarySources = dscript.Integrations.Where(x=>x!=null);//.Skip(1);
             var content = new StringBuilder();
             foreach (var source in secondarySources)
             {

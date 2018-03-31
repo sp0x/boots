@@ -35,7 +35,13 @@ namespace Netlyt.Service.Integration
         /// </summary>
         public string Source { get; set; }
         public string Collection { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public string DataIndexColumn { get; set; }
+        /// <summary>
+        /// Name of the data's timestamp column
+        /// </summary>
         public string DataTimestampColumn { get; set; }
         public string FeaturesCollection { get; set; }
 

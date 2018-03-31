@@ -59,20 +59,20 @@ namespace Netlyt.Service.Lex.Data
 
         public class Factory
         {
-            public static DonutScript CreateWithFeatures(string donutName, string target, params string[] featureBodies)
+            public static DonutScript CreateWithFeatures(string donutName, string target, DataIntegration integration, params string[] featureBodies)
             {
                 var ds = new DonutScript();
+                ValidateIntegrations(integration);
                 ds.Type = new ScriptTypeInfo()
                 {
                     Name = donutName
                 };
-                var tokenizer = new PrecedenceTokenizer();
+                var tokenizer = new FeatureToolsTokenizer(integration);
                 int i = 0;
                 foreach (var fstring in featureBodies)
                 {
                     if (string.IsNullOrEmpty(fstring)) continue;
-                    if (fstring.Contains("(first_")) continue;
-                    var parser = new TokenParser(tokenizer.Tokenize(fstring));
+                    var parser = new DonutSyntaxReader(tokenizer.Tokenize(fstring));
                     IExpression expFeatureBody = parser.ReadExpression();
                     if (expFeatureBody == null) continue;
                     var featureName = $"f_{i}";
@@ -83,9 +83,18 @@ namespace Netlyt.Service.Lex.Data
                     var expFeature = new AssignmentExpression(new VariableExpression(featureName), expFeatureBody);
                     ds.Features.Add(expFeature);
                     i++;
-                } 
+                }
                 ds.TargetAttribute = target;
                 return ds;
+            }
+
+            private static void ValidateIntegrations(params DataIntegration[] integrations)
+            {
+                foreach (var intg in integrations)
+                {
+                    if (string.IsNullOrEmpty(intg.Name))
+                        throw new InvalidIntegrationException("Integration name is requered!");
+                }
             }
         }
     }
