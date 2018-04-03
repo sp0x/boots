@@ -40,6 +40,12 @@ namespace Netlyt.Service.Donut
             File.WriteAllText(filepath, content);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="assemblyName"></param>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
         public EmitResultAssembly Compile(string assemblyName, out string filePath)
         {
             var generatedContext = _codeGen.GenerateContext(assemblyName, _script);

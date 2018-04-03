@@ -138,15 +138,26 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             {
                 ModelName = "Namex"
             };//_db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
-            var xintegration = new DataIntegration()
+            var rootIntegration = new DataIntegration()
             {
-                APIKey = _appAuth, APIKeyId = _appAuth.Id, Name= ignName
+                APIKey = _appAuth, APIKeyId = _appAuth.Id, Name= ignName, DataTimestampColumn = "timestamp"
             };
-            var modelIntegration = new ModelIntegration() { Model = model, Integration = xintegration };
+            rootIntegration.AddField<string>("humidity");
+            rootIntegration.AddField<string>("latitude");
+            rootIntegration.AddField<string>("longitude");
+            rootIntegration.AddField<string>("pm25");
+            rootIntegration.AddField<string>("pressure");
+            rootIntegration.AddField<string>("rssi");
+            rootIntegration.AddField<string>("temperature");
+            rootIntegration.AddField<string>("humidity");
+            rootIntegration.AddField<string>("latitude");
+            rootIntegration.AddField<string>("longitude");
+            rootIntegration.AddField<DateTime>("timestamp");
+            var modelIntegration = new ModelIntegration() { Model = model, Integration = rootIntegration };
 
             model.DataIntegrations.Add(modelIntegration);
 
-            string features = @"pm10
+            string allFeatures = @"pm10
 SUM(Romanian.humidity)
 SUM(Romanian.latitude)
 SUM(Romanian.longitude)
@@ -201,13 +212,17 @@ MODE(Romanian.DAY(timestamp))
 MODE(Romanian.YEAR(timestamp))
 MODE(Romanian.MONTH(timestamp))
 MODE(Romanian.WEEKDAY(timestamp))";
+            var features = @"MIN(Romanian.rssi)
+DAY(first_Romanian_time)
+YEAR(first_Romanian_time)
+MONTH(first_Romanian_time)
+WEEKDAY(first_Romanian_time)";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", xintegration, featureBodies);
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", rootIntegration, featureBodies);
             foreach (var modelIgn in model.DataIntegrations)
             {
-                var integration = _db.Integrations.FirstOrDefault(x => x.Id == modelIgn.IntegrationId);
-                dscript.AddIntegrations(integration);
+                dscript.AddIntegrations(modelIgn.Integration);
             }
             Type donutType, donutContextType, donutFEmitterType;
             var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType, out donutFEmitterType);
@@ -238,7 +253,8 @@ MODE(Romanian.WEEKDAY(timestamp))";
             var parser = new DonutScriptCodeGenerator(null);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;
-            var maxFeature = parser.GenerateFeatureFunctionCall(maxCall, firstFeature);
+            var faggr = new FeatureAggregateCodeGenerator(script, null);
+            var maxFeature = faggr.GenerateFeatureFunctionCall(maxCall, firstFeature);
             Assert.Equal(expectedAggregateValue, maxFeature.GetValue());
 
             var query = BsonDocument.Parse(maxFeature.GetValue());
@@ -265,7 +281,8 @@ MODE(Romanian.WEEKDAY(timestamp))";
             var parser = new DonutScriptCodeGenerator(null);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;
-            var maxFeatureStr = parser.GenerateFeatureFunctionCall(maxCall, firstFeature);
+            var faggr = new FeatureAggregateCodeGenerator(script, null);
+            var maxFeatureStr = faggr.GenerateFeatureFunctionCall(maxCall, firstFeature);
             //var groupings = parser.GetAggregates(DonutFunctionType.Group);
             //var projections = parser.GetAggregates(DonutFunctionType.Project);
             Assert.Equal(expectedAggregateValue, maxFeatureStr.GetValue());
@@ -293,7 +310,8 @@ MODE(Romanian.WEEKDAY(timestamp))";
             var parser = new DonutScriptCodeGenerator(ign);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;
-            var maxFeatureStr = parser.GenerateFeatureFunctionCall(maxCall, firstFeature);
+            var faggr = new FeatureAggregateCodeGenerator(script, null);
+            var maxFeatureStr = faggr.GenerateFeatureFunctionCall(maxCall, firstFeature);
             Assert.Equal(expectedAggregateValue, maxFeatureStr.GetValue());
 
             var query = BsonDocument.Parse(maxFeatureStr.GetValue());

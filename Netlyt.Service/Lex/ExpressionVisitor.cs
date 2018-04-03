@@ -9,6 +9,7 @@ namespace Netlyt.Service.Lex
     /// </summary>
     public class ExpressionVisitor
     {
+        public int Depth { get; protected set; }
         public ExpressionVisitor()
         { 
         }
@@ -36,27 +37,28 @@ namespace Netlyt.Service.Lex
             visitObjResult = null;
             if (expType == typeof(ParameterExpression))
             {
-                return VisitParameter(expression as ParameterExpression);
+                return VisitParameter(expression as ParameterExpression, out visitObjResult);
             }
             else if (expType == typeof(AssignmentExpression))
             {
-                return VisitAssignment(expression as AssignmentExpression);
+                return VisitAssignment(expression as AssignmentExpression, out visitObjResult);
             }
             else if (expType == typeof(CallExpression))
             {
-                return VisitFunctionCall(expression as CallExpression, out visitObjResult);
+                var fn = VisitFunctionCall(expression as CallExpression, out visitObjResult);
+                return fn;
             }
             else if (expType == typeof(BinaryExpression))
             {
-                return VisitBinaryExpression(expression as BinaryExpression);
+                return VisitBinaryExpression(expression as BinaryExpression, out visitObjResult);
             }
             else if (expType == typeof(NumberExpression))
             {
-                return VisitNumberExpression(expression as NumberExpression);
+                return VisitNumberExpression(expression as NumberExpression, out visitObjResult);
             }
             else if (expType == typeof(VariableExpression))
             {
-                return VisitVariableExpression(expression as VariableExpression);
+                return VisitVariableExpression(expression as VariableExpression, out visitObjResult);
             }
             else
             {
@@ -65,18 +67,21 @@ namespace Netlyt.Service.Lex
             
         }
 
-        protected virtual string VisitVariableExpression(VariableExpression exp)
+        protected virtual string VisitVariableExpression(VariableExpression exp, out object resultObj)
         {
+            resultObj = null;
             return null;
         }
 
-        protected virtual string VisitNumberExpression(NumberExpression exp)
+        protected virtual string VisitNumberExpression(NumberExpression exp, out object resultObj)
         {
+            resultObj = null;
             return null;    
         }
 
-        protected virtual string VisitParameter(ParameterExpression parameterExpression)
+        protected virtual string VisitParameter(ParameterExpression parameterExpression, out object resultObj)
         {
+            resultObj = null;
             return null;
         }
 
@@ -86,24 +91,28 @@ namespace Netlyt.Service.Lex
             return null;
         }
 
-        protected virtual string VisitAssignment(AssignmentExpression exp)
-        { 
+        protected virtual string VisitAssignment(AssignmentExpression exp, out object resultObj)
+        {
+            resultObj = null;
             return null;
         }
 
-        public virtual string VisitBinaryExpression(BinaryExpression exp)
+        public virtual string VisitBinaryExpression(BinaryExpression exp, out object resultObj)
         {
+            resultObj = null;
             return null;
         }
 
 
-        protected virtual string VisitStringExpression(StringExpression exp)
+        protected virtual string VisitStringExpression(StringExpression exp, out object resultObj)
         {
+            resultObj = null;
             return null;
         }
 
-        protected virtual string VisitFloatExpression(FloatExpression exp)
+        protected virtual string VisitFloatExpression(FloatExpression exp, out object resultObj)
         {
+            resultObj = null;
             return null;
         }
          

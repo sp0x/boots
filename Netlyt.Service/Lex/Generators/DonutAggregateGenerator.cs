@@ -6,10 +6,9 @@ using Netlyt.Service.Lex.Generation;
 
 namespace Netlyt.Service.Lex.Generators
 {
-    public class DonutCSharpGenerator : CodeGenerator
+    public class DonutAggregateGenerator : CodeGenerator
     {
-
-        public DonutCSharpGenerator()
+        public DonutAggregateGenerator()
         {
         }
         public override string GenerateFromExpression(Expression mapReduce)
@@ -27,6 +26,10 @@ namespace Netlyt.Service.Lex.Generators
             //if(expVisitor==null) expVisitor = new DonutFeatureGeneratingExpressionVisitor(_script);
             var lstValues = VisitCall(callExpression, null, expVisitor);
             return lstValues;
+        }
+
+        public void Clean()
+        {
         }
     }
 }
