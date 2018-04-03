@@ -236,6 +236,14 @@ namespace Netlyt.Web.Controllers
                 sourceStream.Position = 0;
                 try
                 {
+                    if (!string.IsNullOrEmpty(modelParams.UserEmail))
+                    {
+                        _userService.SetUserEmail(user, modelParams.UserEmail);
+                    }
+                    else
+                    {
+                        return BadRequest();
+                    }
                     result = await _integrationService.CreateOrFillIntegration(sourceStream, fileContentType,
                         modelParams.Name);
                     newIntegration = result?.Integration;

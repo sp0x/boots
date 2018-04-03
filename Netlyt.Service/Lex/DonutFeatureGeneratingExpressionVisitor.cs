@@ -12,14 +12,14 @@ namespace Netlyt.Service.Lex
         public Dictionary<VariableExpression, string> Variables { get; private set; }
         private DonutFunctionParser _donutFunctionParser;
         private DonutScript _script;
-        public Queue<DonutFunction> Aggregates { get; set; }
-        public Queue<DonutFunction> FeatureFunctions { get; set; }
+        public Queue<IDonutFunction> Aggregates { get; set; }
+        public Queue<IDonutFunction> FeatureFunctions { get; set; }
 
         public DonutFeatureGeneratingExpressionVisitor(DonutScript script) : base()
         {
             Variables = new Dictionary<VariableExpression, string>();
-            Aggregates = new Queue<DonutFunction>();
-            FeatureFunctions = new Queue<DonutFunction>();
+            Aggregates = new Queue<IDonutFunction>();
+            FeatureFunctions = new Queue<IDonutFunction>();
             _donutFunctionParser = new DonutFunctionParser();
             _script = script;
         }
@@ -28,7 +28,12 @@ namespace Netlyt.Service.Lex
             var function = exp.Name;
             var paramBuilder = new StringBuilder();
             var iParam = 0;
-            var donutFn = _donutFunctionParser.Resolve(function, exp.Parameters); 
+            var donutFn = _donutFunctionParser.Resolve(function, exp.Parameters);
+            if (donutFn == null)
+            {
+                resultObj = null;
+                return null;
+            }
             if (donutFn.IsAggregate)
             {
                 var aggregateResult = donutFn.GetAggregateValue();
@@ -42,6 +47,11 @@ namespace Netlyt.Service.Lex
                     var parameter = exp.Parameters[i];
                     object paramOutputObj;
                     var paramStr = Visit(parameter, out paramOutputObj);
+                    if (string.IsNullOrEmpty(paramStr))
+                    {
+                        resultObj = null;
+                        return null;
+                    }
                     aggregateResult = aggregateResult.Replace("{" + i + "}", paramStr);
                 }
                 donutFn.Content = aggregateResult;
@@ -115,6 +125,10 @@ namespace Netlyt.Service.Lex
             {
                 object donutFn;
                 var value = VisitFunctionCall(paramValue as CallExpression, out donutFn);
+                if (string.IsNullOrEmpty(value))
+                {
+                    return null;
+                }
                 sb.Append(value);
             }
             else if (paramValueType == typeof(VariableExpression))

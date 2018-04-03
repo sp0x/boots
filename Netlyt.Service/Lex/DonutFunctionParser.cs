@@ -9,10 +9,10 @@ namespace Netlyt.Service.Lex
 {
     public class DonutFunctionParser
     {
-        private static Dictionary<string, DonutFunction> Functions { get; set; }
+        private static Dictionary<string, IDonutFunction> Functions { get; set; }
         static DonutFunctionParser()
         {
-            Functions = new Dictionary<string, DonutFunction>();
+            Functions = new Dictionary<string, IDonutFunction>();
             Functions["sum"] = new DonutFunction("sum")
             {
                 Type = DonutFunctionType.Group,
@@ -115,9 +115,9 @@ namespace Netlyt.Service.Lex
         {
             return "Utils.GetYear";
         }
-        public DonutFunction Resolve(string function, List<ParameterExpression> expParameters)
+        public IDonutFunction Resolve(string function, List<ParameterExpression> expParameters)
         {
-            DonutFunction output = null;
+            IDonutFunction output = null;
             var lower = function.ToLower();
             if (Functions.ContainsKey(lower))
             {
@@ -126,7 +126,9 @@ namespace Netlyt.Service.Lex
             }
             else
             {
-                throw new Exception($"Unsupported js function: {function}");
+                ///throw new Exception($"Unsupported js function: {function}");
+                System.Diagnostics.Trace.WriteLine($"Unsupported js function: {function}");
+                return null;
             }
             return output;
         }

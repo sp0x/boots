@@ -62,7 +62,7 @@ namespace Netlyt.Service.Donut
         {
             try
             {
-                var trResult = trainingCompleteNotification["result"];
+                var trResult = trainingCompleteNotification["params"];
                 if (trResult == null) return;
                 var taskId = trResult["task_id"].ToString();
                 var modelId = long.Parse(trResult["model_id"].ToString());
@@ -76,7 +76,7 @@ namespace Netlyt.Service.Donut
                 }
                 if (model.User == null) return;
                 //Notify user that training is complete
-                var endpoint = "http://dev.netlyt.com/oneclick/" + model.Id;
+                var endpoint = "http://dev.netlyt.com/oneclickResults/" + model.Id;
                 var mailMessage = $"Model training for {model.ModelName} is now complete." +
                     $"Get your resutls here: {endpoint}";
                 await _emailService.SendEmailAsync(model.User.Email, "Training complete.", mailMessage);
@@ -109,7 +109,14 @@ namespace Netlyt.Service.Donut
             }
 
             if (model == null) return;
-            var sourceIntegration = model.DataIntegrations.FirstOrDefault()?.Integration;
+            var modelIntegration = model.DataIntegrations.FirstOrDefault();
+            var sourceIntegration = _db.Integrations
+                .Include(x=>x.APIKey)
+                .Include(x=>x.Fields)
+                .Include(x=>x.Models)
+                .Include(x=>x.Owner)
+                .Include(x=>x.PublicKey)
+                .FirstOrDefault(x => x.Id == modelIntegration.IntegrationId);
             if (sourceIntegration == null)
             {
                 throw new InvalidOperationException("Model has no integrations!");

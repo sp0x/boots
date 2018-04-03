@@ -124,6 +124,11 @@ namespace Netlyt.Service.Lex.Generators
                     {
                         //We're dealing with an aggregate call 
                         var aggregateContent = GenerateFeatureFunctionCall(accessor as CallExpression);
+                        //Could not parse function
+                        if (aggregateContent==null || string.IsNullOrEmpty(aggregateContent.GetValue()))
+                        {
+                            continue;
+                        }
                         var functionType = donutFnResolver.GetFunctionType(accessor as CallExpression);
                         var aggregateValue = aggregateContent?.GetValue().Replace("$"+rootCollection+".","$");
                         if (aggregateValue != null) aggregateValue = aggregateValue.Replace("\"", "\\\"");
