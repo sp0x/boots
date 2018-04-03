@@ -47,6 +47,10 @@ namespace Netlyt.Web
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();
             services.AddTransient<CompilerService>();
+            services.AddTransient<IEmailSender, AuthMessageSender>((sp) =>
+                {
+                    return new AuthMessageSender(Configuration);
+                });
             services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
                 new DynamicContextFactory(() =>
                 {

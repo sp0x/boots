@@ -1,16 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Netlyt.Service.Lex.Expressions;
 
 namespace Netlyt.Service.Donut
 {
-    public enum DonutFunctionType
+    public class DonutFunction : IDonutFunction
     {
-        Standard, Group, Project, GroupKey
-    }
-    public class DonutFunction
-    {
-        string Name { get; set; }
+        public string Name { get; set; }
         public bool IsAggregate { get; set; }
         public List<ParameterExpression> Parameters { get; set; }
         public string Body { get; set; }
@@ -29,9 +26,9 @@ namespace Netlyt.Service.Donut
             Name = nm;
         }
 
-        public DonutFunction Clone()
+        public IDonutFunction Clone()
         {
-            var newFn = new DonutFunction(Name);
+            var newFn = Activator.CreateInstance(this.GetType(), new object[]{ Name}) as IDonutFunction;
             newFn.Name = Name;
             newFn.IsAggregate = IsAggregate;
             newFn.Body = Body;
@@ -40,6 +37,19 @@ namespace Netlyt.Service.Donut
             newFn.Content = Content;
             newFn.Type = Type;
             return newFn;
+        }
+
+        public override string ToString()
+        {
+            return $"{GetValue()}";
+        }
+
+        public string GetValue()
+        {
+            if (!string.IsNullOrEmpty(Projection)) return Projection;
+            if (!string.IsNullOrEmpty(GroupValue)) return GroupValue;
+            if (!string.IsNullOrEmpty(Content)) return Content;
+            return null;
         }
 
         /// <summary>

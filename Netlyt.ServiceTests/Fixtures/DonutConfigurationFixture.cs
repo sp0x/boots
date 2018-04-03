@@ -66,6 +66,10 @@ namespace Netlyt.ServiceTests.Fixtures
             services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>(), new TimestampService(_context)));
             services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
             services.AddSingleton(BehaviourContext);
+            services.AddTransient<IEmailSender, AuthMessageSender>((sp) =>
+            {
+                return new AuthMessageSender(Config);
+            });
             services.AddSingleton<DonutOrionHandler>();
             services.AddTransient<CompilerService>();
         }
