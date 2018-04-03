@@ -76,9 +76,9 @@ namespace Netlyt.Service.Donut
                 }
                 if (model.User == null) return;
                 //Notify user that training is complete
-                var endpoint = "http://dev.netlyt.com/oneclickResults/" + model.Id;
+                var endpoint = "http://dev.netlyt.com/oneclick/" + model.Id;
                 var mailMessage = $"Model training for {model.ModelName} is now complete." +
-                    $"Get your resutls here: {endpoint}";
+                    $"Get your results here: {endpoint}";
                 await _emailService.SendEmailAsync(model.User.Email, "Training complete.", mailMessage);
             }
             catch (Exception ex)
