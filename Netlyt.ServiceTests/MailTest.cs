@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using Netlyt.Service;
 using Xunit;
 
 namespace Netlyt.ServiceTests
@@ -20,25 +21,10 @@ namespace Netlyt.ServiceTests
         [Fact]
         public void TestSendEmail()
         {
-            var configurationSection = Configuration.GetSection("mail");
-            var server = configurationSection["smtp_server"];
-            var username = configurationSection["username"];
-            var password = configurationSection["password"];
-            var fromEmail = configurationSection["from_email"];
-            var client = new SmtpClient(server);
-            client.UseDefaultCredentials = false;
-            client.Credentials = new NetworkCredential(username, password);
-            client.Port = int.Parse(configurationSection["smtp_port"]);
-            client.EnableSsl = true;
-
-            MailMessage mailMessage = new MailMessage();
-            mailMessage.From = new MailAddress(fromEmail);
-            mailMessage.To.Add("vaskovasilev94@yahoo.com");
-            mailMessage.Body = "body mody";
-            mailMessage.Subject = "some subject";
+            var svc = new AuthMessageSender(Configuration);
             try
             {
-                client.Send(mailMessage);
+                svc.SendEmailAsync("vaskovasilev94@yahoo.com", "Subject a", "Long message..");
             }
             catch (Exception ex)
             {
