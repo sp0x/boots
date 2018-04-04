@@ -4,14 +4,16 @@ using System.Text;
 using Netlyt.Service.Donut;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Expressions;
+using Netlyt.Service.Lex.Generators;
 
 namespace Netlyt.Service.Lex
 {
     public class DonutFeatureGeneratingExpressionVisitor : ExpressionVisitor
     { 
         public Dictionary<VariableExpression, string> Variables { get; private set; }
-        private DonutFunctionParser _donutFunctionParser;
+        private DonutFunctions _functionDict;
         private DonutScript _script;
+        AggregatePipeline _pipeline;
         public Queue<IDonutFunction> Aggregates { get; set; }
         public Queue<IDonutFunction> FeatureFunctions { get; set; }
 
@@ -20,44 +22,42 @@ namespace Netlyt.Service.Lex
             Variables = new Dictionary<VariableExpression, string>();
             Aggregates = new Queue<IDonutFunction>();
             FeatureFunctions = new Queue<IDonutFunction>();
-            _donutFunctionParser = new DonutFunctionParser();
+            _functionDict = new DonutFunctions();
             _script = script;
+            _pipeline = new AggregatePipeline();
         }
+
         protected override string VisitFunctionCall(CallExpression exp, out object resultObj)
         {
+            Depth++;
             var function = exp.Name;
             var paramBuilder = new StringBuilder();
             var iParam = 0;
-            var donutFn = _donutFunctionParser.Resolve(function, exp.Parameters);
-            if (donutFn == null)
+            var donutFn = _functionDict.GetFunction(function);
+            donutFn.Parameters = exp.Parameters;
+            string result;
+            _pipeline.AddFromFunction(donutFn);
+            if (donutFn is IDonutTemplateFunction fnTemplate)
             {
-                resultObj = null;
-                return null;
+                FeatureFunctions.Enqueue(donutFn);
+                var codeContext = new DonutCodeContext(_script);
+                result = fnTemplate.GetTemplate(exp, codeContext);
+                donutFn.Content = result;
+                resultObj = donutFn;
             }
-            if (donutFn.IsAggregate)
+            else if (donutFn.IsAggregate)
             {
-                var aggregateResult = donutFn.GetAggregateValue();
+                var aggregateResult = donutFn.GetValue();
                 if (aggregateResult == null)
                 {
                     resultObj = null;
                     return "";
                 }
-                for(int i=0; i<exp.Parameters.Count; i++)
-                {
-                    var parameter = exp.Parameters[i];
-                    object paramOutputObj;
-                    var paramStr = Visit(parameter, out paramOutputObj);
-                    if (string.IsNullOrEmpty(paramStr))
-                    {
-                        resultObj = null;
-                        return null;
-                    }
-                    aggregateResult = aggregateResult.Replace("{" + i + "}", paramStr);
-                }
+                aggregateResult = FillCallParameters(exp, aggregateResult);
                 donutFn.Content = aggregateResult;
                 resultObj = donutFn;
                 Aggregates.Enqueue(donutFn);
-                return aggregateResult;
+                result = aggregateResult;
             }
             else
             {
@@ -72,63 +72,95 @@ namespace Netlyt.Service.Lex
                     }
                     iParam++;
                 }
-                var result = $"{donutFn}({paramBuilder})";
+                result = $"{donutFn}({paramBuilder})";
                 resultObj = donutFn;
-                return result;
             }
+            Depth--;
+            return result;
         }
-        protected override string VisitNumberExpression(NumberExpression exp)
+        /// <summary>
+        /// Fills the parameters in, into functions.
+        /// </summary>
+        /// <param name="exp"></param>
+        /// <param name="template"></param>
+        /// <returns></returns>
+        private string FillCallParameters(CallExpression exp, string template)
         {
+            for (int i = 0; i < exp.Parameters.Count; i++)
+            {
+                var parameter = exp.Parameters[i];
+                object paramOutputObj;
+                var pValue = parameter.Value;
+                //If we visit functions here, note that in the pipeline
+                var paramStr = Visit(parameter, out paramOutputObj);
+                if (pValue is CallExpression || paramOutputObj is IDonutTemplateFunction)
+                {
+                    template = template.Replace("\"{" + i + "}\"", paramStr);
+                }
+                else
+                {
+                    template = template.Replace("{" + i + "}", $"${paramStr}");
+                }
+            }
+            return template;
+        }
+
+        protected override string VisitNumberExpression(NumberExpression exp, out object resultObj)
+        {
+            resultObj = null;
             var output = exp.ToString();
             return output;
         }
 
-        protected override string VisitStringExpression(StringExpression exp)
+        protected override string VisitStringExpression(StringExpression exp, out object resultObj)
         {
+            resultObj = null;
             return exp.ToString();
         }
 
-        protected override string VisitFloatExpression(FloatExpression exp)
+        protected override string VisitFloatExpression(FloatExpression exp, out object resultObj)
         {
+            resultObj = null;
             return exp.ToString();
         }
 
-        public override string VisitBinaryExpression(BinaryExpression exp)
+        public override string VisitBinaryExpression(BinaryExpression exp, out object resultObj)
         {
+            resultObj = null;
             var left = Visit(exp.Left);
             var right = Visit(exp.Right);
             var op = $"{left} {exp.Token.Value} {right}";
             return op;
         }
-        protected override string VisitAssignment(AssignmentExpression exp)
+        protected override string VisitAssignment(AssignmentExpression exp, out object resultObj)
         {
             var sb = new StringBuilder();
             sb.Append($"var {exp.Member}");
             sb.Append("=");
-            var assignValue = Visit(exp.Value);
+            var assignValue = Visit(exp.Value, out resultObj);
             sb.Append(assignValue);
             sb.Append(";");
             //AddVariable(exp.Member, sb.ToString());
             return sb.ToString();
         }
-        protected override string VisitParameter(ParameterExpression exp)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="exp"></param>
+        /// <returns></returns>
+        protected override string VisitParameter(ParameterExpression exp, out object resultObj)
         {
             var sb = new StringBuilder();
             var paramValue = exp.Value;
             var paramValueType = paramValue.GetType();
             if (paramValueType == typeof(LambdaExpression))
             {
-                var value = VisitLambda(paramValue as LambdaExpression);
+                var value = VisitLambda(paramValue as LambdaExpression, out resultObj);
                 sb.Append(value);
             }
             else if (paramValueType == typeof(CallExpression))
             {
-                object donutFn;
-                var value = VisitFunctionCall(paramValue as CallExpression, out donutFn);
-                if (string.IsNullOrEmpty(value))
-                {
-                    return null;
-                }
+                var value = VisitFunctionCall(paramValue as CallExpression, out resultObj);
                 sb.Append(value);
             }
             else if (paramValueType == typeof(VariableExpression))
@@ -160,22 +192,31 @@ namespace Netlyt.Service.Lex
                 }
                 if (foundCallExpression != null)
                 {
-                    object donutFn;
-                    var value = VisitFunctionCall(foundCallExpression, out donutFn);
+                    var value = VisitFunctionCall(foundCallExpression, out resultObj);
                     sb.Append(value);
                 }
                 else
                 {
-                    sb.Append(exp.ToString());
+                    var vex = ((VariableExpression)paramValue);
+                    var varValue = VisitVariableExpression(vex, out resultObj);
+                    sb.Append(varValue);
                 }
             }
             else
             {
                 sb.Append(exp.ToString());
+                resultObj = null;
             }
             return sb.ToString();
         }
-        private string VisitLambda(LambdaExpression lambda)
+
+        private string VisitVariableExpression(VariableExpression vex, out object resultObj)
+        {
+            resultObj = null;
+            return vex.Member.ToString();
+        }
+
+        private string VisitLambda(LambdaExpression lambda, out object resultObj)
         {
             var sb = new StringBuilder();
             sb.Append("(");
@@ -187,7 +228,7 @@ namespace Netlyt.Service.Lex
                 if (i < (lambda.Parameters.Count - 1)) sb.Append(", ");
             }
             sb.Append(")=>{\n");
-            var bodyContent = Visit(lambda.Body.FirstOrDefault());
+            var bodyContent = Visit(lambda.Body.FirstOrDefault(), out resultObj);
             sb.Append(" return ").Append(bodyContent).Append(";");
             sb.Append("\n}");
             return sb.ToString();
@@ -202,6 +243,11 @@ namespace Netlyt.Service.Lex
         public void SetScript(DonutScript script)
         {
             _script = script;
+        }
+
+        public void Clean()
+        {
+            _pipeline.Clean();
         }
     }
 }

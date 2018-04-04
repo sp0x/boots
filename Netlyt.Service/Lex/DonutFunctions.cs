@@ -7,29 +7,29 @@ using Netlyt.Service.Lex.Expressions;
 
 namespace Netlyt.Service.Lex
 {
-    public class DonutFunctionParser
+    public class DonutFunctions
     {
         private static Dictionary<string, IDonutFunction> Functions { get; set; }
-        static DonutFunctionParser()
+        static DonutFunctions()
         {
             Functions = new Dictionary<string, IDonutFunction>();
             Functions["sum"] = new DonutFunction("sum")
             {
                 Type = DonutFunctionType.Group,
                 IsAggregate = true,
-                GroupValue = (new BsonDocument { { "$sum", "${0}" } }).ToString()
+                GroupValue = (new BsonDocument { { "$sum", "{0}" } }).ToString()
             };
             Functions["max"] = new DonutFunction("max")
             {
                 Type = DonutFunctionType.Group,
                 IsAggregate = true,
-                GroupValue = (new BsonDocument { { "$max", "${0}" } }).ToString()
+                GroupValue = (new BsonDocument { { "$max", "{0}" } }).ToString()
             };
             Functions["min"] = new DonutFunction("min")
             {
                 Type = DonutFunctionType.Group,
                 IsAggregate = true,
-                GroupValue = (new BsonDocument { { "$min", "${0}" } }).ToString()
+                GroupValue = (new BsonDocument { { "$min", "{0}" } }).ToString()
             };
             Functions["num_unique"] = new DonutFunction("num_unique")
             { IsAggregate = true };
@@ -43,13 +43,13 @@ namespace Netlyt.Service.Lex
             {
                 Type = DonutFunctionType.Group,
                 IsAggregate = true,
-                GroupValue = (new BsonDocument { { "$avg", "${0}" } }).ToString()
+                GroupValue = (new BsonDocument { { "$avg", "{0}" } }).ToString()
             };
             Functions["avg"] = new DonutFunction("avg")
             {
                 Type = DonutFunctionType.Group,
                 IsAggregate = true,
-                GroupValue = (new BsonDocument { { "$avg", "${0}" } }).ToString()
+                GroupValue = (new BsonDocument { { "$avg", "{0}" } }).ToString()
             };
 //            Functions["num_unique"] = new DonutFunction("num_unique")
 //            {
@@ -63,34 +63,53 @@ namespace Netlyt.Service.Lex
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$dayOfMonth", "${0}" } }).ToString()
+                Projection = (new BsonDocument { { "$dayOfMonth", "{0}" } }).ToString()
             };
             Functions["month"] = new DonutFunction("month")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$month", "${0}" } }).ToString()
+                Projection = (new BsonDocument { { "$month", "{0}" } }).ToString()
             };
             Functions["year"] = new DonutFunction("year")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$year", "${0}" } }).ToString()
+                Projection = (new BsonDocument { { "$year", "{0}" } }).ToString()
             };
             Functions["weekday"] = new DonutFunction("weekday")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$dayOfWeek", "${0}" } }).ToString()
+                Projection = (new BsonDocument { { "$dayOfWeek", "{0}" } }).ToString()
             };
             Functions["yearday"] = new DonutFunction("day")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$dayOfYear", "${0}" } }).ToString()
+                Projection = (new BsonDocument { { "$dayOfYear", "{0}" } }).ToString()
             };
             Functions["mode"] = new DonutFunction("mode")
             { IsAggregate = false };
+            Functions["first"] = new DonutFunction("first")
+            {
+                Type = DonutFunctionType.Group,
+                IsAggregate = true,
+                Projection = (new BsonDocument{ { "$first", "{0}"} }).ToString()
+            };
+            Functions["last"] = new DonutFunction("last")
+            {
+                Type = DonutFunctionType.Group,
+                IsAggregate = true,
+                Projection = (new BsonDocument { { "$last", "{0}" } }).ToString()
+            };
+            //Custom functions
+            Functions["dstime"] = new DsTime("dstime")
+            {
+                Type = DonutFunctionType.Project,
+                IsAggregate = false
+            };
+
             //Functions["time"] = "(function(timeElem){ return timeElem.getTime() })";
         }
 
@@ -115,20 +134,23 @@ namespace Netlyt.Service.Lex
         {
             return "Utils.GetYear";
         }
-        public IDonutFunction Resolve(string function, List<ParameterExpression> expParameters)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="function"></param>
+        /// <param name="expParameters"></param>
+        /// <returns></returns>
+        public IDonutFunction GetFunction(string function)
         {
             IDonutFunction output = null;
             var lower = function.ToLower();
             if (Functions.ContainsKey(lower))
             {
                 output = Functions[lower].Clone();
-                output.Parameters = expParameters;
             }
             else
             {
-                ///throw new Exception($"Unsupported js function: {function}");
-                System.Diagnostics.Trace.WriteLine($"Unsupported js function: {function}");
-                return null;
+                throw new Exception($"Unsupported js function: {function}");
             }
             return output;
         }

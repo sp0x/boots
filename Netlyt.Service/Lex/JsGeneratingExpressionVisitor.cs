@@ -19,35 +19,38 @@ namespace Netlyt.Service.Lex
             Variables = new Dictionary<VariableExpression, string>();
         } 
 
-        protected override string VisitNumberExpression(NumberExpression exp)
+        protected override string VisitNumberExpression(NumberExpression exp, out object retObject)
         {
+            retObject = null;
             var output = exp.ToString();
             return output;
         }
 
-        protected override string VisitStringExpression(StringExpression exp)
+        protected override string VisitStringExpression(StringExpression exp, out  object retObject)
         {
+            retObject = null;
             return exp.ToString();
         }
 
-        protected override string VisitFloatExpression(FloatExpression exp)
+        protected override string VisitFloatExpression(FloatExpression exp, out object retObject)
         {
+            retObject = null;
             return exp.ToString();
         }
 
-        public override string VisitBinaryExpression(BinaryExpression exp)
+        public override string VisitBinaryExpression(BinaryExpression exp, out object retObject)
         {
             var left = Visit(exp.Left);
-            var right = Visit(exp.Right);
+            var right = Visit(exp.Right, out retObject);
             var op = $"{left} {exp.Token.Value} {right}";
             return op;
         }
-        protected override string VisitAssignment(AssignmentExpression exp)
+        protected override string VisitAssignment(AssignmentExpression exp, out object retObject)
         {
             var sb = new StringBuilder();
             sb.Append($"var {exp.Member}");
             sb.Append("=");
-            var assignValue = Visit(exp.Value);
+            var assignValue = Visit(exp.Value, out retObject);
             sb.Append(assignValue);
             sb.Append(";");
             AddVariable(exp.Member, sb.ToString());
@@ -82,30 +85,30 @@ namespace Netlyt.Service.Lex
             return result;
         }
 
-        protected override string VisitParameter(ParameterExpression exp)
+        protected override string VisitParameter(ParameterExpression exp, out object retObject)
         { 
             var sb = new StringBuilder();
             var paramValue = exp.Value;
             var paramValueType = paramValue.GetType();
             if (paramValueType == typeof(LambdaExpression))
             {
-                var value = VisitLambda(paramValue as LambdaExpression);
+                var value = VisitLambda(paramValue as LambdaExpression, out retObject);
                 sb.Append(value);
             }
             else if (paramValueType == typeof(CallExpression))
             {
-                object jsout;
-                var value = VisitFunctionCall(paramValue as CallExpression, out jsout);
+                var value = VisitFunctionCall(paramValue as CallExpression, out retObject);
                 sb.Append(value);
             }
             else
             {
+                retObject = null;
                 sb.Append(exp.ToString());
             }
             return sb.ToString();
         }
 
-        private string VisitLambda(LambdaExpression lambda)
+        private string VisitLambda(LambdaExpression lambda, out object retObject)
         {
             var sb = new StringBuilder();
             sb.Append("function(");
@@ -117,14 +120,15 @@ namespace Netlyt.Service.Lex
                 if(i<(lambda.Parameters.Count - 1)) sb.Append(", ");
             }
             sb.Append("){\n");
-            var bodyContent = Visit(lambda.Body.FirstOrDefault());
+            var bodyContent = Visit(lambda.Body.FirstOrDefault(), out retObject);
             sb.Append(" return ").Append(bodyContent).Append(";");
             sb.Append("\n}"); 
             return sb.ToString();
         }
 
-        protected override string VisitVariableExpression(VariableExpression exp)
+        protected override string VisitVariableExpression(VariableExpression exp, out object  retObject)
         {
+            retObject = null;
             var val = exp.ToString();
             return val;
         }
