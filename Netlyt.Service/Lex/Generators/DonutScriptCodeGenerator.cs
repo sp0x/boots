@@ -17,12 +17,12 @@ namespace Netlyt.Service.Lex.Generators
     public class DonutScriptCodeGenerator : CodeGenerator
     {
         private DonutFeatureGeneratingExpressionVisitor _expVisitor;
-        private DataIntegration _integration;
+        //private DataIntegration _integration;
 
-        public DonutScriptCodeGenerator(DataIntegration integration)
+        public DonutScriptCodeGenerator(DonutScript script)
         {
-            _expVisitor = new DonutFeatureGeneratingExpressionVisitor(null);
-            _integration = integration;
+            _expVisitor = new DonutFeatureGeneratingExpressionVisitor(script);
+            //_integration = integration;
         }
         public override string GenerateFromExpression(Expression contextExpressionInfo)
         {
@@ -104,7 +104,8 @@ namespace Netlyt.Service.Lex.Generators
             GetIntegrationRecordVars(script, fBuilder);
 
             var aggregates = new FeatureAggregateCodeGenerator(script, _expVisitor);
-            var aggregatePipeline = aggregates.GetContent();
+            aggregates.AddAll(script.Features);
+            var aggregatePipeline = aggregates.GetScriptContent();
             fBuilder.Append(aggregatePipeline);
             return fBuilder.ToString();
         }

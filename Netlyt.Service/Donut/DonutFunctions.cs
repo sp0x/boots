@@ -106,7 +106,7 @@ namespace Netlyt.Service.Lex
             //Custom functions
             Functions["dstime"] = new DsTime("dstime")
             {
-                Type = DonutFunctionType.Project,
+                Type = DonutFunctionType.Group,
                 IsAggregate = false
             };
 

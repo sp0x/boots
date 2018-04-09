@@ -9,13 +9,13 @@ namespace Netlyt.Service.Lex.Generation
 {
     public static class Extensions
     {
-        private static Dictionary<Type, Func<CodeGenerator>> _generators;
+        private static Dictionary<Type, Func<object,CodeGenerator>> _generators;
         static Extensions()
         {
-            _generators = new Dictionary<Type, Func<CodeGenerator>>();
-            _generators.Add(typeof(MapReduceExpression), () => new MapReduceMapGenerator());
-            _generators.Add(typeof(MapAggregateExpression), () => new MapReduceAggregateGenerator());
-            _generators.Add(typeof(DonutScript), () => new DonutScriptCodeGenerator(null));
+            _generators = new Dictionary<Type, Func<object, CodeGenerator>>();
+            _generators.Add(typeof(MapReduceExpression), (x) => new MapReduceMapGenerator());
+            _generators.Add(typeof(MapAggregateExpression), (x) => new MapReduceAggregateGenerator());
+            _generators.Add(typeof(DonutScript), (x) => new DonutScriptCodeGenerator((DonutScript)x));
         }
 
         /// <summary>
@@ -26,10 +26,10 @@ namespace Netlyt.Service.Lex.Generation
         public static CodeGenerator GetCodeGenerator(this IExpression expression)
         {
             var expType = expression.GetType();
-            Func<CodeGenerator> generatorFunc;
+            Func<object, CodeGenerator> generatorFunc;
             if (_generators.TryGetValue(expType, out generatorFunc))
             {
-                var generator = generatorFunc();
+                var generator = generatorFunc(expression);
                 return generator;
             } 
             else

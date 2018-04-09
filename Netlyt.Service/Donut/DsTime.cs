@@ -25,5 +25,11 @@ namespace Netlyt.Service.Donut
                 throw new Exception("Integration not found");
             }
         }
+
+        public override int GetHashCode()
+        {
+            var content = GetValue();
+            return content.GetHashCode();
+        }
     }
 }

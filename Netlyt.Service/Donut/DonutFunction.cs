@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Netlyt.Service.Lex.Expressions;
 
@@ -31,7 +32,7 @@ namespace Netlyt.Service.Donut
 
         public DonutFunction Clone()
         {
-            var newFn = new DonutFunction(Name);
+            var newFn = Activator.CreateInstance(this.GetType(), new object[]{ Name}) as IDonutFunction;
             newFn.Name = Name;
             newFn.IsAggregate = IsAggregate;
             newFn.Body = Body;
@@ -40,6 +41,25 @@ namespace Netlyt.Service.Donut
             newFn.Content = Content;
             newFn.Type = Type;
             return newFn;
+        }
+
+        public override string ToString()
+        {
+            return $"{GetValue()}";
+        }
+
+        public string GetValue()
+        {
+            if (!string.IsNullOrEmpty(Content)) return Content;
+            if (!string.IsNullOrEmpty(Projection)) return Projection;
+            if (!string.IsNullOrEmpty(GroupValue)) return GroupValue;
+            return null;
+        }
+
+        public virtual int GetHashCode()
+        {
+            var content = GetValue();
+            return content.GetHashCode();
         }
 
         /// <summary>

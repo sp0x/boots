@@ -1,21 +1,22 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Netlyt.Service.Donut;
+using Netlyt.Service.Lex;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Generators;
 
-namespace Netlyt.Service.Lex
+namespace Netlyt.Service.Donut
 {
     public class DonutFeatureGeneratingExpressionVisitor : ExpressionVisitor
     { 
         public Dictionary<VariableExpression, string> Variables { get; private set; }
         private DonutFunctions _functionDict;
         private DonutScript _script;
-        AggregatePipeline _pipeline;
+        AggregateJobTree _aggTree;
         public Queue<IDonutFunction> Aggregates { get; set; }
         public Queue<IDonutFunction> FeatureFunctions { get; set; }
+        public AggregateJobTree AggregateTree => _aggTree;
 
         public DonutFeatureGeneratingExpressionVisitor(DonutScript script) : base()
         {
@@ -24,9 +25,9 @@ namespace Netlyt.Service.Lex
             FeatureFunctions = new Queue<IDonutFunction>();
             _functionDict = new DonutFunctions();
             _script = script;
-            _pipeline = new AggregatePipeline();
+            _aggTree = new AggregateJobTree(_script);
         }
-
+        
         protected override string VisitFunctionCall(CallExpression exp, out object resultObj)
         {
             Depth++;
@@ -36,12 +37,13 @@ namespace Netlyt.Service.Lex
             var donutFn = _functionDict.GetFunction(function);
             donutFn.Parameters = exp.Parameters;
             string result;
-            _pipeline.AddFromFunction(donutFn);
+            var aggStage = _aggTree.AddFunction(donutFn);
+
             if (donutFn is IDonutTemplateFunction fnTemplate)
             {
                 FeatureFunctions.Enqueue(donutFn);
                 var codeContext = new DonutCodeContext(_script);
-                result = fnTemplate.GetTemplate(exp, codeContext);
+                result = fnTemplate.GetTemplate(exp, codeContext); 
                 donutFn.Content = result;
                 resultObj = donutFn;
             }
@@ -53,8 +55,7 @@ namespace Netlyt.Service.Lex
                     resultObj = null;
                     return "";
                 }
-                aggregateResult = FillCallParameters(exp, aggregateResult);
-                donutFn.Content = aggregateResult;
+                donutFn.Content = aggregateResult = aggStage.GetValue();//FillCallParameters(donutFn, exp.Parameters);
                 resultObj = donutFn;
                 Aggregates.Enqueue(donutFn);
                 result = aggregateResult;
@@ -78,32 +79,7 @@ namespace Netlyt.Service.Lex
             Depth--;
             return result;
         }
-        /// <summary>
-        /// Fills the parameters in, into functions.
-        /// </summary>
-        /// <param name="exp"></param>
-        /// <param name="template"></param>
-        /// <returns></returns>
-        private string FillCallParameters(CallExpression exp, string template)
-        {
-            for (int i = 0; i < exp.Parameters.Count; i++)
-            {
-                var parameter = exp.Parameters[i];
-                object paramOutputObj;
-                var pValue = parameter.Value;
-                //If we visit functions here, note that in the pipeline
-                var paramStr = Visit(parameter, out paramOutputObj);
-                if (pValue is CallExpression || paramOutputObj is IDonutTemplateFunction)
-                {
-                    template = template.Replace("\"{" + i + "}\"", paramStr);
-                }
-                else
-                {
-                    template = template.Replace("{" + i + "}", $"${paramStr}");
-                }
-            }
-            return template;
-        }
+        
 
         protected override string VisitNumberExpression(NumberExpression exp, out object resultObj)
         {
@@ -238,16 +214,13 @@ namespace Netlyt.Service.Lex
         {
             Aggregates.Clear();
             FeatureFunctions.Clear();
+            _aggTree.Clear();
         }
 
         public void SetScript(DonutScript script)
         {
             _script = script;
         }
-
-        public void Clean()
-        {
-            _pipeline.Clean();
-        }
+         
     }
 }

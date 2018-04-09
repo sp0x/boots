@@ -307,7 +307,7 @@ WEEKDAY(first_Romanian_time)";
             var script = DonutScript.Factory.CreateWithFeatures("SomeDonut",featureBody, ign);
             
             script.Integrations.Add(ign);
-            var parser = new DonutScriptCodeGenerator(ign);
+            var parser = new DonutScriptCodeGenerator(script);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;
             var faggr = new FeatureAggregateCodeGenerator(script, null);

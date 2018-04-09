@@ -16,5 +16,6 @@ namespace Netlyt.Service.Donut
         string GroupValue { get; set; }
         string GetAggregateValue();
         string GetValue();
+        int GetHashCode();
     }
 }

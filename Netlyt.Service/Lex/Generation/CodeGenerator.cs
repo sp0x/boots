@@ -11,6 +11,9 @@ using nvoid.extensions;
 
 namespace Netlyt.Service.Lex.Generation
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public abstract class CodeGenerator
     {
         private static Assembly _assembly;
