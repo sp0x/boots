@@ -5,13 +5,9 @@ using Netlyt.Service.Lex.Expressions;
 
 namespace Netlyt.Service.Donut
 {
-    public enum DonutFunctionType
+    public class DonutFunction : IDonutFunction
     {
-        Standard, Group, Project, GroupKey
-    }
-    public class DonutFunction
-    {
-        string Name { get; set; }
+        public string Name { get; set; }
         public bool IsAggregate { get; set; }
         public List<ParameterExpression> Parameters { get; set; }
         public string Body { get; set; }
@@ -30,7 +26,7 @@ namespace Netlyt.Service.Donut
             Name = nm;
         }
 
-        public DonutFunction Clone()
+        public IDonutFunction Clone()
         {
             var newFn = Activator.CreateInstance(this.GetType(), new object[]{ Name}) as IDonutFunction;
             newFn.Name = Name;

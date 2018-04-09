@@ -15,6 +15,7 @@ namespace Netlyt.ServiceTests
         private ManagementDbContext _context;
         public DbContextOptionsBuilder<ManagementDbContext> DbOptionsBuilder { get; private set; } 
         public ServiceProvider ServiceProvider { get; set; }
+        public IConfigurationRoot Configuration { get; set; }
 
         public ConfigurationFixture()
         {
@@ -22,15 +23,16 @@ namespace Netlyt.ServiceTests
             Debug.WriteLine($"Started test process: {p.Id}");
             var builder = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.Development.json", optional: false, reloadOnChange: true);
-            var config = builder.Build();
+            Configuration = builder.Build();
             DbOptionsBuilder = new DbContextOptionsBuilder<ManagementDbContext>()
                 .UseInMemoryDatabase("Testing"); 
             var services = new ServiceCollection();
             _context = CreateContext();
-            DBConfig.Initialize(config);
+            DBConfig.Initialize(Configuration);
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider(); 
         }
+
 
 
         private void ConfigureServices(IServiceCollection services)

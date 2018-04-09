@@ -32,6 +32,7 @@ namespace Netlyt.Service.Donut
         private IServiceProvider _serviceProvider;
         private DatabaseConfiguration _dbConfig;
         private RedisCacher _cacher;
+        private IEmailSender _emailService;
 
         public DonutOrionHandler(IFactory<ManagementDbContext> contextFactory,
             OrionContext orion,
@@ -39,12 +40,14 @@ namespace Netlyt.Service.Donut
             IServiceProvider serviceProvider,
             ApiService apiService,
             IntegrationService integrationService,
-            RedisCacher redisCacher)
+            RedisCacher redisCacher,
+            IEmailSender emailSender)
         {
             _db = contextFactory.Create();
             _orion = orion;
 #pragma warning disable 4014
             _orion.FeaturesGenerated += (x)=> _orion_FeaturesGenerated(x);
+            _orion.TrainingComplete += (x) => _orion_TrainingComplete(x);
 #pragma warning restore 4014
             _compiler = compilerService;
             _serviceProvider = serviceProvider;
@@ -52,6 +55,36 @@ namespace Netlyt.Service.Donut
             _integrationService = integrationService; 
             _cacher = redisCacher; 
             _dbConfig = DBConfig.GetGeneralDatabase();
+            _emailService = emailSender;
+        }
+
+        private async void _orion_TrainingComplete(JObject trainingCompleteNotification)
+        {
+            try
+            {
+                var trResult = trainingCompleteNotification["params"];
+                if (trResult == null) return;
+                var taskId = trResult["task_id"].ToString();
+                var modelId = long.Parse(trResult["model_id"].ToString());
+                Model model = _db.Models
+                    .Include(x => x.DataIntegrations)
+                    .Include(x => x.User)
+                    .FirstOrDefault(x => x.Id == modelId);
+                if (model.User == null)
+                {
+                    model.User = _db.Users.FirstOrDefault(x => x.Id == model.UserId);
+                }
+                if (model.User == null) return;
+                //Notify user that training is complete
+                var endpoint = "http://dev.netlyt.com/oneclick/" + model.Id;
+                var mailMessage = $"Model training for {model.ModelName} is now complete." +
+                    $"Get your results here: {endpoint}";
+                await _emailService.SendEmailAsync(model.User.Email, "Training complete.", mailMessage);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+            }
         }
 
         /// <summary>
@@ -76,7 +109,14 @@ namespace Netlyt.Service.Donut
             }
 
             if (model == null) return;
-            var sourceIntegration = model.DataIntegrations.FirstOrDefault()?.Integration;
+            var modelIntegration = model.DataIntegrations.FirstOrDefault();
+            var sourceIntegration = _db.Integrations
+                .Include(x=>x.APIKey)
+                .Include(x=>x.Fields)
+                .Include(x=>x.Models)
+                .Include(x=>x.Owner)
+                .Include(x=>x.PublicKey)
+                .FirstOrDefault(x => x.Id == modelIntegration.IntegrationId);
             if (sourceIntegration == null)
             {
                 throw new InvalidOperationException("Model has no integrations!");

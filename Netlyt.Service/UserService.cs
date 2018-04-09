@@ -216,5 +216,11 @@ namespace Netlyt.Service
                 .Include(x => x.ApiKeys)
                 .FirstOrDefault(u => u.ApiKeys.Any(x => x.ApiId == appAuth.Id));
         }
+
+        public void SetUserEmail(User user, string newEmail)
+        {
+            user.Email = newEmail;
+            _context.SaveChanges();
+        }
     }
 }

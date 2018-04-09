@@ -146,5 +146,10 @@ namespace Netlyt.Service.Integration
             var fdef = new FieldDefinition(fieldName, type);
             Fields.Add(fdef); //fieldName
         }
+        public void AddField<TField>(string fieldName)
+        {
+            var fdef = new FieldDefinition(fieldName, typeof(TField));
+            Fields.Add(fdef); //fieldName
+        }
     }
 }
