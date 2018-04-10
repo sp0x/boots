@@ -28,6 +28,7 @@ namespace Netlyt.Service.Lex.Generators
         public bool HasProjection { get; private set; }
         public bool HasGroupingFields { get; private set; }
         public bool HasGroupingKeys { get; private set; }
+        public bool HasFilters { get; private set; }
 
         public FeatureAggregateCodeGenerator(DonutScript script, DonutFeatureGeneratingExpressionVisitor expVisitor)
         {
@@ -40,6 +41,10 @@ namespace Netlyt.Service.Lex.Generators
                 throw new InvalidIntegrationException("Integration has no fields");
             _rootDataMember = script.GetDatasetMember(_rootIntegration.Name);
             _outputCollection = _rootIntegration.FeaturesCollection;
+            if (string.IsNullOrEmpty(_outputCollection))
+            {
+                throw new InvalidOperationException("Root integration must have a features collection set.");
+            }
             _expVisitor = expVisitor;
             _aggregateJobTrees = new List<AggregateJobTree>();
         }
@@ -52,43 +57,43 @@ namespace Netlyt.Service.Lex.Generators
         private AggregateJobTree AddAggregateTreeFromCall(CallExpression callExpression, AssignmentExpression feature = null)
         {
             var fnDict = new DonutFunctions();
-//            var isAggregate = fnDict.IsAggregate(callExpression);
-//            var functionType = fnDict.GetFunctionType(callExpression);
+            //            var isAggregate = fnDict.IsAggregate(callExpression);
+            //            var functionType = fnDict.GetFunctionType(callExpression);
             Clean();
             _expVisitor.Clear();
             var strValues = VisitCall(callExpression, null, _expVisitor);
             var outputTree = _expVisitor.AggregateTree.Clone();
             return outputTree;
-//            if (string.IsNullOrEmpty(strValues))
-//            {
-//                return null;
-//            }
-//            if (isAggregate)
-//            {
-//                var aggregateField = new BsonDocument();
-//                if (feature == null)
-//                {
-//                    try
-//                    {
-//                        aggregateField = BsonDocument.Parse(strValues);
-//                    }
-//                    catch (Exception ex)
-//                    {
-//                        Trace.WriteLine($"Failed to parse expression: {callExpression}\nError: {ex.Message}");
-//                        return null;
-//                    }
-//                }
-//                else
-//                {
-//                    aggregateField[feature.Member.ToString()] = BsonDocument.Parse(strValues);
-//                }
-//                var result = new FeatureFunctionsCodeResult(functionType, aggregateField.ToString());
-//                return result;
-//            }
-//            else
-//            {
-//                return new FeatureFunctionsCodeResult(strValues);
-//            }
+            //            if (string.IsNullOrEmpty(strValues))
+            //            {
+            //                return null;
+            //            }
+            //            if (isAggregate)
+            //            {
+            //                var aggregateField = new BsonDocument();
+            //                if (feature == null)
+            //                {
+            //                    try
+            //                    {
+            //                        aggregateField = BsonDocument.Parse(strValues);
+            //                    }
+            //                    catch (Exception ex)
+            //                    {
+            //                        Trace.WriteLine($"Failed to parse expression: {callExpression}\nError: {ex.Message}");
+            //                        return null;
+            //                    }
+            //                }
+            //                else
+            //                {
+            //                    aggregateField[feature.Member.ToString()] = BsonDocument.Parse(strValues);
+            //                }
+            //                var result = new FeatureFunctionsCodeResult(functionType, aggregateField.ToString());
+            //                return result;
+            //            }
+            //            else
+            //            {
+            //                return new FeatureFunctionsCodeResult(strValues);
+            //            }
         }
 
         /// <summary>
@@ -137,7 +142,7 @@ namespace Netlyt.Service.Lex.Generators
             }
         }
 
-        
+
 
         public void AddAll(IEnumerable<AssignmentExpression> featureAssignments)
         {
@@ -146,17 +151,12 @@ namespace Netlyt.Service.Lex.Generators
                 Add(f);
             }
         }
-        /// <summary>
-        /// Add a feature assignment to the aggregate pipeline
-        /// </summary>
-        /// <param name="feature"></param>
-        public void Add(AssignmentExpression feature)
-        {
-            IExpression fExpression = feature.Value;
-            string fName = feature.Member.ToString();
 
+        private string GetFeatureName(AssignmentExpression feature)
+        {
+            string fName = feature.Member.ToString();
+            IExpression fExpression = feature.Value;
             var featureFType = fExpression.GetType();
-            string featureContent = null;
             if (featureFType == typeof(VariableExpression))
             {
                 var member = (fExpression as VariableExpression).Member?.ToString();
@@ -166,6 +166,26 @@ namespace Netlyt.Service.Lex.Generators
                 {
                     fName = member;
                 }
+            }
+            return fName;
+        }
+
+        /// <summary>
+        /// Add a feature assignment to the aggregate pipeline
+        /// </summary>
+        /// <param name="feature"></param>
+        public void Add(AssignmentExpression feature)
+        {
+            IExpression fExpression = feature.Value;
+            string fName = GetFeatureName(feature);//feature.Member.ToString();
+
+            var featureFType = fExpression.GetType();
+            string featureContent = null;
+            if (featureFType == typeof(VariableExpression))
+            {
+                var member = (fExpression as VariableExpression).Member?.ToString();
+                //In some cases we might just use the field
+                if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
                 featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"$" + member + "\" } };";
             }
             else if (featureFType == typeof(CallExpression))
@@ -174,49 +194,67 @@ namespace Netlyt.Service.Lex.Generators
                 {
                     //We're dealing with an aggregate call 
                     var aggregateTree = AddAggregateTreeFromCall(fExpression as CallExpression);
+                    aggregateTree.Name = fName;
                     _aggregateJobTrees.Add(aggregateTree);
+                    var functionType = _donutFnResolver.GetFunctionType(fExpression as CallExpression);  
+                    switch (functionType)
+                    {
+                        case DonutFunctionType.Group:
+                            HasGroupingFields = true;
+                            break;
+                        case DonutFunctionType.Project:
+                            HasProjection = true;
+                            break;
+                        case DonutFunctionType.GroupKey:
+                            HasGroupingKeys = true;
+                            break;
+                        case DonutFunctionType.Filter:
+                            HasFilters = true;
+                            break;
+                    }
+
                     //TOADD
-//                    var functionType = _donutFnResolver.GetFunctionType(fExpression as CallExpression);
-//                    var aggregateValue = aggregateContent?.GetValue().Replace("$" + _rootIntegration.Name + ".", "$");
-//                    if (aggregateValue != null) aggregateValue = aggregateValue.Replace("\"", "\\\"");
-//                    switch (functionType)
-//                    {
-//                        case DonutFunctionType.Group:
-//                            featureContent = $"groupFields[\"{fName}\"] = BsonDocument.Parse(\"{aggregateValue}\");";
-//                            HasGroupingFields = true;
-//                            break;
-//                        case DonutFunctionType.Project:
-//                            featureContent = $"projections[\"{fName}\"] = \"{aggregateValue}\";";
-//                            HasProjection = true;
-//                            break;
-//                        case DonutFunctionType.GroupKey:
-//                            if (!string.IsNullOrEmpty(aggregateValue))
-//                            {
-//                                featureContent = $"groupKeys[\"{fName}\"] = \"{aggregateValue}\";";
-//                                HasGroupingKeys = true;
-//                            }
-//                            break;
-//                        case DonutFunctionType.Standard:
-//                            var variableName = GetFeatureVariableName(feature);
-//                            if (!string.IsNullOrEmpty(variableName))
-//                            {
-//                                var fieldInfo = _rootIntegration.Fields?.FirstOrDefault(x => x.Name == variableName);
-//                                var dttype = typeof(DateTime);
-//                                if (fieldInfo.Type == dttype.FullName)
-//                                {
-//                                    featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", " +
-//                                                     "new BsonDocument { { \"$dayOfYear\" , \"$" + variableName + "\" } }" +
-//                                                     " }};";
-//                                }
-//                                else
-//                                {
-//                                    featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", \"$" + variableName + "\" }};";
-//                                }
-//
-//                            }
-//                            break;
-//                    }
-                }
+                            //                    var functionType = _donutFnResolver.GetFunctionType(fExpression as CallExpression);
+                            //                    var aggregateValue = aggregateContent?.GetValue().Replace("$" + _rootIntegration.Name + ".", "$");
+                            //                    if (aggregateValue != null) aggregateValue = aggregateValue.Replace("\"", "\\\"");
+                            //                    switch (functionType)
+                            //                    {
+                            //                        case DonutFunctionType.Group:
+                            //                            featureContent = $"groupFields[\"{fName}\"] = BsonDocument.Parse(\"{aggregateValue}\");";
+                            //                            HasGroupingFields = true;
+                            //                            break;
+                            //                        case DonutFunctionType.Project:
+                            //                            featureContent = $"projections[\"{fName}\"] = \"{aggregateValue}\";";
+                            //                            HasProjection = true;
+                            //                            break;
+                            //                        case DonutFunctionType.GroupKey:
+                            //                            if (!string.IsNullOrEmpty(aggregateValue))
+                            //                            {
+                            //                                featureContent = $"groupKeys[\"{fName}\"] = \"{aggregateValue}\";";
+                            //                                HasGroupingKeys = true;
+                            //                            }
+                            //                            break;
+                            //                        case DonutFunctionType.Standard:
+                            //                            var variableName = GetFeatureVariableName(feature);
+                            //                            if (!string.IsNullOrEmpty(variableName))
+                            //                            {
+                            //                                var fieldInfo = _rootIntegration.Fields?.FirstOrDefault(x => x.Name == variableName);
+                            //                                var dttype = typeof(DateTime);
+                            //                                if (fieldInfo.Type == dttype.FullName)
+                            //                                {
+                            //                                    featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", " +
+                            //                                                     "new BsonDocument { { \"$dayOfYear\" , \"$" + variableName + "\" } }" +
+                            //                                                     " }};";
+                            //                                }
+                            //                                else
+                            //                                {
+                            //                                    featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", \"$" + variableName + "\" }};";
+                            //                                }
+                            //
+                            //                            }
+                            //                            break;
+                            //                    }
+                    }
                 else
                 {
                     //We're dealing with a function call 
@@ -241,7 +279,7 @@ namespace Netlyt.Service.Lex.Generators
             string fName = feature.Member.ToString();
 
             var featureFType = fExpression.GetType();
-            string featureContent=null;
+            string featureContent = null;
             if (featureFType == typeof(VariableExpression))
             {
                 var member = (fExpression as VariableExpression).Member?.ToString();
@@ -362,30 +400,64 @@ namespace Netlyt.Service.Lex.Generators
         public string GetScriptContent()
         {
             var fBuilder = new StringBuilder();
-            //Update this to work with multiple collections later on
-//            foreach (var feature in _script.Features)
-//            {
-//                Add(feature);
-//                //string featureContent = Add(feature);
-//                //if (!string.IsNullOrEmpty(featureContent)) fBuilder.AppendLine(featureContent);
-//            }
             var globalPipeline = new AggregateJobTree(_script);
             var aggGroups = new Dictionary<string, AggregateStage>();
-            foreach (var stage in _aggregateJobTrees.SelectMany(x => x.Stages))
+            var sbGroups = new StringBuilder();
+            var sbProjections = new StringBuilder();
+            var groupHashes = new Dictionary<int, string>();
+            //var allStages = _aggregateJobTrees.SelectMany(x => x.Stages);
+            foreach (var aggJobTree in _aggregateJobTrees)
             {
-                var groups = stage.GetGroupings();
-                var projections = stage.GetProjections();
-                foreach (var grp in groups)
+                foreach (var stage in aggJobTree.Stages)
                 {
-                    aggGroups[grp.Function.GetHashCode().ToString()] = stage;
+                    var groups = stage.GetGroupings().ToList();
+                    var projections = stage.GetProjections();
+                    int iGrp = 0;
+                    var stageJsonX = stage.WrapValue();
+                    var stageJson = stage.WrapValueWithRoot(aggJobTree.Name);
+                    foreach (var grp in groups)
+                    {
+                        var grpHash = Math.Abs(grp.GetHashCode());
+                        var mName = "g" + grpHash.ToString();
+                        string groupJson;
+                        if (!groupHashes.ContainsKey(grpHash))
+                        {
+                            groupJson = grp.WrapValue(false);
+                            var groupWrapedRoot = grp.WrapValueWithRoot(mName);
+                            var bsonDoc = $"groupFields.Merge(BsonDocument.Parse({groupWrapedRoot}));";
+                            aggGroups[grp.Function.GetHashCode().ToString()] = stage;
+                            sbGroups.AppendLine(bsonDoc);
+                            groupHashes[grpHash] = groupJson;
+                        }
+                        else
+                        {
+                            groupJson = groupHashes[grpHash];
+                        }
+                        stageJson = stageJson.Replace(groupJson, $"\"\"${mName}\"\"");
+                        iGrp++;
+                    }
+                    switch (stage.Type)
+                    {
+                        case AggregateStageType.Group:
+                            //TODO: provide group name
+                            var stageWrap = stage.WrapValueWithRoot(aggJobTree.Name);
+                            var gBsonDoc = $"groupFields.Merge(BsonDocument.Parse({stageWrap}));";
+                            //Append our group to the projections so that it's visible
+                            var pBsonDocFake = $"projections.Merge(new BsonDocument" + "{{\"" + aggJobTree.Name + "\", \"$" + aggJobTree.Name + "\"}}" + ");";
+                            sbProjections.AppendLine(pBsonDocFake);
+                            sbGroups.AppendLine(gBsonDoc);
+                            break;
+                        case AggregateStageType.Project:
+                            var pBsonDoc = $"projections.Merge(BsonDocument.Parse({stageJson}));";
+                            sbProjections.AppendLine(pBsonDoc);
+                            break;
+                        default:
+                            throw new NotImplementedException("Support for root pipeline expression not implemented: " + stage.Type.ToString());
+                    }
                 }
             }
-            //Select groups first, each group should produce a GId to which a projection will be contected
-            //then project
-            foreach(var aggTree in aggGroups)
-            {
-
-            }
+            fBuilder.AppendLine(sbGroups.ToString());
+            fBuilder.AppendLine(sbProjections.ToString());
             var aggregatePipeline = GeneratePipeline();
             fBuilder.Append(aggregatePipeline);
             return fBuilder.ToString();
@@ -435,7 +507,8 @@ namespace Netlyt.Service.Lex.Generators
                                 {" + "\"$out\", \"" + _outputCollection + "\"" + "}" +
                                  "});";
                 fBuilder.AppendLine(outputStep);
-                var record = $"var aggregateResult = rec{_rootDataMember.GetPropertyName()}.Aggregate<BsonDocument>(pipeline);";
+                var record = "var aggOptions = new AggregateOptions(){ AllowDiskUse = true, BatchSize=1  };\n";
+                record += $"var aggregateResult = rec{_rootDataMember.GetPropertyName()}.Aggregate<BsonDocument>(pipeline, aggOptions);";
                 fBuilder.AppendLine(record);
             }
             return fBuilder.ToString();

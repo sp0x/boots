@@ -11,8 +11,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Core.Operations;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
+using nvoid.db.DB.MongoDB;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
@@ -37,14 +39,24 @@ namespace Netlyt.Web
             OrionContext.Configure(Configuration.GetSection("behaviour"));
             OrionContext.Run();
 //            var dbConfig = DBConfig.GetGeneralDatabase();
-//            var mongoList = new MongoList(dbConfig, "1c2fd942-b9fa-401d-bff8-0597b5339260");
+//            var mongoList = new MongoList(dbConfig, "1145146c-bff3-495f-ac1c-40afce4536fd");
+//            var featuresCollection = new MongoList(dbConfig, "1145146c-bff3-495f-ac1c-40afce4536fd_ftr");
+//            featuresCollection.Truncate();
 //            var recRom = mongoList.Records;
 //            var groupKeys = new BsonDocument();
 //            var groupFields = new BsonDocument();
 //            var projections = new BsonDocument();
 //            var pipeline = new List<BsonDocument>();
 //
-//            groupFields["pm10"] = new BsonDocument { { "$first", "$pm10" } };
+//            groupFields.Merge(BsonDocument.Parse(@"{""f_0"":{""$min"":""$rssi""}}"));
+//            groupFields.Merge(BsonDocument.Parse(@"{""g1817192762"":{""$first"":""$timestamp""}}"));
+//
+//            projections.Merge(new BsonDocument { { "f_0", "$f_0" } });
+//            projections.Merge(BsonDocument.Parse(@"{""f_1"":{""$dayOfMonth"":""$g1817192762""}}"));
+//            projections.Merge(BsonDocument.Parse(@"{""f_2"":{""$year"":""$g1817192762""}}"));
+//            projections.Merge(BsonDocument.Parse(@"{""f_3"":{""$month"":""$g1817192762""}}"));
+//            projections.Merge(BsonDocument.Parse(@"{""f_4"":{""$dayOfWeek"":""$g1817192762""}}"));
+//
 //            var idSubKey1 = new BsonDocument { { "idKey", "$_id" } };
 //            var idSubKey2 = new BsonDocument { { "tsKey", new BsonDocument { { "$dayOfYear", "$timestamp" } } } };
 //            groupKeys.Merge(idSubKey1);
@@ -53,11 +65,13 @@ namespace Netlyt.Web
 //            grouping["_id"] = groupKeys;
 //            grouping = grouping.Merge(groupFields);
 //            pipeline.Add(new BsonDocument{
-//                                        {"$group", grouping}});
+//                {"$group", grouping}});
 //            pipeline.Add(new BsonDocument{
-//                                {"$out", "1c2fd942-b9fa-401d-bff8-0597b5339260_features"}});
-//            var aggregateResult = recRom.Aggregate<BsonDocument>(pipeline);
-            //             
+//                {"$project", projections} });
+//            pipeline.Add(new BsonDocument{
+//                {"$out", featuresCollection.CollectionName}}); 
+//            var aggOptions = new AggregateOptions(){ AllowDiskUse = true, BatchSize=1 }; 
+//            var aggregateResult = recRom.Aggregate<BsonDocument>(pipeline, aggOptions);
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.

@@ -8,6 +8,7 @@ namespace Netlyt.Service.Lex.Generators
     {
         private DonutScript _script;
         public List<AggregateStage> Stages { get; set; }
+        public string Name { get; set; }
 
         public AggregateJobTree(DonutScript script)
         {

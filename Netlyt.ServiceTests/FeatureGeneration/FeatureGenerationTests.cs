@@ -140,7 +140,8 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             };//_db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
             var rootIntegration = new DataIntegration()
             {
-                APIKey = _appAuth, APIKeyId = _appAuth.Id, Name= ignName, DataTimestampColumn = "timestamp"
+                APIKey = _appAuth, APIKeyId = _appAuth.Id, Name= ignName, DataTimestampColumn = "timestamp",
+                FeaturesCollection = $"{ignName}_features",
             };
             rootIntegration.AddField<string>("humidity");
             rootIntegration.AddField<string>("latitude");
@@ -226,6 +227,7 @@ WEEKDAY(first_Romanian_time)";
             }
             Type donutType, donutContextType, donutFEmitterType;
             var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType, out donutFEmitterType);
+            Assert.NotNull(assembly);
             model.DonutScript = new DonutScriptInfo(dscript);
             model.DonutScript.AssemblyPath = assembly.Location;
             model.DonutScript.Model = model;

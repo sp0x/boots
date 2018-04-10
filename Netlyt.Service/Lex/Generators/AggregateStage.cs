@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using nvoid.db.Extensions;
+using Newtonsoft.Json.Linq;
 using Netlyt.Service.Donut;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Expressions;
+using Newtonsoft.Json;
 
 namespace Netlyt.Service.Lex.Generators
 {
@@ -89,5 +90,30 @@ namespace Netlyt.Service.Lex.Generators
             return template;
         }
 
+        public string WrapValueWithRoot(string mName)
+        {
+            var jsdoc = JObject.Parse(GetValue());
+            var wrapper = new JObject();
+            wrapper[mName] = jsdoc;
+            var output = wrapper.ToString(Formatting.None);
+            output = output.Replace("\"", "\"\"");
+            output = $"@\"{output}\"";
+            return output;
+        }
+
+        public string WrapValue(bool asStringLiteral = true)
+        {
+            var jsdoc = JObject.Parse(GetValue());
+            var output = jsdoc.ToString(Formatting.None);
+            output = output.Replace("\"", "\"\"");
+            if(asStringLiteral) output = $"@\"{output}\"";
+            return output;
+        }
+
+        public override int GetHashCode()
+        {
+            var val = GetValue();
+            return val.GetHashCode();
+        }
     }
 }
