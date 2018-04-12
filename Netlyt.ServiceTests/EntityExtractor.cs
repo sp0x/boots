@@ -18,7 +18,8 @@ using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.IntegrationSource; 
-using Netlyt.Service.Time; 
+using Netlyt.Service.Time;
+using Netlyt.ServiceTests.Fixtures;
 using Netlyt.ServiceTests.Netinfo;
 using Xunit; 
 

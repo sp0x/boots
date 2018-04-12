@@ -2,19 +2,16 @@
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using nvoid.db.DB;
-using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
 using Netlyt.Service.IntegrationSource;
-using Netlyt.ServiceTests.IntegrationSource;
+using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
 namespace Netlyt.ServiceTests.Integration.Blocks

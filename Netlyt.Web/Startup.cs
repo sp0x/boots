@@ -70,7 +70,7 @@ namespace Netlyt.Web
 //                {"$project", projections} });
 //            pipeline.Add(new BsonDocument{
 //                {"$out", featuresCollection.CollectionName}}); 
-//            var aggOptions = new AggregateOptions(){ AllowDiskUse = true, BatchSize=1 }; 
+            //var aggOptions = new AggregateOptions(){ AllowDiskUse = true, BatchSize=1 }; 
 //            var aggregateResult = recRom.Aggregate<BsonDocument>(pipeline, aggOptions);
         }
 

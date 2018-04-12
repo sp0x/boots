@@ -129,7 +129,15 @@ namespace Netlyt.Service.Donut
             var sb = new StringBuilder();
             var paramValue = exp.Value;
             var paramValueType = paramValue.GetType();
-            if (paramValueType == typeof(LambdaExpression))
+            if (paramValueType == typeof(NumberExpression))
+            {
+                return VisitNumberExpression(paramValue as NumberExpression, out resultObj);
+            }
+            else if (paramValueType == typeof(StringExpression))
+            {
+                return VisitStringExpression(paramValue as StringExpression, out resultObj);
+            }
+            else if (paramValueType == typeof(LambdaExpression))
             {
                 var value = VisitLambda(paramValue as LambdaExpression, out resultObj);
                 sb.Append(value);
@@ -184,12 +192,19 @@ namespace Netlyt.Service.Donut
                 resultObj = null;
             }
             return sb.ToString();
-        }
+        } 
 
-        private string VisitVariableExpression(VariableExpression vex, out object resultObj)
+        protected override string VisitVariableExpression(VariableExpression vex, out object resultObj)
         {
             resultObj = null;
-            return vex.Member.ToString();
+            var output = vex.ToString();
+            if (vex.Member != null) output = vex.Member.ToString();
+            var donutFn = new InternalDonutFunctionProxy(output, output);
+            resultObj = donutFn;
+            string result;
+            //Dont add variables as a stage
+            //var aggStage = _aggTree.AddFunction(donutFn);
+            return output;
         }
 
         private string VisitLambda(LambdaExpression lambda, out object resultObj)

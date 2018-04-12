@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +22,7 @@ namespace Netlyt.ServiceTests.Fixtures
         public ServiceProvider ServiceProvider { get; set; }
         private OrionContext BehaviourContext { get; }
         public IConfigurationRoot Config { get; set; }
+        private static Assembly _assembly = Assembly.GetExecutingAssembly();
 
         public DonutConfigurationFixture()
         {
@@ -45,7 +48,17 @@ namespace Netlyt.ServiceTests.Fixtures
             ServiceProvider.GetService<DonutOrionHandler>();
         }
 
-
+        public static String GetTemplate(string name)
+        {
+            var resourceName = $"Netlyt.ServiceTests.Res.{name}";
+            Stream stream = _assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+            {
+                throw new Exception("Template not found!");
+            }
+            //StreamReader reader = new StreamReader(stream);
+            return new StreamReader(stream, System.Text.Encoding.UTF8).ReadToEnd();
+        }
 
         private void ConfigureServices(IServiceCollection services)
         {

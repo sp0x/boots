@@ -1,6 +1,7 @@
-﻿using Xunit;
+﻿using Netlyt.ServiceTests.Fixtures;
+using Xunit;
 
-namespace Netlyt.ServiceTests.IntegrationSource
+namespace Netlyt.ServiceTests.Collections
 {
     [CollectionDefinition("Data Sources")]
     public class DataSourceCollection : ICollectionFixture<ConfigurationFixture>

@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using nvoid.db.DB; 
+using System.Linq;
+using nvoid.db.DB;
+using Netlyt.Service.Integration;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Models;
 
@@ -41,5 +43,9 @@ namespace Netlyt.Service.Ml
             TrainingTasks = new List<TrainingTask>();
         }
 
+        public DataIntegration GetRootIntegration()
+        {
+            return DataIntegrations.FirstOrDefault()?.Integration;
+        }
     }
 }

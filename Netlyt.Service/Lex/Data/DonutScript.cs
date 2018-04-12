@@ -15,7 +15,7 @@ namespace Netlyt.Service.Lex.Data
         {
             Filters = new List<MatchCondition>();
             Features = new List<AssignmentExpression>();
-            Integrations = new List<DataIntegration>();
+            Integrations = new HashSet<DataIntegration>();
         }
         /// <summary>
         /// 
@@ -24,18 +24,18 @@ namespace Netlyt.Service.Lex.Data
         public IList<MatchCondition> Filters { get; set; }
         public List<AssignmentExpression> Features { get; set; }
         public OrderByExpression StartingOrderBy { get; set; }
-        public List<DataIntegration> Integrations { get; set; }
+        public HashSet<DataIntegration> Integrations { get; set; }
         public string TargetAttribute { get; set; }
 
         public void AddIntegrations(params DataIntegration[] sourceIntegrations)
         {
             if (this.Integrations == null)
             {
-                this.Integrations = new List<DataIntegration>(sourceIntegrations);
+                this.Integrations = new HashSet<DataIntegration>(sourceIntegrations);
             }
             else
             {
-                this.Integrations.AddRange(sourceIntegrations);
+                foreach(var ign in sourceIntegrations) this.Integrations.Add(ign);
             }
         }
 
@@ -86,6 +86,7 @@ namespace Netlyt.Service.Lex.Data
                 };
                 var tokenizer = new FeatureToolsTokenizer(integration);
                 int i = 0;
+                ds.AddIntegrations(integration);
                 foreach (var fstring in featureBodies)
                 {
                     if (string.IsNullOrEmpty(fstring)) continue;
@@ -128,6 +129,11 @@ namespace Netlyt.Service.Lex.Data
                 if (source.Name == dsName) return new DatasetMember(source);
             }
             return null;
+        }
+
+        public DataIntegration GetRootIntegration()
+        {
+            return Integrations.FirstOrDefault();
         }
     }
 }

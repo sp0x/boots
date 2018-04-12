@@ -1,6 +1,7 @@
-﻿using Xunit;
+﻿using Netlyt.ServiceTests.Fixtures;
+using Xunit;
 
-namespace Netlyt.ServiceTests.IntegrationSource
+namespace Netlyt.ServiceTests.Collections
 {
     [CollectionDefinition("Entity Parsers")]
     public class EntityParsingCollection : ICollectionFixture<ConfigurationFixture>

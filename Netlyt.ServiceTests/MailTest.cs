@@ -5,6 +5,7 @@ using System.Net.Mail;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Netlyt.Service;
+using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
 namespace Netlyt.ServiceTests

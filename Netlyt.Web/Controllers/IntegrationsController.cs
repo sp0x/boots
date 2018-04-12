@@ -200,6 +200,18 @@ namespace Netlyt.Web.Controllers
             var fields = item.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
             return Ok(fields);
         }
+
+        [HttpPost("/integration/schema")]
+        public IActionResult GetUploadSchema()
+        {
+            var item = _integrationService.GetById(0);
+            if (item == null)
+            {
+                return new NotFoundResult();
+            }
+            var fields = item.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
+            return Ok(fields);
+        }
     }
 
 

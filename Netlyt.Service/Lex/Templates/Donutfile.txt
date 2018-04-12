@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using nvoid.db.Caching;
 using nvoid.db.DB;
 using nvoid.extensions;
@@ -19,32 +20,32 @@ namespace $Namespace
         {
             //ReplayInputOnFeatures = true;
         }
-		 
+        
         protected override void OnCreated()
         {
-            base.OnCreated(); 
-			//Perform any initial cleanup
+            base.OnCreated();
+            //Perform any initial cleanup
         }
-
+        
         protected override void OnMetaComplete()
         {
         }
+        
+        public override async Task OnFinished()
+        {
+            var groupKeys = new BsonDocument();
+            var groupFields = new BsonDocument();
+            var projections = new BsonDocument();
+            var pipeline = new List<BsonDocument>(); 
 
-		public override async Task OnFinished()
-		{
-			var groupKeys = new BsonDocument();
-			var groupFields = new BsonDocument();
-			var projections = new BsonDocument();
-			var pipeline = new List<BsonDocument>(); 
+            $OnFinished
 
-			$OnFinished
+        }
 
-		}
+        public override void ProcessRecord(IntegratedDocument intDoc){
+            //Extraction goes in here
+            $ExtractionBody
+        }
 
-		public override void ProcessRecord(IntegratedDocument intDoc){
-			//Extraction goes in here
-			$ExtractionBody
-		}
-
-	}
+    }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics; 
 using nvoid.db.Caching;
+using Netlyt.ServiceTests.Fixtures;
 using StackExchange.Redis;
 using Xunit;
 

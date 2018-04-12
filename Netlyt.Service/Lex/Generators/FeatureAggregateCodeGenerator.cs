@@ -48,6 +48,20 @@ namespace Netlyt.Service.Lex.Generators
             _expVisitor = expVisitor;
             _aggregateJobTrees = new List<AggregateJobTree>();
         }
+
+        private AggregateJobTree AddAggregateTreeFromField(VariableExpression expression)
+        {
+            Clean();
+            _expVisitor.Clear();
+            var firstCallExpression = new CallExpression()
+            {
+                Name = "first"
+            };
+            firstCallExpression.AddParameter(new ParameterExpression(expression));
+            var firstGrpStage = AddAggregateTreeFromCall(firstCallExpression);
+            //var outputTree = _expVisitor.AggregateTree.Clone();
+            return firstGrpStage;
+        }
         /// <summary>
         /// Creates an aggregate tree from a call
         /// </summary>
@@ -55,8 +69,7 @@ namespace Netlyt.Service.Lex.Generators
         /// <param name="feature"></param>
         /// <returns></returns>
         private AggregateJobTree AddAggregateTreeFromCall(CallExpression callExpression, AssignmentExpression feature = null)
-        {
-            var fnDict = new DonutFunctions();
+        { 
             //            var isAggregate = fnDict.IsAggregate(callExpression);
             //            var functionType = fnDict.GetFunctionType(callExpression);
             Clean();
@@ -183,10 +196,13 @@ namespace Netlyt.Service.Lex.Generators
             string featureContent = null;
             if (featureFType == typeof(VariableExpression))
             {
-                var member = (fExpression as VariableExpression).Member?.ToString();
-                //In some cases we might just use the field
-                if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
-                featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"$" + member + "\" } };";
+                var aggTree = AddAggregateTreeFromField(fExpression as VariableExpression);
+                aggTree.Name = fName;
+                _aggregateJobTrees.Add(aggTree);
+//                var member = (fExpression as VariableExpression).Member?.ToString();
+//                //In some cases we might just use the field
+//                if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
+//                featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"$" + member + "\" } };";
             }
             else if (featureFType == typeof(CallExpression))
             {
@@ -212,54 +228,10 @@ namespace Netlyt.Service.Lex.Generators
                             HasFilters = true;
                             break;
                     }
-
-                    //TOADD
-                            //                    var functionType = _donutFnResolver.GetFunctionType(fExpression as CallExpression);
-                            //                    var aggregateValue = aggregateContent?.GetValue().Replace("$" + _rootIntegration.Name + ".", "$");
-                            //                    if (aggregateValue != null) aggregateValue = aggregateValue.Replace("\"", "\\\"");
-                            //                    switch (functionType)
-                            //                    {
-                            //                        case DonutFunctionType.Group:
-                            //                            featureContent = $"groupFields[\"{fName}\"] = BsonDocument.Parse(\"{aggregateValue}\");";
-                            //                            HasGroupingFields = true;
-                            //                            break;
-                            //                        case DonutFunctionType.Project:
-                            //                            featureContent = $"projections[\"{fName}\"] = \"{aggregateValue}\";";
-                            //                            HasProjection = true;
-                            //                            break;
-                            //                        case DonutFunctionType.GroupKey:
-                            //                            if (!string.IsNullOrEmpty(aggregateValue))
-                            //                            {
-                            //                                featureContent = $"groupKeys[\"{fName}\"] = \"{aggregateValue}\";";
-                            //                                HasGroupingKeys = true;
-                            //                            }
-                            //                            break;
-                            //                        case DonutFunctionType.Standard:
-                            //                            var variableName = GetFeatureVariableName(feature);
-                            //                            if (!string.IsNullOrEmpty(variableName))
-                            //                            {
-                            //                                var fieldInfo = _rootIntegration.Fields?.FirstOrDefault(x => x.Name == variableName);
-                            //                                var dttype = typeof(DateTime);
-                            //                                if (fieldInfo.Type == dttype.FullName)
-                            //                                {
-                            //                                    featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", " +
-                            //                                                     "new BsonDocument { { \"$dayOfYear\" , \"$" + variableName + "\" } }" +
-                            //                                                     " }};";
-                            //                                }
-                            //                                else
-                            //                                {
-                            //                                    featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", \"$" + variableName + "\" }};";
-                            //                                }
-                            //
-                            //                            }
-                            //                            break;
-                            //                    }
                     }
                 else
                 {
-                    //We're dealing with a function call 
-                    featureContent = featureContent;
-                    //featureContent = GenerateFeatureFunctionCall(accessor as CallExpression, feature).Content;
+                    throw new NotImplementedException();
                 }
             }
             else
@@ -340,9 +312,7 @@ namespace Netlyt.Service.Lex.Generators
                 }
                 else
                 {
-                    //We're dealing with a function call 
-                    featureContent = featureContent;
-                    //featureContent = GenerateFeatureFunctionCall(accessor as CallExpression, feature).Content;
+                    throw new NotImplementedException();
                 }
             }
             else
@@ -400,24 +370,20 @@ namespace Netlyt.Service.Lex.Generators
         public string GetScriptContent()
         {
             var fBuilder = new StringBuilder();
-            var globalPipeline = new AggregateJobTree(_script);
             var aggGroups = new Dictionary<string, AggregateStage>();
             var sbGroups = new StringBuilder();
             var sbProjections = new StringBuilder();
-            var groupHashes = new Dictionary<int, string>();
-            //var allStages = _aggregateJobTrees.SelectMany(x => x.Stages);
+            var groupHashes = new Dictionary<string, string>();
             foreach (var aggJobTree in _aggregateJobTrees)
             {
                 foreach (var stage in aggJobTree.Stages)
                 {
                     var groups = stage.GetGroupings().ToList();
-                    var projections = stage.GetProjections();
-                    int iGrp = 0;
-                    var stageJsonX = stage.WrapValue();
                     var stageJson = stage.WrapValueWithRoot(aggJobTree.Name);
+                    int iGrp = 0;
                     foreach (var grp in groups)
                     {
-                        var grpHash = Math.Abs(grp.GetHashCode());
+                        var grpHash = grp.GetHashCode();
                         var mName = "g" + grpHash.ToString();
                         string groupJson;
                         if (!groupHashes.ContainsKey(grpHash))
@@ -436,24 +402,7 @@ namespace Netlyt.Service.Lex.Generators
                         stageJson = stageJson.Replace(groupJson, $"\"\"${mName}\"\"");
                         iGrp++;
                     }
-                    switch (stage.Type)
-                    {
-                        case AggregateStageType.Group:
-                            //TODO: provide group name
-                            var stageWrap = stage.WrapValueWithRoot(aggJobTree.Name);
-                            var gBsonDoc = $"groupFields.Merge(BsonDocument.Parse({stageWrap}));";
-                            //Append our group to the projections so that it's visible
-                            var pBsonDocFake = $"projections.Merge(new BsonDocument" + "{{\"" + aggJobTree.Name + "\", \"$" + aggJobTree.Name + "\"}}" + ");";
-                            sbProjections.AppendLine(pBsonDocFake);
-                            sbGroups.AppendLine(gBsonDoc);
-                            break;
-                        case AggregateStageType.Project:
-                            var pBsonDoc = $"projections.Merge(BsonDocument.Parse({stageJson}));";
-                            sbProjections.AppendLine(pBsonDoc);
-                            break;
-                        default:
-                            throw new NotImplementedException("Support for root pipeline expression not implemented: " + stage.Type.ToString());
-                    }
+                    GenerateStageAggregateCode(aggJobTree.Name, stage, sbProjections, sbGroups, stageJson);
                 }
             }
             fBuilder.AppendLine(sbGroups.ToString());
@@ -462,6 +411,39 @@ namespace Netlyt.Service.Lex.Generators
             fBuilder.Append(aggregatePipeline);
             return fBuilder.ToString();
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name">The name of the field</param>
+        /// <param name="stage">The stage that you're processing</param>
+        /// <param name="sbProjections">A buffer of projections to append to</param>
+        /// <param name="sbGroups">A buffer of group fields to append to</param>
+        /// <param name="stageJson">The name wrapped json of a stage</param>
+        private static void GenerateStageAggregateCode(string name, AggregateStage stage, StringBuilder sbProjections,
+            StringBuilder sbGroups, string stageJson)
+        {
+            switch (stage.Type)
+            {
+                case AggregateStageType.Group:
+                    //TODO: provide group name
+                    var stageWrap = stage.WrapValueWithRoot(name);
+                    var gBsonDoc = $"groupFields.Merge(BsonDocument.Parse({stageWrap}));";
+                    //Append our group to the projections so that it's visible
+                    var pBsonDocFake = $"projections.Merge(new BsonDocument" + "{{\"" + name + "\", \"$" +
+                                       name + "\"}}" + ");";
+                    sbProjections.AppendLine(pBsonDocFake);
+                    sbGroups.AppendLine(gBsonDoc);
+                    break;
+                case AggregateStageType.Project:
+                    var pBsonDoc = $"projections.Merge(BsonDocument.Parse({stageJson}));";
+                    sbProjections.AppendLine(pBsonDoc);
+                    break;
+                default:
+                    throw new NotImplementedException("Support for root pipeline expression not implemented: " +
+                                                      stage.Type.ToString());
+            }
+        }
+
         public string GeneratePipeline()
         {
             var fBuilder = new StringBuilder();

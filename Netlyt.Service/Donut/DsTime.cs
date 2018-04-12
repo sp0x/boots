@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using nvoid.Crypto;
 using Netlyt.Service.Lex;
 using Netlyt.Service.Lex.Expressions;
 
@@ -29,7 +30,7 @@ namespace Netlyt.Service.Donut
         public override int GetHashCode()
         {
             var content = GetValue();
-            return content.GetHashCode();
+            return (int)HashAlgos.Adler32(content);
         }
     }
 }

@@ -8,6 +8,7 @@ using Netlyt.Service.Lex;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Parsing;
 using Netlyt.Service.Lex.Parsing.Tokenizers;
+using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
 namespace Netlyt.ServiceTests.Lex.Expressions

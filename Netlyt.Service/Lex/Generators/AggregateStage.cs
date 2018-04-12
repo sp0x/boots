@@ -1,5 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using nvoid.Crypto;
 using Newtonsoft.Json.Linq;
 using Netlyt.Service.Donut;
 using Netlyt.Service.Lex.Data;
@@ -58,7 +63,8 @@ namespace Netlyt.Service.Lex.Generators
         public string GetValue()
         {
             var template = Function.GetValue();
-            var lstParameters = Function.Parameters.ToList();
+            var lstParameters = Function?.Parameters?.ToList();
+            if (lstParameters == null) lstParameters = new List<ParameterExpression>();
             for (int i = 0; i < lstParameters.Count; i++)
             {
                 var parameter = lstParameters[i];
@@ -66,8 +72,24 @@ namespace Netlyt.Service.Lex.Generators
                 var pValue = parameter.Value;
                 var argExpVisitor = new DonutFeatureGeneratingExpressionVisitor(_script);
                 //If we visit functions here, note that in the pipeline
+                //TODO: FIx Romanian.WEEKDAY(timestamp) 
                 var paramStr = argExpVisitor.Visit(parameter, out paramOutputObj);
                 var subAggregateTree = argExpVisitor.AggregateTree;
+                if (pValue is VariableExpression varValue && varValue.Member!=null)
+                {
+                    var isRootIntegrationVar = varValue.Name == _script.GetRootIntegration().Name;
+                    //Strip the root integration name in cases of [IntegrationName].[Function].
+                    if (isRootIntegrationVar)
+                    {
+                        pValue = varValue.Member;
+                    }
+                }
+
+                if (pValue is MemberExpression memberValue)
+                {
+                    pValue = memberValue.Parent;
+                }
+
                 Children.AddRange(subAggregateTree.Stages);
                 if (pValue is CallExpression || paramOutputObj is IDonutTemplateFunction)
                 {
@@ -92,28 +114,64 @@ namespace Netlyt.Service.Lex.Generators
 
         public string WrapValueWithRoot(string mName)
         {
-            var jsdoc = JObject.Parse(GetValue());
-            var wrapper = new JObject();
-            wrapper[mName] = jsdoc;
-            var output = wrapper.ToString(Formatting.None);
-            output = output.Replace("\"", "\"\"");
-            output = $"@\"{output}\"";
-            return output;
+            var value = GetValue();
+            try
+            {
+                var jsdoc = JObject.Parse(value);
+                var wrapper = new JObject();
+                wrapper[mName] = jsdoc;
+                var output = wrapper.ToString(Formatting.None);
+                output = output.Replace("\"", "\"\"");
+                output = $"@\"{output}\"";
+                return output;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                return null;
+            }
         }
 
         public string WrapValue(bool asStringLiteral = true)
         {
-            var jsdoc = JObject.Parse(GetValue());
-            var output = jsdoc.ToString(Formatting.None);
-            output = output.Replace("\"", "\"\"");
-            if(asStringLiteral) output = $"@\"{output}\"";
-            return output;
+            var value = GetValue();
+            try
+            {
+                var jsdoc = JObject.Parse(value);
+                var output = jsdoc.ToString(Formatting.None);
+                output = output.Replace("\"", "\"\"");
+                if (asStringLiteral) output = $"@\"{output}\"";
+                return output;
+            }
+            catch (Exception ex)
+            {
+                ex = ex;
+                return null;
+            }
         }
 
-        public override int GetHashCode()
+        public string GetHashCode()
         {
             var val = GetValue();
-            return val.GetHashCode();
+            var adhash = HashAlgos.Adler32(val);
+            return adhash.ToString();
+//            using (MD5 md5Hash = MD5.Create())
+//            {
+//                byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(val));
+//
+//                // Create a new Stringbuilder to collect the bytes
+//                // and create a string.
+//                StringBuilder sBuilder = new StringBuilder();
+//
+//                // Loop through each byte of the hashed data 
+//                // and format each one as a hexadecimal string.
+//                for (int i = 0; i < data.Length; i++)
+//                {
+//                    sBuilder.Append(data[i].ToString("x2"));
+//                }
+//
+//                return sBuilder.ToString();
+//            }
         }
     }
 }

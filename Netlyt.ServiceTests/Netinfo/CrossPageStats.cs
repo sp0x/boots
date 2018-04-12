@@ -56,9 +56,9 @@ namespace Netlyt.ServiceTests.Netinfo
         /// <returns></returns>
         public double Get(string hostname , Func<PageStats, double> getter)
         {
-            if (this.PageStats.ContainsKey(hostname))
+            if (PageStats.ContainsKey(hostname))
             {
-                return getter(this.PageStats[hostname]);
+                return getter(PageStats[hostname]);
             }
             else
             {
@@ -81,11 +81,8 @@ namespace Netlyt.ServiceTests.Netinfo
 
         public PageStats this[string key] 
         {
-            get { return PageStats.ContainsKey(key) ? PageStats[key] : null; }
-            set
-            {
-                PageStats[key] = value;
-            }
+            get => PageStats.ContainsKey(key) ? PageStats[key] : null;
+            set => PageStats[key] = value;
         }
          
         /// <summary>

@@ -68,6 +68,37 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             _modelService = fixture.GetService<ModelService>();
         }
 
+        private Model GetModel()
+        {
+            var ignName = "Romanian";//Must match the features
+            var model = new Model()
+            {
+                ModelName = "Namex"
+            };//_db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
+            var rootIntegration = new DataIntegration()
+            {
+                APIKey = _appAuth,
+                APIKeyId = _appAuth.Id,
+                Name = ignName,
+                DataTimestampColumn = "timestamp",
+                FeaturesCollection = $"{ignName}_features",
+            };
+            rootIntegration.AddField<string>("humidity");
+            rootIntegration.AddField<string>("latitude");
+            rootIntegration.AddField<string>("longitude");
+            rootIntegration.AddField<string>("pm25");
+            rootIntegration.AddField<string>("pressure");
+            rootIntegration.AddField<string>("rssi");
+            rootIntegration.AddField<string>("temperature");
+            rootIntegration.AddField<string>("humidity");
+            rootIntegration.AddField<string>("latitude");
+            rootIntegration.AddField<string>("longitude");
+            rootIntegration.AddField<DateTime>("timestamp");
+            var modelIntegration = new ModelIntegration() { Model = model, Integration = rootIntegration };
+            model.DataIntegrations.Add(modelIntegration);
+            return model;
+        }
+
         [Fact]
         public async Task TrainGeneratedFeatures()
         {
@@ -130,89 +161,9 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         }
 
         [Fact]
-        public async Task TestGeneratedFeatures()
+        public async Task TestGeneratedUnderscoreFeatures()
         {
-            long modelId = 198;
-            var ignName = "Romanian";//Must match the features
-            var model = new Model()
-            {
-                ModelName = "Namex"
-            };//_db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
-            var rootIntegration = new DataIntegration()
-            {
-                APIKey = _appAuth, APIKeyId = _appAuth.Id, Name= ignName, DataTimestampColumn = "timestamp",
-                FeaturesCollection = $"{ignName}_features",
-            };
-            rootIntegration.AddField<string>("humidity");
-            rootIntegration.AddField<string>("latitude");
-            rootIntegration.AddField<string>("longitude");
-            rootIntegration.AddField<string>("pm25");
-            rootIntegration.AddField<string>("pressure");
-            rootIntegration.AddField<string>("rssi");
-            rootIntegration.AddField<string>("temperature");
-            rootIntegration.AddField<string>("humidity");
-            rootIntegration.AddField<string>("latitude");
-            rootIntegration.AddField<string>("longitude");
-            rootIntegration.AddField<DateTime>("timestamp");
-            var modelIntegration = new ModelIntegration() { Model = model, Integration = rootIntegration };
-
-            model.DataIntegrations.Add(modelIntegration);
-
-            string allFeatures = @"pm10
-SUM(Romanian.humidity)
-SUM(Romanian.latitude)
-SUM(Romanian.longitude)
-SUM(Romanian.pm25)
-SUM(Romanian.pressure)
-SUM(Romanian.rssi)
-SUM(Romanian.temperature)
-STD(Romanian.humidity)
-STD(Romanian.latitude)
-STD(Romanian.longitude)
-STD(Romanian.pm25)
-STD(Romanian.pressure)
-STD(Romanian.rssi)
-STD(Romanian.temperature)
-MAX(Romanian.humidity)
-MAX(Romanian.latitude)
-MAX(Romanian.longitude)
-MAX(Romanian.pm25)
-MAX(Romanian.pressure)
-MAX(Romanian.rssi)
-MAX(Romanian.temperature)
-SKEW(Romanian.humidity)
-SKEW(Romanian.latitude)
-SKEW(Romanian.longitude)
-SKEW(Romanian.pm25)
-SKEW(Romanian.pressure)
-SKEW(Romanian.rssi)
-SKEW(Romanian.temperature)
-MIN(Romanian.humidity)
-MIN(Romanian.latitude)
-MIN(Romanian.longitude)
-MIN(Romanian.pm25)
-MIN(Romanian.pressure)
-MIN(Romanian.rssi)
-MIN(Romanian.temperature)
-MEAN(Romanian.humidity)
-MEAN(Romanian.latitude)
-MEAN(Romanian.longitude)
-MEAN(Romanian.pm25)
-MEAN(Romanian.pressure)
-MEAN(Romanian.rssi)
-MEAN(Romanian.temperature)
-DAY(first_Romanian_time)
-YEAR(first_Romanian_time)
-MONTH(first_Romanian_time)
-WEEKDAY(first_Romanian_time)
-NUM_UNIQUE(Romanian.DAY(timestamp))
-NUM_UNIQUE(Romanian.YEAR(timestamp))
-NUM_UNIQUE(Romanian.MONTH(timestamp))
-NUM_UNIQUE(Romanian.WEEKDAY(timestamp))
-MODE(Romanian.DAY(timestamp))
-MODE(Romanian.YEAR(timestamp))
-MODE(Romanian.MONTH(timestamp))
-MODE(Romanian.WEEKDAY(timestamp))";
+            var model = GetModel();
             var features = @"MIN(Romanian.rssi)
 DAY(first_Romanian_time)
 YEAR(first_Romanian_time)
@@ -220,7 +171,24 @@ MONTH(first_Romanian_time)
 WEEKDAY(first_Romanian_time)";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", rootIntegration, featureBodies);
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", model.GetRootIntegration(), featureBodies);
+            foreach (var modelIgn in model.DataIntegrations)
+            {
+                dscript.AddIntegrations(modelIgn.Integration);
+            }
+            Type donutType, donutContextType, donutFEmitterType;
+            var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType, out donutFEmitterType);
+            Assert.NotNull(assembly);
+        }
+
+        [Fact]
+        public async Task TestGeneratedNestedFeatures()
+        {
+            var model = GetModel();
+            string features = @"MIN(Romanian.WEEKDAY(timestamp))";
+            string[] featureBodies = features.Split('\n');
+            string donutName = $"{model.ModelName}Donut";
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", model.GetRootIntegration(), featureBodies);
             foreach (var modelIgn in model.DataIntegrations)
             {
                 dscript.AddIntegrations(modelIgn.Integration);

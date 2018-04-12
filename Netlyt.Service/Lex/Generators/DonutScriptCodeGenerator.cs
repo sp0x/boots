@@ -73,7 +73,8 @@ namespace Netlyt.Service.Lex.Generators
             var conutextName = script.Type.GetContextName();
             _expVisitor.Clear();
             _expVisitor.SetScript(script);
-            using (StreamReader reader = new StreamReader(GetTemplate("Donutfile.txt")))
+            var encoding = System.Text.Encoding.UTF8;
+            using (StreamReader reader = new StreamReader(GetTemplate("Donutfile.txt"), encoding))
             {
                 donutTemplate = reader.ReadToEnd();
                 if (string.IsNullOrEmpty(donutTemplate)) throw new Exception("Template empty!");

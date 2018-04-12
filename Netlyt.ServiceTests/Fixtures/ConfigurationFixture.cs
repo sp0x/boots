@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,11 +10,12 @@ using nvoid.db.DB.Configuration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 
-namespace Netlyt.ServiceTests
+namespace Netlyt.ServiceTests.Fixtures
 {
     public class ConfigurationFixture : IDisposable
     {
         private ManagementDbContext _context;
+        private static Assembly _assembly = Assembly.GetExecutingAssembly();
         public DbContextOptionsBuilder<ManagementDbContext> DbOptionsBuilder { get; private set; } 
         public ServiceProvider ServiceProvider { get; set; }
         public IConfigurationRoot Configuration { get; set; }
@@ -30,7 +33,7 @@ namespace Netlyt.ServiceTests
             _context = CreateContext();
             DBConfig.Initialize(Configuration);
             ConfigureServices(services);
-            ServiceProvider = services.BuildServiceProvider(); 
+            ServiceProvider = services.BuildServiceProvider();
         }
 
 
@@ -49,7 +52,19 @@ namespace Netlyt.ServiceTests
         public ManagementDbContext CreateContext()
         {
             return new ManagementDbContext(DbOptionsBuilder.Options);
-        } 
+        }
+
+        protected static Stream GetTemplate(string name)
+        {
+            var resourceName = $"Netlyt.ServiceTests.Res.{name}";
+            Stream stream = _assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+            {
+                throw new Exception("Template not found!");
+            }
+            //StreamReader reader = new StreamReader(stream);
+            return stream;
+        }
 
         public T GetService<T>()
         {

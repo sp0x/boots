@@ -74,6 +74,18 @@ namespace Netlyt.Service.Lex.Generation
         /// <param name="expressions"></param>
         /// <param name="value"></param>
         /// <returns></returns>
+        protected static string VisitVar(VariableExpression expression, StringBuilder value, ExpressionVisitor visitor)
+        {
+            var visitResult = visitor.Visit(expression);
+            return visitResult;
+        }
+
+        /// <summary>
+        /// Generates variables from the given assignent expressions.
+        /// </summary>
+        /// <param name="expressions"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         protected static IEnumerable<string> VisitVariables(IEnumerable<AssignmentExpression> expressions, StringBuilder value, ExpressionVisitor visitor)
         {
             var variables = new HashSet<string>();

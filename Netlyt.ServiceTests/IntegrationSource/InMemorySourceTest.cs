@@ -4,6 +4,7 @@ using System.Text;
 using Netlyt.Service.Format;
 using Netlyt.Service.IntegrationSource;
 using Netlyt.Service.Source;
+using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
 namespace Netlyt.ServiceTests.IntegrationSource
