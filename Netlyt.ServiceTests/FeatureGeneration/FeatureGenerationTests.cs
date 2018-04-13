@@ -113,23 +113,18 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         }
 
         [Theory]
-        [InlineData("TestData\\big_set.csv")]
-        public async Task TestFileIntegration(string sourceFile)
+        [InlineData("Res\\TestData\\pollution_data.csv")]
+        public async Task TestOneHotForStrings(string sourceFile)
         {
             //Source
             var modelName = "FunModel";
             var integrationResult = await _integrationService.CreateOrFillIntegration(sourceFile, _appAuth, _user, modelName);
             var newIntegration = integrationResult?.Integration;
-            string modelCallback = "http://localhost:9999";
-            var relations = new List<FeatureGenerationRelation>();
-            string targetAttribute = "pm10"; //"Events.is_paying";
-            var newModel = await _modelService.CreateModel(_user, modelName,
-                new List<DataIntegration>(new[] {newIntegration}),
-                modelCallback,
-                true,
-                relations,
-                targetAttribute);
-            integrationResult.Collection.Truncate();
+            //Assert the category field has a DataEncoding of OneHot
+            var categoryField = newIntegration.Fields.FirstOrDefault(x => x.Name == "category");
+            Assert.NotNull(categoryField);
+            Assert.Equal(FieldDataEncoding.OneHot,
+                categoryField.DataEncoding);
         }
 
         [Fact]

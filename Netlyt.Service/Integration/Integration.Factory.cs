@@ -28,10 +28,10 @@ namespace Netlyt.Service.Integration
             /// </summary>
             /// <typeparam name="T"></typeparam>
             /// <returns></returns>
-            public static Service.Integration.DataIntegration CreateFromType<T>(string name, ApiAuth apiObj)
+            public static DataIntegration CreateFromType<T>(string name, ApiAuth apiObj)
             {
                 var type = typeof(T);
-                var typedef = new Service.Integration.DataIntegration(type.Name);
+                var typedef = new DataIntegration(type.Name);
                 typedef.APIKey = apiObj;
                 typedef.DataFormatType = "dynamic";
                 typedef.DataEncoding = System.Text.Encoding.Default.CodePage;

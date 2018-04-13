@@ -68,14 +68,7 @@ namespace Netlyt.Service.IntegrationSource
                 using (var fStream = Open())
                 {
                     var firstInstance = _cachedInstance = Formatter.GetIterator(fStream, true).FirstOrDefault();
-                    Integration.DataIntegration typedef = null;
-                    if (firstInstance != null)
-                    {
-                        typedef = new Integration.DataIntegration(FileName);
-                        typedef.DataEncoding = Encoding.CodePage;
-                        typedef.DataFormatType = Formatter.Name;
-                        typedef.SetFieldsFromType(firstInstance);
-                    }
+                    var typedef = CreateIntegrationFromObj(firstInstance, FileName);
                     return typedef;
                 }
             }

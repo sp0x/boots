@@ -4,12 +4,16 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Res\GeneratedDonutTest1.txt" />
+    <None Remove="Res\TestData\pollution_data.csv" />
     <None Remove="Res\testHarvesterInput.json" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="appsettings.Development.json">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Res\TestData\pollution_data.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Res\testHarvesterInput.json" />
   </ItemGroup>

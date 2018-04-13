@@ -42,39 +42,63 @@ namespace Netlyt.Service.Integration.Import
             }
         }
         public DestinationCollection OutputDestinationCollection { get; private set; }
-        
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="apiService"></param>
         /// <param name="integrationService"></param>
         /// <param name="options"></param>
-         public DataImportTask(ApiService apiService, IntegrationService integrationService, DataImportTaskOptions options)
+        public DataImportTask(ApiService apiService, IntegrationService integrationService, DataImportTaskOptions options)
         {
             _options = options;
             string tmpGuid = Guid.NewGuid().ToString();
             _harvester = new Harvester<T>(apiService, integrationService, _options.ThreadCount);
-            _integration = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey, 
-                _options.IntegrationName, true, tmpGuid);
+            if (options.Integration != null)
+            {
+                if (options.Integration.Fields.Count == 0)
+                {
+                    throw new InvalidOperationException("Integration needs to have at least 1 field.");
+                }
+                _integration = options.Integration;
+                _integration.APIKey = _options.ApiKey;
+                if (string.IsNullOrEmpty(_integration.FeaturesCollection))
+                {
+                    _integration.FeaturesCollection = $"{_integration.Collection}_features";
+                }
+                if (string.IsNullOrEmpty(_integration.Collection))
+                {
+                    _integration.Collection = tmpGuid;
+                }
+                _harvester.AddType(options.Integration, _options.Source);
+            }
+            else
+            {
+                _integration = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey,
+                    _options.IntegrationName, true, tmpGuid);
+            }
+            
             var outCollection = new DestinationCollection(_integration.Collection, _integration.GetReducedCollectionName());
             OutputDestinationCollection = outCollection;
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
-            if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit); 
+            if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit);
         }
-
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async Task<DataImportResult> Import(CancellationToken? cancellationToken = null)
+        public async Task<DataImportResult> Import(CancellationToken? cancellationToken = null, bool truncateDestination = false)
         {
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
             var dstCollection = new MongoList(databaseConfiguration, OutputDestinationCollection.OutputCollection);
 
-            dstCollection.Truncate();
-            Debug.WriteLine($"Created temp collections: {dstCollection.GetCollectionName()} & {OutputDestinationCollection.ReducedOutputCollection}");
+            if (truncateDestination)
+            {
+                dstCollection.Truncate();
+                Debug.WriteLine($"Created temp collections: {dstCollection.GetCollectionName()} & {OutputDestinationCollection.ReducedOutputCollection}");
+            }
 
             var batchesInserted = 0;
             var batchSize = _options.ReadBlockSize;
@@ -82,7 +106,7 @@ namespace Netlyt.Service.Integration.Import
 
             var transformerBlock = BsonConverter.CreateBlock(new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
             var readBatcher = BatchedBlockingBlock<ExpandoObject>.CreateBlock(batchSize);
-            readBatcher.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true }); 
+            readBatcher.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
             var inserterBlock = new ActionBlock<IEnumerable<BsonDocument>>(x =>
             {
                 Debug.WriteLine($"Inserting batch {batchesInserted + 1} [{x.Count()}]");
@@ -91,13 +115,13 @@ namespace Netlyt.Service.Integration.Import
                 Debug.WriteLine($"Inserted batch {batchesInserted}");
             }, executionOptions);
             transformerBlock.LinkTo(inserterBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            var result = await _harvester.ReadAll(readBatcher, cancellationToken); 
+            var result = await _harvester.ReadAll(readBatcher, cancellationToken);
             await Task.WhenAll(inserterBlock.Completion, transformerBlock.Completion);
             foreach (var index in _options.IndexesToCreate)
             {
                 dstCollection.EnsureIndex(index);
             }
-            var output = new DataImportResult(result, dstCollection, _integration); 
+            var output = new DataImportResult(result, dstCollection, _integration);
             return output;
         }
         /// <summary>
@@ -112,11 +136,11 @@ namespace Netlyt.Service.Integration.Import
             MapReduceExpression mapReduce = new DonutSyntaxReader(new PrecedenceTokenizer(new DonutTokenDefinitions())
                 .Tokenize(donutScript)).ReadMapReduce();
             MapReduceJsScript script = MapReduceJsScript.Create(mapReduce);
-            var targetCollection = OutputDestinationCollection.ReducedOutputCollection; 
+            var targetCollection = OutputDestinationCollection.ReducedOutputCollection;
             var mapReduceOptions = new MapReduceOptions<BsonDocument, BsonDocument>
             {
                 Sort = orderBy,
-                JavaScriptMode = true, 
+                JavaScriptMode = true,
                 OutputOptions = MapReduceOutputOptions.Replace(targetCollection)
             };
             if (inputDocumentsLimit > 0) mapReduceOptions.Limit = inputDocumentsLimit;

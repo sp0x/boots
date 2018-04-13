@@ -119,5 +119,24 @@ namespace Netlyt.Service.IntegrationSource
         {
             Formatter.Reset();
         }
+
+        /// <summary>
+        /// Create a new integration from an object instance
+        /// </summary>
+        /// <param name="firstInstance"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        protected DataIntegration CreateIntegrationFromObj(dynamic firstInstance, string name)
+        {
+            Integration.DataIntegration typeDef = null;
+            if (firstInstance != null)
+            {
+                typeDef = new DataIntegration();
+                typeDef.DataEncoding = Encoding.CodePage;
+                typeDef.DataFormatType = Formatter.Name;
+                typeDef.SetFieldsFromType(firstInstance);
+            }
+            return typeDef;
+        }
     }
 }

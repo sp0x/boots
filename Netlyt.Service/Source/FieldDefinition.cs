@@ -7,16 +7,24 @@ using Netlyt.Service.Integration;
 
 namespace Netlyt.Service.Source
 {
+    public enum FieldDataEncoding
+    {
+        None,
+        OneHot
+    }
     public class FieldDefinition
     {
         public long Id { get; set; }
         [BsonSerializer(typeof(StringSerializer))]
         public string Name { get; set; }
-
+        /// <summary>
+        /// The clr type of the field
+        /// </summary>
         [BsonSerializer(typeof(TypeSerializer))]
         public string Type { get; set; }
         
         public FieldExtras Extras { get; set; }
+        public FieldDataEncoding DataEncoding { get; set; }
         [ForeignKey("Integration")]
         public long IntegrationId { get; set; }
         public DataIntegration Integration { get; set; }

@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Dynamic;
 using System.IO;
-using Netlyt.Service;
 using Netlyt.Service.Format;
-using Netlyt.Service.Integration;
 using Netlyt.Service.IntegrationSource;
-using Netlyt.Service.Source;
 using Netlyt.ServiceTests.Fixtures;
-using Netlyt.ServiceTests.IntegrationSource;
 using Netlyt.ServiceTests.Properties;
 using Xunit;
 

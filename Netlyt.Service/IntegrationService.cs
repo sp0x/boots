@@ -136,7 +136,8 @@ namespace Netlyt.Service
         }
 
         /// <summary>
-        /// 
+        /// Creates a new integration or appends the data to an existing one.
+        /// Find an existing integration by checking the name and all of the field definitions.
         /// </summary>
         /// <param name="filePath"></param>
         /// <returns></returns>
@@ -154,6 +155,7 @@ namespace Netlyt.Service
                 return await CreateOrFillIntegration(fsStream, apiKey, user, mime, name);
             }
         }
+
         /// <summary>
         /// Creates a new integration from the stream, or adds the stream to an existing integration.
         /// </summary>
@@ -197,10 +199,12 @@ namespace Netlyt.Service
             integrationInfo.APIKey = apiKey;
             integrationInfo.Owner = owner;
             integrationInfo.Name = name;
-
+            integrationInfo.Collection = Guid.NewGuid().ToString();
+            integrationInfo.FeaturesCollection = $"{integrationInfo.Collection}_features";
             options.Source = source;
             options.ApiKey = apiKey;
             options.IntegrationName = integrationInfo.Name;
+            options.Integration = integrationInfo;
 
             var importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
             var result = await importTask.Import();

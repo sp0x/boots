@@ -90,6 +90,11 @@ namespace Netlyt.Service.Integration
                     else if (isDateTime) value = timeValue;
                     Type memberType = value.GetType();
                     var fieldDefinition = new FieldDefinition(memberName, memberType);
+                    //TODO: move this to a factory method
+                    if (value is string)
+                    {
+                        fieldDefinition.DataEncoding = FieldDataEncoding.OneHot;
+                    }
                     Fields.Add(fieldDefinition);
                 }
             }

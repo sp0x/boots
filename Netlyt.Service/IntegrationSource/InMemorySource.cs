@@ -72,15 +72,8 @@ namespace Netlyt.Service.IntegrationSource
             if (_cachedIntegration != null) return _cachedIntegration;
             var iterator = Formatter.GetIterator(Content, true);
             var firstInstance = _cachedInstance = iterator.First();
-            Integration.DataIntegration typeDef = null;
-            if (firstInstance != null)
-            {
-                typeDef = new Integration.DataIntegration();
-                typeDef.DataEncoding = Encoding.CodePage;
-                typeDef.DataFormatType = Formatter.Name;
-                typeDef.SetFieldsFromType(firstInstance);
-            }
-            return _cachedIntegration = typeDef;
+            var outputIntegration = CreateIntegrationFromObj(firstInstance, null);
+            return _cachedIntegration = outputIntegration;
         }
 
         public override IEnumerable<T> GetIterator<T>()
