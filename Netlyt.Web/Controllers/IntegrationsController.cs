@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using static Netlyt.Web.Attributes;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration.Import;
 using Netlyt.Service.Orion;
@@ -180,7 +181,7 @@ namespace Netlyt.Web.Controllers
         [Authorize]
         public IActionResult Delete(long id)
         {
-            var item = _integrationService.GetById(id);
+            var item = _integrationService.GetById(id).FirstOrDefault();
             if (item == null)
             {
                 return NotFound();
@@ -192,7 +193,9 @@ namespace Netlyt.Web.Controllers
         [HttpGet("{id}/schema")]
         public IActionResult GetSchema(long id)
         {
-            var item = _integrationService.GetById(id);
+            var item = _integrationService.GetById(id)
+                .Include(x=>x.Fields)
+                .FirstOrDefault();
             if (item == null)
             {
                 return new NotFoundResult();
@@ -202,17 +205,41 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpPost("/integration/schema")]
-        public IActionResult GetUploadSchema()
+        public async Task<IActionResult> GetUploadSchema()
         {
-            var item = _integrationService.GetById(0);
-            if (item == null)
+            DataIntegration newIntegration = null;
+            if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
-                return new NotFoundResult();
+                return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
             }
-            var fields = item.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
-            return Ok(fields);
+            NewIntegrationViewModel integrationParams = new NewIntegrationViewModel();
+            string targetFilePath = Path.GetTempFileName();
+            string fileContentType = null;
+            DataImportResult result = null;
+            using (var targetStream = System.IO.File.Create(targetFilePath))
+            {
+                var form = await Request.StreamFile(targetStream);
+                fileContentType = form.GetValue("mime-type").ToString();
+                var filename = form.GetValue("filename").ToString().Trim('\"');
+                targetStream.Position = 0;
+                try
+                {
+                    result = await _integrationService.CreateOrAppendToIntegration(targetStream, fileContentType,
+                        filename);
+                    newIntegration = result?.Integration;
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(ex.Message);
+                }
+            }
+            if (result != null)
+            {
+                System.IO.File.Delete(targetFilePath);
+                var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
+                return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
+            }
+            return null;
         }
     }
-
-
 }

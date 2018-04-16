@@ -45,7 +45,7 @@ namespace Netlyt.Service.Lex.Generators
             {
                 throw new InvalidOperationException("Root integration must have a features collection set.");
             }
-            _expVisitor = expVisitor;
+            _expVisitor = expVisitor ?? throw new ArgumentNullException(nameof(expVisitor));
             _aggregateJobTrees = new List<AggregateJobTree>();
         }
 

@@ -42,7 +42,7 @@ namespace Netlyt.Service.Integration.Import
             }
         }
         public DestinationCollection OutputDestinationCollection { get; private set; }
-
+        private OneHotEncodeTask _oneHotEncoder;
         /// <summary>
         /// 
         /// </summary>
@@ -77,11 +77,12 @@ namespace Netlyt.Service.Integration.Import
                 _integration = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey,
                     _options.IntegrationName, true, tmpGuid);
             }
-            
+
             var outCollection = new DestinationCollection(_integration.Collection, _integration.GetReducedCollectionName());
             OutputDestinationCollection = outCollection;
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
             if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit);
+            _oneHotEncoder = new OneHotEncodeTask(new OneHotEncodeTaskOptions { Integration = _integration });
         }
 
         /// <summary>
@@ -91,6 +92,7 @@ namespace Netlyt.Service.Integration.Import
         /// <returns></returns>
         public async Task<DataImportResult> Import(CancellationToken? cancellationToken = null, bool truncateDestination = false)
         {
+
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
             var dstCollection = new MongoList(databaseConfiguration, OutputDestinationCollection.OutputCollection);
 
@@ -135,8 +137,7 @@ namespace Netlyt.Service.Integration.Import
 
         private void EncodeImportDocument(BsonDocument doc)
         {
-            var oneHotEncoding = new OneHotEncodeTask(new OneHotEncodeTaskOptions{Integration = _integration});
-            oneHotEncoding.Apply(doc);
+            _oneHotEncoder.Apply(doc);
         }
 
         /// <summary>
@@ -162,6 +163,12 @@ namespace Netlyt.Service.Integration.Import
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
             var sourceCollection = new MongoList(databaseConfiguration, OutputDestinationCollection.OutputCollection);
             await sourceCollection.Records.MapReduceAsync<BsonDocument>(script.Map, script.Reduce, mapReduceOptions);
+        }
+
+        public async Task Encode(CancellationToken? ct = null)
+        {
+            if (ct == null) ct = CancellationToken.None;
+            await _oneHotEncoder.ApplyToAllFields(ct);
         }
     }
 }

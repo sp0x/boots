@@ -6,18 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using nvoid.db.Extensions;
 using Newtonsoft.Json.Linq;
 using Netlyt.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using nvoid.db;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Import;
-using Netlyt.Service.Ml;
 using Netlyt.Service.Orion;
 using Netlyt.Web.Helpers;
 using Netlyt.Web.ViewModels;
@@ -190,12 +187,48 @@ namespace Netlyt.Web.Controllers
         }
 
         /// <summary>
+        /// Automatically creates a new model with generated features and model parameters
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("/model/createAuto")]
+        public async Task<IActionResult> CreateAuto([FromBody]CreateAutomaticModelViewModel modelData)
+        {
+            var user = await _userService.GetCurrentUser();
+            if (!string.IsNullOrEmpty(modelData.UserEmail))
+            {
+                _userService.SetUserEmail(user, modelData.UserEmail);
+            }
+            var relations = new List<FeatureGenerationRelation>();
+            if (modelData.Target == null || string.IsNullOrEmpty(modelData.Target.Name))
+            {
+                return BadRequest("Target is required.");
+            }
+            var integration = _integrationService.GetById(modelData.IntegrationId)
+                .Include(x=>x.Fields)
+                .Include(x=>x.Models)
+                .Include(x=>x.APIKey)
+                .FirstOrDefault();
+            if (integration == null)
+            {
+                return NotFound("Integration not found.");
+            }
+            var modelName = modelData.Name.Replace(".", "_");
+            var newModel = await _modelService.CreateModel(user,
+                modelData.Name,
+                new List<DataIntegration>(new[] { integration }),
+                "",
+                true,
+                relations,
+                modelData.Target.Name);
+            return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
         [Attributes.DisableFormValueModelBinding]
         [RequestSizeLimit(100_000_000)]
-        [AllowAnonymous]
         [HttpPost("/model/integrate")]
         public async Task<IActionResult> CreateAndIntegrate()
         {
@@ -204,23 +237,6 @@ namespace Netlyt.Web.Controllers
             string targetFilePath = Path.GetTempFileName();
             string fileContentType = null;
             var user = await _userService.GetCurrentUser();
-            var rnd = new Random();
-            if (user == null)
-            {
-                var newRegistration = new Service.Models.Account.RegisterViewModel();
-                newRegistration.Password = "ComplexP4ssword!";
-                var randomInt = rnd.Next(100000, 9000000);
-                newRegistration.Email = "somemail" + randomInt + "@mail.com";
-                newRegistration.FirstName = "Userx";
-                newRegistration.LastName = "Lastnamex";
-                newRegistration.Org = "Lol";
-                var newUserCreated = _userService.CreateUser(newRegistration, out user);
-                if (newUserCreated.Succeeded)
-                {
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                }
-
-            }
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
                 return BadRequest($"Expected a multipart request, but got {Request.ContentType}");

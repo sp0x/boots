@@ -46,7 +46,6 @@ namespace Netlyt.Web.Helpers
             {
                 ContentDispositionHeaderValue contentDisposition;
                 var hasContentDispositionHeader = ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out contentDisposition);
-
                 if (hasContentDispositionHeader)
                 {
                     if (MultipartRequestHelper.HasFileContentDisposition(contentDisposition))
@@ -60,7 +59,8 @@ namespace Netlyt.Web.Helpers
                         {
                             throw new ForbiddenException("Mime type is forbidden!");
                         }
-
+                        var filename = contentDisposition.FileName;
+                        formAccumulator.Append("filename", filename.ToString());
                         await section.Body.CopyToAsync(targetStream);
                     }
                     else if (MultipartRequestHelper.HasFormDataContentDisposition(contentDisposition))

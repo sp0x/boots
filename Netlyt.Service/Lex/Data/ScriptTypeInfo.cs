@@ -9,7 +9,8 @@
 
         public string GetClassName()
         {
-            return Name;
+            var clearedName = Name.Replace('-', '_').Replace('.', '_').Replace(' ', '_').Replace(';', '_');
+            return clearedName;
         }
 
         public string GetContextName()

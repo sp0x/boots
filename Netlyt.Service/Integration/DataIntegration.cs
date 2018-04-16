@@ -3,26 +3,26 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Dynamic;
 using System.Linq.Expressions;
-using Dynamitey; 
-using nvoid.db.DB; 
+using Dynamitey;
+using nvoid.db.DB;
 using nvoid.Integration;
 using Netlyt.Service.Ml;
-using Netlyt.Service.Source; 
+using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Integration
 {
     public partial class DataIntegration
         : Entity, IIntegration
-    { 
+    {
         public long Id { get; set; }
         public virtual ICollection<ModelIntegration> Models { get; set; }
         public User Owner { get; set; }
         public string FeatureScript { get; set; }
-        public string Name { get; set; }        
+        public string Name { get; set; }
         public int DataEncoding { get; set; }
         [ForeignKey("APIKey")]
         public long APIKeyId { get; set; }
-        public ApiAuth APIKey { get; set; } 
+        public ApiAuth APIKey { get; set; }
         public long? PublicKeyId { get; set; }
         public virtual ApiAuth PublicKey { get; set; }
         /// <summary>
@@ -49,19 +49,24 @@ namespace Netlyt.Service.Integration
         public ICollection<IntegrationExtra> Extras { get; set; }
 
         public static DataIntegration Empty { get; set; } = new DataIntegration("Empty");
-        
+
 
         public DataIntegration()
-        { 
+        {
             Fields = new HashSet<FieldDefinition>();
             Models = new HashSet<ModelIntegration>();
             Extras = new HashSet<IntegrationExtra>();
             this.PublicKey = ApiAuth.Generate();
         }
-        public DataIntegration(string name)
+        public DataIntegration(string name, bool generateCollections = false)
             : this()
-        { 
-            this.Name = name; 
+        {
+            this.Name = name;
+            if (generateCollections)
+            {
+                Collection = Guid.NewGuid().ToString();
+                FeaturesCollection = $"{Collection}_features";
+            }
         }
 
         /// <summary>
@@ -76,7 +81,7 @@ namespace Netlyt.Service.Integration
             var type = typeof(T);
             ExpandoObject xpObj = instance as ExpandoObject;
             var dateParser = new DateParser();
-            if (xpObj !=null)
+            if (xpObj != null)
             {
                 var fields = xpObj as IDictionary<string, object>;
                 foreach (var memberName in fields.Keys)

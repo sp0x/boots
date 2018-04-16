@@ -60,7 +60,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             if (_user == null)
             {
                 _user = new User() { FirstName = "tester1231", Email = "mail@lol.co" };
-                _userService.CreateUser(_user, "Password-IsStrong!", _appAuth); 
+                _userService.CreateUser(_user, "Password-IsStrong!", _appAuth);
             }
             _cacher = fixture.GetService<RedisCacher>();
             _dbConfig = DBConfig.GetGeneralDatabase();
@@ -68,20 +68,19 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             _modelService = fixture.GetService<ModelService>();
         }
 
-        private Model GetModel()
+        private Model GetModel(string modelName = "Romanian", string integrationName = "Namex")
         {
-            var ignName = "Romanian";//Must match the features
+            var ignName = modelName;//Must match the features
             var model = new Model()
             {
-                ModelName = "Namex"
+                ModelName = modelName
             };//_db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
-            var rootIntegration = new DataIntegration()
+            var rootIntegration = new DataIntegration(integrationName, true)
             {
                 APIKey = _appAuth,
                 APIKeyId = _appAuth.Id,
                 Name = ignName,
                 DataTimestampColumn = "timestamp",
-                FeaturesCollection = $"{ignName}_features",
             };
             rootIntegration.AddField<string>("humidity");
             rootIntegration.AddField<string>("latitude");
@@ -104,15 +103,15 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         {
             Model model = _db.Models
                 .Include(x => x.DataIntegrations)
-                .Include(x => x.User) 
+                .Include(x => x.User)
                 .FirstOrDefault(x => x.Id == 198);
-            DataIntegration ign = _db.Integrations.FirstOrDefault(x=> x.Id == model.DataIntegrations.FirstOrDefault().IntegrationId);
+            DataIntegration ign = _db.Integrations.FirstOrDefault(x => x.Id == model.DataIntegrations.FirstOrDefault().IntegrationId);
             var query = OrionQuery.Factory.CreateTrainQuery(model, ign);
             var m_id = await _orion.Query(query);
             m_id = m_id;
         }
 
-        
+
 
         [Fact]
         public async Task IntegrationTest()
@@ -120,11 +119,11 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             string dataSource = "Romanian";
             var integration = _userService.GetUserIntegration(_user, dataSource);
             var relations = new List<FeatureGenerationRelation>();
-//            for (var i = 0; i < 1; i++)
-//            {
-//                var nr = new FeatureGenerationRelation("Events.uuid", "Demography.uuid");
-//                relations.Add(nr);
-//            }
+            //            for (var i = 0; i < 1; i++)
+            //            {
+            //                var nr = new FeatureGenerationRelation("Events.uuid", "Demography.uuid");
+            //                relations.Add(nr);
+            //            }
             string modelName = "Rommol1";
             string modelCallback = "http://localhost:9999";
             string targetAttribute = "pm10"; //"Events.is_paying";
@@ -183,42 +182,62 @@ WEEKDAY(first_Romanian_time)";
             model.DonutScript.Model = model;
             _db.SaveChanges();
         }
+        [Fact]
+        public async Task TestGeneratedNestedDotFeatures()
+        {
+            var model = GetModel("feature_test.csv", "feature_test.csv");
+            string features = @"SUM(feature_test.csv.humidity)";
+            string[] featureBodies = features.Split('\n');
+            string donutName = $"{model.ModelName}Donut";
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", model.GetRootIntegration(), featureBodies);
+            foreach (var modelIgn in model.DataIntegrations)
+            {
+                dscript.AddIntegrations(modelIgn.Integration);
+            }
+            Type donutType, donutContextType, donutFEmitterType;
+            var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType, out donutFEmitterType);
+            Assert.NotNull(assembly);
+            model.DonutScript = new DonutScriptInfo(dscript);
+            model.DonutScript.AssemblyPath = assembly.Location;
+            model.DonutScript.Model = model;
+            _db.SaveChanges();
+            //SUM(feature_test.csv.humidity)
+        }
 
         [Theory]
-        [InlineData("max(someint)", "{ \"f_0\" : { \"$max\" : \"$someint\" } }")]
-        [InlineData("min(someint)", "{ \"f_0\" : { \"$min\" : \"$someint\" } }")]
-        [InlineData("sum(someint)", "{ \"f_0\" : { \"$sum\" : \"$someint\" } }")]
-        [InlineData("std(someint)", "{ \"f_0\" : { \"$stdDevSamp\" : \"$someint\" } }")]
-        [InlineData("mean(someint)", "{ \"f_0\" : { \"$avg\" : \"$someint\" } }")]
-        [InlineData("avg(someint)", "{ \"f_0\" : { \"$avg\" : \"$someint\" } }")]
+        [InlineData("max(pm10)", "{ \"f_0\" : { \"$max\" : \"$pm10\" } }")]
+        [InlineData("min(pm10)", "{ \"f_0\" : { \"$min\" : \"$pm10\" } }")]
+        [InlineData("sum(pm10)", "{ \"f_0\" : { \"$sum\" : \"$pm10\" } }")]
+        [InlineData("std(pm10)", "{ \"f_0\" : { \"$stdDevSamp\" : \"$pm10\" } }")]
+        [InlineData("mean(pm10)", "{ \"f_0\" : { \"$avg\" : \"$pm10\" } }")]
+        [InlineData("avg(pm10)", "{ \"f_0\" : { \"$avg\" : \"$pm10\" } }")]
+        [InlineData("SUM(feature_test.csv.humidity)", "{ \"f_0\" : { \"$sum\" : \"$humidity\" } }")]
         public void TestDonutAggregateFunction(string featureBody, string expectedAggregateValue)
         {
-            var collection = GetTestingCollection();
-            //            var validProjection = new BsonDocument();
-            //            validProjection[ "_id"] = "$_id";
-            //            validProjection[fieldName + "_v"] = new BsonDocument {{ "$max", "$" + fieldName }};
-            //            var validResult = collection.Aggregate().Group(validProjection).ToList();
-            var ign = new DataIntegration() { Name = "Romanian" };
+            var ign = new DataIntegration("feature_test.csv", true);
             var tsField = new FieldDefinition("timestamp", typeof(DateTime));
+            var pm10Field = new FieldDefinition("pm10", typeof(Double));
             ign.Fields.Add(tsField);
-            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", featureBody, ign);
+            ign.Fields.Add(pm10Field);
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", "pm10", ign, featureBody);
             var parser = new DonutScriptCodeGenerator(null);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;
-            var faggr = new FeatureAggregateCodeGenerator(script, null);
+            var faggr = new FeatureAggregateCodeGenerator(script, new DonutFeatureGeneratingExpressionVisitor(script));
             var maxFeature = faggr.GenerateFeatureFunctionCall(maxCall, firstFeature);
             Assert.Equal(expectedAggregateValue, maxFeature.GetValue());
 
             var query = BsonDocument.Parse(maxFeature.GetValue());
             query["_id"] = "$_id";
-            var result = collection.Aggregate().Group(query).ToList();
-            Assert.Equal(100, result.Count);
+            //var result = collection.Aggregate().Group(query).ToList();
+            //Assert.Equal(100, result.Count);
         }
 
         [Theory]
         [InlineData("day(timestamp)", "{ \"f_0\" : { \"$dayOfMonth\" : \"$timestamp\" } }")]
         [InlineData("year(timestamp)", "{ \"f_0\" : { \"$year\" : \"$timestamp\" } }")]
         [InlineData("month(timestamp)", "{ \"f_0\" : { \"$month\" : \"$timestamp\" } }")]
+        //[InlineData("SUM(feature_test.csv.humidity)", "{ \"f_0\" : { \"$month\" : \"$timestamp\" } }")]
         public void TestDonutTimeAggregateFunction(string featureBody, string expectedAggregateValue)
         {
             var collection = GetTestingCollection();
@@ -226,10 +245,14 @@ WEEKDAY(first_Romanian_time)";
             //            validProjection[ "_id"] = "$_id";
             //            validProjection[fieldName + "_v"] = new BsonDocument {{ "$max", "$" + fieldName }};
             //            var validResult = collection.Aggregate().Group(validProjection).ToList();
-            var ign = new DataIntegration() { Name = "Romanian" };
+            var ign = new DataIntegration("feature_test.csv", true);
             var tsField = new FieldDefinition("timestamp", typeof(DateTime));
+            var hdField = new FieldDefinition("humidity", typeof(Double));
+            var pm10Field = new FieldDefinition("pm10", typeof(Double));
             ign.Fields.Add(tsField);
-            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", featureBody, ign);
+            ign.Fields.Add(hdField);
+            ign.Fields.Add(pm10Field);
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", "pm10", ign, featureBody);
             var parser = new DonutScriptCodeGenerator(null);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;
@@ -245,9 +268,9 @@ WEEKDAY(first_Romanian_time)";
         }
 
         [Theory]
-        [InlineData("NUM_UNIQUE(Romanian.DAY(timestamp))", "{ \"f_0\" : { \"$max\" : \"$someint\" } }")] 
+        [InlineData("NUM_UNIQUE(Romanian.DAY(timestamp))", "{ \"f_0\" : { \"$max\" : \"$someint\" } }")]
         public void TestDonutNestedAggregateFunction(string featureBody, string expectedAggregateValue)
-        { 
+        {
             var collection = GetTestingCollection();
             //            var validProjection = new BsonDocument();
             //            validProjection[ "_id"] = "$_id";
@@ -255,9 +278,11 @@ WEEKDAY(first_Romanian_time)";
             //            var validResult = collection.Aggregate().Group(validProjection).ToList();
             var ign = new DataIntegration() { Name = "Romanian" };
             var tsField = new FieldDefinition("timestamp", typeof(DateTime));
+            var pm10Field = new FieldDefinition("pm10", typeof(Double));
             ign.Fields.Add(tsField);
-            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut",featureBody, ign);
-            
+            ign.Fields.Add(pm10Field);
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", "pm10", ign, featureBody);
+
             script.Integrations.Add(ign);
             var parser = new DonutScriptCodeGenerator(script);
             var firstFeature = script.Features.FirstOrDefault();
@@ -279,7 +304,7 @@ WEEKDAY(first_Romanian_time)";
             mongoList.Truncate();
             IMongoCollection<BsonDocument> collection = mongoList.Records;
             int i = 0;
-            FillCollection(collection,  () => new BsonDocument
+            FillCollection(collection, () => new BsonDocument
             {
                 {"someint", i++ },
                 {"timestamp", DateTime.Today.AddDays(i) }

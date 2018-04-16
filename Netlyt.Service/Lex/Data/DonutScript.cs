@@ -87,10 +87,12 @@ namespace Netlyt.Service.Lex.Data
                 var tokenizer = new FeatureToolsTokenizer(integration);
                 int i = 0;
                 ds.AddIntegrations(integration);
+                ds.TargetAttribute = target;
                 foreach (var fstring in featureBodies)
                 {
                     if (string.IsNullOrEmpty(fstring)) continue;
                     var featureName = $"f_{i}";
+
                     var parser = new DonutSyntaxReader(tokenizer.Tokenize(fstring));
                     IExpression expFeatureBody = parser.ReadExpression();
                     if (expFeatureBody == null) continue;
@@ -102,7 +104,6 @@ namespace Netlyt.Service.Lex.Data
                     ds.Features.Add(expFeature);
                     i++;
                 }
-                ds.TargetAttribute = target;
                 return ds;
             }
 

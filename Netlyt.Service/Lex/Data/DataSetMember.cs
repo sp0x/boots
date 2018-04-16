@@ -16,7 +16,7 @@ namespace Netlyt.Service.Lex.Data
 
         public string GetPropertyName()
         {
-            var sName = Name.Replace(' ', '_');
+            var sName = Name.Replace(' ', '_').Replace('.', '_').Replace('-', '_').Replace(';', '_');
             return "Ds" + sName;
         }
     }

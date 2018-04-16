@@ -149,7 +149,7 @@ namespace Netlyt.Service.Donut
             }
             else if (paramValueType == typeof(VariableExpression))
             {
-                var subExpression = (paramValue as VariableExpression).Member;
+                IExpression subExpression = (paramValue as VariableExpression).Member;
                 CallExpression foundCallExpression = null;
                 while (subExpression!=null)
                 {
@@ -166,6 +166,18 @@ namespace Netlyt.Service.Donut
                         if (memberExpType == typeof(MemberExpression))
                         {
                             subExpression = memberExp as MemberExpression;
+                        }
+                        else if (memberExp is VariableExpression)
+                        {
+                            if ((subExpression as MemberExpression)?.ChildMember != null)
+                            {
+                                subExpression = (subExpression as MemberExpression)?.ChildMember;
+                            }
+                            else
+                            {
+                                paramValue = memberExp;
+                                break;
+                            }
                         }
                         else
                         {

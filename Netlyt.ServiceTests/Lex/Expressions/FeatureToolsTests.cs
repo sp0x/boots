@@ -40,6 +40,18 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             Assert.Equal("DAY(first(dstime(Romanian)))", exps.ToString());
         }
 
+//        [Fact]
+//        public void ParseDottedIntegrationExpression()
+//        {
+//            var code = @"DAY(first_Romanian_time)";
+//            var integration = new DataIntegration("Romanian");
+//            integration.DataTimestampColumn = "timestamp";
+//            var tokenizer = new FeatureToolsTokenizer(integration);
+//            var parser = new DonutSyntaxReader(tokenizer.Tokenize(code), integration);
+//            var exps = parser.ReadExpressions().FirstOrDefault();
+//            Assert.Equal("DAY(first(dstime(Romanian)))", exps.ToString());
+//        }
+
         [Fact]
         public void ParseProjectionExpression()
         {

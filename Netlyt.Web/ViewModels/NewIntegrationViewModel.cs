@@ -7,6 +7,7 @@ namespace Netlyt.Web.ViewModels
         public string UserEmail { get; set; }
 
     }
+
     public class NewIntegrationViewModel
     {
         public string Name { get; set; }

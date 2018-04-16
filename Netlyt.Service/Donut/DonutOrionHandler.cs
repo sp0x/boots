@@ -121,23 +121,22 @@ namespace Netlyt.Service.Donut
             {
                 throw new InvalidOperationException("Model has no integrations!");
             }
-            var featureBodies = features.Select(x => x.ToString()).ToArray();
-            string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.TargetAttribute, sourceIntegration, featureBodies);
-            dscript.TargetAttribute = model.TargetAttribute;
-            foreach (var integration in model.DataIntegrations)
-            {
-                var ign = _db.Integrations
-                    .Include(x=>x.Fields)
-                    .Include(x=>x.Extras)
-                    .Include(x=>x.APIKey)
-                    .Include(x=>x.PublicKey)
-                    .FirstOrDefault(x => x.Id == integration.IntegrationId);
-                dscript.AddIntegrations(ign);
-            }
-
             try
             {
+                var featureBodies = features.Select(x => x.ToString()).ToArray();
+                string donutName = $"{model.ModelName}Donut";
+                DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.TargetAttribute, sourceIntegration, featureBodies);
+                dscript.TargetAttribute = model.TargetAttribute;
+                foreach (var integration in model.DataIntegrations)
+                {
+                    var ign = _db.Integrations
+                        .Include(x => x.Fields)
+                        .Include(x => x.Extras)
+                        .Include(x => x.APIKey)
+                        .Include(x => x.PublicKey)
+                        .FirstOrDefault(x => x.Id == integration.IntegrationId);
+                    dscript.AddIntegrations(ign);
+                }
                 Type donutType, donutContextType, donutFEmitterType;
                 _compiler.SetModel(model);
                 var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType,

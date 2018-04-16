@@ -116,9 +116,9 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public DataIntegration GetById(long id)
+        public IQueryable<DataIntegration> GetById(long id)
         {
-            return _context.Integrations.Find(id);
+            return _context.Integrations.Where(x=>x.Id == id);
         }
 
         /// <summary>
@@ -267,29 +267,42 @@ namespace Netlyt.Service
             }
             var source = InMemorySource.Create(inputData, formatter);
             DataIntegration integrationInfo = source.ResolveIntegrationDefinition() as DataIntegration;
-            var timestampCol = _timestampService.Discover(integrationInfo);
-            if (!string.IsNullOrEmpty(timestampCol) && integrationInfo != null)
+            DataIntegration exitingIntegration=null;
+            bool isNewIntegration = false;
+            if (IntegrationExists(integrationInfo, apiKey.AppId, out exitingIntegration))
             {
-                integrationInfo.DataTimestampColumn = timestampCol;
+                integrationInfo = exitingIntegration;
             }
-
+            else
+            {
+                isNewIntegration = true;
+                integrationInfo.APIKey = apiKey;
+                integrationInfo.Owner = owner;
+                integrationInfo.Name = name;
+                integrationInfo.Collection = Guid.NewGuid().ToString();
+                integrationInfo.FeaturesCollection = $"{integrationInfo.Collection}_features";
+                var timestampCol = _timestampService.Discover(integrationInfo);
+                if (!string.IsNullOrEmpty(timestampCol) && integrationInfo != null)
+                {
+                    integrationInfo.DataTimestampColumn = timestampCol;
+                }
+            }
             if (integrationInfo == null)
             {
                 throw new Exception("No integration found!");
             }
-            integrationInfo.APIKey = apiKey;
-            integrationInfo.Owner = owner;
-            integrationInfo.Name = name;
-            integrationInfo.Collection = Guid.NewGuid().ToString();
-            integrationInfo.FeaturesCollection = $"{integrationInfo.Collection}_features";
             options.Source = source;
             options.ApiKey = apiKey;
             options.IntegrationName = integrationInfo.Name;
             options.Integration = integrationInfo;
-
             var importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
             var result = await importTask.Import();
-            _context.SaveChanges();
+            if (isNewIntegration)
+            {
+                await importTask.Encode();
+                _context.Integrations.Add(integrationInfo);
+            }
+            _context.SaveChanges(); //Save any changes done to the integration.
             return result;
         }
 
