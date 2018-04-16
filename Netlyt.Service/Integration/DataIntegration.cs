@@ -94,6 +94,8 @@ namespace Netlyt.Service.Integration
                     if (value is string)
                     {
                         fieldDefinition.DataEncoding = FieldDataEncoding.OneHot;
+                        fieldDefinition.Extras = new FieldExtras();
+                        fieldDefinition.Extras.Field = fieldDefinition;
                     }
                     Fields.Add(fieldDefinition);
                 }

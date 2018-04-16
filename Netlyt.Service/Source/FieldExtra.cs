@@ -6,5 +6,12 @@
         public string Key { get; set; }
         public string Value { get; set; }
         public FieldDefinition Field { get; set; }
+        public FieldExtraType Type { get; set; }
+    }
+
+    public enum FieldExtraType
+    {
+        None,
+        Dummy
     }
 }

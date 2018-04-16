@@ -413,7 +413,7 @@ events : elements };
                 };
             });
             var updateBatch = new MongoUpdateBatch<IntegratedDocument>(_documentStore, updateBatchSize);
-            //BatchedBlockingBlock<FindAndModifyArgs<IntegratedDocument>>.CreateBlock(updateBatchSize);//
+            //BatchedBlockingBlock<FindAndModifyArgs<IntegratedDocument>>.CreateManyBlock(updateBatchSize);//
             featureBlock.LinkTo(updateCreator, new DataflowLinkOptions { PropagateCompletion = true });
             updateCreator.LinkTo(updateBatch.Block, new DataflowLinkOptions { PropagateCompletion = true });
             //updateBatch.LinkToEnd(new DataflowLinkOptions { PropagateCompletion = true});

@@ -244,7 +244,7 @@ namespace Netlyt.Web.Controllers
                     {
                         return BadRequest();
                     }
-                    result = await _integrationService.CreateOrFillIntegration(sourceStream, fileContentType,
+                    result = await _integrationService.CreateOrAppendToIntegration(sourceStream, fileContentType,
                         modelParams.Name);
                     newIntegration = result?.Integration;
                 }

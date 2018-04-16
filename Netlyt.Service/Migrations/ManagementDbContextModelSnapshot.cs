@@ -431,6 +431,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Key");
 
+                    b.Property<int>("Type");
+
                     b.Property<string>("Value");
 
                     b.HasKey("Id");

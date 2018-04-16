@@ -10,5 +10,10 @@ namespace Netlyt.Service.Source
         public bool Unique { get; set; }
         public bool Nullable { get; set; }
         public FieldDefinition Field { get; set; }
+
+        public FieldExtras()
+        {
+            Extra = new HashSet<FieldExtra>();
+        }
     }
 }

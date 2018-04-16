@@ -72,7 +72,7 @@ namespace Netlyt.Web.Controllers
         public async Task<ActionResult> Entity()
         {
             //GetRoutes();
-            var result = await _integrationService.CreateOrFillIntegration(Request.Body, null);
+            var result = await _integrationService.CreateOrAppendToIntegration(Request.Body, null);
             return Json(new
             {
                 success = true

@@ -133,7 +133,7 @@ namespace Netlyt.Web.Controllers
                 targetStream.Position = 0;
                 try
                 {
-                    result = await _integrationService.CreateOrFillIntegration(targetStream, fileContentType,
+                    result = await _integrationService.CreateOrAppendToIntegration(targetStream, fileContentType,
                         integrationParams.Name);
                     newIntegration = result?.Integration;
                 }

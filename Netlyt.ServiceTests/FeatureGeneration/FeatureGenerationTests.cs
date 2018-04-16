@@ -112,20 +112,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             m_id = m_id;
         }
 
-        [Theory]
-        [InlineData("Res\\TestData\\pollution_data.csv")]
-        public async Task TestOneHotForStrings(string sourceFile)
-        {
-            //Source
-            var modelName = "FunModel";
-            var integrationResult = await _integrationService.CreateOrFillIntegration(sourceFile, _appAuth, _user, modelName);
-            var newIntegration = integrationResult?.Integration;
-            //Assert the category field has a DataEncoding of OneHot
-            var categoryField = newIntegration.Fields.FirstOrDefault(x => x.Name == "category");
-            Assert.NotNull(categoryField);
-            Assert.Equal(FieldDataEncoding.OneHot,
-                categoryField.DataEncoding);
-        }
+        
 
         [Fact]
         public async Task IntegrationTest()

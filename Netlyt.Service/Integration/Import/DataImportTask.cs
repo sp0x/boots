@@ -104,9 +104,15 @@ namespace Netlyt.Service.Integration.Import
             var batchSize = _options.ReadBlockSize;
             var executionOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 1, };
 
-            var transformerBlock = BsonConverter.CreateBlock(new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
-            var readBatcher = BatchedBlockingBlock<ExpandoObject>.CreateBlock(batchSize);
-            readBatcher.LinkTo(transformerBlock, new DataflowLinkOptions { PropagateCompletion = true });
+            var toBsonDocBlock = new TransformBlock<ExpandoObject, BsonDocument>((o) =>
+            {
+                var doc = o.ToBsonDocument();
+                //Apply encoding here
+                EncodeImportDocument(doc);
+                return doc;
+            });//BsonConverter.CreateBlock(new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
+            var readBatcher = BatchedBlockingBlock<BsonDocument>.CreateBlock(batchSize);
+            //readBatcher.LinkTo(toBsonDocBlock, new DataflowLinkOptions { PropagateCompletion = true });
             var inserterBlock = new ActionBlock<IEnumerable<BsonDocument>>(x =>
             {
                 Debug.WriteLine($"Inserting batch {batchesInserted + 1} [{x.Count()}]");
@@ -114,9 +120,11 @@ namespace Netlyt.Service.Integration.Import
                 Interlocked.Increment(ref batchesInserted);
                 Debug.WriteLine($"Inserted batch {batchesInserted}");
             }, executionOptions);
-            transformerBlock.LinkTo(inserterBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            var result = await _harvester.ReadAll(readBatcher, cancellationToken);
-            await Task.WhenAll(inserterBlock.Completion, transformerBlock.Completion);
+            toBsonDocBlock.LinkTo(readBatcher, new DataflowLinkOptions { PropagateCompletion = true });
+            readBatcher.LinkTo(inserterBlock, new DataflowLinkOptions { PropagateCompletion = true });
+
+            var result = await _harvester.ReadAll(toBsonDocBlock, cancellationToken);
+            await Task.WhenAll(inserterBlock.Completion, toBsonDocBlock.Completion);
             foreach (var index in _options.IndexesToCreate)
             {
                 dstCollection.EnsureIndex(index);
@@ -124,6 +132,13 @@ namespace Netlyt.Service.Integration.Import
             var output = new DataImportResult(result, dstCollection, _integration);
             return output;
         }
+
+        private void EncodeImportDocument(BsonDocument doc)
+        {
+            var oneHotEncoding = new OneHotEncodeTask(new OneHotEncodeTaskOptions{Integration = _integration});
+            oneHotEncoding.Apply(doc);
+        }
+
         /// <summary>
         /// 
         /// </summary>

@@ -141,7 +141,7 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="filePath"></param>
         /// <returns></returns>
-        public async Task<DataImportResult> CreateOrFillIntegration(string filePath, ApiAuth apiKey, User user,string name=null)
+        public async Task<DataImportResult> CreateOrAppendToIntegration(string filePath, ApiAuth apiKey, User user,string name=null)
         {
             //Must be relative
             if (filePath[0] != '/' && filePath[1] != ':')
@@ -152,7 +152,7 @@ namespace Netlyt.Service
             var mime = MimeResolver.Resolve(filePath); 
             using (var fsStream = System.IO.File.Open(filePath, FileMode.Open))
             {
-                return await CreateOrFillIntegration(fsStream, apiKey, user, mime, name);
+                return await CreateOrAppendToIntegration(fsStream, apiKey, user, mime, name);
             }
         }
 
@@ -161,12 +161,93 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="inputData">The stream containing integration data</param>
         /// <returns></returns>
-        public async Task<DataImportResult> CreateOrFillIntegration(Stream inputData, string mime = null, string name = null)
+        public async Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, string mime = null, string name = null)
         {
             var options = new DataImportTaskOptions();
             var apiKey = await _userService.GetCurrentApi();
             var crUser = await _userService.GetCurrentUser();
-            return await CreateOrFillIntegration(inputData, apiKey, crUser, mime, name);
+            return await CreateOrAppendToIntegration(inputData, apiKey, crUser, mime, name);
+        }
+
+        /// <summary>
+        /// Appends the data to an existing integration
+        /// </summary>
+        /// <param name="ign"></param>
+        /// <param name="inputData"></param>
+        /// <param name="apiKey"></param>
+        /// <param name="mime"></param>
+        /// <returns></returns>
+        public async Task<DataImportResult> AppendToIntegration(DataIntegration ign, string filePath, ApiAuth apiKey)
+        {
+            if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
+            //Must be relative
+            if (filePath[0] != '/' && filePath[1] != ':')
+            {
+                var relativePath = Environment.CurrentDirectory;
+                filePath = System.IO.Path.Combine(relativePath, filePath);
+            }
+            var mime = MimeResolver.Resolve(filePath);
+            var formatter = ResolveFormatter<ExpandoObject>(mime);
+            if (formatter == null)
+            {
+                throw new Exception("Could not resolve formatter for the given content type!");
+            }
+            using (var fsStream = File.Open(filePath, FileMode.Open))
+            {
+                return await AppendToIntegration(ign, fsStream, apiKey, mime);
+            }
+        }
+
+        /// <summary>
+        /// Appends the data to an existing integration
+        /// </summary>
+        /// <param name="ign"></param>
+        /// <param name="inputData"></param>
+        /// <param name="apiKey"></param>
+        /// <param name="mime"></param>
+        /// <returns></returns>
+        public async Task<DataImportResult> AppendToIntegration(DataIntegration ign, Stream inputData, ApiAuth apiKey, string mime = null)
+        {
+            if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
+            var formatter = ResolveFormatter<ExpandoObject>(mime);
+            if (formatter == null)
+            {
+                throw new Exception("Could not resolve formatter for the given content type!");
+            }
+            var source = InMemorySource.Create(inputData, formatter);
+            var options = new DataImportTaskOptions();
+            options.Source = source;
+            options.ApiKey = apiKey;
+            options.Integration = ign;
+            var importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
+            var result = await importTask.Import();
+            return result;
+        }
+
+        /// <summary>
+        /// Appends the data to an existing integration
+        /// </summary>
+        /// <param name="ign"></param>
+        /// <param name="source"></param>
+        /// <param name="apiKey"></param>
+        /// <param name="mime"></param>
+        /// <returns></returns>
+        public async Task<DataImportResult> AppendToIntegration(DataIntegration ign, InputSource source, ApiAuth apiKey, string mime = null)
+        {
+            if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
+            var formatter = ResolveFormatter<ExpandoObject>(mime);
+            if (formatter == null)
+            {
+                throw new Exception("Could not resolve formatter for the given content type!");
+            }
+            var options = new DataImportTaskOptions();
+            options.Source = source;
+            options.ApiKey = apiKey;
+            options.Integration = ign;
+            var importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
+            var result = await importTask.Import();
+            _context.SaveChanges();
+            return result;
         }
 
         /// <summary>
@@ -175,7 +256,7 @@ namespace Netlyt.Service
         /// <param name="inputData">The stream containing integration data</param>
         /// <param name="apiKey"></param>
         /// <returns></returns>
-        public async Task<DataImportResult> CreateOrFillIntegration(Stream inputData, ApiAuth apiKey, User owner, string mime = null, string name = null)
+        public async Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, ApiAuth apiKey, User owner, string mime = null, string name = null)
         {
             var options = new DataImportTaskOptions();
             if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
@@ -208,6 +289,7 @@ namespace Netlyt.Service
 
             var importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
             var result = await importTask.Import();
+            _context.SaveChanges();
             return result;
         }
 
