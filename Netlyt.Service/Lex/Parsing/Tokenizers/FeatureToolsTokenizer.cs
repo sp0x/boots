@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Parsing.Tokens;
@@ -14,6 +15,7 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
     {
         private List<TokenDefinition> _tokenDefinitions;
         private DataIntegration[] _integrations;
+        private DataIntegration _currentIntegration;
 
         public FeatureToolsTokenizer(params DataIntegration[] integrations)
         {
@@ -21,6 +23,11 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
             _tokenDefinitions = new List<TokenDefinition>();
             _tokenDefinitions.AddRange(defs.GetAll());
             _integrations = integrations;
+            foreach (var ign in _integrations)
+            {
+                var ignToken = new TokenDefinition(TokenType.DataSource, Regex.Escape(ign.Name), 1);
+                _tokenDefinitions.Add(ignToken);
+            }
         }
         public FeatureToolsTokenizer(FeatureToolsTokenDefinitions toks, params DataIntegration[] integrations)
         {
@@ -34,10 +41,10 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
             var reader = new StringReader(query);
             return Tokenize(reader);
         }
-        public IEnumerable<DslToken> Tokenize(string query, out int cReadTokens)
+        public IEnumerable<DslToken> Tokenize(string query, ref int cReadTokens)
         {
             var reader = new StringReader(query);
-            return Tokenize(reader, out cReadTokens);
+            return Tokenize(reader, ref cReadTokens);
         }
 
         /// <summary>
@@ -48,7 +55,7 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
         public IEnumerable<DslToken> Tokenize(StringReader strReader)
         {
             int tmpint = 0;
-            return Tokenize(strReader, out tmpint);
+            return Tokenize(strReader, ref tmpint);
         }
 
         /// <summary>
@@ -56,7 +63,7 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
         /// </summary>
         /// <param name="strReader"></param>
         /// <returns></returns>
-        public IEnumerable<DslToken> Tokenize(StringReader strReader, out int cReadTokens)
+        public IEnumerable<DslToken> Tokenize(StringReader strReader, ref int cReadTokens)
         {
             var tokenMatches = FindTokenMatches(strReader).ToList();
             var definitions = tokenMatches.GroupBy(x => new TokenPosition(x.Line, (uint)x.StartIndex),
@@ -68,7 +75,7 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
             TokenMatch lastMatch = null;
             var output = new Stack<DslToken>();
             bool isSubstring = false;
-
+            DataIntegration matchedIntegration = null;
             for (int i = 0; i < definitions.Count; i++)
             {
                 var orderedEnumerable = definitions[i].OrderBy(x => x.Precedence);
@@ -88,28 +95,31 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
                     if (isSubstring)
                     {
                         if (tokensTargetDataset == null) throw new Exception("Target DataSet not found!");
-                        var timeTokens = ConstructTimeTokens(tokensTargetDataset, bestMatch, i, output);
+                        var timeTokens = ConstructTimeTokens(tokensTargetDataset, bestMatch.Line, bestMatch.StartIndex, i, output);
                         foreach (var tt in timeTokens) output.Push(tt);
                         continue;
                     }
                     else
                     {
-                        throw new NotImplementedException("Time projection not supported for non-substring expressions. Use the format DataSetName_time");
+                        var timeTokens = ConstructTimeTokens(_currentIntegration, bestMatch.Line, bestMatch.StartIndex, i, output);
+                        foreach (var tt in timeTokens) output.Push(tt);
+                        i += 1;
+                        continue;
                     }
                 }
                 if (bestMatch.TokenType == TokenType.First)
                 {
-                    var nextDefinitions = ((definitions.Count - 1) == i) ? null : definitions[i + 1];
-                    if (nextDefinitions != null)
+                    var nextBestMatch = ((definitions.Count - 1) == i) ? null : definitions[i + 1];
+                    if (nextBestMatch != null)
                     {
-                        var nextBestMatch = nextDefinitions.OrderBy(x => x.Precedence).First();
-                        var expValue = nextBestMatch.Value;
-                        var pTokenIndex = expValue.IndexOf(bestMatch.Value);
-                        if (pTokenIndex > 0) continue;
+                        var nextTokens = definitions.Skip(i+2).Select(x=> x.FirstOrDefault()).ToList();
+                        var expValue = GetParameterSymbol(bestMatch, nextBestMatch, nextTokens, out matchedIntegration, ref cReadTokens);
+                        i += cReadTokens;
+                        _currentIntegration = matchedIntegration;
+                        if (String.IsNullOrEmpty(expValue)) continue;
                         //Get the subtoken
-                        expValue = expValue.Substring(bestMatch.Value.Length);
                         int iReadTokens = 0;
-                        var subTokens = ConstructFirstElementTokens(bestMatch, nextBestMatch, expValue, out iReadTokens);
+                        var subTokens = ConstructFirstElementTokens(bestMatch, expValue, ref iReadTokens);
                         if (subTokens == null || subTokens.Count() == 0)
                         {
                             continue;
@@ -139,25 +149,118 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
             return output.Reverse();
         }
 
-        private IEnumerable<DslToken> ConstructTimeTokens(DataIntegration tokensTargetDataset, TokenMatch bestMatch,
+        private string GetParameterSymbol(TokenMatch bestMatch, IGrouping<TokenPosition, TokenMatch> nextBestMatches,
+            List<TokenMatch> nextTokens,
+            out DataIntegration dataIntegration,
+            ref int cntReadTokens)
+        {
+            int offset = 0;
+            var nextDefsSorted = nextBestMatches.OrderBy(x => x.Precedence).ToList();
+            dataIntegration = null;
+            while ((nextDefsSorted.Count)>offset)
+            {
+                var nextDef = nextDefsSorted[offset];
+                var nextDefVal = nextDef.Value;
+                if (offset == 0)
+                {
+                    var pTokenIndex = nextDefVal.IndexOf(bestMatch.Value);
+                    if (pTokenIndex > 0) return null;
+                    nextDefVal = nextDefVal.Substring(bestMatch.Value.Length);
+                }
+                string outputExpression;
+                if (ParseParameterSubstring(nextTokens, nextDefVal, out dataIntegration, out outputExpression, ref cntReadTokens))
+                {
+                    return outputExpression;
+                    break;
+                }
+                offset++;
+            }
+            var nextBestMatch = nextBestMatches.OrderBy(x => x.Precedence).First();
+            var expValue = nextBestMatch.Value;
+            expValue = expValue.Substring(bestMatch.Value.Length);
+            return expValue;
+        }
+
+        private bool ParseParameterSubstring(List<TokenMatch> nextTokens, 
+            string nextDefVal,
+            out DataIntegration matchingIntegration,
+            out string outputExpValue,
+            ref int cntReadTokens)
+        {
+            matchingIntegration = _integrations.FirstOrDefault(x => x.Name.StartsWith(nextDefVal));
+            outputExpValue = null;
+            if (matchingIntegration != null)
+            {
+                var isFullMatch = matchingIntegration.Name == nextDefVal;
+                if (!isFullMatch && nextTokens != null && nextTokens.Count > 0)
+                {
+                    var strLeft = matchingIntegration.Name.Substring(nextDefVal.Length);
+                    for (int intx = 0; intx < nextTokens.Count; intx++)
+                    {
+                        cntReadTokens++;
+                        TokenMatch tokenMatch = nextTokens[intx];
+                        if (strLeft.StartsWith(tokenMatch.Value))
+                        {
+                            strLeft = strLeft.Substring(tokenMatch.Value.Length);
+                        }
+                        else if (tokenMatch.Value.EndsWith(strLeft))
+                        {
+                            TokenMatch nextBest = null;
+                            for (int xt = intx; xt < nextTokens.Count; xt++)
+                            {
+                                if (nextTokens[xt].Line >= tokenMatch.Line &&
+                                    nextTokens[xt].StartIndex >= tokenMatch.EndIndex)
+                                {
+                                    cntReadTokens += xt-1;
+                                    nextBest = nextTokens[xt];
+                                    break;
+                                }
+                            }
+                            if (nextBest == null) continue;
+                            outputExpValue = nextBest?.Value;
+                            //outputExpValue = tokenMatch.Value;
+                            break;
+                        }
+                        else
+                        {
+                            outputExpValue = tokenMatch.Value;
+                            break;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private IEnumerable<DslToken> ConstructTimeTokens(DataIntegration tkTargetDataset, uint startLine, int startIndex,
             int i, Stack<DslToken> output)
         {
             var matches = new List<DslToken>();
-            output.Pop();
-            var timeFn = new DslToken(TokenType.Symbol, "dstime", bestMatch.Line) {Position = (uint)bestMatch.StartIndex};
-            var obrk = new DslToken(TokenType.OpenParenthesis, "(", bestMatch.Line) {Position = (uint)bestMatch.StartIndex+4};
+            if(output.Count>0) output.Pop();
+            var timeFn = new DslToken(TokenType.Symbol, "dstime", startLine) {Position = (uint)startIndex };
+            var obrk = new DslToken(TokenType.OpenParenthesis, "(", startLine) {Position = (uint)startIndex + 4};
             var paramsVal = "";
-            paramsVal += tokensTargetDataset.Name;
-            var dbSymbol = new DslToken(TokenType.Symbol, paramsVal, bestMatch.Line) {  Position =(uint)(bestMatch.StartIndex+5)};
-            var cbrk = new DslToken(TokenType.CloseParenthesis, ")", bestMatch.Line) {Position = (uint)(bestMatch.StartIndex + 4 + paramsVal.Length) };
+            paramsVal += tkTargetDataset.Name;
+            var dbSymbol = new DslToken(TokenType.Symbol, paramsVal, startLine) {  Position =(uint)(startIndex + 5)};
+            var cbrk = new DslToken(TokenType.CloseParenthesis, ")", startLine) {Position = (uint)(startIndex + 4 + paramsVal.Length) };
             matches.AddRange(new []{ timeFn, obrk, dbSymbol, cbrk });
             return matches;
         }
 
-
-        private IEnumerable<DslToken> ConstructFirstElementTokens(TokenMatch parent, TokenMatch child, string expValue, out int cntOfReadTokens)
+        /// <summary>
+        /// Construct a first({innerExpValue}) call
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="child"></param>
+        /// <param name="innerExpValue"></param>
+        /// <param name="cntOfReadTokens"></param>
+        /// <returns></returns>
+        private IEnumerable<DslToken> ConstructFirstElementTokens(TokenMatch parent, string innerExpValue, ref int cntOfReadTokens)
         {
-            var subTokens = Tokenize(expValue, out cntOfReadTokens);
+            var subTokens = Tokenize(innerExpValue, ref cntOfReadTokens);
             var output = new List<DslToken>();
             var timeFn = new DslToken(TokenType.Symbol, "first", parent.Line) { Position = (uint)parent.StartIndex };
             var obrk = new DslToken(TokenType.OpenParenthesis, "(", parent.Line) { Position = (uint)parent.StartIndex + 4 };
@@ -177,7 +280,7 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
         {
             targetDataSet = null;
             if (child.TokenType != TokenType.DatasetTime) return false;
-            var pValue = parent.Value;
+            string pValue = parent.Value;
             var subIndex = pValue.LastIndexOf(child.Value);
             if (subIndex != (pValue.Length - child.Value.Length))
             {

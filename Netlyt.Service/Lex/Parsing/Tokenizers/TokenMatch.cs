@@ -10,5 +10,10 @@ namespace Netlyt.Service.Lex.Parsing.Tokenizers
         public uint Line { get; set; }
         public int EndIndex { get; set; }
         public int Precedence { get; set; }
+        public override string ToString()
+        {
+            return Value;
+            //return base.ToString();
+        }
     }
 }

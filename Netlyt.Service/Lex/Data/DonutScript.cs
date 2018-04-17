@@ -92,16 +92,23 @@ namespace Netlyt.Service.Lex.Data
                 {
                     if (string.IsNullOrEmpty(fstring)) continue;
                     var featureName = $"f_{i}";
-
-                    var parser = new DonutSyntaxReader(tokenizer.Tokenize(fstring));
-                    IExpression expFeatureBody = parser.ReadExpression();
-                    if (expFeatureBody == null) continue;
-                    if (!string.IsNullOrEmpty(target) && expFeatureBody.ToString() == target)
+                    try
                     {
-                        featureName = target;
+                        var parser = new DonutSyntaxReader(tokenizer.Tokenize(fstring));
+                        IExpression expFeatureBody = parser.ReadExpression();
+                        if (expFeatureBody == null) continue;
+                        if (!string.IsNullOrEmpty(target) && expFeatureBody.ToString() == target)
+                        {
+                            featureName = target;
+                        }
+
+                        var expFeature = new AssignmentExpression(new VariableExpression(featureName), expFeatureBody);
+                        ds.Features.Add(expFeature);
                     }
-                    var expFeature = new AssignmentExpression(new VariableExpression(featureName), expFeatureBody);
-                    ds.Features.Add(expFeature);
+                    catch (Exception ex)
+                    {
+                        throw new FeatureGenerationFailed(featureName, fstring, ex);
+                    }
                     i++;
                 }
                 return ds;
@@ -135,6 +142,14 @@ namespace Netlyt.Service.Lex.Data
         public DataIntegration GetRootIntegration()
         {
             return Integrations.FirstOrDefault();
+        }
+    }
+
+    public class FeatureGenerationFailed : Exception
+    {
+        public FeatureGenerationFailed(string featureName, string featureBody, Exception internalEx) 
+            : base($"Could not generate feature: {featureName}\n Body: {featureBody}", internalEx)
+        {
         }
     }
 }

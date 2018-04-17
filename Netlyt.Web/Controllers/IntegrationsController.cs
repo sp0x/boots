@@ -220,7 +220,7 @@ namespace Netlyt.Web.Controllers
             {
                 var form = await Request.StreamFile(targetStream);
                 fileContentType = form.GetValue("mime-type").ToString();
-                var filename = form.GetValue("filename").ToString().Trim('\"');
+                var filename = form.GetValue("filename").ToString().Trim('\"').Replace('.', '_').Replace('-', '_');
                 targetStream.Position = 0;
                 try
                 {

@@ -63,6 +63,10 @@ namespace Netlyt.Service.Lex.Generators
         public string GetValue()
         {
             var template = Function.GetValue();
+            if (string.IsNullOrEmpty(template))
+            {
+                return null;
+            }
             var lstParameters = Function?.Parameters?.ToList();
             if (lstParameters == null) lstParameters = new List<ParameterExpression>();
             for (int i = 0; i < lstParameters.Count; i++)
@@ -115,6 +119,10 @@ namespace Netlyt.Service.Lex.Generators
         public string WrapValueWithRoot(string mName)
         {
             var value = GetValue();
+            if (string.IsNullOrEmpty(value))
+            {
+                return null;
+            }
             try
             {
                 var jsdoc = JObject.Parse(value);

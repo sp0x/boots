@@ -161,7 +161,18 @@ namespace Netlyt.Service.Lex.Generators
         {
             foreach (var f in featureAssignments)
             {
-                Add(f);
+                try
+                {
+                    Add(f);
+                }
+                catch (DonutFunctionNotImplementedException ex)
+                {
+                    Trace.WriteLine(ex.Message);
+#if DEBUG
+                    Debug.WriteLine(ex.Message);
+#endif
+                }
+                
             }
         }
 
@@ -231,7 +242,7 @@ namespace Netlyt.Service.Lex.Generators
                     }
                 else
                 {
-                    throw new NotImplementedException();
+                    throw new DonutFunctionNotImplementedException(fExpression.ToString());
                 }
             }
             else
@@ -380,6 +391,10 @@ namespace Netlyt.Service.Lex.Generators
                 {
                     var groups = stage.GetGroupings().ToList();
                     var stageJson = stage.WrapValueWithRoot(aggJobTree.Name);
+                    if (string.IsNullOrEmpty(stageJson))
+                    {
+                        continue;
+                    }
                     int iGrp = 0;
                     foreach (var grp in groups)
                     {
@@ -504,5 +519,12 @@ namespace Netlyt.Service.Lex.Generators
         public void Clean()
         {
         }
+    }
+}
+
+public class DonutFunctionNotImplementedException : Exception
+{
+    public DonutFunctionNotImplementedException(string message) : base($"Donut fn not implemented: ${message}")
+    {
     }
 }

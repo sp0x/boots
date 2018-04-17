@@ -33,12 +33,12 @@ namespace Netlyt.Service.Lex
             };
             Functions["num_unique"] = new DonutFunction("num_unique")
             { IsAggregate = true };
-            Functions["std"] = new DonutFunction("std")
-            {
-                Type = DonutFunctionType.Group,
-                IsAggregate = true,
-                GroupValue = (new BsonDocument { { "$stdDevSamp", "{0}" } }).ToString()
-            };
+//            Functions["std"] = new DonutFunction("std")//Disables because mongo doesn't handle it right
+//            {
+//                Type = DonutFunctionType.Group,
+//                IsAggregate = true,
+//                GroupValue = (new BsonDocument { { "$stdDevSamp", "{0}" } }).ToString()
+//            };
             Functions["mean"] = new DonutFunction("mean")
             {
                 Type = DonutFunctionType.Group,
@@ -57,8 +57,8 @@ namespace Netlyt.Service.Lex
 //                IsAggregate = true,
 //                GroupValue = (new BsonDocument { { "{0}", "{1}"} }).ToString()
 //            };
-            Functions["skew"] = new DonutFunction("skew")
-            { IsAggregate = true };
+//            Functions["skew"] = new DonutFunction("skew")
+//            { IsAggregate = true };
             Functions["day"] = new DonutFunction("day")
             {
                 Type = DonutFunctionType.Project,
