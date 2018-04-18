@@ -1,72 +1,23 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
+using Netlyt.Service.Integration.Encoding;
 using Netlyt.Service.Source;
 
-namespace Netlyt.Service.Integration.Import
+namespace Netlyt.Service.Integration.Encoding
 {
-    public class OneHotEncodeTask
+    public class OneHotEncoder : FieldEncoder
     {
-        private OneHotEncodeTaskOptions _options;
-        private DataIntegration _integration;
-        private IMongoCollection<BsonDocument> _records;
-        private List<FieldDefinition> _oneHotFields;
-        private Dictionary<string, ConcurrentDictionary<string, FieldExtra>> _fieldDict;
-
-        public OneHotEncodeTask(OneHotEncodeTaskOptions options)
+        public OneHotEncoder(FieldEncodingOptions options) : base(options, FieldDataEncoding.OneHot)
         {
-            _options = options;
-            _integration = _options.Integration;
-            var collection = _integration.Collection;
-            var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var dstCollection = new MongoList(databaseConfiguration, collection);
-            _records = dstCollection.Records;
-            _oneHotFields = _integration.Fields.Where(x => x.DataEncoding == Source.FieldDataEncoding.OneHot).ToList();
-            _fieldDict = new Dictionary<string, ConcurrentDictionary<string, FieldExtra>>();
-            foreach (var fld in _oneHotFields)
-            {
-                if (fld.Extras == null)
-                {
-                    var dict1 = new ConcurrentDictionary<string, FieldExtra>();
-                    _fieldDict.Add(fld.Name, dict1);
-                    continue;
-                }
-                var dict = new ConcurrentDictionary<string, FieldExtra>(fld.Extras.Extra.ToDictionary(x => x.Value));
-                _fieldDict[fld.Name] = dict;
-            }
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public async Task Run(CancellationToken? cancellationToken = null)
-        {
-            if (cancellationToken == null) cancellationToken = CancellationToken.None;
-            GetEncodedIntegration();
-            await ApplyToAllFields(cancellationToken);
-        }
-
-        public async Task ApplyToAllFields(CancellationToken? cancellationToken = null)
-        {
-            if (cancellationToken == null) cancellationToken = CancellationToken.None;
-            foreach (var field in _oneHotFields)
-            {
-                if (field.Extras == null) continue;
-                await ApplyToField(field, cancellationToken);
-            }
-        }
-
-        public async Task<BulkWriteResult<BsonDocument>> ApplyToField(FieldDefinition field, CancellationToken? cancellationToken = null)
+        
+        public override async Task<BulkWriteResult<BsonDocument>> ApplyToField(FieldDefinition field, CancellationToken? cancellationToken = null)
         {
             if (cancellationToken == null) cancellationToken = CancellationToken.None;
             var updateModels = new WriteModel<BsonDocument>[field.Extras.Extra.Count];
@@ -75,11 +26,6 @@ namespace Netlyt.Service.Integration.Import
             foreach (var column in dummies)
             {
                 var otherDummies = dummies.Where(x => x.Key != column.Key);
-                //                    var query = Builders<IntegratedDocument>.Filter.And(
-                //                        Builders<IntegratedDocument>.Filter.Eq("Document.uuid",
-                //                            docFeatures.Document["uuid"].ToString()),
-                //                        Builders<IntegratedDocument>.Filter.Eq("Document.noticed_date",
-                //                            docFeatures.Document.GetDate("noticed_date")));
                 var query = Builders<BsonDocument>.Filter.And(
                     Builders<BsonDocument>.Filter.Eq(field.Name, column.Value)
                 );
@@ -90,17 +36,16 @@ namespace Netlyt.Service.Integration.Import
                 var actionModel = new UpdateManyModel<BsonDocument>(query, qrUpdateRoot);
                 updateModels[iModel++] = actionModel;
             }
-
-            var result = await _records.BulkWriteAsync(updateModels, new BulkWriteOptions()
+            var result = await Records.BulkWriteAsync(updateModels, new BulkWriteOptions()
             {
             }, cancellationToken.Value);
             return result;
         }
 
-        public DataIntegration GetEncodedIntegration(bool truncateDestination = false)
+        public override DataIntegration GetEncodedIntegration(bool truncateDestination = false)
         {
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var collection = _integration.Collection;
+            var collection = Integration.Collection;
             var dstCollection = new MongoList(databaseConfiguration, collection);
 
             if (truncateDestination)
@@ -108,7 +53,7 @@ namespace Netlyt.Service.Integration.Import
                 dstCollection.Truncate();
             }
             var records = dstCollection.Records;
-            foreach (var oneHotField in _oneHotFields)
+            foreach (var oneHotField in TargetFields)
             {
                 var fld = oneHotField;
                 //Run a group aggregate
@@ -133,15 +78,15 @@ namespace Netlyt.Service.Integration.Import
                     fld.Extras.Extra.Add(fieldExtra);
                 }
             }
-            return _integration;
+            return Integration;
         }
 
-        public void Apply(BsonDocument doc)
+        public override void Apply(BsonDocument doc)
         {
-            foreach (var field in _oneHotFields)
+            foreach (var field in TargetFields)
             {
                 var docFieldVal = doc[field.Name].ToString();
-                var categories = _fieldDict[field.Name];
+                var categories = FieldCache[field.Name];
                 FieldExtra extrasCategory = null;
                 extrasCategory = categories.GetOrAdd(docFieldVal, (key) =>
                 {
@@ -165,8 +110,5 @@ namespace Netlyt.Service.Integration.Import
         }
     }
 
-    public class OneHotEncodeTaskOptions
-    {
-        public DataIntegration Integration { get; set; }
-    }
 }
+

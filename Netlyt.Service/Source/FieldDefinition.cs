@@ -10,7 +10,8 @@ namespace Netlyt.Service.Source
     public enum FieldDataEncoding
     {
         None,
-        OneHot
+        OneHot,
+        BinaryIntId
     }
     public class FieldDefinition
     {

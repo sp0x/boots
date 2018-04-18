@@ -98,7 +98,7 @@ namespace Netlyt.Service.Integration
                     //TODO: move this to a factory method
                     if (value is string)
                     {
-                        fieldDefinition.DataEncoding = FieldDataEncoding.OneHot;
+                        fieldDefinition.DataEncoding = FieldDataEncoding.BinaryIntId;
                         fieldDefinition.Extras = new FieldExtras();
                         fieldDefinition.Extras.Field = fieldDefinition;
                     }

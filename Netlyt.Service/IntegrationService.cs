@@ -65,7 +65,7 @@ namespace Netlyt.Service
         /// <returns></returns>
         public bool IntegrationExists(IIntegration type, string appId, out DataIntegration existingDefinition)
         {
-            var localFields = type.Fields; 
+            var localFields = type.Fields;
             existingDefinition = (from x in _context.Integrations
                                   where x.APIKey.AppId == appId
                                         && x.Name == type.Name
@@ -81,7 +81,7 @@ namespace Netlyt.Service
         //            if (string.IsNullOrEmpty(APIKey))
         //                throw new InvalidOperationException("Only user owned type definitions can be saved!");
         //        }
-         
+
 
         /// <summary>
         /// 
@@ -118,7 +118,7 @@ namespace Netlyt.Service
         /// <returns></returns>
         public IQueryable<DataIntegration> GetById(long id)
         {
-            return _context.Integrations.Where(x=>x.Id == id);
+            return _context.Integrations.Where(x => x.Id == id);
         }
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace Netlyt.Service
         public DataIntegration GetByName(ApiAuth contextApiAuth, string name)
         {
             var integration = _context.Integrations
-                .Include(x=>x.APIKey)
+                .Include(x => x.APIKey)
                 .FirstOrDefault(x => x.APIKey.Id == contextApiAuth.Id && x.Name == name);
             return integration;
         }
@@ -141,7 +141,7 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="filePath"></param>
         /// <returns></returns>
-        public async Task<DataImportResult> CreateOrAppendToIntegration(string filePath, ApiAuth apiKey, User user,string name=null)
+        public async Task<DataImportResult> CreateOrAppendToIntegration(string filePath, ApiAuth apiKey, User user, string name = null)
         {
             //Must be relative
             if (filePath[0] != '/' && filePath[1] != ':')
@@ -149,7 +149,7 @@ namespace Netlyt.Service
                 var relativePath = Environment.CurrentDirectory;
                 filePath = System.IO.Path.Combine(relativePath, filePath);
             }
-            var mime = MimeResolver.Resolve(filePath); 
+            var mime = MimeResolver.Resolve(filePath);
             using (var fsStream = System.IO.File.Open(filePath, FileMode.Open))
             {
                 return await CreateOrAppendToIntegration(fsStream, apiKey, user, mime, name);
@@ -258,6 +258,47 @@ namespace Netlyt.Service
         /// <returns></returns>
         public async Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, ApiAuth apiKey, User owner, string mime = null, string name = null)
         {
+            var integrationInfo = CreateIntegrationImportTask(inputData, apiKey, owner, mime, name, out var isNewIntegration, out var importTask);
+            var result = await importTask.Import();
+            if (isNewIntegration)
+            {
+                await importTask.Encode();
+                _context.Integrations.Add(integrationInfo);
+            }
+            _context.SaveChanges(); //Save any changes done to the integration.
+            return result;
+        }
+
+        /// <summary>
+        /// Creates a new integration or appends the data to an existing one.
+        /// Find an existing integration by checking the name and all of the field definitions.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
+        public DataImportTask<ExpandoObject> CreateIntegrationImportTask(string filePath, ApiAuth apiKey, User user, string name = null)
+        {
+            //Must be relative
+            if (filePath[0] != '/' && filePath[1] != ':')
+            {
+                var relativePath = Environment.CurrentDirectory;
+                filePath = Path.Combine(relativePath, filePath);
+            }
+            var mime = MimeResolver.Resolve(filePath);
+            var fsStream = System.IO.File.Open(filePath, FileMode.Open);
+            DataImportTask<ExpandoObject> newTask;
+            bool isNewIntegration;
+            var newIntegration = CreateIntegrationImportTask(fsStream, apiKey, user, mime, name, out isNewIntegration, out newTask);
+            return newTask;
+        }
+
+        public DataIntegration CreateIntegrationImportTask(Stream inputData,
+            ApiAuth apiKey, 
+            User owner,
+            string mime,
+            string name,
+            out bool isNewIntegration, 
+            out DataImportTask<ExpandoObject> importTask)
+        {
             var options = new DataImportTaskOptions();
             if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
             var formatter = ResolveFormatter<ExpandoObject>(mime);
@@ -265,10 +306,11 @@ namespace Netlyt.Service
             {
                 throw new Exception("Could not resolve formatter for the given content type!");
             }
+
             var source = InMemorySource.Create(inputData, formatter);
             DataIntegration integrationInfo = source.ResolveIntegrationDefinition() as DataIntegration;
-            DataIntegration exitingIntegration=null;
-            bool isNewIntegration = false;
+            DataIntegration exitingIntegration = null;
+            isNewIntegration = false;
             if (IntegrationExists(integrationInfo, apiKey.AppId, out exitingIntegration))
             {
                 integrationInfo = exitingIntegration;
@@ -287,23 +329,18 @@ namespace Netlyt.Service
                     integrationInfo.DataTimestampColumn = timestampCol;
                 }
             }
+
             if (integrationInfo == null)
             {
                 throw new Exception("No integration found!");
             }
+
             options.Source = source;
             options.ApiKey = apiKey;
             options.IntegrationName = integrationInfo.Name;
             options.Integration = integrationInfo;
-            var importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
-            var result = await importTask.Import();
-            if (isNewIntegration)
-            {
-                await importTask.Encode();
-                _context.Integrations.Add(integrationInfo);
-            }
-            _context.SaveChanges(); //Save any changes done to the integration.
-            return result;
+            importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
+            return integrationInfo;
         }
 
         /// <summary>
@@ -325,7 +362,7 @@ namespace Netlyt.Service
             newIntegration.APIKey = apiKey;
 
             var existingIntegration = _context.Integrations
-                .FirstOrDefault(x=>x.Name.ToLower() == integrationName.ToLower()
+                .FirstOrDefault(x => x.Name.ToLower() == integrationName.ToLower()
                 && x.Owner.Id == crUser.Id);
             if (existingIntegration != null)
             {
@@ -347,8 +384,8 @@ namespace Netlyt.Service
             if (!string.IsNullOrEmpty(mimeType))
             {
                 if (mimeType.Contains("ms-excel")) return new CsvFormatter<T>() { Delimiter = ',' };
-                if (mimeType=="text/csv") return new CsvFormatter<T>() { Delimiter = ',' };
-                if (mimeType== "application/json") return new JsonFormatter<T>() {  };
+                if (mimeType == "text/csv") return new CsvFormatter<T>() { Delimiter = ',' };
+                if (mimeType == "application/json") return new JsonFormatter<T>() { };
             }
             else
             {

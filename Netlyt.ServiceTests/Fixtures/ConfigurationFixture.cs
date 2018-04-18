@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +29,8 @@ namespace Netlyt.ServiceTests.Fixtures
                 .AddJsonFile("appsettings.Development.json", optional: false, reloadOnChange: true);
             Configuration = builder.Build();
             DbOptionsBuilder = new DbContextOptionsBuilder<ManagementDbContext>()
-                .UseInMemoryDatabase("Testing"); 
+                .UseInMemoryDatabase("Testing")
+                .EnableSensitiveDataLogging(true);
             var services = new ServiceCollection();
             _context = CreateContext();
             DBConfig.Initialize(Configuration);
@@ -47,6 +49,8 @@ namespace Netlyt.ServiceTests.Fixtures
                 s.GetService<TimestampService>()));
             services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
             services.AddTransient<CompilerService>();
+            services.AddTransient<UserService>(s => new UserService(s.GetService<UserManager<User>>(), s.GetService<ApiService>(), null, null,
+                s.GetService<OrganizationService>(), s.GetService<ModelService>(), _context));
         }
 
         public ManagementDbContext CreateContext()

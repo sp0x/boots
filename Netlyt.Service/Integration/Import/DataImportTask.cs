@@ -12,6 +12,7 @@ using nvoid.db.Batching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.exec.Blocks;
+using Netlyt.Service.Integration.Encoding;
 using Netlyt.Service.Lex;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Parsing;
@@ -42,7 +43,8 @@ namespace Netlyt.Service.Integration.Import
             }
         }
         public DestinationCollection OutputDestinationCollection { get; private set; }
-        private OneHotEncodeTask _oneHotEncoder;
+        private FieldEncoder _oneHotEncoder;
+        public bool EncodeOnImport { get; set; } = true;
         /// <summary>
         /// 
         /// </summary>
@@ -82,7 +84,7 @@ namespace Netlyt.Service.Integration.Import
             OutputDestinationCollection = outCollection;
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
             if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit);
-            _oneHotEncoder = new OneHotEncodeTask(new OneHotEncodeTaskOptions { Integration = _integration });
+            _oneHotEncoder = FieldEncoder.Factory.Create(_integration);// new OneHotEncoder(new FieldEncodingOptions { Integration = _integration });
         }
 
         /// <summary>
@@ -110,7 +112,7 @@ namespace Netlyt.Service.Integration.Import
             {
                 var doc = o.ToBsonDocument();
                 //Apply encoding here
-                EncodeImportDocument(doc);
+                if(EncodeOnImport) EncodeImportDocument(doc);
                 return doc;
             });//BsonConverter.CreateBlock(new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
             var readBatcher = BatchedBlockingBlock<BsonDocument>.CreateBlock(batchSize);
