@@ -100,31 +100,7 @@ namespace Netlyt.Service
 
         public async Task GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, string targetAttribute)
         {
-            var collections = new List<FeatureGenerationCollectionOptions>();
-            foreach (var integration in newModel.DataIntegrations)
-            {
-                var ign = integration.Integration;
-                var ignTimestampColumn = !string.IsNullOrEmpty(ign.DataTimestampColumn) ? ign.DataTimestampColumn : _timestampService.Discover(ign);
-                var fields = ign.Fields;
-                InternalEntity intEntity = null;
-                if (fields.Any(x => x.Name == targetAttribute))
-                {
-                    intEntity = new InternalEntity()
-                    {
-                        Name = targetAttribute
-                    };
-                }
-                var colOptions = new FeatureGenerationCollectionOptions()
-                {
-                    Collection = ign.Collection,
-                    Name = ign.Name,
-                    TimestampField = ignTimestampColumn,
-                    InternalEntity = intEntity
-                    //Other parameters are ignored for now
-                };
-                collections.Add(colOptions);
-            }
-
+            var collections = newModel.GetFeatureGenerationCollections(targetAttribute);
             var query = OrionQuery.Factory.CreateFeatureGenerationQuery(newModel, collections, relations, targetAttribute);
             var result = await _orion.Query(query);
 //            var newTask = new FeatureGenerationTask();

@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Dynamic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
@@ -11,14 +8,10 @@ using MongoDB.Driver;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
-using nvoid.Integration;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
-using Netlyt.Service.FeatureGeneration;
-using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
-using Netlyt.Service.Lex;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Generators;
@@ -45,6 +38,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         private ModelService _modelService;
         private User _user;
         private OrionContext _orion;
+        private TimestampService _timestampService;
 
         public FeatureGenerationTests(DonutConfigurationFixture fixture)
         {
@@ -66,6 +60,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             _dbConfig = DBConfig.GetGeneralDatabase();
             _serviceProvider = fixture.GetService<IServiceProvider>();
             _modelService = fixture.GetService<ModelService>();
+            _timestampService = new TimestampService(_db);
         }
 
         private Model GetModel(string modelName = "Romanian", string integrationName = "Namex")
@@ -82,20 +77,39 @@ namespace Netlyt.ServiceTests.FeatureGeneration
                 Name = ignName,
                 DataTimestampColumn = "timestamp",
             };
-            rootIntegration.AddField<string>("humidity");
-            rootIntegration.AddField<string>("latitude");
-            rootIntegration.AddField<string>("longitude");
-            rootIntegration.AddField<string>("pm25");
-            rootIntegration.AddField<string>("pressure");
-            rootIntegration.AddField<string>("rssi");
-            rootIntegration.AddField<string>("temperature");
-            rootIntegration.AddField<string>("humidity");
-            rootIntegration.AddField<string>("latitude");
-            rootIntegration.AddField<string>("longitude");
+            rootIntegration.AddField<double>("humidity");
+            rootIntegration.AddField<double>("latitude");
+            rootIntegration.AddField<double>("longitude");
+            rootIntegration.AddField<double>("pm10");
+            rootIntegration.AddField<double>("pm25");
+            rootIntegration.AddField<double>("pressure");
+            rootIntegration.AddField<double>("rssi");
+            rootIntegration.AddField<double>("temperature");
             rootIntegration.AddField<DateTime>("timestamp");
             var modelIntegration = new ModelIntegration() { Model = model, Integration = rootIntegration };
             model.DataIntegrations.Add(modelIntegration);
             return model;
+        }
+
+        [Fact]
+        public void CreateFeatureGenerationRequest()
+        { 
+            var newModel = GetModel();
+            var targetAttribute = "pm10";
+            var rootIgn = newModel.GetRootIntegration();
+            var fldCategory = rootIgn.AddField<string>("category", FieldDataEncoding.BinaryIntId);
+            fldCategory.Extras = new FieldExtras();
+            fldCategory.Extras.Extra.Add(new FieldExtra("100000001", "aba"));
+            fldCategory.Extras.Extra.Add(new FieldExtra("100000010", "acaba"));
+            var fldEvent = rootIgn.AddField<string>("event", FieldDataEncoding.BinaryIntId);
+            fldEvent.Extras = new FieldExtras();
+            fldEvent.Extras.Extra.Add(new FieldExtra("100000001", "visit"));
+            fldEvent.Extras.Extra.Add(new FieldExtra("100000010", "stay"));
+            var collections = newModel.GetFeatureGenerationCollections(targetAttribute);
+            var query = OrionQuery.Factory.CreateFeatureGenerationQuery(newModel, collections, null, targetAttribute);
+            var jsQuery = query.Serialize();
+            var jsFields = jsQuery["params"]["collections"][0]["fields"];
+            Assert.Equal(11, jsFields.Count());
         }
 
         [Fact]

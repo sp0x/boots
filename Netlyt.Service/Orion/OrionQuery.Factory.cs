@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Netlyt.Service.Integration;
+using Netlyt.Service.Integration.Encoding;
 using Netlyt.Service.Ml;
 using Newtonsoft.Json.Linq;
 
@@ -45,6 +46,35 @@ namespace Netlyt.Service.Orion
                     collection["index"] = cl.IndexBy;
                     collection["timestamp"] = cl.TimestampField;
                     collection["internal_entity_keys"] = null;
+                    var binFields =
+                        cl.Integration.Fields.Where(x => x.DataEncoding == Source.FieldDataEncoding.BinaryIntId);
+                    collection["fields"] = new JArray();
+                    var encoder = FieldEncoder.Factory.Create(cl.Integration);
+                    foreach (var fld in cl.Integration.Fields)
+                    {
+                        var isEncoded = fld.DataEncoding != Source.FieldDataEncoding.None;
+                        if (!isEncoded)
+                        {
+                            var jField = new JObject();
+                            jField["name"] = fld.Name;
+                            (collection["fields"] as JArray).Add(jField);
+                        }
+                        else
+                        {
+                            var encodedFields = encoder.GetFieldNames(fld);
+                            foreach (var encField in encodedFields)
+                            {
+                                (collection["fields"] as JArray).Add(new JObject
+                                {
+                                    {"name" as string, encField },
+                                    {"encoding" as string, fld.DataEncoding.ToString().ToLower() }
+                                });
+
+                            }
+                        }
+                        
+                    }
+
                     if (cl.InternalEntity != null)
                     {
                         var intEntity = new JObject();
@@ -59,9 +89,12 @@ namespace Netlyt.Service.Orion
                 }
                 parameters["collections"] = collectionsArray;
                 var relationsArray = new JArray();
-                foreach (var relation in relations)
+                if (relations != null)
                 {
-                    relationsArray.Add(new JArray(new object[] { relation.Attribute1, relation.Attribute2 }));
+                    foreach (var relation in relations)
+                    {
+                        relationsArray.Add(new JArray(new object[] { relation.Attribute1, relation.Attribute2 }));
+                    }
                 }
                 parameters["relations"] = relationsArray;
                 parameters["target"] = targetAttribute;

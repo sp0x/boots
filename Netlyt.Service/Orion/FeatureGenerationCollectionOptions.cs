@@ -1,4 +1,5 @@
 ﻿using System;
+using Netlyt.Service.Integration;
 
 namespace Netlyt.Service.Orion
 {
@@ -11,5 +12,6 @@ namespace Netlyt.Service.Orion
         public string IndexBy { get; set; }
         public string TimestampField { get; set; }
         public InternalEntity InternalEntity { get; set; }
+        public DataIntegration Integration { get; set; }
     }
 }

@@ -53,7 +53,7 @@ namespace Netlyt.Service.Integration
 
         public DataIntegration()
         {
-            Fields = new HashSet<FieldDefinition>();
+            Fields = new HashSet<FieldDefinition>(new FieldDefinitionComparer());
             Models = new HashSet<ModelIntegration>();
             Extras = new HashSet<IntegrationExtra>();
             this.PublicKey = ApiAuth.Generate();
@@ -158,10 +158,25 @@ namespace Netlyt.Service.Integration
             var fdef = new FieldDefinition(fieldName, type);
             Fields.Add(fdef); //fieldName
         }
-        public void AddField<TField>(string fieldName)
+        public FieldDefinition AddField<TField>(string fieldName, FieldDataEncoding encoding = FieldDataEncoding.None)
         {
             var fdef = new FieldDefinition(fieldName, typeof(TField));
-            Fields.Add(fdef); //fieldName
+            fdef.DataEncoding = encoding;
+            (Fields as HashSet<FieldDefinition>)?.Add(fdef); //fieldName
+            return fdef;
+        }
+    }
+
+    public class FieldDefinitionComparer : IEqualityComparer<FieldDefinition>
+    {
+        public bool Equals(FieldDefinition x, FieldDefinition y)
+        {
+            return x.Name == y.Name;
+        }
+
+        public int GetHashCode(FieldDefinition obj)
+        {
+            return obj.Name.GetHashCode();
         }
     }
 }

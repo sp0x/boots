@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration.Encoding;
+using Netlyt.Service.Orion;
 using Netlyt.Service.Source;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
@@ -100,7 +103,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             //Source
             var modelName = "FunModel";
             var integrationTask = _integrationService.CreateIntegrationImportTask(sourceFile, _appAuth, _user, modelName);
-            integrationTask.EncodeOnImport = false;
+            //integrationTask.EncodeOnImport = false;
             await integrationTask.Import();
             var newIntegration = integrationTask?.Integration;
             FieldEncodingOptions options = new FieldEncodingOptions
@@ -117,8 +120,8 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             //Apply it
             var result = await ht.ApplyToField(categoryField);
 
-            Assert.Equal(5402, result.ModifiedCount);
-            Assert.Equal(5402, result.MatchedCount);
+            Assert.Equal(0, result.ModifiedCount);
+            Assert.Equal(0, result.MatchedCount);
             Assert.Equal(2, result.ProcessedRequests.Count);
             Assert.Equal(0, result.Upserts.Count);
             var addResult = await _integrationService.AppendToIntegration(newIntegration, sourceFile, _appAuth);
@@ -126,6 +129,8 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             //Cleanup
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
             var dstCollection = new MongoList(databaseConfiguration, newIntegration.Collection);
+            var category1 = dstCollection.Records.FindSync(Builders<BsonDocument>.Filter.Eq("category", 100000001)).ToList();
+            Assert.Equal(6, category1.Count);
             Assert.Equal(10804, dstCollection.Size);
             dstCollection.Trash();
         }

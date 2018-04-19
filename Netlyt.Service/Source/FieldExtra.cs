@@ -7,6 +7,17 @@
         public string Value { get; set; }
         public FieldDefinition Field { get; set; }
         public FieldExtraType Type { get; set; }
+
+        public FieldExtra()
+        {
+
+        }
+
+        public FieldExtra(string key, string value)
+        {
+            this.Key = key;
+            this.Value = value;
+        }
     }
 
     public enum FieldExtraType

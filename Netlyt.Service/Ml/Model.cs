@@ -5,6 +5,7 @@ using nvoid.db.DB;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Models;
+using Netlyt.Service.Orion;
 
 namespace Netlyt.Service.Ml
 {
@@ -46,6 +47,35 @@ namespace Netlyt.Service.Ml
         public DataIntegration GetRootIntegration()
         {
             return DataIntegrations.FirstOrDefault()?.Integration;
+        }
+
+        public IEnumerable<FeatureGenerationCollectionOptions> GetFeatureGenerationCollections(string targetAttribute)
+        {
+            var timestampservice = new TimestampService(null);
+            foreach (var integration in DataIntegrations)
+            {
+                var ign = integration.Integration;
+                var ignTimestampColumn = !string.IsNullOrEmpty(ign.DataTimestampColumn) ? ign.DataTimestampColumn : timestampservice.Discover(ign);
+                var fields = ign.Fields;
+                InternalEntity intEntity = null;
+                if (fields.Any(x => x.Name == targetAttribute))
+                {
+                    intEntity = new InternalEntity()
+                    {
+                        Name = targetAttribute
+                    };
+                }
+                var colOptions = new FeatureGenerationCollectionOptions()
+                {
+                    Collection = ign.Collection,
+                    Name = ign.Name,
+                    TimestampField = ignTimestampColumn,
+                    InternalEntity = intEntity,
+                    Integration = ign
+                    //Other parameters are ignored for now
+                };
+                yield return colOptions;
+            }
         }
     }
 }

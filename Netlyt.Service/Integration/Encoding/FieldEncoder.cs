@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -102,6 +103,29 @@ namespace Netlyt.Service.Integration.Encoding
             }
         }
 
-        
+
+        public IEnumerable<string> GetFieldNames(FieldDefinition fld)
+        {
+            if (fld.Extras == null)
+            {
+                yield return fld.Name;
+                yield break;
+            }
+            var names = GetEncodedFieldNames(fld);
+            if (!names.Any())
+            {
+                yield return fld.Name;
+                yield break;
+            }
+            foreach (var name in names)
+            {
+                yield return name;
+            }
+        }
+
+        public virtual IEnumerable<string> GetEncodedFieldNames(FieldDefinition fld)
+        {
+            yield break;
+        }
     }
 }

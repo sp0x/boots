@@ -112,6 +112,11 @@ namespace Netlyt.Service.Integration.Encoding
             }
             return Integration;
         }
+
+        public override IEnumerable<string> GetEncodedFieldNames(FieldDefinition fld)
+        {
+            yield return fld.Name;
+        }
     }
 
 }

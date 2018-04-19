@@ -16,7 +16,7 @@ namespace Netlyt.Service.Integration.Encoding
         public OneHotEncoder(FieldEncodingOptions options) : base(options, FieldDataEncoding.OneHot)
         {
         }
-        
+
         public override async Task<BulkWriteResult<BsonDocument>> ApplyToField(FieldDefinition field, CancellationToken? cancellationToken = null)
         {
             if (cancellationToken == null) cancellationToken = CancellationToken.None;
@@ -62,7 +62,7 @@ namespace Netlyt.Service.Integration.Encoding
                 group["$group"] = new BsonDocument() { { "_id", $"${fld.Name}" } };
                 pipeline.Add(group);
                 var uniqueColumnResults = records.Aggregate<BsonDocument>(pipeline).ToList();
-                int iVariation = fld.Extras.Extra==null ? 1 : fld.Extras.Extra.Count+1;
+                int iVariation = fld.Extras.Extra == null ? 1 : fld.Extras.Extra.Count + 1;
                 foreach (var uniqueValue in uniqueColumnResults)
                 {
                     var columnVal = uniqueValue["_id"].ToString();
@@ -95,7 +95,7 @@ namespace Netlyt.Service.Integration.Encoding
                         Key = $"{field.Name}{categories.Count + 1}",
                         Value = docFieldVal
                     };
-                    if (field.Extras==null)
+                    if (field.Extras == null)
                     {
                         field.Extras = new FieldExtras();
                     }
@@ -106,6 +106,18 @@ namespace Netlyt.Service.Integration.Encoding
                 {
                     doc[dummy.Key] = dummy.Key == extrasCategory.Key ? 1 : 0;
                 }
+            }
+        }
+
+        public override IEnumerable<string> GetEncodedFieldNames(FieldDefinition fld)
+        {
+            if (fld.Extras == null)
+            {
+                yield break;
+            }
+            foreach (var extra in fld.Extras.Extra)
+            {
+                yield return extra.Key;
             }
         }
     }

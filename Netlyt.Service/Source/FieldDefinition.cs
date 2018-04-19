@@ -33,7 +33,6 @@ namespace Netlyt.Service.Source
         {
         }
 
-        
         public FieldDefinition(string fName, Type fType)
         {
             Name = fName;
