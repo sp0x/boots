@@ -11,9 +11,9 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Integration.Encoding
 {
-    public class OneHotEncoder : FieldEncoder
+    public class OneHotEncoding : FieldEncoding
     {
-        public OneHotEncoder(FieldEncodingOptions options) : base(options, FieldDataEncoding.OneHot)
+        public OneHotEncoding(FieldEncodingOptions options) : base(options, FieldDataEncoding.OneHot)
         {
         }
 

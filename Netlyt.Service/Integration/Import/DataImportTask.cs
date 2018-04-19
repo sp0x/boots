@@ -43,7 +43,7 @@ namespace Netlyt.Service.Integration.Import
             }
         }
         public DestinationCollection OutputDestinationCollection { get; private set; }
-        private FieldEncoder _oneHotEncoder;
+        private FieldEncoder _oneHotEncoding;
         public bool EncodeOnImport { get; set; } = true;
         /// <summary>
         /// 
@@ -84,7 +84,7 @@ namespace Netlyt.Service.Integration.Import
             OutputDestinationCollection = outCollection;
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
             if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit);
-            _oneHotEncoder = FieldEncoder.Factory.Create(_integration);// new OneHotEncoder(new FieldEncodingOptions { Integration = _integration });
+            _oneHotEncoding = FieldEncoder.Factory.Create(_integration);// new OneHotEncoding(new FieldEncodingOptions { Integration = _integration });
         }
 
         /// <summary>
@@ -139,7 +139,7 @@ namespace Netlyt.Service.Integration.Import
 
         private void EncodeImportDocument(BsonDocument doc)
         {
-            _oneHotEncoder.Apply(doc);
+            _oneHotEncoding.Apply(doc);
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace Netlyt.Service.Integration.Import
         public async Task Encode(CancellationToken? ct = null)
         {
             if (ct == null) ct = CancellationToken.None;
-            await _oneHotEncoder.ApplyToAllFields(ct);
+            await _oneHotEncoding.ApplyToAllFields(ct);
         }
     }
 }

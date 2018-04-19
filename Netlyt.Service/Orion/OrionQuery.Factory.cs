@@ -49,7 +49,6 @@ namespace Netlyt.Service.Orion
                     var binFields =
                         cl.Integration.Fields.Where(x => x.DataEncoding == Source.FieldDataEncoding.BinaryIntId);
                     collection["fields"] = new JArray();
-                    var encoder = FieldEncoder.Factory.Create(cl.Integration);
                     foreach (var fld in cl.Integration.Fields)
                     {
                         var isEncoded = fld.DataEncoding != Source.FieldDataEncoding.None;
@@ -61,20 +60,19 @@ namespace Netlyt.Service.Orion
                         }
                         else
                         {
-                            var encodedFields = encoder.GetFieldNames(fld);
+                            var encoding = FieldEncoding.Factory.Create(cl.Integration, fld.DataEncoding);
+                            var encodedFields = encoding.GetFieldNames(fld);
                             foreach (var encField in encodedFields)
                             {
-                                (collection["fields"] as JArray).Add(new JObject
+                                var newField = new JObject
                                 {
-                                    {"name" as string, encField },
-                                    {"encoding" as string, fld.DataEncoding.ToString().ToLower() }
-                                });
-
+                                    {"name" as string, encField},
+                                    {"encoding" as string, fld.DataEncoding.ToString().ToLower()}
+                                };
+                                (collection["fields"] as JArray).Add(newField);
                             }
                         }
-                        
                     }
-
                     if (cl.InternalEntity != null)
                     {
                         var intEntity = new JObject();
@@ -82,7 +80,7 @@ namespace Netlyt.Service.Orion
                         intEntity["name"] = cl.InternalEntity.Name;
                         intEntity["index"] = $"{cl.InternalEntity.Name}_id";
                         intEntity["fields"] = new JArray(new string[] { "_id", cl.InternalEntity.Name });
-                        collection["internal_entity_keys"] = new JArray(new string[]{ intEntity["index"].ToString() });
+                        collection["internal_entity_keys"] = new JArray(new string[] { intEntity["index"].ToString() });
                         internalEntities.Add(intEntity);
                     }
                     collectionsArray.Add(collection);
@@ -98,7 +96,7 @@ namespace Netlyt.Service.Orion
                 }
                 parameters["relations"] = relationsArray;
                 parameters["target"] = targetAttribute;
-                parameters["internal_entities"] = internalEntities; 
+                parameters["internal_entities"] = internalEntities;
                 qr["params"] = parameters;
                 return qr;
             }
@@ -120,7 +118,7 @@ namespace Netlyt.Service.Orion
                 parameters["client"] = model.User.UserName;
                 parameters["target"] = model.TargetAttribute;
                 models["auto"] = autoModel; // GridSearchCV - param_grid
-                
+
                 dataOptions["db"] = rootIntegration.FeaturesCollection;
                 dataOptions["start"] = null; //DateTime.MinValue;
                 dataOptions["end"] = null;// DateTime.MaxValue;
@@ -131,7 +129,7 @@ namespace Netlyt.Service.Orion
                 parameters["options"] = dataOptions;
                 parameters["model_id"] = model.Id;
 
-                qr["params"] = parameters;  
+                qr["params"] = parameters;
                 return qr;
             }
         }

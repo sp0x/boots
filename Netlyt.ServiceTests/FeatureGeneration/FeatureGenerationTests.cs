@@ -101,15 +101,15 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             fldCategory.Extras = new FieldExtras();
             fldCategory.Extras.Extra.Add(new FieldExtra("100000001", "aba"));
             fldCategory.Extras.Extra.Add(new FieldExtra("100000010", "acaba"));
-            var fldEvent = rootIgn.AddField<string>("event", FieldDataEncoding.BinaryIntId);
+            var fldEvent = rootIgn.AddField<string>("event", FieldDataEncoding.OneHot);
             fldEvent.Extras = new FieldExtras();
-            fldEvent.Extras.Extra.Add(new FieldExtra("100000001", "visit"));
-            fldEvent.Extras.Extra.Add(new FieldExtra("100000010", "stay"));
+            fldEvent.Extras.Extra.Add(new FieldExtra("event1", "visit"));
+            fldEvent.Extras.Extra.Add(new FieldExtra("event2", "stay"));
             var collections = newModel.GetFeatureGenerationCollections(targetAttribute);
             var query = OrionQuery.Factory.CreateFeatureGenerationQuery(newModel, collections, null, targetAttribute);
             var jsQuery = query.Serialize();
             var jsFields = jsQuery["params"]["collections"][0]["fields"];
-            Assert.Equal(11, jsFields.Count());
+            Assert.Equal(12, jsFields.Count());
         }
 
         [Fact]

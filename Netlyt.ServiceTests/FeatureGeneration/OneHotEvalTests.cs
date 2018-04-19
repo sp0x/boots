@@ -68,7 +68,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             {
                 Integration = newIntegration
             };
-            var ht = new OneHotEncoder(options);
+            var ht = new OneHotEncoding(options);
             var encodedIntegration = ht.GetEncodedIntegration();
             //Assert the category field has a DataEncoding of OneHot
             var categoryField = encodedIntegration.Fields.FirstOrDefault(x => x.Name == "category");
@@ -99,7 +99,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             {
                 Integration = newIntegration
             };
-            var ht = new OneHotEncoder(options);
+            var ht = new OneHotEncoding(options);
             //Get our encoding
             var encodedIntegration = ht.GetEncodedIntegration();
             //Assert the category field has a DataEncoding of OneHot

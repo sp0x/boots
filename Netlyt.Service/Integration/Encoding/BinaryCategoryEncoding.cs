@@ -11,9 +11,9 @@ using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Integration.Encoding
 {
-    public class BinaryCategoryEncoder : FieldEncoder
+    public class BinaryCategoryEncoding : FieldEncoding
     {
-        public BinaryCategoryEncoder(FieldEncodingOptions options) : base(options, FieldDataEncoding.BinaryIntId)
+        public BinaryCategoryEncoding(FieldEncodingOptions options) : base(options, FieldDataEncoding.BinaryIntId)
         {
 
         }
