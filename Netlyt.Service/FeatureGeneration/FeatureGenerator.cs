@@ -4,22 +4,19 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Donut;
+using Netlyt.Interfaces;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Models;
 
 namespace Netlyt.Service.FeatureGeneration
 {
-    public interface IFeatureGenerator<T>
-    {
-
-    }
-
     /// <summary>
-    /// A tpl block which deals with generating multiple functions
+    /// A tpl block which deals with generating features by multiple functions
     /// </summary>
     public class FeatureGenerator<TIn> : IFeatureGenerator<TIn>
     {
-        private List<Func<TIn, IEnumerable<KeyValuePair<string, object>>>> _generators;
+        private List<Func<TIn, IEnumerable<KeyValuePair<string, object>>>> _featureGenerators;
         private int _threadCount;
 
         /// <summary>
@@ -28,7 +25,7 @@ namespace Netlyt.Service.FeatureGeneration
         //public IPropagatorBlock<IntegratedDocument, DocumentFeatures> Block { get; private set; }
         public FeatureGenerator(int threadCount)
         {
-            _generators = new List<Func<TIn, IEnumerable<KeyValuePair<string, object>>>>();
+            _featureGenerators = new List<Func<TIn, IEnumerable<KeyValuePair<string, object>>>>();
             _threadCount = threadCount;
         }
         /// <summary>
@@ -38,7 +35,7 @@ namespace Netlyt.Service.FeatureGeneration
         public FeatureGenerator(Func<TIn, IEnumerable<KeyValuePair<string, object>>> generator, int threadCount = 4) 
             : this(threadCount)
         {
-            if(generator!=null) _generators.Add(generator);
+            if(generator!=null) _featureGenerators.Add(generator);
         }
 
         public FeatureGenerator(IEnumerable<Func<TIn, IEnumerable<KeyValuePair<string, object>>>> generators,
@@ -46,14 +43,14 @@ namespace Netlyt.Service.FeatureGeneration
         {
             if (generators != null)
             {
-                _generators.AddRange(generators);
+                _featureGenerators.AddRange(generators);
             }
         }
 
-        public FeatureGenerator<TIn> AddGenerator(
+        public IFeatureGenerator<TIn> AddGenerator(
             Func<TIn, IEnumerable<KeyValuePair<string, object>>> generator)
         {
-            _generators.Add(generator);
+            _featureGenerators.Add(generator);
             return this;
         }
 
@@ -65,28 +62,30 @@ namespace Netlyt.Service.FeatureGeneration
         {
             return CreateFeaturesBlock<FeaturesWrapper<TIn>>();
         }
+
         /// <summary>
         /// Creates a new transformer block that creates features 
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">A features wrapper</typeparam>
         /// <returns></returns>
         public IPropagatorBlock<TIn, T> CreateFeaturesBlock<T>()
-            where T : FeaturesWrapper<TIn>, new()
+            where T :  FeaturesWrapper<TIn>, new()
         {
             var options = new ExecutionDataflowBlockOptions {MaxDegreeOfParallelism = _threadCount};
             var queueLock = new object(); 
             var transformerBlock = new TransformBlock<TIn, T>((doc) =>
             {
                 var queue = new Queue<KeyValuePair<string, object>>();
-                Parallel.ForEach(_generators, (generator) =>
+                //Go through each function that generates features
+                Parallel.ForEach(_featureGenerators, (ftrGen) =>
                 {
-                    //var docVal = (doc as IntegratedDocument).GetDocument();
-                    //docVal = docVal;
-                    var features = generator(doc);
+                    //Feed the function with the document
+                    var features = ftrGen(doc);
                     foreach (var feature in features)
                     {
                         lock (queueLock)
                         {
+                            //Append each feature
                             queue.Enqueue(feature);
                         }
                     }
@@ -94,7 +93,7 @@ namespace Netlyt.Service.FeatureGeneration
                 T featuresDoc = new T();
                 Debug.Assert(featuresDoc != null, nameof(featuresDoc) + " != null");
                 featuresDoc.Document = doc;
-                featuresDoc.Features = queue; 
+                featuresDoc.Features = queue;
                 return featuresDoc;
             }, options);
             return transformerBlock;
@@ -110,7 +109,7 @@ namespace Netlyt.Service.FeatureGeneration
             //Dataflow: poster -> each transformer -> buffer
             var buffer = new BufferBlock<IEnumerable<KeyValuePair<string, object>>>();
             // The target part receives data and adds them to the queue.
-            var transformers = _generators
+            var transformers = _featureGenerators
                 .Select(x =>
                 {
                     var transformer =

@@ -6,10 +6,12 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Donut;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
+using Netlyt.Interfaces;
 using Netlyt.Service.Data;
 using Netlyt.Service.FeatureGeneration;
 using Netlyt.Service.Format;
@@ -184,14 +186,14 @@ namespace Netlyt.Service.Donut
             //source.ProgressInterval = 0.05;
             var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
             //Create a donut and a donutRunner
-            var donutMachine = DonutBuilderFactory.Create(donutType, donutContextType, sourceIntegration, _cacher, _serviceProvider);
+            var donutMachine = DonutGeneratorFactory.Create<IntegratedDocument>(donutType, donutContextType, sourceIntegration, _cacher, _serviceProvider);
             harvester.AddIntegrationSource(source, sourceIntegration);//source, appAuth, "SomeIntegrationName3");
             IDonutfile donut = donutMachine.Generate();
             donut.SetupCacheInterval(source.Size);
             donut.ReplayInputOnFeatures = true;
             donut.SkipFeatureExtraction = true;
-            IDonutRunner donutRunner = DonutRunnerFactory.CreateByType(donutType, donutContextType, harvester, _dbConfig, sourceIntegration.FeaturesCollection);
-            var featureGenerator = FeatureGeneratorFactory.Create(donut, donutFEmitterType);
+            IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType<IntegratedDocument>(donutType, donutContextType, harvester, _dbConfig, sourceIntegration.FeaturesCollection);
+            var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);
 
             var result = await donutRunner.Run(donut, featureGenerator);
 

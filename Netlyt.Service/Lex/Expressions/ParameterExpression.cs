@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using Donut;
+using Netlyt.Interfaces;
 
 namespace Netlyt.Service.Lex.Expressions
 {
     public class ParameterExpression
-        : Expression
+        : Expression, IParameterExpression, IExpression
     {
         public IExpression Value { get; private set; }
 

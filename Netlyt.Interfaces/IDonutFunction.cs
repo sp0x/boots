@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
-using Netlyt.Service.Lex.Expressions;
+using Donut;
 
-namespace Netlyt.Service.Donut
+namespace Netlyt.Interfaces
 {
     public interface IDonutFunction
     {
         IDonutFunction Clone();
-        List<ParameterExpression> Parameters { get; set; }
+        List<IParameterExpression> Parameters { get; set; }
         bool IsAggregate { get; set; }
         DonutFunctionType Type { get; set; }
         string Content { get; set; }

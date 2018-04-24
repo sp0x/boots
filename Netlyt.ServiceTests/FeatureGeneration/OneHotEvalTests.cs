@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration.Encoding;

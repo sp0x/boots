@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Netlyt.Interfaces;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Source;
@@ -56,7 +57,7 @@ namespace Netlyt.Service
             return null;
         }
 
-        private bool IsTimestamp(FieldDefinition field)
+        private bool IsTimestamp(IFieldDefinition field)
         {
             return field.Type == _tmType.FullName;//_possibleColumns.Any(x => x == field.Name);
         }

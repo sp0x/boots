@@ -1,20 +1,26 @@
 ﻿using System;
-using System.Text;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
+using Donut;
 using nvoid.db.Caching;
-using nvoid.exec.Blocks;
+using Netlyt.Interfaces;
 using Netlyt.Service.FeatureGeneration;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
-using Netlyt.Service.Models;
-using StackExchange.Redis;
 
 namespace Netlyt.Service.Donut
 {
-    public abstract class Donutfile<TContext> : IDonutfile, IDisposable
+    /// <summary>
+    /// Base for donutfiles.
+    /// A donut receives all data and processes it, extracting features as output.
+    /// </summary>
+    /// <typeparam name="TContext"></typeparam>
+    public abstract class Donutfile<TContext, TData> : IDonutfile, IDisposable
         where TContext : DonutContext
+        where TData : class, IIntegratedDocument
     {
+        /// <summary>
+        /// The data context that the donut uses.
+        /// </summary>
         public TContext Context
         {
             get
@@ -55,16 +61,20 @@ namespace Netlyt.Service.Donut
             Context.SetCacheRunInterval(interval);
         }
 
-        public abstract void ProcessRecord(IntegratedDocument intDoc);
+        /// <summary>
+        /// Processes each record that has been inputed.
+        /// </summary>
+        /// <param name="intDoc"></param>
+        public abstract void ProcessRecord(TData intDoc);
 
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
-        public DonutBlock CreateDataflowBlock(FeatureGenerator<IntegratedDocument> featureGen)
+        public DonutBlock<TData> CreateDataflowBlock(IFeatureGenerator<TData> featureGen)
         {
             var featuresBlock = featureGen.CreateFeaturesBlock();
-            var metaBlock = new MemberVisitingBlock(ProcessRecord);
+            var metaBlock = new MemberVisitingBlock<TData>(ProcessRecord);
             //metaBlock.ContinueWith(RunFeatureExtraction);
             //_featuresBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
             //insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
@@ -72,13 +82,18 @@ namespace Netlyt.Service.Donut
             //var metaBlockInternal = metaBlock.GetInputBlock();
             //Encapsulate our input and features block, so they're usable.
             //var resultingBlock = DataflowBlock.Encapsulate<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>(metaBlockInternal, featuresBlock);
-            return new DonutBlock(metaBlock, featuresBlock);
+            return new DonutBlock<TData>(metaBlock, featuresBlock);
         }
 
         public void Complete()
         {
             Context.Complete();
             OnMetaComplete();
+        }
+
+        public async virtual Task PrepareExtraction()
+        {
+
         }
 
         public async virtual Task OnFinished()

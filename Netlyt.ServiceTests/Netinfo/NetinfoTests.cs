@@ -5,7 +5,8 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;  
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow; 
+using System.Threading.Tasks.Dataflow;
+using Donut;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.Batching;
@@ -15,6 +16,7 @@ using nvoid.db.DB.MongoDB;
 using nvoid.db.Extensions; 
 using nvoid.extensions;
 using nvoid.Integration;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Analytics;
 using Netlyt.Service.Data;
@@ -173,7 +175,7 @@ events : elements };
             var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
             //harvester.AddPersistentType(fileSource, _appId, true);
 
-            var grouper = new GroupingBlock(_appId,
+            var grouper = new GroupingBlock<IntegratedDocument>(_appId,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.DaysTotal()}",
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
                 (acc, doc) => AccumulateUserDocument(acc, doc));
@@ -321,7 +323,7 @@ events : elements };
                     .ToBsonArray();
                 IList<DomainUserSession> sessions = null;//NetinfoDonutfile.GetWebSessions(userBlock).ToList();
                 var sessionWrapper = new DomainUserSessionCollection(sessions) {UserId = uuid, Created = dateNoticed};
-                var document = IntegratedDocument.FromType(sessionWrapper, typeDef, apiObj.Id);
+                var document = IntegratedDocument.FromType<DomainUserSessionCollection, IntegratedDocument>(sessionWrapper, typeDef, apiObj.Id);
                 var documentBson = document.GetDocument();
                 documentBson["is_paying"] = userIsPaying ? 1 : 0;
                 documentBson["g_timestamp"] = g_timestamp;
@@ -456,7 +458,7 @@ events : elements };
                         sessionWrapper.UserId = uuid;
                         sessionWrapper.Created = dateNoticed;
 
-                        var document = IntegratedDocument.FromType(sessionWrapper, typeDef, userAPIId);
+                        var document = IntegratedDocument.FromType< DomainUserSessionCollection, IntegratedDocument>(sessionWrapper, typeDef, userAPIId);
                         var documentBson = document.GetDocument();
                         documentBson["is_paying"] = userIsPaying ? 1 : 0;
                         document.IntegrationId = typeDef.Id;
@@ -642,7 +644,7 @@ events : elements };
         } 
 
 
-        private object AccumulateUserDocument(IntegratedDocument accumulator, BsonDocument newEntry, bool appendEvent = true)
+        private object AccumulateUserDocument(IIntegratedDocument accumulator, BsonDocument newEntry, bool appendEvent = true)
         {
             var value = newEntry.GetString("value");
             var onDate = newEntry.GetDate("ondate").Value;

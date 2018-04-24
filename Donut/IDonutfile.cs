@@ -1,4 +1,4 @@
-﻿namespace Netlyt.Service.Donut
+﻿namespace Donut
 {
     public interface IDonutfile
     {

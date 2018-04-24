@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Donut;
 using nvoid.db.Extensions;
+using Netlyt.Interfaces;
 using Netlyt.Service.Lex.Expressions;
 
 namespace Netlyt.Service.Lex
@@ -71,7 +73,7 @@ namespace Netlyt.Service.Lex
             var iParam = 0;
             foreach (var parameter in exp.Parameters)
             {
-                var paramStr = Visit(parameter);
+                var paramStr = Visit(parameter as IExpression);
                 paramBuilder.Append(paramStr);
                 if (iParam < exp.Parameters.Count - 1)
                 {

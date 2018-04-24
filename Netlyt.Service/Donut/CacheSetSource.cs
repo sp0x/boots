@@ -4,9 +4,13 @@ using System.Reflection;
 using nvoid.db;
 using nvoid.db.Caching;
 using nvoid.db.DB;
+using Netlyt.Interfaces;
 
 namespace Netlyt.Service.Donut
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class CacheSetSource : ICacheSetSource
     {
         /// <summary>

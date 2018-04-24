@@ -1,4 +1,7 @@
-﻿namespace Netlyt.Service.Donut
+﻿using Donut;
+using Netlyt.Interfaces;
+
+namespace Netlyt.Service.Donut
 {
     public class InternalDonutFunctionProxy : DonutFunction
     {

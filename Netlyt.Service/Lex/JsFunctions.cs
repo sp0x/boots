@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Donut;
+using Netlyt.Interfaces;
 using Netlyt.Service.Lex.Expressions;
 
 namespace Netlyt.Service.Lex
@@ -21,7 +23,7 @@ namespace Netlyt.Service.Lex
             Functions["if"] = "(function(condition, ifTrue, ifElse){ return condition ? (ifTrue) : (ifElse); })";
             Functions["any"] = "(function(array){ return array.length>0; })";
         }
-        public static string Resolve(string function, List<ParameterExpression> expParameters)
+        public static string Resolve(string function, List<IParameterExpression> expParameters)
         {
             string output = null;
             if (Functions.ContainsKey(function))

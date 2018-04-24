@@ -5,11 +5,12 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using nvoid.db.DB;
+using Netlyt.Interfaces;
 using Netlyt.Service.Integration.Blocks;
 
 namespace Netlyt.Service.Integration
 {
-    public class IntegratedDocument : Entity
+    public class IntegratedDocument : Entity, IIntegratedDocument
     {
         [BsonId(IdGenerator = typeof(StringObjectIdGenerator))]
         public string Id { get; set; }
@@ -62,7 +63,7 @@ namespace Netlyt.Service.Integration
         {
             return Document?.Value;
         }
-        public IntegratedDocument AddDocumentArrayItem(string key, object itemToAdd)
+        public IIntegratedDocument AddDocumentArrayItem(string key, object itemToAdd)
         {
             _lock.EnterWriteLock();
             if (Document != null)
@@ -113,7 +114,7 @@ namespace Netlyt.Service.Integration
             return Document!=null ? Document.Value.Clone().ToBsonDocument() : null;
         }
 
-        public IntegratedDocument Clone()
+        public IIntegratedDocument Clone()
         {
             var newDocument = new IntegratedDocument();
             newDocument.Document = new Lazy<BsonDocument>(CloneDocument);
@@ -131,9 +132,10 @@ namespace Netlyt.Service.Integration
         /// <param name="typedef"></param>
         /// <param name="apiId">The id of the api object.</param>
         /// <returns></returns>
-        public static IntegratedDocument FromType<T>(T visitSession, DataIntegration typedef, long apiId)
+        public static TDoc FromType<T, TDoc>(T visitSession, DataIntegration typedef, long apiId)
+            where TDoc : IIntegratedDocument, new()
         { 
-            var document = new IntegratedDocument();
+            var document = new TDoc();
             document.Document = new Lazy<BsonDocument>(()=> visitSession.ToBsonDocument());
             document.IntegrationId = typedef.Id;
             document.APIId = apiId;
@@ -159,7 +161,7 @@ namespace Netlyt.Service.Integration
         /// Removes all elements by given keys
         /// </summary>
         /// <param name="keys"></param>
-        public IntegratedDocument RemoveAll(params string[] keys)
+        public IIntegratedDocument RemoveAll(params string[] keys)
         {
             if (Document != null)
             {
@@ -179,7 +181,7 @@ namespace Netlyt.Service.Integration
             return this;
         }
 
-        public IntegratedDocument Define(string key, BsonValue value)
+        public IIntegratedDocument Define(string key, BsonValue value)
         { 
             this[key] = value;
             return this;

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using Donut;
 using MongoDB.Bson;
+using Netlyt.Interfaces;
 using Netlyt.Service.Donut;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Lex.Data;
@@ -350,7 +352,7 @@ namespace Netlyt.Service.Lex.Generators
                 if (memberInfo == typeof(CallExpression))
                 {
                     var subItems = (item as CallExpression).Parameters;
-                    foreach (var param in subItems) itemQueue.Enqueue(param);
+                    foreach (var param in subItems) itemQueue.Enqueue(param as IExpression);
                 }
                 else if (memberInfo == typeof(VariableExpression))
                 {
@@ -358,7 +360,7 @@ namespace Netlyt.Service.Lex.Generators
                     if (mInfo != null && mInfo.Parent != null && mInfo.Parent.GetType() == typeof(CallExpression))
                     {
                         var callExpParams = (mInfo.Parent as CallExpression).Parameters;
-                        foreach (var param in callExpParams) itemQueue.Enqueue(param);
+                        foreach (var param in callExpParams) itemQueue.Enqueue(param as IExpression);
                     }
                     else
                     {
@@ -465,18 +467,16 @@ namespace Netlyt.Service.Lex.Generators
             if (!HasGroupingKeys && HasGroupingFields)
             {
                 var groupKey = "";
-                var tsKey = _rootIntegration.DataTimestampColumn;
-                if (_rootIntegration != null && !string.IsNullOrEmpty(tsKey))
+                var ignKeys = _rootIntegration?.GetAggregateKeys();
+                var tsKey = _rootIntegration?.DataTimestampColumn;
+                if (_rootIntegration != null && ignKeys != null)
                 {
-                    groupKey += "var idSubKey1 = new BsonDocument { { \"tsHour\", new BsonDocument{" +
-                                "{ \"$hour\", \"$" + tsKey + "\"}" +
-                                "} }};\n";
-                    groupKey += "var idSubKey2 = new BsonDocument { { \"tsKey\", new BsonDocument{" +
-                                "{ \"$dayOfYear\", \"$" + tsKey + "\"}" +
-                                "} } };\n";
-                    groupKey += $"groupKeys.Merge(idSubKey1);\n" +
-                                $"groupKeys.Merge(idSubKey2);\n" +
-                                $"var grouping = new BsonDocument();\n" +
+                    foreach (var key in ignKeys)
+                    {
+                        var content = key.ToString();
+                        groupKey += $"groupKeys.Merge({content});\n";
+                    }
+                    groupKey += $"var grouping = new BsonDocument();\n" +
                                 $"grouping[\"_id\"] = groupKeys;\n" +
                                 $"grouping = grouping.Merge(groupFields);";
                 }

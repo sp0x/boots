@@ -6,9 +6,11 @@ using System.Dynamic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks.Dataflow;
+using Donut;
 using MongoDB.Driver;
 using nvoid.db.DB.MongoDB;
 using nvoid.exec.Blocks;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.FeatureGeneration;
@@ -59,7 +61,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var harv = GetHarvester();
             var cnt = 0;
             var str = "";
-            var metaBlock = new MemberVisitingBlock(new Action<IntegratedDocument>(x =>
+            var metaBlock = new MemberVisitingBlock<IntegratedDocument>(new Action<IIntegratedDocument>(x =>
             { 
             }));
             //Simple increment, because the continuations should run sequentially, not in parallel.
@@ -84,7 +86,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         {
             var harv = GetHarvester();
             var cnt = 0;
-            var block = new StatsBlock(x =>
+            var block = new StatsBlock<IntegratedDocument>(x =>
             {
                 x["lol"] = true;
                 Interlocked.Increment(ref cnt);
@@ -101,12 +103,12 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var harv = GetHarvester();
             var cnt = 0;
             var lCnt = 0;
-            var block = new StatsBlock(x =>
+            var block = new StatsBlock<IntegratedDocument>(x =>
             {
                 x["lol"] = true;
                 Interlocked.Increment(ref cnt);
             });
-            block.BroadcastTo(new ActionBlock<IntegratedDocument>(x =>
+            block.BroadcastTo(new ActionBlock<IIntegratedDocument>(x =>
             {
                 x["1241"] = true;
                 Interlocked.Increment(ref lCnt);
@@ -125,13 +127,13 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var harv = GetHarvester();
             var cnt = 0;
             var lCount = 0;
-            var block = new StatsBlock(x =>
+            var block = new StatsBlock<IntegratedDocument>(x =>
             { 
                 x["lol"] = true;
                 Interlocked.Increment(ref cnt);
             });
             //Bug: this does not complete
-            block.LinkTo(new IntegrationActionBlock("1234",  (act, x) =>
+            block.LinkTo(new IntegrationActionBlock<IntegratedDocument>("1234",  (act, x) =>
             {
                 x["r"] = false;
                 Interlocked.Increment(ref lCount);
@@ -151,7 +153,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var lCount = 0;
             var r = new Random();
             var rCycles = r.Next(1, 5);
-            var block = new StatsBlock(x =>
+            var block = new StatsBlock<IntegratedDocument>(x =>
             {
                 x["lol"] = true;
                 Interlocked.Increment(ref cnt);
@@ -162,7 +164,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
 
             for (var i = 0; i < rCycles; i++)
             {
-                var action = new IntegrationActionBlock("1234", (act, x) =>
+                var action = new IntegrationActionBlock<IntegratedDocument>("1234", (act, x) =>
                 {
                     x["r"] = false;
                     //Debug.WriteLine($"Proc from block {act.Id}[{act.ThreadId}]: {x.Id}");
@@ -206,7 +208,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var lCount = 0;
             var r = new Random();
             var rCycles = r.Next(1, 5);
-            var block = new StatsBlock(x =>
+            var block = new StatsBlock<IntegratedDocument>(x =>
             {
                 x["lol"] = true;
                 Interlocked.Increment(ref cnt);
@@ -217,7 +219,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
 
             for (var i = 0; i < rCycles; i++)
             {
-                var action = new IntegrationActionBlock("1234", (act, x) =>
+                var action = new IntegrationActionBlock<IntegratedDocument>("1234", (act, x) =>
                 {
                     x["r"] = false;
                     Debug.WriteLine($"Proc from block {act.Id}[{act.ThreadId}]: {x.Id}");
@@ -229,7 +231,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             }
             var iOnDone = 0;
             var iProcessDone = 0;
-            var onDoneBlock = new IntegrationActionBlock("1234", (actionblock, x) =>
+            var onDoneBlock = new IntegrationActionBlock<IntegratedDocument>("1234", (actionblock, x) =>
             {
                 finishingTasks[Thread.CurrentThread.ManagedThreadId.ToString()] = "";
                 Interlocked.Increment(ref iOnDone); 
@@ -258,33 +260,33 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var batchSize = (uint)3000;
             var featureSize = 1;
 
-            var grouper = new GroupingBlock(_apiAuth,
+            var grouper = new GroupingBlock<IntegratedDocument>(_apiAuth,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
                 (doc, docx) => doc);
             // create features for each user -> create Update -> batch update
-            var featureGenerator = new FeatureGenerator<IntegratedDocument>((doc) =>
+            var featureGenerator = new FeatureGenerator<IIntegratedDocument>((doc) =>
             {
                 Interlocked.Increment(ref cntFeatures);
                 return new[]{ new KeyValuePair<string, object>("feature1", 0) };
             } , 8);
-            var updateCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, FindAndModifyArgs<IntegratedDocument>>((docFeatures) =>
+            var updateCreator = new TransformBlock<FeaturesWrapper<IIntegratedDocument>, FindAndModifyArgs<IIntegratedDocument>>((docFeatures) =>
             {
                 Interlocked.Increment(ref cntUpdates);
-                return new FindAndModifyArgs<IntegratedDocument>()
+                return new FindAndModifyArgs<IIntegratedDocument>()
                 {
-                    Query = Builders<IntegratedDocument>.Filter.And(
-                                Builders<IntegratedDocument>.Filter.Eq("Document.uuid", docFeatures.Document["uuid"].ToString()),
-                                Builders<IntegratedDocument>.Filter.Eq("Document.noticed_date", docFeatures.Document.GetDate("noticed_date"))),
-                    Update = docFeatures.Features.ToMongoUpdate<IntegratedDocument, object>()
+                    Query = Builders<IIntegratedDocument>.Filter.And(
+                                Builders<IIntegratedDocument>.Filter.Eq("Document.uuid", docFeatures.Document["uuid"].ToString()),
+                                Builders<IIntegratedDocument>.Filter.Eq("Document.noticed_date", docFeatures.Document.GetDate("noticed_date"))),
+                    Update = docFeatures.Features.ToMongoUpdate<IIntegratedDocument, object>()
                 };
             }); 
-            var updateBatcher = BatchedBlockingBlock< FindAndModifyArgs < IntegratedDocument > >.CreateBlock(batchSize);
-            var updateApplier = new ActionBlock<FindAndModifyArgs<IntegratedDocument>[]>(x =>
+            var updateBatcher = BatchedBlockingBlock< FindAndModifyArgs < IIntegratedDocument > >.CreateBlock(batchSize);
+            var updateApplier = new ActionBlock<FindAndModifyArgs<IIntegratedDocument>[]>(x =>
             {
                 Interlocked.Increment(ref cntBatchesApplied);
             });
-            IPropagatorBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>> featuresBlock = featureGenerator.CreateFeaturesBlock();
+            IPropagatorBlock<IIntegratedDocument, FeaturesWrapper<IIntegratedDocument>> featuresBlock = featureGenerator.CreateFeaturesBlock();
             featuresBlock.LinkTo(updateCreator, new DataflowLinkOptions() { PropagateCompletion = true });
             updateCreator.LinkTo(updateBatcher, new DataflowLinkOptions() { PropagateCompletion = true });
             updateBatcher.LinkTo(updateApplier, new DataflowLinkOptions() { PropagateCompletion = true });

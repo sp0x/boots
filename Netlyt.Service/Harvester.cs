@@ -10,6 +10,7 @@ using nvoid.db.DB;
 using nvoid.db.Extensions;
 using nvoid.exec.Blocks;
 using nvoid.Integration;
+using Netlyt.Interfaces;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration; 
 using Netlyt.Service.IntegrationSource; 
@@ -17,7 +18,7 @@ using IntegrationFactory = Netlyt.Service.Integration.DataIntegration.Factory;
 
 namespace Netlyt.Service
 {
-    public class HarvesterResult
+    public class HarvesterResult : IHarvesterResult
     {
         public int ProcessedEntries { get; private set; }
         public int ProcessedShards { get; private set; }

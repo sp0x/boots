@@ -1,4 +1,4 @@
-﻿namespace Netlyt.Service.Donut
+﻿namespace Netlyt.Interfaces
 {
     public enum DonutFunctionType
     {

@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using Donut;
 using nvoid.Crypto;
+using Netlyt.Interfaces;
 using Newtonsoft.Json.Linq;
 using Netlyt.Service.Donut;
 using Netlyt.Service.Lex.Data;
@@ -18,13 +20,13 @@ namespace Netlyt.Service.Lex.Generators
         private DonutScript _script;
         public AggregateStageType Type { get; set; }
         public IDonutFunction Function { get; set; }
-        public List<AggregateStage> Children { get; set; }
+        public List<AggregateStage> ChildStages { get; set; }
 
         public AggregateStage(DonutScript script, IDonutFunction function)
         {
             Function = function;
             _script = script;
-            Children = new List<AggregateStage>();//new AggregateJobTree(script);
+            ChildStages = new List<AggregateStage>();//new AggregateJobTree(script);
             switch (function.Type)
             {
                 case DonutFunctionType.Project: Type = AggregateStageType.Project; break;
@@ -33,21 +35,21 @@ namespace Netlyt.Service.Lex.Generators
         }
         public IEnumerable<AggregateStage> GetGroupings()
         {
-            return Children.Where(x => x.Type == AggregateStageType.Group);
+            return ChildStages.Where(x => x.Type == AggregateStageType.Group);
         }
         public IEnumerable<AggregateStage> GetProjections()
         {
-            return Children.Where(x => x.Type == AggregateStageType.Project);
+            return ChildStages.Where(x => x.Type == AggregateStageType.Project);
         }
         public IEnumerable<AggregateStage> GetFilters()
         {
-            return Children.Where(x => x.Type == AggregateStageType.Match);
+            return ChildStages.Where(x => x.Type == AggregateStageType.Match);
         }
         public AggregateStage Clone()
         {
             var nstage = new AggregateStage(_script, Function);
             nstage.Type = Type;
-            nstage.Children = new List<AggregateStage>(Children.ToArray());
+            nstage.ChildStages = new List<AggregateStage>(ChildStages.ToArray());
             return nstage;
         }
 
@@ -68,7 +70,13 @@ namespace Netlyt.Service.Lex.Generators
                 return null;
             }
             var lstParameters = Function?.Parameters?.ToList();
-            if (lstParameters == null) lstParameters = new List<ParameterExpression>();
+            if (lstParameters == null) lstParameters = new List<IParameterExpression>();
+            template = DonutFunctionToMongoAggregateElement(lstParameters, template);
+            return template;
+        }
+
+        public string DonutFunctionToMongoAggregateElement(List<IParameterExpression> lstParameters, string template)
+        {
             for (int i = 0; i < lstParameters.Count; i++)
             {
                 var parameter = lstParameters[i];
@@ -76,10 +84,9 @@ namespace Netlyt.Service.Lex.Generators
                 var pValue = parameter.Value;
                 var argExpVisitor = new DonutFeatureGeneratingExpressionVisitor(_script);
                 //If we visit functions here, note that in the pipeline
-                //TODO: FIx Romanian.WEEKDAY(timestamp) 
-                var paramStr = argExpVisitor.Visit(parameter, out paramOutputObj);
+                var paramStr = argExpVisitor.Visit(parameter as IExpression, out paramOutputObj);
                 var subAggregateTree = argExpVisitor.AggregateTree;
-                if (pValue is VariableExpression varValue && varValue.Member!=null)
+                if (pValue is VariableExpression varValue && varValue.Member != null)
                 {
                     var isRootIntegrationVar = varValue.Name == _script.GetRootIntegration().Name;
                     //Strip the root integration name in cases of [IntegrationName].[Function].
@@ -88,13 +95,11 @@ namespace Netlyt.Service.Lex.Generators
                         pValue = varValue.Member;
                     }
                 }
-
                 if (pValue is MemberExpression memberValue)
                 {
                     pValue = memberValue.Parent;
                 }
-
-                Children.AddRange(subAggregateTree.Stages);
+                ChildStages.AddRange(subAggregateTree.Stages);
                 if (pValue is CallExpression || paramOutputObj is IDonutTemplateFunction)
                 {
                     if (Function.Type == DonutFunctionType.Group)
@@ -106,12 +111,23 @@ namespace Netlyt.Service.Lex.Generators
                                 $"Function {Function} is a grouping and cannot have projection arguments.");
                         }
                     }
-                    template = template.Replace("\"{" + i + "}\"", paramStr);
                 }
-                else
-                {
-                    template = template.Replace("{" + i + "}", $"${paramStr}");
-                }
+                template = FormatDonutFnAggregateParameter(template, pValue, paramOutputObj, i, paramStr);
+            }
+
+            return template;
+        }
+
+        public static string FormatDonutFnAggregateParameter(string template, IExpression srcExpression, object srcDonutFn, int argIndex,
+            string paramStr)
+        {
+            if ((srcExpression is CallExpression) || srcDonutFn is IDonutTemplateFunction)
+            {
+                template = template.Replace("\"{" + argIndex + "}\"", paramStr);
+            }
+            else
+            {
+                template = template.Replace("{" + argIndex + "}", $"${paramStr}");
             }
             return template;
         }

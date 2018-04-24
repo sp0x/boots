@@ -6,13 +6,14 @@ using MongoDB.Bson;
 using nvoid.db.Caching;
 using nvoid.db.DB;
 using nvoid.extensions;
+using Netlyt.Interfaces;
 using Netlyt.Service.Donut;
 using Netlyt.Service.Integration; 
 using Netlyt.Service.Time;
 
 namespace Netlyt.ServiceTests.Netinfo
 {
-    public class NetinfoDonutfile : Donutfile<NetinfoDonutContext>
+    public class NetinfoDonutfile : Donutfile<NetinfoDonutContext, IntegratedDocument>
     {
         private string TargetHost { get; set; } = "ebag.bg";
         
@@ -225,7 +226,7 @@ namespace Netlyt.ServiceTests.Netinfo
 
         #region Domain tracking
 
-        public IEnumerable<DomainUserSession> GetWebSessions(IntegratedDocument doc, string targetDomain)
+        public IEnumerable<DomainUserSession> GetWebSessions(IIntegratedDocument doc, string targetDomain)
         {
             return GetWebSessions(doc)
                 .Where(x => x.Domain.ToHostname()
@@ -237,7 +238,7 @@ namespace Netlyt.ServiceTests.Netinfo
         /// </summary>
         /// <param name="userDoc"></param>
         /// <returns></returns>
-        public static IEnumerable<DomainUserSession> GetWebSessions(IntegratedDocument document)
+        public static IEnumerable<DomainUserSession> GetWebSessions(IIntegratedDocument document)
         {
             var visits = document.GetDocument()["events"] as BsonArray;
             var firstVisit = visits[0];

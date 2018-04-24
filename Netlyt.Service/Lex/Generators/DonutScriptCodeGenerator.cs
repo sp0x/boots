@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Donut;
 using Microsoft.CodeAnalysis.Emit;
 using MongoDB.Bson;
+using Netlyt.Interfaces;
 using Netlyt.Service.Donut;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Lex.Data;
@@ -83,7 +85,8 @@ namespace Netlyt.Service.Lex.Generators
                 donutTemplate = donutTemplate.Replace("$ClassName", baseName);
                 donutTemplate = donutTemplate.Replace("$ContextTypeName", conutextName);
                 donutTemplate = donutTemplate.Replace("$ExtractionBody", GetFeaturePrepContent(script));
-                donutTemplate = donutTemplate.Replace("$OnFinished", GenerateOnDonutFinishedContent(script));
+                donutTemplate = donutTemplate.Replace("$PrepareExtraction", GeneratePrepareExtractionContent(script));
+                donutTemplate = donutTemplate.Replace("$OnFinished", GenerateOnDounutFinishedContent(script));
                 donutTemplate += "\n\n\n" +
                                  "/* Donut script: \n" + script.ToString() +
                                  "\n*/"; 
@@ -92,12 +95,17 @@ namespace Netlyt.Service.Lex.Generators
             return donutTemplate;
         }
 
+        private string GenerateOnDounutFinishedContent(DonutScript script)
+        {
+            return String.Empty;
+        }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="script"></param>
         /// <returns></returns>
-        private string GenerateOnDonutFinishedContent(DonutScript script)
+        private string GeneratePrepareExtractionContent(DonutScript script)
         {
             var fBuilder = new StringBuilder();
             var rootIntegration = script.Integrations.FirstOrDefault();

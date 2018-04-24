@@ -1,26 +1,27 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using Donut;
 using nvoid.db.Caching;
+using Netlyt.Interfaces;
 using Netlyt.Service.Integration;
 
 namespace Netlyt.Service.Donut
 {
-    public interface IDonutBuilder
+    /// <summary>
+    /// Helps with creating a donut builder for abstract donuts.
+    /// </summary>
+    public abstract class DonutGeneratorFactory
     {
-        IDonutfile Generate();
-    }
-    public abstract class DonutBuilderFactory
-    {
-
-        public static IDonutBuilder Create(Type donutType, Type donutContextType, DataIntegration integration, RedisCacher cacher, IServiceProvider serviceProvider)
+        public static IDonutBuilder Create<TData>(Type donutType, Type donutContextType, DataIntegration integration, RedisCacher cacher, IServiceProvider serviceProvider)
+        where TData : class, IIntegratedDocument
         {
-            var builderType = typeof(DonutBuilder<,>).MakeGenericType(new Type[] {donutType, donutContextType});
+            var builderType = typeof(DonutBuilder<,,>).MakeGenericType(new Type[] { donutType, donutContextType, typeof(TData) });
             //DataIntegration integration, RedisCacher cacher, IServiceProvider serviceProvider
             var builderCtor = builderType.GetConstructor(new Type[]
                 {typeof(DataIntegration), typeof(RedisCacher), typeof(IServiceProvider)});
             if (builderCtor == null) throw new Exception("DonutBuilder<> has invalid ctor parameters.");
-            var builder = Activator.CreateInstance(builderType, integration, cacher, serviceProvider) ;
+            var builder = Activator.CreateInstance(builderType, integration, cacher, serviceProvider);
             return builder as IDonutBuilder;
         }
 
@@ -30,9 +31,10 @@ namespace Netlyt.Service.Donut
     /// </summary>
     /// <typeparam name="TDonut">The donut type</typeparam>
     /// <typeparam name="TContext">The donut's context type</typeparam>
-    public class DonutBuilder<TDonut, TContext> : IDonutBuilder
+    public class DonutBuilder<TDonut, TContext, TData> : IDonutBuilder
         where TContext : DonutContext
-        where TDonut : Donutfile<TContext>
+        where TDonut : Donutfile<TContext, TData>
+        where TData : class, IIntegratedDocument
     {
         private string _template;
         private RedisCacher _cacher;

@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using Dynamitey;
 using nvoid.db.DB;
 using nvoid.Integration;
+using Netlyt.Interfaces;
 using Netlyt.Service.Ml;
 using Netlyt.Service.Source;
 
@@ -22,7 +23,7 @@ namespace Netlyt.Service.Integration
         public int DataEncoding { get; set; }
         [ForeignKey("APIKey")]
         public long APIKeyId { get; set; }
-        public ApiAuth APIKey { get; set; }
+        public IApiAuth APIKey { get; set; }
         public long? PublicKeyId { get; set; }
         public virtual ApiAuth PublicKey { get; set; }
         /// <summary>
@@ -45,17 +46,17 @@ namespace Netlyt.Service.Integration
         public string DataTimestampColumn { get; set; }
         public string FeaturesCollection { get; set; }
 
-        public ICollection<FieldDefinition> Fields { get; set; }
-        public ICollection<IntegrationExtra> Extras { get; set; }
+        public ICollection<IFieldDefinition> Fields { get; set; }
+        public ICollection<IIntegrationExtra> Extras { get; set; }
 
         public static DataIntegration Empty { get; set; } = new DataIntegration("Empty");
 
 
         public DataIntegration()
         {
-            Fields = new HashSet<FieldDefinition>(new FieldDefinitionComparer());
+            Fields = new HashSet<IFieldDefinition>(new FieldDefinitionComparer());
             Models = new HashSet<ModelIntegration>();
-            Extras = new HashSet<IntegrationExtra>();
+            Extras = new HashSet<IIntegrationExtra>();
             this.PublicKey = ApiAuth.Generate();
         }
         public DataIntegration(string name, bool generateCollections = false)
@@ -77,7 +78,7 @@ namespace Netlyt.Service.Integration
         public DataIntegration SetFieldsFromType<T>(T instance)
         {
             if (instance == null) throw new ArgumentNullException(nameof(instance));
-            Fields = new List<FieldDefinition>();
+            Fields = new List<IFieldDefinition>();
             var type = typeof(T);
             ExpandoObject xpObj = instance as ExpandoObject;
             var dateParser = new DateParser();
@@ -144,7 +145,7 @@ namespace Netlyt.Service.Integration
         {
             return $"{Collection}_reduced";
         }
-        public IntegratedDocument CreateDocument<T>(T data)
+        public IIntegratedDocument CreateDocument<T>(T data)
         {
             var doc = new IntegratedDocument();
             doc.SetDocument(data);
@@ -165,16 +166,36 @@ namespace Netlyt.Service.Integration
             (Fields as HashSet<FieldDefinition>)?.Add(fdef); //fieldName
             return fdef;
         }
+
+        /// <summary>
+        /// Gets the aggregate keys for this integration.
+        /// If a timestamp column is present, it's used as a key (day of year and hour).
+        /// TODO: Implement field key flags.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<AggregateKey> GetAggregateKeys()
+        {
+            var tsKey = DataTimestampColumn;
+            if (!string.IsNullOrEmpty(tsKey))
+            {
+                yield return new AggregateKey("tsHour", "hour", tsKey);
+                yield return new AggregateKey("tsDayyr", "dayOfYear", tsKey);
+            }
+            else
+            {
+                yield return new AggregateKey("_id", null, "_id");
+            }
+        }
     }
 
-    public class FieldDefinitionComparer : IEqualityComparer<FieldDefinition>
+    public class FieldDefinitionComparer : IEqualityComparer<IFieldDefinition>
     {
-        public bool Equals(FieldDefinition x, FieldDefinition y)
+        public bool Equals(IFieldDefinition x, IFieldDefinition y)
         {
             return x.Name == y.Name;
         }
 
-        public int GetHashCode(FieldDefinition obj)
+        public int GetHashCode(IFieldDefinition obj)
         {
             return obj.Name.GetHashCode();
         }

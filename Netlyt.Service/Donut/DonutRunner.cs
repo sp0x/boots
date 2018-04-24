@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Donut;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.Batching;
@@ -9,6 +10,7 @@ using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.db.Extensions;
+using Netlyt.Interfaces;
 using Netlyt.Service.FeatureGeneration;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
@@ -16,29 +18,23 @@ using Netlyt.Service.Models;
 
 namespace Netlyt.Service.Donut
 {
-    public interface IDonutRunner
-    {
-        Task<HarvesterResult> Run(IDonutfile donut, FeatureGenerator<IntegratedDocument> featureGenerator);
-    }
-    public interface IDonutRunner<TDonut>  : IDonutRunner
-    {
-        Task<HarvesterResult> Run(TDonut donut, FeatureGenerator<IntegratedDocument> getFeatureGenerator);
-    }
+
 
     /// <summary>
     /// 
     /// </summary>
     /// <typeparam name="TDonut"></typeparam>
     /// <typeparam name="TContext"></typeparam>
-    public class DonutRunner<TDonut, TContext> : IDonutRunner<TDonut>
+    public class DonutRunner<TDonut, TContext, TData> : IDonutRunner<TDonut, TData>
         where TContext: DonutContext
-        where TDonut : Donutfile<TContext>
+        where TDonut : Donutfile<TContext, TData>
+        where TData : class, IIntegratedDocument
     {
-        private Harvester<IntegratedDocument> _harvester;
+        private Harvester<TData> _harvester;
         private IMongoCollection<BsonDocument> _featuresCollection;
-        private IPropagatorBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>> _featuresBlock;
+        private IPropagatorBlock<TData, FeaturesWrapper<TData>> _featuresBlock;
 
-        public DonutRunner(Harvester<IntegratedDocument> harvester, DatabaseConfiguration db, string featuresCollection)
+        public DonutRunner(Harvester<TData> harvester, DatabaseConfiguration db, string featuresCollection)
         {
             if (string.IsNullOrEmpty(featuresCollection))
             {
@@ -49,18 +45,21 @@ namespace Netlyt.Service.Donut
             _featuresCollection = mlist.Records;
         }
 
-        public async Task<HarvesterResult> Run(IDonutfile donut, FeatureGenerator<IntegratedDocument> featureGenerator)
-        {
-            return await Run(donut as TDonut, featureGenerator);
-        }
-        public async Task<HarvesterResult> Run(TDonut donut, FeatureGenerator<IntegratedDocument> getFeatureGenerator)
+        public async Task<IHarvesterResult> Run(IDonutfile donut, IFeatureGenerator<TData> featureGenerator) => await Run(donut as TDonut, featureGenerator);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="donut"></param>
+        /// <param name="getFeatureGenerator"></param>
+        /// <returns></returns>
+        public async Task<IHarvesterResult> Run(TDonut donut, IFeatureGenerator<TData> getFeatureGenerator)
         {
             var integration = donut.Context.Integration;
             var donutBlock = donut.CreateDataflowBlock(getFeatureGenerator);
-            var flowBlock = donutBlock.FlowBlock;
+            var dataProcessingBlock = donutBlock.FlowBlock;
             _featuresBlock = donutBlock.FeaturePropagator;
 
-            var insertCreator = new TransformBlock<FeaturesWrapper<IntegratedDocument>, BsonDocument>((x) =>
+            var insertCreator = new TransformBlock<FeaturesWrapper<TData>, BsonDocument>((x) =>
             { 
                 var rawFeatures = new BsonDocument();
                 var featuresDocument = new IntegratedDocument(rawFeatures);
@@ -82,14 +81,15 @@ namespace Netlyt.Service.Donut
             });
             var insertBatcher = new MongoInsertBatch<BsonDocument>(_featuresCollection, 3000);
             insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
-
+            //Insert our features
             _featuresBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
-            flowBlock.ContinueWith(() =>
+            //After all data is processed, extract the features
+            dataProcessingBlock.ContinueWith(() =>
             {
                 var extractionTask = RunFeatureExtraction(donut);
                 Task.WaitAll(extractionTask);
             }); 
-            _harvester.SetDestination(flowBlock);
+            _harvester.SetDestination(dataProcessingBlock);
             
             var harvesterRun = await _harvester.Run(); 
             //If we have to repeat it, handle this..
@@ -98,10 +98,20 @@ namespace Netlyt.Service.Donut
 
         private async Task RunFeatureExtraction(TDonut donut)
         {
+            //Don`t accept any more data
             donut.Complete();
+            try
+            {
+                //Prepare anything that we need to do, like running mongodb aggregate pipelines
+                await donut.PrepareExtraction();
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("Donut error while preparing extraction: " + ex.Message);
+            }
             if (donut.ReplayInputOnFeatures && !donut.SkipFeatureExtraction)
             {
-                var featuresFlow = new InternalFlowBlock<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>
+                var featuresFlow = new InternalFlowBlock<TData, FeaturesWrapper<TData>>
                     (_featuresBlock);
                 _harvester.Reset();
                 _harvester.SetDestination(featuresFlow);
@@ -121,7 +131,7 @@ namespace Netlyt.Service.Donut
             }
             catch (Exception ex)
             {
-                Trace.WriteLine("Donut error: " + ex.Message);
+                Trace.WriteLine("Donut error while finishing: " + ex.Message);
             }
         }
 

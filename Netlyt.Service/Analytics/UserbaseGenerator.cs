@@ -46,7 +46,7 @@ namespace Netlyt.Service.Analytics
         /// <param name="destinationDirectory"></param>
         public void Simulate(string destinationDirectory, int userCount = 10)
         {
-            //Prepare
+            //PrepareExtraction
             var userGen = new UserGenerator();
             var behaviourGen = new UserBehaviourGenerator();
             var domain = (new Faker()).Internet.DomainName();

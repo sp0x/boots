@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks.Dataflow;
 using MongoDB.Bson;
 using nvoid.extensions;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Integration; 
 using Netlyt.Service.Time;
@@ -26,9 +27,9 @@ namespace Netlyt.ServiceTests.Netinfo
         /// </summary>
         /// <param name="intDoc"></param>
         /// <returns></returns>
-        public TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> GetBlock()
+        public TransformBlock<IIntegratedDocument, IEnumerable<KeyValuePair<string, object>>> GetBlock()
         {
-            var block = new TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>((doc) =>
+            var block = new TransformBlock<IIntegratedDocument, IEnumerable<KeyValuePair<string, object>>>((doc) =>
             {
                 return GetFeatures(doc);
             });
@@ -36,7 +37,7 @@ namespace Netlyt.ServiceTests.Netinfo
         }
 
 
-        public IEnumerable<KeyValuePair<string, object>> GetFeatures(IntegratedDocument intDoc)
+        public IEnumerable<KeyValuePair<string, object>> GetFeatures(IIntegratedDocument intDoc)
         {
             //TODO: Clean this up..
             BsonDocument intDocDocument = intDoc.GetDocument();
@@ -256,7 +257,7 @@ namespace Netlyt.ServiceTests.Netinfo
         }
 
 
-        public IEnumerable<KeyValuePair<string, object>> GetAvgTimeBetweenSessionFeatures(IntegratedDocument doc)
+        public IEnumerable<KeyValuePair<string, object>> GetAvgTimeBetweenSessionFeatures(IIntegratedDocument doc)
         {
             int max = 604800;
             var sessions = Donut.GetWebSessions(doc, TargetDomain)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using nvoid.Integration;
+using Netlyt.Interfaces;
 using Netlyt.Service.Integration;
 using Netlyt.Service.IntegrationSource;
 using Netlyt.Service.Source;

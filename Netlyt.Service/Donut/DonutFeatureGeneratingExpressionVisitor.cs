@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Donut;
+using Netlyt.Interfaces;
 using Netlyt.Service.Lex;
 using Netlyt.Service.Lex.Data;
 using Netlyt.Service.Lex.Expressions;
@@ -65,7 +67,7 @@ namespace Netlyt.Service.Donut
                 FeatureFunctions.Enqueue(donutFn);
                 foreach (var parameter in exp.Parameters)
                 {
-                    var paramStr = Visit(parameter);
+                    var paramStr = Visit(parameter as IExpression);
                     paramBuilder.Append(paramStr);
                     if (iParam < exp.Parameters.Count - 1)
                     {

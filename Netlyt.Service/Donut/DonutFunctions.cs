@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using Donut;
 using MongoDB.Bson;
-using Netlyt.Service.Donut;
+using Netlyt.Interfaces;
 using Netlyt.Service.Lex.Expressions;
 
-namespace Netlyt.Service.Lex
+namespace Netlyt.Service.Donut
 {
     public class DonutFunctions
     {
@@ -65,6 +65,12 @@ namespace Netlyt.Service.Lex
                 IsAggregate = true,
                 Projection = (new BsonDocument { { "$dayOfMonth", "{0}" } }).ToString()
             };
+            Functions["hour"] = new DonutFunction("hour")
+            {
+                Type = DonutFunctionType.Project,
+                IsAggregate = true,
+                Projection = (new BsonDocument { { "$hour", "{0}" } }).ToString()
+            };
             Functions["month"] = new DonutFunction("month")
             {
                 Type = DonutFunctionType.Project,
@@ -83,7 +89,13 @@ namespace Netlyt.Service.Lex
                 IsAggregate = true,
                 Projection = (new BsonDocument { { "$dayOfWeek", "{0}" } }).ToString()
             };
-            Functions["yearday"] = new DonutFunction("day")
+            Functions["yearday"] = new DonutFunction("yearday")
+            {
+                Type = DonutFunctionType.Project,
+                IsAggregate = true,
+                Projection = (new BsonDocument { { "$dayOfYear", "{0}" } }).ToString()
+            };
+            Functions["dayofyear"] = new DonutFunction("dayOfYear")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,

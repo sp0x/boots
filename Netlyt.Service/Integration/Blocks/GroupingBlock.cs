@@ -6,32 +6,33 @@ using MongoDB.Bson;
 using nvoid.extensions;
 using System.Linq;
 using nvoid.exec.Blocks;
-using nvoid.Integration; 
+using nvoid.Integration;
+using Netlyt.Interfaces;
 
 namespace Netlyt.Service.Integration.Blocks
 {
     /// <summary>
     /// An entity grouping block
     /// </summary>
-    public class GroupingBlock
-        : BaseFlowBlock<IntegratedDocument, IntegratedDocument>
+    public class GroupingBlock<T> : BaseFlowBlock<T, T>
+        where T : class, IIntegratedDocument
     {
         #region "Variables"
-        private Func<IntegratedDocument, object> _groupBySelector;
+        private Func<T, object> _groupBySelector;
         /// <summary>
         /// 
         /// </summary>
-        private Func<IntegratedDocument, BsonDocument, object> _accumulator;
+        private Func<T, BsonDocument, object> _accumulator;
         /// <summary>
         /// 
         /// </summary>
-        private Action<IntegratedDocument> _inputProjection;
+        private Action<T> _inputProjection;
         #endregion
 
         #region "Props"
 //        public event EventHandler<EventArgs> GroupingComplete;
 
-        public ConcurrentDictionary<object, IntegratedDocument> EntityDictionary { get; private set; } 
+        public ConcurrentDictionary<object, T> EntityDictionary { get; private set; } 
         
         //public BsonArray Purchases { get; set; }
         #endregion
@@ -43,9 +44,9 @@ namespace Netlyt.Service.Integration.Blocks
         /// <param name="selector"></param>
         /// <param name="inputProjection">Projection to perform on the input</param>
         /// <param name="accumulator">Accumulate input data to the resolved element</param>
-        public GroupingBlock(ApiAuth apiKey, Func<IntegratedDocument, object> selector,
-            Action<IntegratedDocument> inputProjection,
-            Func<IntegratedDocument, BsonDocument, object> accumulator)
+        public GroupingBlock(ApiAuth apiKey, Func<T, object> selector,
+            Action<T> inputProjection,
+            Func<T, BsonDocument, object> accumulator)
             : base(capacity: 1000, procType: BlockType.Action)
         {
             base.AppId = apiKey.AppId;
@@ -53,16 +54,16 @@ namespace Netlyt.Service.Integration.Blocks
             this._accumulator = accumulator;
             this._inputProjection = inputProjection;
             //base.Completed += OnReadingCompleted;
-            EntityDictionary = new ConcurrentDictionary<object, IntegratedDocument>();
+            EntityDictionary = new ConcurrentDictionary<object, T>();
             //PageStats = new CrossPageStats();
         } 
          
 
-        protected override IEnumerable<IntegratedDocument> GetCollectedItems()
+        protected override IEnumerable<T> GetCollectedItems()
         {
             return EntityDictionary.Values;
         } 
-        protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
+        protected override T OnBlockReceived(T intDoc)
         {
             //Get key
             var key = _groupBySelector==null ? null : _groupBySelector(intDoc);
@@ -76,7 +77,7 @@ namespace Netlyt.Service.Integration.Blocks
                     //Ignore non valid values
                     if (_inputProjection != null)
                     {
-                        docClone = intDoc.Clone();
+                        docClone = intDoc.Clone() as T;
                         _inputProjection(docClone);
                     }
                     EntityDictionary[key] = docClone;

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Donut;
+using Netlyt.Interfaces;
 using Netlyt.Service.Lex.Expressions;
 
 namespace Netlyt.Service.Donut
@@ -9,7 +11,7 @@ namespace Netlyt.Service.Donut
     {
         public string Name { get; set; }
         public bool IsAggregate { get; set; }
-        public List<ParameterExpression> Parameters { get; set; }
+        public List<IParameterExpression> Parameters { get; set; }
         public string Body { get; set; }
         public string Projection { get; set; }
         public string GroupValue { get; set; }

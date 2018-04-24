@@ -1,13 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks.Dataflow;
+using Donut;
+using Netlyt.Interfaces;
 using Netlyt.Service.Donut;
-using Netlyt.Service.FeatureGeneration;
 
-namespace Netlyt.Service.Integration
+namespace Netlyt.Service.FeatureGeneration
 {
-    public abstract class DonutFeatureEmitter<TDonut, TContext> : IDonutFeatureEmitter<TDonut>
-        where TDonut : Donutfile<TContext> 
+    /// <summary>
+    /// Base class for feature emitters that work on documents.
+    /// </summary>
+    /// <typeparam name="TDonut"></typeparam>
+    /// <typeparam name="TContext"></typeparam>
+    public abstract class DonutFeatureEmitter<TDonut, TContext, TData> : IDonutFeatureEmitter<TDonut, TData>
+        where TDonut : Donutfile<TContext, TData> 
         where TContext : DonutContext
+        where TData : class, IIntegratedDocument
     {  
         public TDonut DonutFile { get; set; }
         public DonutFeatureEmitter(TDonut donut)
@@ -15,14 +22,23 @@ namespace Netlyt.Service.Integration
             this.DonutFile = donut;
         }
 
-        public TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>> GetBlock()
+        /// <summary>
+        /// Gets a transform block that transforms documents to feature pairs.
+        /// </summary>
+        /// <returns></returns>
+        public TransformBlock<TData, IEnumerable<KeyValuePair<string, object>>> GetBlock()
         {
-            var block = new TransformBlock<IntegratedDocument, IEnumerable<KeyValuePair<string, object>>>((doc) =>
+            var block = new TransformBlock<TData, IEnumerable<KeyValuePair<string, object>>>((doc) =>
             {
                 return GetFeatures(doc);
             });
             return block;
         }
-        public abstract IEnumerable<KeyValuePair<string, object>> GetFeatures(IntegratedDocument intDoc);
+        /// <summary>
+        /// Gets the feature pairs from a document
+        /// </summary>
+        /// <param name="intDoc"></param>
+        /// <returns></returns>
+        public abstract IEnumerable<KeyValuePair<string, object>> GetFeatures(TData intDoc);
     }
 }

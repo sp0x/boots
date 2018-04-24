@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using Netlyt.Interfaces;
 using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Integration.Encoding
@@ -13,7 +14,7 @@ namespace Netlyt.Service.Integration.Encoding
     public class FieldEncoder
     {
         private DataIntegration _integration;
-        private IEnumerable<FieldDefinition> _encodedFields;
+        private IEnumerable<IFieldDefinition> _encodedFields;
         private IEnumerable<FieldEncoding> _encoders;
 
         public FieldEncoder(DataIntegration ign)

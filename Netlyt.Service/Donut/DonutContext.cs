@@ -2,12 +2,14 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic; 
 using System.Linq;
+using Donut;
 using MongoDB.Driver;
 using nvoid.db;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.Integration;
+using Netlyt.Interfaces;
 using Netlyt.Service.Integration; 
 using StackExchange.Redis;
 
@@ -17,18 +19,18 @@ namespace Netlyt.Service.Donut
     /// <summary>
     /// 
     /// </summary>
-    public class DonutContext : EntityMetaContext, ISetCollection, IDisposable
+    public class DonutContext : EntityMetaContext, ISetCollection, IDisposable, IDonutContext
     {
         private readonly object _cacheLock = new object();
-        private readonly RedisCacher _cacher;
-        public DataIntegration Integration { get; set; }
+        private readonly IRedisCacher _cacher;
+        public IIntegration Integration { get; set; }
         private ConcurrentDictionary<string, List<HashEntry>> CurrentCache { get; set; }
         private readonly IDictionary<Type, ICacheSet> _sets = new Dictionary<Type, ICacheSet>();
         private readonly IDictionary<Type, IDataSet> _dataSets = new Dictionary<Type, IDataSet>(); 
 
         public string Prefix { get; set; }
-        public ApiAuth ApiAuth { get; private set; }
-        public RedisCacher Database => _cacher;
+        public IApiAuth ApiAuth { get; private set; }
+        public IRedisCacher Database => _cacher;
         private int _currentCacheRunIndex;
         private CachingPersistеnceService _cachingService;
 
@@ -36,7 +38,7 @@ namespace Netlyt.Service.Donut
         /// The entity interval on which to cache the values.
         /// </summary>
         public int CacheRunInterval { get; private set; }
-        public DonutContext(RedisCacher cacher, DataIntegration integration, IServiceProvider serviceProvider)
+        public DonutContext(IRedisCacher cacher, DataIntegration integration, IServiceProvider serviceProvider)
         {
             _cacher = cacher;
             ApiAuth = integration.APIKey;

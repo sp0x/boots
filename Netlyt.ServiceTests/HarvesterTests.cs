@@ -48,7 +48,7 @@ namespace Netlyt.ServiceTests
             var harvester = new Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
-            var outBlock = new IntegrationActionBlock(appId, (action, x) => { });
+            var outBlock = new IntegrationActionBlock<IntegratedDocument>(appId, (action, x) => { });
             harvester.SetDestination(outBlock);
             harvester.AddIntegrationSource(fileSource, apiObj, null); 
             var hresult = await harvester.Run();
@@ -72,7 +72,7 @@ namespace Netlyt.ServiceTests
             var harvester = new Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
-            var outBlock = new IntegrationActionBlock(appId, (action, x) => { });
+            var outBlock = new IntegrationActionBlock<IntegratedDocument>(appId, (action, x) => { });
             harvester.SetDestination(outBlock);
             harvester.AddIntegrationSource(fileSource, apiObj, null);
             Assert.True(harvester.IntegrationSets.Count > 0);
@@ -98,7 +98,7 @@ namespace Netlyt.ServiceTests
 
             Assert.Equal(harvester.ThreadCount, threadCount);
             type.APIKey = apiObj; 
-            var outBlock = new IntegrationActionBlock(appId, (action, x) =>
+            var outBlock = new IntegrationActionBlock<IntegratedDocument>(appId, (action, x) =>
             { });
             harvester.SetDestination(outBlock);
             harvester.AddType(type, fileSource);

@@ -31,15 +31,19 @@ namespace $Namespace
         {
         }
         
-        public override async Task OnFinished()
+        public override async Task PrepareExtraction()
         {
             var groupKeys = new BsonDocument();
             var groupFields = new BsonDocument();
             var projections = new BsonDocument();
             var pipeline = new List<BsonDocument>(); 
 
-            $OnFinished
+            $PrepareExtraction
+        }
 
+		public override async Task OnFinished()
+        {
+            $OnFinished
         }
 
         public override void ProcessRecord(IntegratedDocument intDoc){

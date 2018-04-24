@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Netlyt.Interfaces;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Encoding;
 using Netlyt.Service.Ml;
@@ -47,11 +48,11 @@ namespace Netlyt.Service.Orion
                     collection["timestamp"] = cl.TimestampField;
                     collection["internal_entity_keys"] = null;
                     var binFields =
-                        cl.Integration.Fields.Where(x => x.DataEncoding == Source.FieldDataEncoding.BinaryIntId);
+                        cl.Integration.Fields.Where(x => x.DataEncoding == FieldDataEncoding.BinaryIntId);
                     collection["fields"] = new JArray();
                     foreach (var fld in cl.Integration.Fields)
                     {
-                        var isEncoded = fld.DataEncoding != Source.FieldDataEncoding.None;
+                        var isEncoded = fld.DataEncoding != FieldDataEncoding.None;
                         if (!isEncoded)
                         {
                             var jField = new JObject();

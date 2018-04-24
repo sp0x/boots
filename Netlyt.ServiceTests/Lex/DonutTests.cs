@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Threading.Tasks;
+using Donut;
 using MongoDB.Bson;
 using MongoDB.Driver; 
 using nvoid.db.Caching;
@@ -11,6 +12,7 @@ using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.db.Extensions;
 using nvoid.Integration;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
@@ -98,9 +100,7 @@ namespace Netlyt.ServiceTests.Lex
             //Import any data that we need beforehand, because we'll used it in this flow.
             var demographyImport = await AddDemographyData(); 
 
-            //Donut
-            //hehe
-            var donutMachine = new DonutBuilder<NetinfoDonutfile, NetinfoDonutContext>(integration, _cacher, _serviceProvider);
+            var donutMachine = new DonutBuilder<NetinfoDonutfile, NetinfoDonutContext, IntegratedDocument>(integration, _cacher, _serviceProvider);
             var donut = donutMachine.Generate(); 
             donut.SetupCacheInterval(source.Size);
             //Create our donut block. 
@@ -112,7 +112,7 @@ namespace Netlyt.ServiceTests.Lex
             //->bing in demographic data to the already grouped userbase
             //->pass the day_user document through FeatureGenerator to create it's features
             var featuresCollection = collectionName + "_features";
-            var donutRunner = new DonutRunner<NetinfoDonutfile, NetinfoDonutContext>(harvester, _dbConfig, featuresCollection);
+            var donutRunner = new DonutRunner<NetinfoDonutfile, NetinfoDonutContext, IntegratedDocument>(harvester, _dbConfig, featuresCollection);
             var result = await donutRunner.Run(donut, GetFeatureGenerator(donut)); 
             
             Debug.WriteLine(result.ProcessedEntries);

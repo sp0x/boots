@@ -11,6 +11,7 @@ using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.Integration;
 using Netlyt.Data;
+using Netlyt.Interfaces;
 using Netlyt.Service.Data;
 using Netlyt.Service.Exceptions;
 using Netlyt.Service.Format;
@@ -127,7 +128,7 @@ namespace Netlyt.Service
         /// <param name="contextApiAuth"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        public DataIntegration GetByName(ApiAuth contextApiAuth, string name)
+        public DataIntegration GetByName(IApiAuth contextApiAuth, string name)
         {
             var integration = _context.Integrations
                 .Include(x => x.APIKey)

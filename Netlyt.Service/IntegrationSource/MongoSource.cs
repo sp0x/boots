@@ -8,6 +8,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
+using Netlyt.Interfaces;
 using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Source;

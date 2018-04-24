@@ -7,6 +7,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
+using Netlyt.Interfaces;
 using Netlyt.Service.Source;
 
 namespace Netlyt.Service.Integration.Encoding
@@ -24,7 +25,7 @@ namespace Netlyt.Service.Integration.Encoding
             {
                 var docFieldVal = doc[field.Name].ToString();
                 var categories = FieldCache[field.Name];
-                FieldExtra extrasCategory = null;
+                IFieldExtra extrasCategory = null;
                 extrasCategory = categories.GetOrAdd(docFieldVal, (key) =>
                 {
                     var newExtra = new FieldExtra()
@@ -50,7 +51,7 @@ namespace Netlyt.Service.Integration.Encoding
             return bvinary;
         }
 
-        public override async Task<BulkWriteResult<BsonDocument>> ApplyToField(FieldDefinition field, CancellationToken? cancellationToken = null)
+        public override async Task<BulkWriteResult<BsonDocument>> ApplyToField(IFieldDefinition field, CancellationToken? cancellationToken = null)
         {
             if (cancellationToken == null) cancellationToken = CancellationToken.None;
             var updateModels = new WriteModel<BsonDocument>[field.Extras.Extra.Count];
@@ -74,7 +75,7 @@ namespace Netlyt.Service.Integration.Encoding
             return null;
         }
 
-        public override DataIntegration GetEncodedIntegration(bool truncateDestination = false)
+        public override IIntegration GetEncodedIntegration(bool truncateDestination = false)
         {
             var databaseConfiguration = DBConfig.GetGeneralDatabase();
             var collection = Integration.Collection;
@@ -113,7 +114,7 @@ namespace Netlyt.Service.Integration.Encoding
             return Integration;
         }
 
-        public override IEnumerable<string> GetEncodedFieldNames(FieldDefinition fld)
+        public override IEnumerable<string> GetEncodedFieldNames(IFieldDefinition fld)
         {
             yield return fld.Name;
         }

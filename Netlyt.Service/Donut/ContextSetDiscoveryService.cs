@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq; 
-using nvoid.db.Caching; 
+using nvoid.db.Caching;
+using Netlyt.Interfaces;
 using Netlyt.Service.Integration;
 
 namespace Netlyt.Service.Donut
@@ -47,6 +48,7 @@ namespace Netlyt.Service.Donut
                             $"Integration data source unavailable: {integrationSource.IntegrationName}");
                     }
                     newSet.SetSource(integration.Collection);
+                    //newSet.SetAggregateKeys(integration.GetAggregateKeys());
                     //var integration = 
                     //newSet.SetSource(integrationSource.IntegrationName);
                 }

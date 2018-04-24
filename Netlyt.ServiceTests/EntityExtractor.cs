@@ -12,6 +12,7 @@ using nvoid.db.DB;
 using nvoid.exec.Blocks;
 using nvoid.extensions;
 using nvoid.Integration;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data; 
 using Netlyt.Service.Format;
@@ -97,7 +98,7 @@ namespace Netlyt.ServiceTests
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>());   
             var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService);
             var type = harvester.AddIntegrationSource(fileSource, _apiAuth, null, true); 
-            var grouper = new GroupingBlock(_apiAuth, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
+            var grouper = new GroupingBlock<IntegratedDocument>(_apiAuth, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
             var saver = new MongoSink<IntegratedDocument>(_apiAuth.AppId);
             var demographyImporter = new EntityDataImporter(demographySheet, true);
             //demographyImporter.SetEntityRelation((input, x) => input[0] == x.Document["uuid"]);
@@ -111,7 +112,7 @@ namespace Netlyt.ServiceTests
             //demographyImporter.Helper = helper;
             //grouper.Helper = helper;
             
-            grouper.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
+            grouper.LinkTo(DataflowBlock.NullTarget<IIntegratedDocument>());
             demographyImporter.LinkTo(DataflowBlock.NullTarget<IntegratedDocument>());
 
             //var featureGen = new NetinfoFeatureGeneratorHelper() { Helper = helper};
@@ -164,7 +165,7 @@ namespace Netlyt.ServiceTests
             }
         }
 
-        private object GroupDocuments(IntegratedDocument arg)
+        private object GroupDocuments(IIntegratedDocument arg)
         {
             var argDocument = arg.GetDocument();
             var uuid = argDocument["uuid"].ToString();
@@ -172,7 +173,7 @@ namespace Netlyt.ServiceTests
             return $"{uuid}_{date.Day}"; //_{date.Day}";
         }
          
-        private void DumpUsergroupSessionsToCsv(GroupingBlock usersData)
+        private void DumpUsergroupSessionsToCsv(GroupingBlock<IntegratedDocument> usersData)
         {
             var userValues = usersData.EntityDictionary.Values;
             var outputFile = Path.Combine(Environment.CurrentDirectory, "payingBrowsingSessions.csv");
@@ -227,7 +228,7 @@ namespace Netlyt.ServiceTests
         /// <param name="fromBlock"></param>
         private void OnUsersGrouped(EntityDataImporter dataImporter, IFlowBlock fromBlock)
         {
-            var grouper = fromBlock as GroupingBlock;
+            var grouper = fromBlock as GroupingBlock<IntegratedDocument>;
             var userValues = grouper.EntityDictionary.Values; 
             //var today = DateTime.Today;
             var dateHelper = new DateHelper();
@@ -269,7 +270,7 @@ namespace Netlyt.ServiceTests
             dataImporter.PostAll(userValues);
         }
 
-        private void OnUserDemographyImported(NetinfoFeatureGeneratorHelper gen, GroupingBlock usersData)
+        private void OnUserDemographyImported(NetinfoFeatureGeneratorHelper gen, GroupingBlock<IntegratedDocument> usersData)
         { 
             var userValues = usersData.EntityDictionary.Values;
             //gen.Helper.GroupDemographics(); //readd
@@ -281,7 +282,7 @@ namespace Netlyt.ServiceTests
         /// Format the initial user data
         /// </summary>
         /// <param name="obj"></param>
-        private void FilterUserCreatedData(IntegratedDocument obj)
+        private void FilterUserCreatedData(IIntegratedDocument obj)
         {
             var objDocument = obj.GetDocument();
             var date = DateTime.Parse(objDocument["ondate"].ToString());
@@ -298,7 +299,7 @@ namespace Netlyt.ServiceTests
         /// </summary>
         /// <param name="accumulator"></param>
         /// <param name="newEntry"></param>
-        private object AccumulateUserEvent(IntegratedDocument accumulator, BsonDocument newEntry)
+        private object AccumulateUserEvent(IIntegratedDocument accumulator, BsonDocument newEntry)
         {
             var value = newEntry["value"]?.ToString();
             var onDate = newEntry["ondate"].ToString();

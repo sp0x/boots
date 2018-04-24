@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using MongoDB.Bson;
 using nvoid.db.DB;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Format;
@@ -36,9 +37,9 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             _apiService.Register(_apiAuth);
         }
 
-        private GroupingBlock GetGrouper(ApiAuth apiAuth)
+        private GroupingBlock<IntegratedDocument> GetGrouper(ApiAuth apiAuth)
         {
-            var grouper = new GroupingBlock(apiAuth,
+            var grouper = new GroupingBlock<IntegratedDocument>(apiAuth,
                 (document) => $"{document.GetString("uuid")}_{document.GetDate("ondate")?.Day}",
                 (document) => document.Define("noticed_date", document.GetDate("ondate")).RemoveAll("event_id", "ondate", "value", "type"),
                 (accumulated, document) =>
@@ -85,7 +86,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
 
             var grouper = GetGrouper(_apiAuth);
             var statsCounter = 0;
-            var statsBlock = new StatsBlock((visit) =>
+            var statsBlock = new StatsBlock<IntegratedDocument>((visit) =>
             { 
                 Interlocked.Increment(ref statsCounter);
                 Thread.Sleep(1000);

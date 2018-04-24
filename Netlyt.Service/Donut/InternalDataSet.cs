@@ -1,7 +1,5 @@
-﻿using MongoDB.Driver;
-using nvoid.db;
-using nvoid.db.Caching;
-using nvoid.db.DB;
+﻿using nvoid.db;
+using Netlyt.Interfaces;
 
 namespace Netlyt.Service.Donut
 {
@@ -10,6 +8,10 @@ namespace Netlyt.Service.Donut
 
         public InternalDataSet(ISetCollection context)
         { 
+        }
+
+        protected InternalDataSet()
+        {
         }
     }
 }

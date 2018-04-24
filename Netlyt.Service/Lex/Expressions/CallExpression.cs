@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using Donut;
+using Netlyt.Interfaces;
 using Netlyt.Service.Lex.Expressions;
 using Netlyt.Service.Lex.Parsing;
 
@@ -10,14 +13,14 @@ namespace Netlyt.Service.Lex.Expressions
         : Expression
     {
         public string Name { get; set; }
-        public List<ParameterExpression> Parameters { get; private set; }
+        public List<IParameterExpression> Parameters { get; private set; }
 
         public CallExpression()
         {
-            Parameters = new List<ParameterExpression>();
+            Parameters = new List<IParameterExpression>();
         }
 
-        public override IEnumerable<IExpression> GetChildren() => Parameters;
+        public override IEnumerable<IExpression> GetChildren() => Parameters.Cast<IExpression>();
 
         public void AddParameter(ParameterExpression fnParameter)
         {

@@ -8,6 +8,7 @@ using nvoid.extensions;
 using Netlyt.Service;
 using Netlyt.Service.Integration; 
 using Netlyt.Service.Time;
+using Netlyt.Service.FeatureGeneration;
 
 namespace $Namespace
 {

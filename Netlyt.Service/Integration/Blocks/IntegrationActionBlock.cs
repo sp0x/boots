@@ -2,15 +2,16 @@
 using System.Collections.Generic;
 using System.Text;
 using nvoid.exec.Blocks;
+using Netlyt.Interfaces;
 
 namespace Netlyt.Service.Integration.Blocks
 {
-    public class IntegrationActionBlock 
-        : BaseFlowBlock<IntegratedDocument, IntegratedDocument>
+    public class IntegrationActionBlock<T> : BaseFlowBlock<T, T>
+        where T : class, IIntegratedDocument
     {
-        private Func<IntegrationActionBlock, IntegratedDocument, IntegratedDocument> _action; 
+        private Func<IntegrationActionBlock<T>, T, T> _action; 
 
-        public IntegrationActionBlock(string appId, Action<IntegrationActionBlock, IntegratedDocument> action, int threadCount = 4)
+        public IntegrationActionBlock(string appId, Action<IntegrationActionBlock<T>, T> action, int threadCount = 4)
             :base(capacity: 100000, procType: BlockType.Action, threadCount: threadCount)
         {
             this.AppId = appId;
@@ -21,7 +22,7 @@ namespace Netlyt.Service.Integration.Blocks
             });
         }
 
-        public IntegrationActionBlock(Action<IntegrationActionBlock, IntegratedDocument> action, int threadCount = 4)
+        public IntegrationActionBlock(Action<IntegrationActionBlock<T>, T> action, int threadCount = 4)
             : base(capacity: 100000, procType: BlockType.Action, threadCount: threadCount)
         {
             _action = ((act, x) =>
@@ -31,14 +32,14 @@ namespace Netlyt.Service.Integration.Blocks
             });
         }
 
-        public IntegrationActionBlock(string appId, Func<IntegrationActionBlock, IntegratedDocument, IntegratedDocument> action, int threadCount = 4)
+        public IntegrationActionBlock(string appId, Func<IntegrationActionBlock<T>, T, T> action, int threadCount = 4)
             : base(capacity: 100000, procType: BlockType.Action, threadCount: threadCount)
         {
             this.AppId = appId;
             _action = action;
         }
 
-        public IntegrationActionBlock(string appId, Action<IntegrationActionBlock, IntegratedDocument> action)
+        public IntegrationActionBlock(string appId, Action<IntegrationActionBlock<T>, T> action)
             : base(capacity: 100000, procType: BlockType.Action, threadCount : 4)
         {
             AppId = appId;
@@ -49,12 +50,12 @@ namespace Netlyt.Service.Integration.Blocks
             });
         }
 
-        protected override IEnumerable<IntegratedDocument> GetCollectedItems()
+        protected override IEnumerable<T> GetCollectedItems()
         {
             return null;
         }
 
-        protected override IntegratedDocument OnBlockReceived(IntegratedDocument intDoc)
+        protected override T OnBlockReceived(T intDoc)
         {
             var output = _action(this, intDoc);
             return output;

@@ -1,11 +1,13 @@
-﻿namespace Netlyt.Service.Source
+﻿using Netlyt.Interfaces;
+
+namespace Netlyt.Service.Source
 {
-    public class FieldExtra
+    public class FieldExtra : IFieldExtra
     {
         public long Id { get; set; }
         public string Key { get; set; }
         public string Value { get; set; }
-        public FieldDefinition Field { get; set; }
+        public IFieldDefinition Field { get; set; }
         public FieldExtraType Type { get; set; }
 
         public FieldExtra()
@@ -20,9 +22,5 @@
         }
     }
 
-    public enum FieldExtraType
-    {
-        None,
-        Dummy
-    }
+
 }

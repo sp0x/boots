@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using nvoid.db.DB;
 using nvoid.db.Extensions;
 using nvoid.Integration;
+using Netlyt.Interfaces;
 using Netlyt.Service.Ml;
 
 namespace Netlyt.Service

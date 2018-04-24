@@ -8,6 +8,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
+using Netlyt.Interfaces;
 using Netlyt.Service.Integration.Import;
 using Netlyt.Service.Source;
 
@@ -16,15 +17,15 @@ namespace Netlyt.Service.Integration.Encoding
     public abstract class FieldEncoding : IFieldEncoder
     {
         private FieldEncodingOptions _options;
-        private DataIntegration _integration;
+        private IIntegration _integration;
         private IMongoCollection<BsonDocument> _records;
-        private List<FieldDefinition> _targetFields;
-        private Dictionary<string, ConcurrentDictionary<string, FieldExtra>> _fieldDict;
+        private List<IFieldDefinition> _targetFields;
+        private Dictionary<string, ConcurrentDictionary<string, IFieldExtra>> _fieldDict;
         public FieldDataEncoding Encoding { get; set; }
-        protected List<FieldDefinition> TargetFields => _targetFields;
-        protected DataIntegration Integration => _integration;
+        protected List<IFieldDefinition> TargetFields => _targetFields;
+        protected IIntegration Integration => _integration;
         protected IMongoCollection<BsonDocument> Records => _records;
-        protected Dictionary<string, ConcurrentDictionary<string, FieldExtra>> FieldCache
+        protected Dictionary<string, ConcurrentDictionary<string, IFieldExtra>> FieldCache
         {
             get { return _fieldDict; }
             set { _fieldDict = value; }
@@ -39,16 +40,16 @@ namespace Netlyt.Service.Integration.Encoding
             var dstCollection = new MongoList(databaseConfiguration, collection);
             _records = dstCollection.Records;
             _targetFields = _integration.Fields.Where(x => x.DataEncoding == encoding).ToList();
-            _fieldDict = new Dictionary<string, ConcurrentDictionary<string, FieldExtra>>();
+            _fieldDict = new Dictionary<string, ConcurrentDictionary<string, IFieldExtra>>();
             foreach (var fld in TargetFields)
             {
                 if (fld.Extras == null)
                 {
-                    var dict1 = new ConcurrentDictionary<string, FieldExtra>();
+                    var dict1 = new ConcurrentDictionary<string, IFieldExtra>();
                     _fieldDict.Add(fld.Name, dict1);
                     continue;
                 }
-                var dict = new ConcurrentDictionary<string, FieldExtra>(fld.Extras.Extra.ToDictionary(x => x.Value));
+                var dict = new ConcurrentDictionary<string, IFieldExtra>(fld.Extras.Extra.ToDictionary(x => x.Value));
                 _fieldDict[fld.Name] = dict;
             }
         }
@@ -63,8 +64,8 @@ namespace Netlyt.Service.Integration.Encoding
                 await ApplyToField(field, cancellationToken);
             }
         }
-        public abstract Task<BulkWriteResult<BsonDocument>> ApplyToField(FieldDefinition field, CancellationToken? cancellationToken = null);
-        public abstract DataIntegration GetEncodedIntegration(bool truncateDestination = false);
+        public abstract Task<BulkWriteResult<BsonDocument>> ApplyToField(IFieldDefinition field, CancellationToken? cancellationToken = null);
+        public abstract IIntegration GetEncodedIntegration(bool truncateDestination = false);
         /// <summary>
         /// 
         /// </summary>
@@ -102,7 +103,7 @@ namespace Netlyt.Service.Integration.Encoding
         }
 
 
-        public IEnumerable<string> GetFieldNames(FieldDefinition fld)
+        public IEnumerable<string> GetFieldNames(IFieldDefinition fld)
         {
             if (fld.Extras == null)
             {
@@ -121,7 +122,7 @@ namespace Netlyt.Service.Integration.Encoding
             }
         }
 
-        public virtual IEnumerable<string> GetEncodedFieldNames(FieldDefinition fld)
+        public virtual IEnumerable<string> GetEncodedFieldNames(IFieldDefinition fld)
         {
             yield break;
         }
