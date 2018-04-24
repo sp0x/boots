@@ -96,10 +96,10 @@ namespace Netlyt.Service.Build
         ///
         /// <returns>   An EmitResult. </returns>
 
-        public EmitResultAssembly Compile(params string[] sources)
+        public EmitResultAssembly Compile(params SourceContent[] sources)
         {
             var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
-            var trees = sources.Select(x => CSharpSyntaxTree.ParseText(x));
+            var trees = sources.Select(x => CSharpSyntaxTree.ParseText(x.Content, path: x.File));
             var compilation = CSharpCompilation.Create(_assemblyName,
                 syntaxTrees : trees,
                 options : options,
@@ -132,7 +132,7 @@ namespace Netlyt.Service.Build
         ///
         /// <returns>   An Assembly. </returns>
 
-        public Assembly CompileAndGetAssembly(params string[] sources)
+        public Assembly CompileAndGetAssembly(params SourceContent[] sources)
         {
             var result = Compile(sources);
             if (!result.Result.Success)

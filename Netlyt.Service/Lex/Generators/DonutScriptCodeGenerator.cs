@@ -78,11 +78,15 @@ namespace Netlyt.Service.Lex.Generators
             {
                 donutTemplate = reader.ReadToEnd();
                 if (string.IsNullOrEmpty(donutTemplate)) throw new Exception("Template empty!");
+                donutTemplate = $"//Generated on {DateTime.UtcNow} UTC\n" + donutTemplate;
                 donutTemplate = donutTemplate.Replace("$Namespace", @namespace);
                 donutTemplate = donutTemplate.Replace("$ClassName", baseName);
                 donutTemplate = donutTemplate.Replace("$ContextTypeName", conutextName);
                 donutTemplate = donutTemplate.Replace("$ExtractionBody", GetFeaturePrepContent(script));
                 donutTemplate = donutTemplate.Replace("$OnFinished", GenerateOnDonutFinishedContent(script));
+                donutTemplate += "\n\n\n" +
+                                 "/* Donut script: \n" + script.ToString() +
+                                 "\n*/"; 
                 //Items: $ClassName, $ContextTypeName, $ExtractionBody, $OnFinished
             }
             return donutTemplate;

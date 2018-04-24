@@ -465,11 +465,14 @@ namespace Netlyt.Service.Lex.Generators
             if (!HasGroupingKeys && HasGroupingFields)
             {
                 var groupKey = "";
-                if (_rootIntegration != null && !string.IsNullOrEmpty(_rootIntegration.DataTimestampColumn))
+                var tsKey = _rootIntegration.DataTimestampColumn;
+                if (_rootIntegration != null && !string.IsNullOrEmpty(tsKey))
                 {
-                    groupKey += "var idSubKey1 = new BsonDocument { { \"idKey\", \"$_id\" } };\n";
+                    groupKey += "var idSubKey1 = new BsonDocument { { \"tsHour\", new BsonDocument{" +
+                                "{ \"$hour\", \"$" + tsKey + "\"}" +
+                                "} }};\n";
                     groupKey += "var idSubKey2 = new BsonDocument { { \"tsKey\", new BsonDocument{" +
-                                "{ \"$dayOfYear\", \"$" + _rootIntegration.DataTimestampColumn + "\"}" +
+                                "{ \"$dayOfYear\", \"$" + tsKey + "\"}" +
                                 "} } };\n";
                     groupKey += $"groupKeys.Merge(idSubKey1);\n" +
                                 $"groupKeys.Merge(idSubKey2);\n" +

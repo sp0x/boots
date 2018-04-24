@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Moq;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
@@ -19,6 +20,7 @@ using Netlyt.Service.Ml;
 using Netlyt.Service.Orion;
 using Netlyt.Service.Source;
 using Netlyt.ServiceTests.Fixtures;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Netlyt.ServiceTests.FeatureGeneration
@@ -37,7 +39,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         private UserService _userService;
         private ModelService _modelService;
         private User _user;
-        private OrionContext _orion;
+        private IOrionContext _orion;
         private TimestampService _timestampService;
 
         public FeatureGenerationTests(DonutConfigurationFixture fixture)
@@ -50,6 +52,10 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
             _db = fixture.GetService<ManagementDbContext>();
             _orion = fixture.GetService<OrionContext>();
+//            var orionCtx = new Mock<IOrionContext>();
+//            orionCtx.Setup(m => m.Query(It.IsAny<OrionQuery>())).ReturnsAsync(new JObject { {"id", 1} });
+//            _orion = orionCtx.Object;
+
             _user = _userService.GetByApiKey(_appAuth);
             if (_user == null)
             {
@@ -63,38 +69,15 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             _timestampService = new TimestampService(_db);
         }
 
-        private Model GetModel(string modelName = "Romanian", string integrationName = "Namex")
-        {
-            var ignName = modelName;//Must match the features
-            var model = new Model()
-            {
-                ModelName = modelName
-            };//_db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
-            var rootIntegration = new DataIntegration(integrationName, true)
-            {
-                APIKey = _appAuth,
-                APIKeyId = _appAuth.Id,
-                Name = ignName,
-                DataTimestampColumn = "timestamp",
-            };
-            rootIntegration.AddField<double>("humidity");
-            rootIntegration.AddField<double>("latitude");
-            rootIntegration.AddField<double>("longitude");
-            rootIntegration.AddField<double>("pm10");
-            rootIntegration.AddField<double>("pm25");
-            rootIntegration.AddField<double>("pressure");
-            rootIntegration.AddField<double>("rssi");
-            rootIntegration.AddField<double>("temperature");
-            rootIntegration.AddField<DateTime>("timestamp");
-            var modelIntegration = new ModelIntegration() { Model = model, Integration = rootIntegration };
-            model.DataIntegrations.Add(modelIntegration);
-            return model;
-        }
+        
 
+        /// <summary>
+        /// 
+        /// </summary>
         [Fact]
-        public void CreateFeatureGenerationRequest()
+        public async Task CreateFeatureGenerationRequest()
         { 
-            var newModel = GetModel();
+            var newModel = Utils.GetModel(_appAuth);
             var targetAttribute = "pm10";
             var rootIgn = newModel.GetRootIntegration();
             var fldCategory = rootIgn.AddField<string>("category", FieldDataEncoding.BinaryIntId);
@@ -107,22 +90,21 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             fldEvent.Extras.Extra.Add(new FieldExtra("event2", "stay"));
             var collections = newModel.GetFeatureGenerationCollections(targetAttribute);
             var query = OrionQuery.Factory.CreateFeatureGenerationQuery(newModel, collections, null, targetAttribute);
+            //var queryResult = await _orion.Query(query);
             var jsQuery = query.Serialize();
             var jsFields = jsQuery["params"]["collections"][0]["fields"];
             Assert.Equal(12, jsFields.Count());
+
         }
 
         [Fact]
         public async Task TrainGeneratedFeatures()
         {
-            Model model = _db.Models
-                .Include(x => x.DataIntegrations)
-                .Include(x => x.User)
-                .FirstOrDefault(x => x.Id == 224);
-            DataIntegration ign = _db.Integrations.FirstOrDefault(x => x.Id == model.DataIntegrations.FirstOrDefault().IntegrationId);
+            Model model = Utils.GetModel(_appAuth);
+            DataIntegration ign = model.GetRootIntegration();
             var query = OrionQuery.Factory.CreateTrainQuery(model, ign);
-            var m_id = await _orion.Query(query);
-            m_id = m_id;
+            //var payload = query.Serialize();
+            Assert.True(query.Operation == OrionOp.Train);
         }
 
 
@@ -158,7 +140,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         [Fact]
         public async Task TestGeneratedUnderscoreFeatures()
         {
-            var model = GetModel();
+            var model = Utils.GetModel(_appAuth);
             var features = @"MIN(Romanian.rssi)
 DAY(first_Romanian_time)
 YEAR(first_Romanian_time)
@@ -179,7 +161,7 @@ WEEKDAY(first_Romanian_time)";
         [Fact]
         public async Task TestGeneratedNestedFeatures()
         {
-            var model = GetModel();
+            var model = Utils.GetModel(_appAuth);
             string features = @"MIN(Romanian.WEEKDAY(timestamp))";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
@@ -199,7 +181,7 @@ WEEKDAY(first_Romanian_time)";
         [Fact]
         public async Task TestGeneratedNestedDotFeatures()
         {
-            var model = GetModel("feature_test.csv", "feature_test.csv");
+            var model = Utils.GetModel(_appAuth, "feature_test.csv", "feature_test.csv");
             string features = @"SUM(feature_test.csv.humidity)";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
@@ -325,6 +307,7 @@ WEEKDAY(first_Romanian_time)";
             }, 100);
             return collection;
         }
+
         private void FillCollection(IMongoCollection<BsonDocument> collection, Func<BsonDocument> generator, int count)
         {
             for (int i = 0; i < count; i++)

@@ -80,7 +80,11 @@ namespace Netlyt.Service.Donut
             var projectDefinition = builder.GenerateProjectDefinition(assemblyName, _script);
             WriteDonutCode(assemblyName, $"{assemblyName}.csproj", projectDefinition);
 #endif
-            var emitResult = builder.Compile(generatedContext, generatedDonut, generatedFeatureGen);
+            var sources = new List<SourceContent>();
+            sources.Add(new SourceContent(generatedContext, "DonutContext.cs"));
+            sources.Add(new SourceContent(generatedDonut, "DonutFile.cs"));
+            sources.Add(new SourceContent(generatedFeatureGen, "FeatureEmitter.cs"));
+            var emitResult = builder.Compile(sources.ToArray());
             filePath = builder.Filepath;
             return emitResult;
         }

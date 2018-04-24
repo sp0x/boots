@@ -34,6 +34,11 @@ namespace Netlyt.Service.Donut
         private RedisCacher _cacher;
         private IEmailSender _emailService;
 
+        #region Events
+
+        public event EventHandler<Model> ModelFeaturesGenerated;
+        #endregion
+
         public DonutOrionHandler(IFactory<ManagementDbContext> contextFactory,
             OrionContext orion,
             CompilerService compilerService,
@@ -46,14 +51,14 @@ namespace Netlyt.Service.Donut
             _db = contextFactory.Create();
             _orion = orion;
 #pragma warning disable 4014
-            _orion.FeaturesGenerated += (x)=> _orion_FeaturesGenerated(x);
+            _orion.FeaturesGenerated += (x) => _orion_FeaturesGenerated(x);
             _orion.TrainingComplete += (x) => _orion_TrainingComplete(x);
 #pragma warning restore 4014
             _compiler = compilerService;
             _serviceProvider = serviceProvider;
             _apiService = apiService;
-            _integrationService = integrationService; 
-            _cacher = redisCacher; 
+            _integrationService = integrationService;
+            _cacher = redisCacher;
             _dbConfig = DBConfig.GetGeneralDatabase();
             _emailService = emailSender;
         }
@@ -98,10 +103,10 @@ namespace Netlyt.Service.Donut
             if (string.IsNullOrEmpty(fscript)) return;
             var features = fscript.Split('\n');
             var parameters = featureResult["params"];
-            long modelId = long.Parse(parameters["model_id"].ToString()); 
+            long modelId = long.Parse(parameters["model_id"].ToString());
             Model model = _db.Models
-                .Include(x=>x.DataIntegrations)
-                .Include(x=>x.User)
+                .Include(x => x.DataIntegrations)
+                .Include(x => x.User)
                 .FirstOrDefault(x => x.Id == modelId);
             if (model.User == null)
             {
@@ -111,11 +116,11 @@ namespace Netlyt.Service.Donut
             if (model == null) return;
             var modelIntegration = model.DataIntegrations.FirstOrDefault();
             var sourceIntegration = _db.Integrations
-                .Include(x=>x.APIKey)
-                .Include(x=>x.Fields)
-                .Include(x=>x.Models)
-                .Include(x=>x.Owner)
-                .Include(x=>x.PublicKey)
+                .Include(x => x.APIKey)
+                .Include(x => x.Fields)
+                .Include(x => x.Models)
+                .Include(x => x.Owner)
+                .Include(x => x.PublicKey)
                 .FirstOrDefault(x => x.Id == modelIntegration.IntegrationId);
             if (sourceIntegration == null)
             {
@@ -145,11 +150,10 @@ namespace Netlyt.Service.Donut
                 model.DonutScript.AssemblyPath = assembly.Location;
                 model.DonutScript.Model = model;
                 _db.SaveChanges();
-                //We got the model
-                //Start training
+                ModelFeaturesGenerated?.Invoke(this, model);
+                //We got the model, start training
                 var trainingResult = await TrainGeneratedFeatures(model, dscript, assembly, donutType, donutContextType,
                     donutFEmitterType);
-                trainingResult = trainingResult;
             }
             catch (Exception ex)
             {
@@ -167,10 +171,10 @@ namespace Netlyt.Service.Donut
         {
             var sourceIntegration = ds.Integrations.FirstOrDefault();
             sourceIntegration = _db.Integrations
-                .Include(x=>x.Fields)
-                .Include(x=>x.Extras)
-                .Include(x=>x.Models)
-                .Include(x=>x.APIKey)
+                .Include(x => x.Fields)
+                .Include(x => x.Extras)
+                .Include(x => x.Models)
+                .Include(x => x.APIKey)
                 .FirstOrDefault(x => x.Id == sourceIntegration.Id);
             var appAuth = sourceIntegration.APIKey;
             if (appAuth == null) appAuth = sourceIntegration.PublicKey;
@@ -195,10 +199,10 @@ namespace Netlyt.Service.Donut
             var m_id = await _orion.Query(query);
             return m_id;
         }
-         
+
 
         public void Dispose()
-        { 
+        {
         }
     }
 }

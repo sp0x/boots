@@ -13,7 +13,7 @@ namespace Netlyt.Service.Orion
     public delegate void TrainingComplete(JObject featureResult);
     public delegate void PredictionReady(JObject featureResult);
 
-    public class OrionContext
+    public class OrionContext : IOrionContext
     {
         private OrionClient _client;
         private OrionEventsListener _eventListener;
@@ -22,10 +22,13 @@ namespace Netlyt.Service.Orion
         private int _outputPort;
         private ITargetBlock<IntegratedDocument> _actionBlock;
         private int _eventsPort;
+
+#region Events
         public event OrionEventsListener.OrionEventHandler NewMessage;
         public event FeaturesGenerated FeaturesGenerated;
         public event TrainingComplete TrainingComplete;
         public event TrainingComplete PredictionReady;
+#endregion
 
         public OrionContext()
         {
