@@ -12,6 +12,7 @@ using Donut.Orion;
 using Microsoft.EntityFrameworkCore;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service.Data;
 using Netlyt.Service.FeatureGeneration;
@@ -43,6 +44,7 @@ namespace Netlyt.Service.Donut
             IServiceProvider serviceProvider,
             ApiService apiService,
             IntegrationService integrationService,
+            IDatabaseConfiguration dbc,
             IRedisCacher redisCacher,
             IEmailSender emailSender)
         {
@@ -57,7 +59,7 @@ namespace Netlyt.Service.Donut
             _apiService = apiService;
             _integrationService = integrationService;
             _cacher = redisCacher;
-            _dbConfig = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            _dbConfig = dbc;
             _emailService = emailSender;
         }
 

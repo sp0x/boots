@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Donut;
 using Donut.Caching;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 
@@ -35,7 +37,7 @@ namespace Netlyt.ServiceTests.Fixtures
                 .EnableSensitiveDataLogging(true);
             var services = new ServiceCollection();
             _context = CreateContext();
-            DBConfig.Initialize(Configuration);
+            DBConfig.GetInstance(Configuration);
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider();
         }
@@ -45,10 +47,14 @@ namespace Netlyt.ServiceTests.Fixtures
         private void ConfigureServices(IServiceCollection services)
         {
             services.AddTransient<TimestampService>();
+            services.AddDonutDb(DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig());
             services.AddDbContext<ManagementDbContext>(s => s.UseInMemoryDatabase("Testing"));
             services.AddTransient<ApiService>(s => new ApiService(_context, null));
-            services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>(),
-                s.GetService<TimestampService>()));
+            services.AddTransient<IntegrationService>(s => new IntegrationService(_context, 
+                s.GetService<ApiService>(),
+                s.GetService<UserService>(),
+                s.GetService<TimestampService>(),
+                s.GetService<IDatabaseConfiguration>()));
             var redisCacher = DBConfig.GetInstance().GetCacheContext();
             services.AddSingleton<IRedisCacher>(redisCacher);
             services.AddTransient<CompilerService>();

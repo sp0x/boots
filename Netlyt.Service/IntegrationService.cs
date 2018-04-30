@@ -15,6 +15,7 @@ using nvoid.db.DB.MongoDB;
 using nvoid.Integration;
 using Netlyt.Data;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service.Data;
 using Netlyt.Service.Exceptions;
@@ -31,16 +32,19 @@ namespace Netlyt.Service
         private ApiService _apiService;
         private UserService _userService;
         private TimestampService _timestampService;
+        private IDatabaseConfiguration _dbConfig;
 
         public IntegrationService(ManagementDbContext context,
             ApiService apiService,
             UserService userService,
-            TimestampService tsService)
+            TimestampService tsService,
+            IDatabaseConfiguration dbConfig)
         {
             _context = context;
             _apiService = apiService;
             _userService = userService;
             _timestampService = tsService;
+            _dbConfig = dbConfig;
         }
 
         public void SaveOrFetchExisting(ref DataIntegration type)
@@ -106,10 +110,9 @@ namespace Netlyt.Service
         {
             _context.Integrations.Remove(importTaskIntegration);
             _context.SaveChanges();
-            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
             if (!string.IsNullOrEmpty(importTaskIntegration.Collection))
             {
-                var collection = new MongoList(dbc.Name, importTaskIntegration.Collection, dbc.GetUrl());
+                var collection = new MongoList(_dbConfig.Name, importTaskIntegration.Collection, _dbConfig.GetUrl());
                 collection.Trash();
                 collection = null;
             }
@@ -265,7 +268,8 @@ namespace Netlyt.Service
             var result = await importTask.Import();
             if (isNewIntegration)
             {
-                await importTask.Encode();
+                var collection = MongoHelper.GetCollection(integrationInfo.Collection);
+                await importTask.Encode(collection);
                 _context.Integrations.Add(integrationInfo);
             }
             _context.SaveChanges(); //Save any changes done to the integration.

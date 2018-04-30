@@ -11,9 +11,9 @@ namespace Donut.Encoding
     public interface IFieldEncoder
     {
         void Apply(BsonDocument doc);
-        Task ApplyToAllFields(CancellationToken? cancellationToken = null);
-        Task<BulkWriteResult<BsonDocument>> ApplyToField(IFieldDefinition field, CancellationToken? cancellationToken = null);
+        Task ApplyToAllFields(IMongoCollection<BsonDocument> collection, CancellationToken? cancellationToken = null);
+        Task<BulkWriteResult<BsonDocument>> ApplyToField(IFieldDefinition field, IMongoCollection<BsonDocument> collection, CancellationToken? cancellationToken = null);
         IIntegration GetEncodedIntegration(bool truncateDestination = false);
-        Task Run(CancellationToken? cancellationToken = null);
+        Task Run(IMongoCollection<BsonDocument> collection, CancellationToken? cancellationToken = null);
     }
 }

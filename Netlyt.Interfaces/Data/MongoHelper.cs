@@ -10,7 +10,18 @@ namespace Netlyt.Interfaces.Data
     {
         public static IMongoCollection<BsonDocument> GetCollection(string collectionName)
         {
-            throw new NotImplementedException();
+            var config = DonutDbConfig.GetConfig();
+            return GetCollection(config, collectionName);
+        }
+
+        public static IMongoCollection<BsonDocument> GetCollection(IDatabaseConfiguration dbc, string collectionName)
+        {
+            var db = GetDatabase(dbc);
+            IMongoCollection<BsonDocument> records;
+            if (null == (records = db.GetCollection<BsonDocument>(collectionName)))
+                db.CreateCollection(collectionName);
+            records = db.GetCollection<BsonDocument>(collectionName);
+            return records;
         }
 
         public static IMongoCollection<T> GetTypeCollection<T>() where T : class
@@ -20,7 +31,17 @@ namespace Netlyt.Interfaces.Data
 
         public static IMongoDatabase GetDatabase()
         {
-            throw new NotImplementedException();
+            var dbc = DonutDbConfig.GetConfig();
+            return GetDatabase(dbc);
+        }
+        public static IMongoDatabase GetDatabase(IDatabaseConfiguration dbc)
+        {
+            var murlBuilder = new MongoUrlBuilder(dbc.GetUrl());
+            murlBuilder.AuthenticationSource = "admin";
+            var murl = murlBuilder.ToMongoUrl();
+            var connection = new MongoClient(murl);
+            var db = connection.GetDatabase(murl.DatabaseName);
+            return db;
         }
     }
 

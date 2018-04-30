@@ -6,6 +6,7 @@ using Donut.Encoding;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.ServiceTests.Fixtures;
@@ -73,14 +74,14 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             Assert.True(categoryField.Extras.Extra.Count == 2);
             _db.Integrations.Add(newIntegration);
             _db.SaveChanges();
-            var result = await ht.ApplyToField(categoryField);
+            var dbc = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
+            var result = await ht.ApplyToField(categoryField, MongoHelper.GetCollection(dbc, newIntegration.Collection));
             Assert.Equal(5402, result.ModifiedCount);
             Assert.Equal(5402, result.MatchedCount);
             Assert.Equal(2, result.ProcessedRequests.Count);
             Assert.Equal(0, result.Upserts.Count);
             
             //Cleanup
-            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
             var dstCollection = new MongoList(dbc.Name, newIntegration.Collection, dbc.GetUrl());
             dstCollection.Trash();
         }
@@ -106,8 +107,9 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             _db.SaveChanges();
 
             Assert.True(categoryField.Extras.Extra.Count == 2);
+            var dbc = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
             //Apply it
-            var result = await ht.ApplyToField(categoryField);
+            var result = await ht.ApplyToField(categoryField, MongoHelper.GetCollection(dbc, newIntegration.Collection));
 
             Assert.Equal(1, result.ModifiedCount);
             Assert.Equal(5402, result.MatchedCount);
@@ -116,7 +118,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             var addResult = await _integrationService.AppendToIntegration(newIntegration, sourceFile, _appAuth);
             Assert.Equal(5402, addResult.Data.ProcessedEntries);
             //Cleanup
-            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            
             var dstCollection = new MongoList(dbc.Name, newIntegration.Collection, dbc.GetUrl());
             Assert.Equal(10804, dstCollection.Size);
             dstCollection.Trash();

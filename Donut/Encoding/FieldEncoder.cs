@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Donut.Integration;
 using Donut.Source;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using Netlyt.Interfaces;
 
 namespace Donut.Encoding
@@ -43,11 +44,11 @@ namespace Donut.Encoding
             }
         }
 
-        public async Task ApplyToAllFields(CancellationToken? ct)
+        public async Task ApplyToAllFields(IMongoCollection<BsonDocument> collection, CancellationToken? ct)
         {
             foreach (var encoding in _encoders)
             {
-                await encoding.ApplyToAllFields(ct);
+                await encoding.ApplyToAllFields(collection, ct);
                 if (ct != null && ct.Value.IsCancellationRequested) break;
             }
         }

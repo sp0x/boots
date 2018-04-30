@@ -60,7 +60,7 @@ namespace Netlyt.ServiceTests.Netinfo
             var cacheConfig = _config.Configuration.GetSection("cache");
             _redisConnection = cacheConfig.GetCacheConnection();
             _redisCacher = cacheConfig.GetCacheContext();
-            _dbConfig = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            _dbConfig = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
         }
 
         [Theory]

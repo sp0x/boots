@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
@@ -34,6 +35,7 @@ namespace Netlyt.Web
                 .AddDefaultTokenProviders();
             services.AddMemoryCache();
             services.AddSession();
+            services.AddDonutDb(DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig());
             services.AddSingleton(Configuration);
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
             services.AddSingleton<IRedisCacher>(DBConfig.GetInstance().GetCacheContext());

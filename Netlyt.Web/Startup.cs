@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -19,62 +19,60 @@ using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
-using Newtonsoft.Json; 
+using Newtonsoft.Json;
 
 namespace Netlyt.Web
 {
     public partial class Startup
-    { 
+    {
         public IConfiguration Configuration { get; private set; }
-        private OrionContext OrionContext { get; }
+        private IOrionContext OrionContext { get; set; }
 
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
             DBConfig.GetInstance(Configuration);
-            OrionContext = new OrionContext();
-            OrionContext.Configure(Configuration.GetSection("behaviour"));
-            OrionContext.Run();
-//            var dbConfig = DBConfig.GetGeneralDatabase();
-//            var mongoList = new MongoList(dbConfig, "1145146c-bff3-495f-ac1c-40afce4536fd");
-//            var featuresCollection = new MongoList(dbConfig, "1145146c-bff3-495f-ac1c-40afce4536fd_ftr");
-//            featuresCollection.Truncate();
-//            var recRom = mongoList.Records;
-//            var groupKeys = new BsonDocument();
-//            var groupFields = new BsonDocument();
-//            var projections = new BsonDocument();
-//            var pipeline = new List<BsonDocument>();
-//
-//            groupFields.Merge(BsonDocument.Parse(@"{""f_0"":{""$min"":""$rssi""}}"));
-//            groupFields.Merge(BsonDocument.Parse(@"{""g1817192762"":{""$first"":""$timestamp""}}"));
-//
-//            projections.Merge(new BsonDocument { { "f_0", "$f_0" } });
-//            projections.Merge(BsonDocument.Parse(@"{""f_1"":{""$dayOfMonth"":""$g1817192762""}}"));
-//            projections.Merge(BsonDocument.Parse(@"{""f_2"":{""$year"":""$g1817192762""}}"));
-//            projections.Merge(BsonDocument.Parse(@"{""f_3"":{""$month"":""$g1817192762""}}"));
-//            projections.Merge(BsonDocument.Parse(@"{""f_4"":{""$dayOfWeek"":""$g1817192762""}}"));
-//
-//            var idSubKey1 = new BsonDocument { { "idKey", "$_id" } };
-//            var idSubKey2 = new BsonDocument { { "tsKey", new BsonDocument { { "$dayOfYear", "$timestamp" } } } };
-//            groupKeys.Merge(idSubKey1);
-//            groupKeys.Merge(idSubKey2);
-//            var grouping = new BsonDocument();
-//            grouping["_id"] = groupKeys;
-//            grouping = grouping.Merge(groupFields);
-//            pipeline.Add(new BsonDocument{
-//                {"$group", grouping}});
-//            pipeline.Add(new BsonDocument{
-//                {"$project", projections} });
-//            pipeline.Add(new BsonDocument{
-//                {"$out", featuresCollection.CollectionName}}); 
+            //            var dbConfig = DBConfig.GetGeneralDatabase();
+            //            var mongoList = new MongoList(dbConfig, "1145146c-bff3-495f-ac1c-40afce4536fd");
+            //            var featuresCollection = new MongoList(dbConfig, "1145146c-bff3-495f-ac1c-40afce4536fd_ftr");
+            //            featuresCollection.Truncate();
+            //            var recRom = mongoList.Records;
+            //            var groupKeys = new BsonDocument();
+            //            var groupFields = new BsonDocument();
+            //            var projections = new BsonDocument();
+            //            var pipeline = new List<BsonDocument>();
+            //
+            //            groupFields.Merge(BsonDocument.Parse(@"{""f_0"":{""$min"":""$rssi""}}"));
+            //            groupFields.Merge(BsonDocument.Parse(@"{""g1817192762"":{""$first"":""$timestamp""}}"));
+            //
+            //            projections.Merge(new BsonDocument { { "f_0", "$f_0" } });
+            //            projections.Merge(BsonDocument.Parse(@"{""f_1"":{""$dayOfMonth"":""$g1817192762""}}"));
+            //            projections.Merge(BsonDocument.Parse(@"{""f_2"":{""$year"":""$g1817192762""}}"));
+            //            projections.Merge(BsonDocument.Parse(@"{""f_3"":{""$month"":""$g1817192762""}}"));
+            //            projections.Merge(BsonDocument.Parse(@"{""f_4"":{""$dayOfWeek"":""$g1817192762""}}"));
+            //
+            //            var idSubKey1 = new BsonDocument { { "idKey", "$_id" } };
+            //            var idSubKey2 = new BsonDocument { { "tsKey", new BsonDocument { { "$dayOfYear", "$timestamp" } } } };
+            //            groupKeys.Merge(idSubKey1);
+            //            groupKeys.Merge(idSubKey2);
+            //            var grouping = new BsonDocument();
+            //            grouping["_id"] = groupKeys;
+            //            grouping = grouping.Merge(groupFields);
+            //            pipeline.Add(new BsonDocument{
+            //                {"$group", grouping}});
+            //            pipeline.Add(new BsonDocument{
+            //                {"$project", projections} });
+            //            pipeline.Add(new BsonDocument{
+            //                {"$out", featuresCollection.CollectionName}}); 
             //var aggOptions = new AggregateOptions(){ AllowDiskUse = true, BatchSize=1 }; 
-//            var aggregateResult = recRom.Aggregate<BsonDocument>(pipeline, aggOptions);
+            //            var aggregateResult = recRom.Aggregate<BsonDocument>(pipeline, aggOptions);
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -82,16 +80,20 @@ namespace Netlyt.Web
         {
             // Register identity framework services and also Mongo storage. 
             var dbConfigInstance = DBConfig.GetInstance(Configuration);
-            var databaseConfiguration = DBConfig.GetInstance().GetGeneralDatabase(); 
-            if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!"); 
-            var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection"); 
+            var databaseConfiguration = DBConfig.GetInstance().GetGeneralDatabase();
+            if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!");
+            var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection");
             services.AddDbContext<ManagementDbContext>(options =>
                 {
                     options.UseNpgsql(postgresConnectionString);
                 }
             );
             //services.AddScoped<IDataAccessProvider, DataAccessPostgreSqlProvider.DataAccessPostgreSqlProvider>();
-             
+            services.AddTransient<IDatabaseConfiguration>((sp) =>
+                {
+                    return DonutDbConfig.GetOrAdd("general",
+                        DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig());
+                });
             services.AddIdentity<User, UserRole>()
                 .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();
@@ -107,12 +109,12 @@ namespace Netlyt.Web
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<OrionContext>(this.OrionContext);
+            OrionContext = services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { });
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();
             services.AddTransient<CompilerService>();
-            
+
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
             services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
@@ -146,11 +148,11 @@ namespace Netlyt.Web
         public void SetupAuthentication(IServiceCollection services)
         {
             services.AddHmacAuthentication();
-//            //Add cookie auth
-//            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-//                .AddCookie(options => {
-//                    options.LoginPath = "/user/Login/";
-//                });
+            //            //Add cookie auth
+            //            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            //                .AddCookie(options => {
+            //                    options.LoginPath = "/user/Login/";
+            //                });
             services.ConfigureApplicationCookie(options =>
             {
                 // Cookie settings
@@ -181,9 +183,9 @@ namespace Netlyt.Web
                 app.UseExceptionHandler("/Home/Error");
             }
             app.UseSession();
-            app.UseStaticFiles(); 
+            app.UseStaticFiles();
             var routeHelper = app.ApplicationServices.GetService<RoutingConfiguration>();
-            app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), builder => SetupApi(app, builder) );
+            app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), builder => SetupApi(app, builder));
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
@@ -225,7 +227,7 @@ namespace Netlyt.Web
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
-            builder.UseAuthentication(); 
+            builder.UseAuthentication();
             builder.Run(async (context) =>
             {
                 if (true)//!context.User.Identity.IsAuthenticated)

@@ -17,7 +17,7 @@ namespace Donut.Encoding
         {
         }
 
-        public override async Task<BulkWriteResult<BsonDocument>> ApplyToField(IFieldDefinition field, CancellationToken? cancellationToken = null)
+        public override async Task<BulkWriteResult<BsonDocument>> ApplyToField(IFieldDefinition field, IMongoCollection<BsonDocument> collection, CancellationToken? cancellationToken = null)
         {
             if (cancellationToken == null) cancellationToken = CancellationToken.None;
             var updateModels = new WriteModel<BsonDocument>[field.Extras.Extra.Count];
@@ -36,7 +36,7 @@ namespace Donut.Encoding
                 var actionModel = new UpdateManyModel<BsonDocument>(query, qrUpdateRoot);
                 updateModels[iModel++] = actionModel;
             }
-            var result = await Records.BulkWriteAsync(updateModels, new BulkWriteOptions()
+            var result = await collection.BulkWriteAsync(updateModels, new BulkWriteOptions()
             {
             }, cancellationToken.Value);
             return result;

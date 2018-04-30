@@ -11,6 +11,7 @@ using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
@@ -59,7 +60,7 @@ namespace Netlyt.ServiceTests.IntegrationTests
                 _userService.CreateUser(_user, "Password-IsStrong!", _appAuth);
             }
             _cacher = fixture.GetService<RedisCacher>();
-            _dbConfig = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            _dbConfig = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
             _serviceProvider = fixture.GetService<IServiceProvider>();
             _modelService = fixture.GetService<ModelService>();
             _timestampService = new TimestampService(_db);

@@ -5,12 +5,27 @@ using Donut.Caching;
 using Microsoft.Extensions.Configuration;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using StackExchange.Redis;
 
 namespace Netlyt.Service.Data
 {
     public static class Extensions
     {
+        public static DonutDbConfig ToDonutDbConfig(this DatabaseConfiguration dbc)
+        {
+            var ddb = new DonutDbConfig(dbc.Name, dbc.Role, dbc.Value);
+            switch (dbc.Type)
+            {
+                case nvoid.db.DB.DatabaseType.MongoDb:
+                    ddb.Type = Interfaces.Data.DatabaseType.MongoDb;
+                    break;
+                case nvoid.db.DB.DatabaseType.MySql:
+                    ddb.Type = Interfaces.Data.DatabaseType.MySql;
+                    break;
+            }
+            return ddb;
+        }
         /// <summary>
         /// 
         /// </summary>

@@ -19,6 +19,7 @@ using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Blocks;
+using Netlyt.Service.Data;
 
 namespace Netlyt.Service.Integration.Import
 {
@@ -97,7 +98,7 @@ namespace Netlyt.Service.Integration.Import
         public async Task<DataImportResult> Import(CancellationToken? cancellationToken = null, bool truncateDestination = false)
         {
 
-            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var dbc = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
             var dstCollection = new MongoList(dbc.Name, OutputDestinationCollection.OutputCollection, dbc.GetUrl());
 
             if (truncateDestination)
@@ -164,15 +165,15 @@ namespace Netlyt.Service.Integration.Import
                 OutputOptions = MapReduceOutputOptions.Replace(targetCollection)
             };
             if (inputDocumentsLimit > 0) mapReduceOptions.Limit = inputDocumentsLimit;
-            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var dbc = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
             var sourceCollection = new MongoList(dbc.Name, OutputDestinationCollection.OutputCollection, dbc.GetUrl());
             await sourceCollection.Records.MapReduceAsync<BsonDocument>(script.Map, script.Reduce, mapReduceOptions);
         }
 
-        public async Task Encode(CancellationToken? ct = null)
+        public async Task Encode(IMongoCollection<BsonDocument> collection, CancellationToken? ct = null)
         {
             if (ct == null) ct = CancellationToken.None;
-            await _oneHotEncoding.ApplyToAllFields(ct);
+            await _oneHotEncoding.ApplyToAllFields(collection, ct);
         }
     }
 }

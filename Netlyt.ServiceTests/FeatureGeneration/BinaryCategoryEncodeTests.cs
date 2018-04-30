@@ -10,6 +10,7 @@ using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.ServiceTests.Fixtures;
@@ -26,6 +27,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         private ManagementDbContext _db;
         private UserService _userService;
         private User _user;
+        private IDatabaseConfiguration _dbConfig;
 
         public BinaryCategoryEncodeTests(ConfigurationFixture fixture)
         {
@@ -38,6 +40,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
                 _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1"); 
             }
             _db = fixture.GetService<ManagementDbContext>();
+            _dbConfig = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
             _user = _userService.GetByApiKey(_appAuth);
             if (_user == null)
             {
@@ -60,7 +63,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             Assert.Equal(FieldDataEncoding.BinaryIntId,
                 categoryField.DataEncoding);
             //Cleanup
-            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var dbc = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
             var dstCollection = new MongoList(dbc.Name, newIntegration.Collection, dbc.GetUrl());
             dstCollection.Trash();
         }
@@ -84,14 +87,15 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             Assert.True(categoryField.Extras.Extra.Count == 2);
             if(newIntegration.Id==0)_db.Integrations.Add(newIntegration);
             _db.SaveChanges();
-            var result = await ht.ApplyToField(categoryField);
+            var db = MongoHelper.GetCollection(_dbConfig, newIntegration.Name);
+            var result = await ht.ApplyToField(categoryField, db);
             Assert.Equal(0, result.ModifiedCount);
             Assert.Equal(0, result.MatchedCount);
             Assert.Equal(2, result.ProcessedRequests.Count);
             Assert.Equal(0, result.Upserts.Count);
 
             //Cleanup
-            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var dbc = (DBConfig.GetInstance().GetGeneralDatabase()).ToDonutDbConfig();
             var dstCollection = new MongoList(dbc.Name, newIntegration.Collection, dbc.GetUrl());
             dstCollection.Trash();
         }
@@ -118,7 +122,8 @@ namespace Netlyt.ServiceTests.FeatureGeneration
 
             Assert.True(categoryField.Extras.Extra.Count == 2);
             //Apply it
-            var result = await ht.ApplyToField(categoryField);
+            var db = MongoHelper.GetCollection(_dbConfig, newIntegration.Collection);
+            var result = await ht.ApplyToField(categoryField, db);
 
             Assert.Equal(0, result.ModifiedCount);
             Assert.Equal(0, result.MatchedCount);
@@ -127,7 +132,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             var addResult = await _integrationService.AppendToIntegration(newIntegration, sourceFile, _appAuth);
             Assert.Equal(5402, addResult.Data.ProcessedEntries);
             //Cleanup
-            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var dbc = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
             var dstCollection = new MongoList(dbc.Name, newIntegration.Collection, dbc.GetUrl());
             var category1 = dstCollection.Records.FindSync(Builders<BsonDocument>.Filter.Eq("category", 100000001)).ToList();
             Assert.Equal(6, category1.Count);

@@ -5,7 +5,7 @@ using System.Threading;
 using Donut.Caching;
 using Netlyt.Interfaces;
 
-namespace Netlyt.Service.Donut
+namespace Donut
 {
     public class EntityMetaContext
     {

@@ -1,4 +1,4 @@
-﻿namespace Donut
+﻿namespace Netlyt.Interfaces.Data
 {
     public interface IDatabaseConfiguration
     {

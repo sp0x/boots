@@ -13,6 +13,7 @@ using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.db.Extensions;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Data;
@@ -57,7 +58,7 @@ namespace Netlyt.ServiceTests.Lex
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
             //_apiService.Register(_appAuth);
             _cacher = fixture.GetService<RedisCacher>();
-            _dbConfig = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            _dbConfig = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
             _serviceProvider = fixture.GetService<IServiceProvider>();
         }
 

@@ -14,6 +14,7 @@ using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
+using Netlyt.Service.Data;
 using Netlyt.Service.Integration.Import;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
@@ -131,7 +132,7 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             }.AddIndex("ondate"));
             var importResult = await importTask.Import();
             await importTask.Reduce(mapReduceDonut, entryLimit, Builders<BsonDocument>.Sort.Ascending("ondate"));
-            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var dbc = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
             var reducedCollection = new MongoList(dbc.Name, importTask.OutputDestinationCollection.ReducedOutputCollection, dbc.GetUrl());
             var reducedDocsCount = reducedCollection.Size;
             Assert.Equal(64, reducedDocsCount);

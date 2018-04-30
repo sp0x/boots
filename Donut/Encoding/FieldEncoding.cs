@@ -16,13 +16,11 @@ namespace Donut.Encoding
     {
         private FieldEncodingOptions _options;
         private IIntegration _integration;
-        private IMongoCollection<BsonDocument> _records;
         private List<FieldDefinition> _targetFields;
         private Dictionary<string, ConcurrentDictionary<string, FieldExtra>> _fieldDict;
         public FieldDataEncoding Encoding { get; set; }
         protected List<FieldDefinition> TargetFields => _targetFields;
         protected IIntegration Integration => _integration;
-        protected IMongoCollection<BsonDocument> Records => _records;
         protected Dictionary<string, ConcurrentDictionary<string, FieldExtra>> FieldCache
         {
             get { return _fieldDict; }
@@ -34,7 +32,6 @@ namespace Donut.Encoding
             _options = options;
             _integration = _options.Integration;
             var collection = MongoHelper.GetCollection(_integration.Collection);
-            _records = collection;
             _targetFields = _integration.Fields.Where(x => x.DataEncoding == encoding).ToList();
             _fieldDict = new Dictionary<string, ConcurrentDictionary<string, FieldExtra>>();
             foreach (var fld in TargetFields)
@@ -51,27 +48,31 @@ namespace Donut.Encoding
         }
 
         public abstract void Apply(BsonDocument doc);
-        public async Task ApplyToAllFields(CancellationToken? cancellationToken = null)
+        public async Task ApplyToAllFields(IMongoCollection<BsonDocument> collection, 
+            CancellationToken? cancellationToken = null)
         {
             if (cancellationToken == null) cancellationToken = CancellationToken.None;
             foreach (var field in TargetFields)
             {
                 if (field.Extras == null) continue;
-                await ApplyToField(field, cancellationToken);
+                await ApplyToField(field, collection, cancellationToken);
             }
         }
-        public abstract Task<BulkWriteResult<BsonDocument>> ApplyToField(IFieldDefinition field, CancellationToken? cancellationToken = null);
+        public abstract Task<BulkWriteResult<BsonDocument>> ApplyToField(
+            IFieldDefinition field,
+            IMongoCollection<BsonDocument> collection,
+            CancellationToken? cancellationToken = null);
         public abstract IIntegration GetEncodedIntegration(bool truncateDestination = false);
         /// <summary>
         /// 
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async Task Run(CancellationToken? cancellationToken = null)
+        public async Task Run(IMongoCollection<BsonDocument> collection, CancellationToken? cancellationToken = null)
         {
             if (cancellationToken == null) cancellationToken = CancellationToken.None;
             GetEncodedIntegration();
-            await ApplyToAllFields(cancellationToken);
+            await ApplyToAllFields(collection, cancellationToken);
         }
         protected virtual string EncodeKey(int i)
         {
