@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using nvoid.extensions;
+using Netlyt.Interfaces;
 using Netlyt.Service.Models;
 
 namespace Netlyt.ServiceTests.Netinfo

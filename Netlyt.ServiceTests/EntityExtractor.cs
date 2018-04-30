@@ -6,19 +6,21 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Donut;
+using Donut.Blocks;
+using Donut.IntegrationSource;
 using MongoDB.Bson;
-using nvoid.db.Batching;
-using nvoid.db.DB; 
-using nvoid.exec.Blocks;
+using nvoid.db.DB;
 using nvoid.extensions;
 using nvoid.Integration;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Batching;
+using Netlyt.Interfaces.Blocks;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
-using Netlyt.Service.Data; 
-using Netlyt.Service.Format;
+using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Blocks;
-using Netlyt.Service.IntegrationSource; 
 using Netlyt.Service.Time;
 using Netlyt.ServiceTests.Fixtures;
 using Netlyt.ServiceTests.Netinfo;
@@ -96,8 +98,8 @@ namespace Netlyt.ServiceTests
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>());   
-            var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService);
-            var type = harvester.AddIntegrationSource(fileSource, _apiAuth, null, true); 
+            var harvester = new Harvester<IntegratedDocument>();
+            var type = harvester.AddIntegrationSource(fileSource, _apiAuth, null); 
             var grouper = new GroupingBlock<IntegratedDocument>(_apiAuth, GroupDocuments, FilterUserCreatedData, AccumulateUserEvent);
             var saver = new MongoSink<IntegratedDocument>(_apiAuth.AppId);
             var demographyImporter = new EntityDataImporter(demographySheet, true);
@@ -312,7 +314,7 @@ namespace Netlyt.ServiceTests
             }.ToBsonDocument();
 
             accumulator.AddDocumentArrayItem("events", newElement);
-            if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
+            if (value.Contains("payments/finish") && Donut.Blocks.Extensions.ToHostname(value).Contains("ebag.bg"))
             {
                 var dateTime = DateTime.Parse(onDate);
                 if (DateHelper.IsHoliday(dateTime))

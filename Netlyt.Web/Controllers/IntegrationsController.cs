@@ -7,20 +7,22 @@ using Microsoft.AspNetCore.Mvc;
 using nvoid.db;
 using nvoid.db.Extensions;
 using Netlyt.Service;
-using Netlyt.Service.Integration;
 using Netlyt.Web.Models;
 using System.Threading.Tasks; 
 using System.IO;
 using System.Text;
 using AutoMapper;
+using Donut;
+using Donut.Integration;
+using Donut.Orion;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using static Netlyt.Web.Attributes;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Netlyt.Interfaces;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration.Import;
-using Netlyt.Service.Orion;
 using Netlyt.Web.Helpers;
 using Netlyt.Web.Services;
 using Netlyt.Web.ViewModels;
@@ -115,7 +117,7 @@ namespace Netlyt.Web.Controllers
         [Authorize]
         public async Task<IActionResult> CreateFileIntegration()
         {
-            DataIntegration newIntegration = null;
+            IIntegration newIntegration = null;
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
                 return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
@@ -207,7 +209,7 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/integration/schema")]
         public async Task<IActionResult> GetUploadSchema()
         {
-            DataIntegration newIntegration = null;
+            IIntegration newIntegration = null;
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
                 return BadRequest($"Expected a multipart request, but got {Request.ContentType}");

@@ -5,11 +5,45 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Build\Templates\Project.txt" />
+    <None Remove="Lex\Templates\DonutContext.txt" />
+    <None Remove="Lex\Templates\Donutfile.txt" />
+    <None Remove="Lex\Templates\FeatureGenerator.txt" />
+    <None Remove="Lex\Templates\MapReduceAggregate.txt" />
+    <None Remove="Lex\Templates\MapReduceMapper.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Build\Templates\Project.txt" />
+    <EmbeddedResource Include="Lex\Templates\DonutContext.txt" />
+    <EmbeddedResource Include="Lex\Templates\Donutfile.txt" />
+    <EmbeddedResource Include="Lex\Templates\FeatureGenerator.txt" />
+    <EmbeddedResource Include="Lex\Templates\MapReduceAggregate.txt" />
+    <EmbeddedResource Include="Lex\Templates\MapReduceMapper.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.0.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.7.0" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="2.0.2" />
+    <PackageReference Include="NetMQ" Version="4.0.0.156-pre" />
     <PackageReference Include="StackExchange.Redis.Extensions.JilCore" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Netlyt.Interfaces\Netlyt.Interfaces.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MongoDB.Driver">
+      <HintPath>C:\Users\cyb3r\.nuget\packages\mongodb.driver\2.4.4\lib\netstandard1.5\MongoDB.Driver.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver.Core">
+      <HintPath>C:\Users\cyb3r\.nuget\packages\mongodb.driver.core\2.4.4\lib\netstandard1.5\MongoDB.Driver.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.Annotations">
+      <HintPath>C:\Program Files\dotnet\sdk\NuGetFallbackFolder\microsoft.netcore.app\2.0.0\ref\netcoreapp2.0\System.ComponentModel.Annotations.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

@@ -5,20 +5,19 @@ using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
 using Donut;
-using nvoid.db.Caching;
+using Donut.Caching;
+using Donut.IntegrationSource;
+using Donut.Lex.Data;
+using Donut.Lex.Expressions;
+using Donut.Lex.Parsing;
+using Donut.Parsing.Tokenizers;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
+using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Donut;
 using Netlyt.Service.FeatureGeneration;
-using Netlyt.Service.Format;
-using Netlyt.Service.Integration;
-using Netlyt.Service.IntegrationSource;
-using Netlyt.Service.Lex.Data;
-using Netlyt.Service.Lex.Expressions;
-using Netlyt.Service.Lex.Parsing;
-using Netlyt.Service.Lex.Parsing.Tokenizers;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
@@ -33,7 +32,7 @@ namespace Netlyt.ServiceTests.Lex
         private CompilerService _compiler;
         private RedisCacher _cacher;
         private IServiceProvider _serviceProvider;
-        private DatabaseConfiguration _dbConfig;
+        private IDatabaseConfiguration _dbConfig;
         private ManagementDbContext _context;
 
         public DonutExpressionTests(DonutConfigurationFixture fixture)
@@ -44,7 +43,7 @@ namespace Netlyt.ServiceTests.Lex
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
             _cacher = fixture.GetService<RedisCacher>();
-            _dbConfig = DBConfig.GetGeneralDatabase();
+            _dbConfig = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
             _serviceProvider = fixture.GetService<IServiceProvider>();
             _context = fixture.GetService<ManagementDbContext>();
 
@@ -154,10 +153,10 @@ namespace Netlyt.ServiceTests.Lex
                 return ((dynamic)x).value as ExpandoObject;
             });
             source.ProgressInterval = 0.05;
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
+            var harvester = new Harvester<IntegratedDocument>(10);
             var entryLimit = (uint)10000;
             harvester.LimitEntries(entryLimit);
-            var integration = harvester.AddIntegrationSource(source, _appAuth, "SomeIntegrationName3");
+            var integration = DataIntegration.Wrap(harvester.AddIntegrationSource(source, _appAuth, "SomeIntegrationName3"));
 
             DonutScript dscript = DonutScript.Factory.CreateWithFeatures("SomeDonut1", null, integration, new[] { feature });
             dscript.AddIntegrations(integration);
@@ -174,7 +173,7 @@ namespace Netlyt.ServiceTests.Lex
             var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);
 
             var result = await donutRunner.Run(donut, featureGenerator);
-            var ftCol = new MongoList(_dbConfig, integration.FeaturesCollection);
+            var ftCol = new MongoList(_dbConfig.Name, integration.FeaturesCollection, _dbConfig.GetUrl());
             ftCol.Truncate();
 
             Assert.NotNull(result);
@@ -208,7 +207,7 @@ namespace Netlyt.ServiceTests.Lex
                 return ((dynamic)x).value as ExpandoObject;
             });
             source.ProgressInterval = 0.05;
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
+            var harvester = new Harvester<IntegratedDocument>(10);
             var entryLimit = (uint)10000;
             harvester.LimitEntries(entryLimit);
             var integration = harvester.AddIntegrationSource(source, _appAuth, "SomeIntegrationName2");
@@ -222,7 +221,7 @@ namespace Netlyt.ServiceTests.Lex
             var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);
 
             var result = await donutRunner.Run(donut, featureGenerator);
-            var ftCol = new MongoList(_dbConfig, integration.FeaturesCollection);
+            var ftCol = new MongoList(_dbConfig.Name, integration.FeaturesCollection, _dbConfig.GetUrl());
             ftCol.Truncate();
 
             Assert.NotNull(result);

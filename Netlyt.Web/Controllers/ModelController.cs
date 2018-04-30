@@ -6,16 +6,18 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using Donut;
+using Donut.Integration;
+using Donut.Orion;
 using Newtonsoft.Json.Linq;
 using Netlyt.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Netlyt.Interfaces;
 using Netlyt.Service.Data;
-using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Import;
-using Netlyt.Service.Orion;
 using Netlyt.Web.Helpers;
 using Netlyt.Web.ViewModels;
 using Newtonsoft.Json;
@@ -232,7 +234,7 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/model/integrate")]
         public async Task<IActionResult> CreateAndIntegrate()
         {
-            DataIntegration newIntegration = null;
+            IIntegration newIntegration = null;
             NewModelIntegrationViewmodel modelParams = new NewModelIntegrationViewmodel();
             string targetFilePath = Path.GetTempFileName();
             string fileContentType = null;
@@ -275,7 +277,7 @@ namespace Netlyt.Web.Controllers
                 var relations = new List<FeatureGenerationRelation>();
                 var newModel = await _modelService.CreateModel(user,
                     modelParams.Name,
-                    new List<DataIntegration>(new[] { newIntegration }),
+                    new List<IIntegration>(new[] { newIntegration }),
                     "",
                     true,
                     relations,

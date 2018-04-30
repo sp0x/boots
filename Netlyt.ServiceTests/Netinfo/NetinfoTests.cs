@@ -7,30 +7,28 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Donut;
+using Donut.Blocks;
+using Donut.Caching;
+using Donut.IntegrationSource;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using nvoid.db.Batching;
 using nvoid.db.DB;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB; 
 using nvoid.db.Extensions; 
 using nvoid.extensions;
-using nvoid.Integration;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Batching;
+using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Analytics;
 using Netlyt.Service.Data;
-using Netlyt.Service.Donut;
 using Netlyt.Service.FeatureGeneration;
-using Netlyt.Service.Format;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Blocks;
-using Netlyt.Service.IntegrationSource;
-using Netlyt.Service.Models;
-using Netlyt.Service.Time; 
 using Xunit;
 using Netlyt.Service.Integration.Import;
 using Netlyt.ServiceTests.Fixtures;
+using StackExchange.Redis;
 
 namespace Netlyt.ServiceTests.Netinfo
 {
@@ -45,6 +43,9 @@ namespace Netlyt.ServiceTests.Netinfo
         private DynamicContextFactory _contextFactory;
         private ApiService _apiService; 
         private IntegrationService _integrationService;
+        private IRedisCacher _redisCacher;
+        private IConnectionMultiplexer _redisConnection;
+        private IDatabaseConfiguration _dbConfig;
 
         public NetinfoTests(ConfigurationFixture fixture)
         {
@@ -56,6 +57,10 @@ namespace Netlyt.ServiceTests.Netinfo
             _integrationService = fixture.GetService<IntegrationService>();
             _appId = _apiService.Generate();
             _apiService.Register(_appId);
+            var cacheConfig = _config.Configuration.GetSection("cache");
+            _redisConnection = cacheConfig.GetCacheConnection();
+            _redisCacher = cacheConfig.GetCacheContext();
+            _dbConfig = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
         }
 
         [Theory]
@@ -68,12 +73,12 @@ namespace Netlyt.ServiceTests.Netinfo
                 inputDirectory = Path.Combine(currentDir, inputDirectory);
                 Console.WriteLine($"Parsing data in: {inputDirectory}");
                 var importCollectionId = Guid.NewGuid().ToString();
-                var mlist = new MongoList(DBConfig.GetGeneralDatabase(), importCollectionId);
+                var mlist = new MongoList(_dbConfig.Name, importCollectionId, _dbConfig.GetUrl());
                 //var altList = RemoteDataSource.GetMongoDb<BsonDocument>(importCollectionId);
 
                 var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>() { Delimiter = ';' });
-                var harvester = new Harvester<ExpandoObject>(_apiService, _integrationService, 10);
-                var type = harvester.AddIntegrationSource(fileSource, _appId, null, true);
+                var harvester = new Harvester<ExpandoObject>(10);
+                var type = harvester.AddIntegrationSource(fileSource, _appId, null);
 
                 mlist.Truncate();
                 //harvester -> documentCreator -> inserter
@@ -172,7 +177,7 @@ events : elements };
         {
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>() { Delimiter = ';' });
-            var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
+            var harvester = new Harvester<IntegratedDocument>(10);
             //harvester.AddPersistentType(fileSource, _appId, true);
 
             var grouper = new GroupingBlock<IntegratedDocument>(_appId,
@@ -223,7 +228,7 @@ events : elements };
                 if (!((IDictionary<string, object>)x).ContainsKey("value")) ((dynamic)x).value.day = ((dynamic)x)._id.day;
                 return ((dynamic)x).value as ExpandoObject;
             });
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
+            var harvester = new Harvester<IntegratedDocument>(10);
             var type = harvester.AddIntegrationSource(source, _appId, "NetInfoUserFeatures_7_8_1"); 
 
             var dictEval = new EvalDictionaryBlock(
@@ -295,7 +300,7 @@ events : elements };
 
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService, 20); 
+            var harvester = new Harvester<IntegratedDocument>(20); 
             harvester.AddIntegrationSource(source, apiObj, "NetInfoUserFeatures_7_8");
             var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", apiObj);
             typeDef.AddField("is_paying", typeof(int));
@@ -349,7 +354,7 @@ events : elements };
         public async void ConstructTrees(string reducedSource)
         {
             MongoSource< ExpandoObject> source = MongoSource.CreateFromCollection(reducedSource, new BsonFormatter<ExpandoObject>()); 
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20); 
+            var harvester = new Harvester<IntegratedDocument>(20); 
             var type = harvester.AddIntegrationSource(source, _appId, "NetInfoUserSessions_7_8");
             var batchSize = 10000;
             var updateBatchSize = (uint)10000;
@@ -368,7 +373,7 @@ events : elements };
                 }).Limit(recordLimit));
             //Feed the builder with documents of distinct user_day
             var builder = new TreeBuilder(batchSize, "_id");
-            var intDocRecords = new MongoList(DBConfig.GetGeneralDatabase(), "IntegratedDocument").Records;
+            var intDocRecords = new MongoList(_dbConfig.Name, "IntegratedDocument", _dbConfig.GetUrl()).Records;
             var treePayingUsers = TreeBuilder.BuildFromItems(from x in intDocRecords.AsQueryable()
                                                              where x["TypeId"] == type.Id.ToString() && x["Document.is_paying"] == 1
                                                              select x);
@@ -485,11 +490,10 @@ events : elements };
 
             var appId = "123123123";
             int threadCount = 12;
-            var harvester = new Netlyt.Service.Harvester<ExpandoObject>(_apiService, _integrationService, 10);
+            var harvester = new Harvester<ExpandoObject>(10);
             var apiObj = _apiService.GetApi(appId);
-            var type = harvester.AddIntegrationSource(fileSource, apiObj, null, true);
-            
-            var cachedReducer = new ReduceCacheBlock(_appId,
+            var type = harvester.AddIntegrationSource(fileSource, apiObj, null);
+            var cachedReducer = new ReduceCacheBlock(_appId, _redisConnection,
                 (document) => $"{document.GetString("uuid")}:{document.GetDate("ondate")?.DaysTotal()}",
                 (document) => document.Define("noticed_date", document.GetDate("ondate"))
                     .RemoveAll("event_id", "ondate", "value", "type"));
@@ -636,7 +640,7 @@ events : elements };
         private object AccumulateUserDocumentLite(IntegratedDocument accumulator, BsonDocument newEntry)
         {
             var value = newEntry.GetString("value");
-            if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
+            if (value.Contains("payments/finish") && Donut.Blocks.Extensions.ToHostname(value).Contains("ebag.bg"))
             { 
                 accumulator["is_paying"] = 1;
             }
@@ -657,7 +661,7 @@ events : elements };
 //                type = newEntry.GetInt("type"),
 //                value = newEntry.GetString("value")
 //            }.ToBsonDocument();
-            var pageHost = value.ToHostname();
+            var pageHost = Donut.Blocks.Extensions.ToHostname(value);
             var pageSelector = pageHost; 
 //            if (!_helper.Stats.ContainsPage(pageHost))
 //            {
@@ -672,7 +676,7 @@ events : elements };
             {
                 accumulator.AddDocumentArrayItem("events", newEntry);
             }
-            if (value.Contains("payments/finish") && value.ToHostname().Contains("ebag.bg"))
+            if (value.Contains("payments/finish") && Donut.Blocks.Extensions.ToHostname(value).Contains("ebag.bg"))
             {
 //                if (DateHelper.IsHoliday(onDate))
 //                {

@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.Loader;
-using System.Text;
-using Microsoft.CodeAnalysis;
-using Netlyt.Service.Build;
-using Netlyt.Service.Donut;
-using Netlyt.Service.Lex.Data;
-using Netlyt.Service.Ml;
+using Donut;
+using Donut.Build;
+using Donut.Lex.Data;
+using Donut.Models;
 
 namespace Netlyt.Service
 {
@@ -18,7 +14,6 @@ namespace Netlyt.Service
         //private AssemblyLoadContext _context;
         public CompilerService()
         {
-            var asmDir = Environment.CurrentDirectory;
             //_context = null;
             //_context = AssemblyLoadContext.Default; //new DonutAssemblyLoadContext(asmDir); 
         }

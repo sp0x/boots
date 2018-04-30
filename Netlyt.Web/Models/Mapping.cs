@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic; 
+using System.Collections.Generic;
+using Donut;
+using Donut.Models;
 using nvoid.DB;
-using Netlyt.Service;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Ml;
+using Netlyt.Interfaces;
 
 namespace Netlyt.Web.Models
 {

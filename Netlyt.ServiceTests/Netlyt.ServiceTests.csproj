@@ -18,7 +18,7 @@
     <Content Include="Res\testHarvesterInput.json" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="LumenWorks.Framework.IO.Core" Version="1.0.0" />
+    <PackageReference Include="LumenWorks.Framework.IO.Core" Version="1.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.1.0-preview1-final" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.0-preview1-final" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.0-preview-20180109-01" />

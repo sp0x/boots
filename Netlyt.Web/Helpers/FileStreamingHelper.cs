@@ -4,14 +4,13 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using Netlyt.Interfaces;
 using Netlyt.Service;
-using Netlyt.Service.Integration;
 
 namespace Netlyt.Web.Helpers
 {

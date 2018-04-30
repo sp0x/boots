@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics; 
+using System.Diagnostics;
+using Donut.Caching;
 using nvoid.db.Caching;
 using Netlyt.ServiceTests.Fixtures;
 using StackExchange.Redis;

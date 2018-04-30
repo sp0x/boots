@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Dynamic;
 using System.IO;
+using Donut.IntegrationSource;
+using Donut.Lex;
+using Donut.Lex.Expressions;
+using Donut.Lex.Generation;
+using Donut.Lex.Parsing;
+using Donut.Parsing.Tokenizers;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
-using nvoid.Integration;
+using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
-using Netlyt.Service.Format;
 using Netlyt.Service.Integration.Import;
-using Netlyt.Service.IntegrationSource;
-using Netlyt.Service.Lex;
-using Netlyt.Service.Lex.Expressions;
-using Netlyt.Service.Lex.Generation;
-using Netlyt.Service.Lex.Parsing;
-using Netlyt.Service.Lex.Parsing.Tokenizers;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
@@ -131,8 +131,8 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             }.AddIndex("ondate"));
             var importResult = await importTask.Import();
             await importTask.Reduce(mapReduceDonut, entryLimit, Builders<BsonDocument>.Sort.Ascending("ondate"));
-            var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var reducedCollection = new MongoList(databaseConfiguration, importTask.OutputDestinationCollection.ReducedOutputCollection);
+            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var reducedCollection = new MongoList(dbc.Name, importTask.OutputDestinationCollection.ReducedOutputCollection, dbc.GetUrl());
             var reducedDocsCount = reducedCollection.Size;
             Assert.Equal(64, reducedDocsCount);
             //Cleanup

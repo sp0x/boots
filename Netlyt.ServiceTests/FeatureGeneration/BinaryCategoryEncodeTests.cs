@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Donut;
+using Donut.Encoding;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
@@ -10,9 +12,6 @@ using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Integration.Encoding;
-using Netlyt.Service.Orion;
-using Netlyt.Service.Source;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
@@ -61,8 +60,8 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             Assert.Equal(FieldDataEncoding.BinaryIntId,
                 categoryField.DataEncoding);
             //Cleanup
-            var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var dstCollection = new MongoList(databaseConfiguration, newIntegration.Collection);
+            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var dstCollection = new MongoList(dbc.Name, newIntegration.Collection, dbc.GetUrl());
             dstCollection.Trash();
         }
 
@@ -73,7 +72,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             //Source
             var modelName = "FunModel";
             var integrationResult = await _integrationService.CreateOrAppendToIntegration(sourceFile, _appAuth, _user, modelName);
-            var newIntegration = integrationResult?.Integration;
+            var newIntegration = DataIntegration.Wrap(integrationResult?.Integration);
             FieldEncodingOptions options = new FieldEncodingOptions
             {
                 Integration = newIntegration
@@ -92,8 +91,8 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             Assert.Equal(0, result.Upserts.Count);
 
             //Cleanup
-            var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var dstCollection = new MongoList(databaseConfiguration, newIntegration.Collection);
+            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var dstCollection = new MongoList(dbc.Name, newIntegration.Collection, dbc.GetUrl());
             dstCollection.Trash();
         }
 
@@ -106,7 +105,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             var integrationTask = _integrationService.CreateIntegrationImportTask(sourceFile, _appAuth, _user, modelName);
             //integrationTask.EncodeOnImport = false;
             await integrationTask.Import();
-            var newIntegration = integrationTask?.Integration;
+            var newIntegration = DataIntegration.Wrap(integrationTask?.Integration);
             FieldEncodingOptions options = new FieldEncodingOptions
             {
                 Integration = newIntegration
@@ -128,8 +127,8 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             var addResult = await _integrationService.AppendToIntegration(newIntegration, sourceFile, _appAuth);
             Assert.Equal(5402, addResult.Data.ProcessedEntries);
             //Cleanup
-            var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var dstCollection = new MongoList(databaseConfiguration, newIntegration.Collection);
+            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var dstCollection = new MongoList(dbc.Name, newIntegration.Collection, dbc.GetUrl());
             var category1 = dstCollection.Records.FindSync(Builders<BsonDocument>.Filter.Eq("category", 100000001)).ToList();
             Assert.Equal(6, category1.Count);
             Assert.Equal(10804, dstCollection.Size);

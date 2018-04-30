@@ -1,9 +1,8 @@
 ﻿using AutoMapper;
-using nvoid.Integration;
-using Netlyt.Service;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Ml;
-using Netlyt.Service.Source;
+using Donut;
+using Donut.Models;
+using Donut.Source;
+using Netlyt.Interfaces;
 using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web

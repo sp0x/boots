@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Donut;
+using Donut.Caching;
+using Donut.Lex.Data;
+using Donut.Lex.Generation;
+using Donut.Lex.Generators;
+using Donut.Models;
+using Donut.Orion;
 using nvoid.Crypto;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Lex.Data;
-using Netlyt.Service.Lex.Generation;
-using Netlyt.Service.Lex.Generators;
-using Netlyt.Service.Ml;
-using Netlyt.Service.Orion;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
@@ -53,7 +55,7 @@ namespace Netlyt.ServiceTests.Lex.Generators
                 _userService.CreateUser(_user, "Password-IsStrong!", _appAuth);
             }
             _cacher = fixture.GetService<RedisCacher>();
-            _dbConfig = DBConfig.GetGeneralDatabase();
+            _dbConfig = DBConfig.GetInstance().GetGeneralDatabase();
             _serviceProvider = fixture.GetService<IServiceProvider>();
             _modelService = fixture.GetService<ModelService>();
             _fixture = fixture;

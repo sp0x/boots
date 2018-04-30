@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Donut;
+using Donut.Lex.Parsing;
+using Donut.Parsing.Tokenizers;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Integration;
-using Netlyt.Service.Lex;
-using Netlyt.Service.Lex.Expressions;
-using Netlyt.Service.Lex.Parsing;
-using Netlyt.Service.Lex.Parsing.Tokenizers;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 

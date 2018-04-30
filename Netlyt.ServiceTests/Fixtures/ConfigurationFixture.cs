@@ -2,12 +2,14 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Donut.Caching;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 
@@ -47,7 +49,8 @@ namespace Netlyt.ServiceTests.Fixtures
             services.AddTransient<ApiService>(s => new ApiService(_context, null));
             services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>(),
                 s.GetService<TimestampService>()));
-            services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
+            var redisCacher = DBConfig.GetInstance().GetCacheContext();
+            services.AddSingleton<IRedisCacher>(redisCacher);
             services.AddTransient<CompilerService>();
             services.AddTransient<UserService>(s => new UserService(s.GetService<UserManager<User>>(), s.GetService<ApiService>(), null, null,
                 s.GetService<OrganizationService>(), s.GetService<ModelService>(), _context));

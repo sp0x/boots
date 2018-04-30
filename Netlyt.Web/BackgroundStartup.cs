@@ -1,20 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using AutoMapper;
+using Donut;
+using Donut.Orion;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
-using Netlyt.Service.Orion;
 using Netlyt.Web.Services;
 
 namespace Netlyt.Web
@@ -38,11 +36,11 @@ namespace Netlyt.Web
             services.AddSession();
             services.AddSingleton(Configuration);
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
-            services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
+            services.AddSingleton<IRedisCacher>(DBConfig.GetInstance().GetCacheContext());
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<OrionContext>(this.OrionContext);
+            services.AddSingleton<IOrionContext>(this.OrionContext);
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();

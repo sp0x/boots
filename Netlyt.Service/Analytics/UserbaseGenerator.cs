@@ -8,6 +8,7 @@ using nvoid.Entities.Social;
 using nvoid.Integration;
 using nvoid.Social;
 using nvoid.Social.FBNet;
+using Netlyt.Interfaces;
 using Netlyt.Service.Models;
 
 namespace Netlyt.Service.Analytics

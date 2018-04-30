@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Dynamic;
-using System.Text;
-using Netlyt.Service.Format;
-using Netlyt.Service.IntegrationSource;
-using Netlyt.Service.Source;
+﻿using System.Dynamic;
+using Donut.IntegrationSource;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 

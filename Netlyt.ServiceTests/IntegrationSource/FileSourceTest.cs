@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using Netlyt.Service.IntegrationSource;
+﻿using Donut.IntegrationSource;
 using Xunit;
 
 namespace Netlyt.ServiceTests.IntegrationSource

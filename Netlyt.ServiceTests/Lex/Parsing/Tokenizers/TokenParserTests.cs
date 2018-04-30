@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Netlyt.Service.Lex.Expressions;
-using Netlyt.Service.Lex.Parsing;
-using Netlyt.Service.Lex.Parsing.Tokenizers;
-using Netlyt.Service.Lex.Parsing.Tokens;
+using Donut.Lex.Expressions;
+using Donut.Lex.Parsing;
+using Donut.Parsing.Tokenizers;
+using Donut.Parsing.Tokens;
 using Xunit;
 
 namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
@@ -18,7 +18,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         {
             var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
             var tokens = tokenizer.Tokenize(fc).ToList();
-            var parser = new Netlyt.Service.Lex.Parsing.DonutSyntaxReader();
+            var parser = new DonutSyntaxReader();
             parser.Load(tokens);
             var x = parser.ReadFunctionCall();
             Assert.Equal("f", x.Name);
@@ -37,7 +37,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         {
             var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
             var tokens = tokenizer.Tokenize(fc).ToList();
-            var parser = new Netlyt.Service.Lex.Parsing.DonutSyntaxReader();
+            var parser = new DonutSyntaxReader();
             parser.Load(tokens);
             var parsedLambda = parser.ReadExpression();
             Assert.Equal(expectedLambda, parsedLambda.ToString());
@@ -52,7 +52,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         { 
             var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
             var tokens = tokenizer.Tokenize(fc).ToList();
-            var parser = new Netlyt.Service.Lex.Parsing.DonutSyntaxReader();
+            var parser = new DonutSyntaxReader();
             parser.Load(tokens);
             var parsedLambda = parser.ReadExpression();
             Assert.Equal(expectedLambda, parsedLambda.ToString());
@@ -68,7 +68,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         {
             var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
             var tokens = tokenizer.Tokenize(code).ToList();
-            var parser = new Netlyt.Service.Lex.Parsing.DonutSyntaxReader();
+            var parser = new DonutSyntaxReader();
             parser.Load(tokens);
             var exp = parser.ReadExpressions().FirstOrDefault();
             Assert.NotNull(exp);
@@ -83,7 +83,7 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
         {
             var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
             var tokens = tokenizer.Tokenize(code).ToList();
-            var parser = new Netlyt.Service.Lex.Parsing.DonutSyntaxReader();
+            var parser = new DonutSyntaxReader();
             parser.Load(tokens);
             var exp = parser.ReadExpressions().FirstOrDefault();
             Assert.NotNull(exp);

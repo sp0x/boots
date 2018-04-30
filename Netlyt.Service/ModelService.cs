@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Donut;
+using Donut.Integration;
+using Donut.Models;
+using Donut.Orion;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Netlyt.Interfaces;
 using Netlyt.Service.Data;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Ml;
 using Netlyt.Service.Models;
-using Netlyt.Service.Orion;
 
 namespace Netlyt.Service
 {
@@ -17,11 +19,11 @@ namespace Netlyt.Service
     {
         private IHttpContextAccessor _contextAccessor;
         private ManagementDbContext _context;
-        private OrionContext _orion;
+        private IOrionContext _orion;
         private TimestampService _timestampService;
 
         public ModelService(ManagementDbContext context,
-            OrionContext orionContext,
+            IOrionContext orionContext,
             IHttpContextAccessor ctxAccessor,
             TimestampService timestampService)
         {
@@ -62,7 +64,7 @@ namespace Netlyt.Service
         public async Task<Model> CreateModel(
             User user, 
             string name,
-            IEnumerable<DataIntegration> integrations, 
+            IEnumerable<IIntegration> integrations, 
             string callbackUrl,
             bool generateFeatures,
             IEnumerable<FeatureGenerationRelation> relations, 
@@ -76,7 +78,7 @@ namespace Netlyt.Service
             newModel.TargetAttribute = targetAttribute;
             if (integrations != null)
             {
-                newModel.DataIntegrations = integrations.Select(x => new ModelIntegration(newModel, x)).ToList(); 
+                newModel.DataIntegrations = integrations.Select(ign => new ModelIntegration(newModel, DataIntegration.Wrap(ign))).ToList(); 
             }
             _context.Models.Add(newModel);
             try

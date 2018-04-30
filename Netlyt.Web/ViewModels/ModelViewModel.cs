@@ -1,5 +1,3 @@
-using Netlyt.Service.Ml;
-
 namespace Netlyt.Web.ViewModels
 {
     public class ModelCreationViewModel

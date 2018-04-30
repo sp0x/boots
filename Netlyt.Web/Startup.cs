@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using AutoMapper;
+using Donut;
+using Donut.Caching;
+using Donut.Orion;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -15,10 +18,10 @@ using MongoDB.Driver.Core.Operations;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
-using Netlyt.Service.Orion;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
@@ -34,7 +37,7 @@ namespace Netlyt.Web
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            DBConfig.Initialize(Configuration);
+            DBConfig.GetInstance(Configuration);
             OrionContext = new OrionContext();
             OrionContext.Configure(Configuration.GetSection("behaviour"));
             OrionContext.Run();
@@ -78,7 +81,8 @@ namespace Netlyt.Web
         public void ConfigureServices(IServiceCollection services)
         {
             // Register identity framework services and also Mongo storage. 
-            var databaseConfiguration = DBConfig.GetGeneralDatabase(); 
+            var dbConfigInstance = DBConfig.GetInstance(Configuration);
+            var databaseConfiguration = DBConfig.GetInstance().GetGeneralDatabase(); 
             if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!"); 
             var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection"); 
             services.AddDbContext<ManagementDbContext>(options =>
@@ -99,7 +103,7 @@ namespace Netlyt.Web
             services.AddSession();
             services.AddSingleton(Configuration);
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
-            services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
+            services.AddSingleton<IRedisCacher>(DBConfig.GetInstance().GetCacheContext());
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();

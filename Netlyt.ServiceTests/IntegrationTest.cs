@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Dynamic;
 using System.IO;
-using Netlyt.Service.Format;
-using Netlyt.Service.IntegrationSource;
+using Donut.IntegrationSource;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.ServiceTests.Fixtures;
 using Netlyt.ServiceTests.Properties;
 using Xunit;

@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
-using nvoid.Integration;
-using Netlyt.Service.IntegrationSource;
+using Donut;
+using Netlyt.Interfaces;
 
 namespace Netlyt.Service.Integration.Import
 {
     public class DataImportTaskOptions
     {
         public uint ReadBlockSize { get; set; } = 30000;
-        public InputSource Source { get; set; }
+        public IInputSource Source { get; set; }
         public ApiAuth ApiKey { get; set; }
         public string IntegrationName { get; set; } 
         public DataIntegration Integration { get; set; }

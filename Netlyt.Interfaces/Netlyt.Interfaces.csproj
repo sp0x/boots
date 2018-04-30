@@ -5,15 +5,32 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dynamitey" Version="2.0.9.136" />
+    <PackageReference Include="LumenWorks.Framework.IO.Core" Version="1.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.0.2" />
+    <PackageReference Include="Microsoft.Net.Http.Headers" Version="2.0.2" />
     <PackageReference Include="MongoDB.Bson" Version="2.6.0" />
     <PackageReference Include="StackExchange.Redis.Extensions.JilCore" Version="1.0.1" />
     <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.9.0-preview2-26406-04" />
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Identity.Stores">
+      <HintPath>C:\Program Files\dotnet\sdk\NuGetFallbackFolder\microsoft.extensions.identity.stores\2.0.1\lib\netstandard2.0\Microsoft.Extensions.Identity.Stores.dll</HintPath>
+    </Reference>
     <Reference Include="MongoDB.Driver">
       <HintPath>C:\Users\cyb3r\.nuget\packages\mongodb.driver\2.4.4\lib\netstandard1.5\MongoDB.Driver.dll</HintPath>
     </Reference>
+    <Reference Include="MongoDB.Driver.Core">
+      <HintPath>C:\Users\cyb3r\.nuget\packages\mongodb.driver.core\2.4.4\lib\netstandard1.5\MongoDB.Driver.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.Annotations">
+      <HintPath>C:\Program Files\dotnet\sdk\NuGetFallbackFolder\system.componentmodel.annotations\4.4.0\ref\netstandard2.0\System.ComponentModel.Annotations.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Feature\" />
   </ItemGroup>
 
 </Project>

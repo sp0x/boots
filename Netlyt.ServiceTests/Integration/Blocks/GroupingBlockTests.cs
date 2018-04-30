@@ -3,15 +3,15 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Threading;
+using Donut;
+using Donut.Blocks;
+using Donut.IntegrationSource;
 using MongoDB.Bson;
 using nvoid.db.DB;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Format;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Blocks;
-using Netlyt.Service.IntegrationSource;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
@@ -64,7 +64,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>());  
-            var harvester = new Harvester<IntegratedDocument>(_apiService, _integrationService, 20);
+            var harvester = new Harvester<IntegratedDocument>(20);
             var grouper = GetGrouper(_apiAuth);
             harvester.LimitEntries(10);
             harvester.SetDestination(grouper); 
@@ -82,7 +82,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>()); 
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 20);
+            var harvester = new Harvester<IntegratedDocument>(20);
 
             var grouper = GetGrouper(_apiAuth);
             var statsCounter = 0;

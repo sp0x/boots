@@ -2,16 +2,19 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Donut;
+using Donut.Caching;
+using Donut.Orion;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
+using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
-using Netlyt.Service.Orion;
 
 namespace Netlyt.ServiceTests.Fixtures
 {
@@ -37,7 +40,7 @@ namespace Netlyt.ServiceTests.Fixtures
             DbOptionsBuilder = new DbContextOptionsBuilder<ManagementDbContext>()
                 .UseNpgsql(postgresConnectionString);
             _context = CreateContext();
-            DBConfig.Initialize(Config);
+            var dbConfig = DBConfig.GetInstance(Config);
 
             BehaviourContext = new OrionContext();
             BehaviourContext.Configure(Config.GetSection("behaviour"));
@@ -77,7 +80,7 @@ namespace Netlyt.ServiceTests.Fixtures
                 s.GetService<OrganizationService>(), s.GetService<ModelService>(), _context));
             services.AddTransient<ModelService>(s => new ModelService(_context, s.GetService<OrionContext>(), null, new TimestampService(_context)));
             services.AddTransient<IntegrationService>(s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>(), new TimestampService(_context)));
-            services.AddSingleton<RedisCacher>(DBConfig.GetCacheContext());
+            services.AddSingleton<IRedisCacher>(DBConfig.GetInstance().GetCacheContext());
             services.AddSingleton(BehaviourContext);
             services.AddTransient<IEmailSender, AuthMessageSender>((sp) =>
             {

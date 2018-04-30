@@ -6,17 +6,19 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Donut;
+using Donut.Encoding;
+using Donut.Integration;
+using Donut.Lex;
+using Donut.Lex.Expressions;
+using Donut.Lex.Parsing;
+using Donut.Parsing.Tokenizers;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using nvoid.db.Batching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
-using nvoid.exec.Blocks;
-using Netlyt.Service.Integration.Encoding;
-using Netlyt.Service.Lex;
-using Netlyt.Service.Lex.Expressions;
-using Netlyt.Service.Lex.Parsing;
-using Netlyt.Service.Lex.Parsing.Tokenizers;
+using Netlyt.Interfaces;
+using Netlyt.Interfaces.Blocks;
 
 namespace Netlyt.Service.Integration.Import
 {
@@ -30,8 +32,8 @@ namespace Netlyt.Service.Integration.Import
     {
         private DataImportTaskOptions _options;
         private Harvester<T> _harvester;
-        private DataIntegration _integration;
-        public DataIntegration Integration
+        private IIntegration _integration;
+        public IIntegration Integration
         {
             get
             {
@@ -55,7 +57,7 @@ namespace Netlyt.Service.Integration.Import
         {
             _options = options;
             string tmpGuid = Guid.NewGuid().ToString();
-            _harvester = new Harvester<T>(apiService, integrationService, _options.ThreadCount);
+            _harvester = new Harvester<T>(_options.ThreadCount);
             if (options.Integration != null)
             {
                 if (options.Integration.Fields.Count == 0)
@@ -77,7 +79,7 @@ namespace Netlyt.Service.Integration.Import
             else
             {
                 _integration = _harvester.AddIntegrationSource(_options.Source, _options.ApiKey,
-                    _options.IntegrationName, true, tmpGuid);
+                    _options.IntegrationName, tmpGuid);
             }
 
             var outCollection = new DestinationCollection(_integration.Collection, _integration.GetReducedCollectionName());
@@ -95,8 +97,8 @@ namespace Netlyt.Service.Integration.Import
         public async Task<DataImportResult> Import(CancellationToken? cancellationToken = null, bool truncateDestination = false)
         {
 
-            var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var dstCollection = new MongoList(databaseConfiguration, OutputDestinationCollection.OutputCollection);
+            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var dstCollection = new MongoList(dbc.Name, OutputDestinationCollection.OutputCollection, dbc.GetUrl());
 
             if (truncateDestination)
             {
@@ -162,8 +164,8 @@ namespace Netlyt.Service.Integration.Import
                 OutputOptions = MapReduceOutputOptions.Replace(targetCollection)
             };
             if (inputDocumentsLimit > 0) mapReduceOptions.Limit = inputDocumentsLimit;
-            var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var sourceCollection = new MongoList(databaseConfiguration, OutputDestinationCollection.OutputCollection);
+            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
+            var sourceCollection = new MongoList(dbc.Name, OutputDestinationCollection.OutputCollection, dbc.GetUrl());
             await sourceCollection.Records.MapReduceAsync<BsonDocument>(script.Map, script.Reduce, mapReduceOptions);
         }
 

@@ -6,22 +6,24 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using Donut;
+using Donut.Integration;
+using Donut.IntegrationSource;
 using Microsoft.EntityFrameworkCore;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.Integration;
 using Netlyt.Data;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service.Data;
 using Netlyt.Service.Exceptions;
-using Netlyt.Service.Format;
 using Netlyt.Service.Integration;
 using Netlyt.Service.Integration.Import;
-using Netlyt.Service.IntegrationSource;
 
 namespace Netlyt.Service
 {
-    public class IntegrationService
+    public class IntegrationService : IIntegrationService
     {
         //private IFactory<ManagementDbContext> _factory;
         private ManagementDbContext _context;
@@ -104,10 +106,10 @@ namespace Netlyt.Service
         {
             _context.Integrations.Remove(importTaskIntegration);
             _context.SaveChanges();
-            var databaseConfiguration = DBConfig.GetGeneralDatabase();
+            var dbc = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
             if (!string.IsNullOrEmpty(importTaskIntegration.Collection))
             {
-                var collection = new MongoList(databaseConfiguration, importTaskIntegration.Collection);
+                var collection = new MongoList(dbc.Name, importTaskIntegration.Collection, dbc.GetUrl());
                 collection.Trash();
                 collection = null;
             }
@@ -128,7 +130,7 @@ namespace Netlyt.Service
         /// <param name="contextApiAuth"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        public DataIntegration GetByName(IApiAuth contextApiAuth, string name)
+        public IIntegration GetByName(IApiAuth contextApiAuth, string name)
         {
             var integration = _context.Integrations
                 .Include(x => x.APIKey)
@@ -355,7 +357,7 @@ namespace Netlyt.Service
             var apiKey = await _userService.GetCurrentApi();
             if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
             var crUser = await _userService.GetCurrentUser();
-            var newIntegration = new Integration.DataIntegration();
+            var newIntegration = new DataIntegration();
             newIntegration.Name = integrationName;
             newIntegration.DataEncoding = System.Text.Encoding.UTF8.CodePage;
             newIntegration.DataFormatType = formatType;
@@ -408,5 +410,6 @@ namespace Netlyt.Service
             if (fileContentType == "application/json") return true;
             return false;
         }
+
     }
 }

@@ -2,14 +2,14 @@ using System;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using Donut;
+using Donut.Blocks;
+using Donut.IntegrationSource;
+using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Format;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Blocks;
-using Netlyt.Service.IntegrationSource;
 using Netlyt.ServiceTests.Fixtures;
-using Netlyt.ServiceTests.IntegrationSource;
 using Xunit;
 
 namespace Netlyt.ServiceTests
@@ -45,7 +45,7 @@ namespace Netlyt.ServiceTests
 
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
+            var harvester = new Harvester<IntegratedDocument>(threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
             var outBlock = new IntegrationActionBlock<IntegratedDocument>(appId, (action, x) => { });
@@ -69,7 +69,7 @@ namespace Netlyt.ServiceTests
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>()); 
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
+            var harvester = new Harvester<IntegratedDocument>(threadCount);
             harvester.LimitShards(1);
             harvester.LimitEntries(10);
             var outBlock = new IntegrationActionBlock<IntegratedDocument>(appId, (action, x) => { });
@@ -93,7 +93,7 @@ namespace Netlyt.ServiceTests
             Assert.NotNull(type);
             var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
-            var harvester = new Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount);
+            var harvester = new Harvester<IntegratedDocument>(threadCount);
             harvester.LimitEntries(3);
 
             Assert.Equal(harvester.ThreadCount, threadCount);

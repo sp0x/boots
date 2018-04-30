@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore.Storage.Internal;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models;
-using Netlyt.Service.Source;
 using System;
 
 namespace Netlyt.Service.Migrations

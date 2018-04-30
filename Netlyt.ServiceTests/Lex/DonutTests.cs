@@ -5,22 +5,19 @@ using System.Dynamic;
 using System.IO;
 using System.Threading.Tasks;
 using Donut;
+using Donut.Caching;
+using Donut.IntegrationSource;
 using MongoDB.Bson;
-using MongoDB.Driver; 
-using nvoid.db.Caching;
+using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using nvoid.db.Extensions;
-using nvoid.Integration;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Donut;
 using Netlyt.Service.FeatureGeneration;
-using Netlyt.Service.Format;
-using Netlyt.Service.Integration; 
 using Netlyt.Service.Integration.Import;
-using Netlyt.Service.IntegrationSource; 
 using Netlyt.Service.Time;
 using Netlyt.ServiceTests.Fixtures;
 using Netlyt.ServiceTests.Netinfo;
@@ -41,7 +38,7 @@ namespace Netlyt.ServiceTests.Lex
         private IntegrationService _integrationService;
         private ApiAuth _appAuth;
         private RedisCacher _cacher;
-        private DatabaseConfiguration _dbConfig;
+        private IDatabaseConfiguration _dbConfig;
         private IServiceProvider _serviceProvider;
         public const byte VisitTypedValue = 1;
 
@@ -60,7 +57,7 @@ namespace Netlyt.ServiceTests.Lex
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
             //_apiService.Register(_appAuth);
             _cacher = fixture.GetService<RedisCacher>();
-            _dbConfig = DBConfig.GetGeneralDatabase();
+            _dbConfig = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
             _serviceProvider = fixture.GetService<IServiceProvider>();
         }
 
@@ -91,9 +88,9 @@ namespace Netlyt.ServiceTests.Lex
             source.ProgressInterval = 0.05;
 
             //Harvester & integration
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
+            var harvester = new Harvester<IntegratedDocument>(10);
             harvester.LimitEntries(10000);
-            var integration = harvester.AddIntegrationSource(source, _appAuth, "NetInfoUserFeatures_7_8_1");
+            var integration = DataIntegration.Wrap(harvester.AddIntegrationSource(source, _appAuth, "NetInfoUserFeatures_7_8_1"));
 
             //Setup third sources and import blocks 
             //_helper = new CrossSiteAnalyticsHelper();
@@ -112,6 +109,7 @@ namespace Netlyt.ServiceTests.Lex
             //->bing in demographic data to the already grouped userbase
             //->pass the day_user document through FeatureGenerator to create it's features
             var featuresCollection = collectionName + "_features";
+            
             var donutRunner = new DonutRunner<NetinfoDonutfile, NetinfoDonutContext, IntegratedDocument>(harvester, _dbConfig, featuresCollection);
             var result = await donutRunner.Run(donut, GetFeatureGenerator(donut)); 
             
@@ -133,7 +131,7 @@ namespace Netlyt.ServiceTests.Lex
                 ApiKey = _appAuth,
                 IntegrationName = "Demography",
             }.AddIndex("uuid"));
-            var collection = new MongoList(_dbConfig, importTask.Integration.Collection);
+            var collection = new MongoList(_dbConfig.Name, importTask.Integration.Collection, _dbConfig.GetUrl());
             collection.Truncate();
             var importResult = await importTask.Import();
             return importResult;
@@ -159,9 +157,10 @@ namespace Netlyt.ServiceTests.Lex
             var importResult = await importTask.Import();
 
             if (entryLimit > 0) Assert.True(entryLimit == importResult.Data.ProcessedEntries);
-            else Assert.True(importResult.Data.ProcessedEntries>0); 
-            _integrationService.Remove(importTask.Integration);
-            var nonExistingIntegration = _integrationService.GetById(importTask.Integration.Id);
+            else Assert.True(importResult.Data.ProcessedEntries>0);
+            var importTaskIntegration = DataIntegration.Wrap(importTask.Integration);
+            _integrationService.Remove(importTaskIntegration);
+            var nonExistingIntegration = _integrationService.GetById(importTaskIntegration.Id);
             Assert.Null(nonExistingIntegration);
         }
 
@@ -196,8 +195,7 @@ namespace Netlyt.ServiceTests.Lex
             }.AddIndex("ondate"));
             var importResult = await importTask.Import();
             await importTask.Reduce(mapReduceDonut, entryLimit, Builders<BsonDocument>.Sort.Ascending("ondate"));
-            var databaseConfiguration = DBConfig.GetGeneralDatabase();
-            var reducedCollection = new MongoList(databaseConfiguration, importTask.OutputDestinationCollection.ReducedOutputCollection);
+            var reducedCollection = new MongoList(_dbConfig.Name, importTask.OutputDestinationCollection.ReducedOutputCollection, _dbConfig.GetUrl());
             var reducedDocsCount = reducedCollection.Size;
             Assert.Equal(64, reducedDocsCount);
             //Cleanup

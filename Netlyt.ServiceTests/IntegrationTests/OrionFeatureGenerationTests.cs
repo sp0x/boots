@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Donut;
+using Donut.Caching;
+using Donut.Orion;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
@@ -11,8 +14,7 @@ using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
-using Netlyt.Service.Orion;
-using Netlyt.Service.Source;
+using Netlyt.Service.Models;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
@@ -26,7 +28,7 @@ namespace Netlyt.ServiceTests.IntegrationTests
         private IntegrationService _integrationService;
         private ApiAuth _appAuth;
         private IServiceProvider _serviceProvider;
-        private DatabaseConfiguration _dbConfig;
+        private IDatabaseConfiguration _dbConfig;
         private RedisCacher _cacher;
         private ManagementDbContext _db;
         private UserService _userService;
@@ -57,7 +59,7 @@ namespace Netlyt.ServiceTests.IntegrationTests
                 _userService.CreateUser(_user, "Password-IsStrong!", _appAuth);
             }
             _cacher = fixture.GetService<RedisCacher>();
-            _dbConfig = DBConfig.GetGeneralDatabase();
+            _dbConfig = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
             _serviceProvider = fixture.GetService<IServiceProvider>();
             _modelService = fixture.GetService<ModelService>();
             _timestampService = new TimestampService(_db);
@@ -73,7 +75,7 @@ namespace Netlyt.ServiceTests.IntegrationTests
             var modelName = "FunModel";
             var targetAttribute = "pm10";
             var integrationResult = await _integrationService.CreateOrAppendToIntegration(sourceFile, _appAuth, _user, modelName);
-            var newIntegration = integrationResult?.Integration;
+            var newIntegration = DataIntegration.Wrap(integrationResult?.Integration);
             var model = Utils.GetModel(_appAuth, modelName, newIntegration);
 
             _db.Models.Add(model);
@@ -95,7 +97,7 @@ namespace Netlyt.ServiceTests.IntegrationTests
             await featuresAwaiter.WaitAsync(); //Wait for the semaphore
             Assert.NotNull(model.DonutScript);
             //Cleanup
-            new MongoList(_dbConfig, newIntegration.Collection).Truncate();
+            new MongoList(_dbConfig.Name, newIntegration.Collection, _dbConfig.GetUrl()).Truncate();
         }
         
     }

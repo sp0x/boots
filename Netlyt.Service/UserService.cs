@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Donut;
+using Donut.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting.Internal;
@@ -14,9 +16,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using nvoid.Integration;
 using Netlyt.Data;
+using Netlyt.Interfaces;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
-using Netlyt.Service.Ml;
 using Netlyt.Service.Models.Account;
 
 namespace Netlyt.Service

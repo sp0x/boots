@@ -2,6 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Donut;
+using Donut.Caching;
+using Donut.Lex.Data;
+using Donut.Lex.Expressions;
+using Donut.Lex.Generators;
+using Donut.Models;
+using Donut.Orion;
+using Donut.Source;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
@@ -11,14 +19,7 @@ using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Donut;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Lex.Data;
-using Netlyt.Service.Lex.Expressions;
-using Netlyt.Service.Lex.Generators;
-using Netlyt.Service.Ml;
-using Netlyt.Service.Orion;
-using Netlyt.Service.Source;
+using Netlyt.Service.Models;
 using Netlyt.ServiceTests.Fixtures;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -33,7 +34,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         private IntegrationService _integrationService;
         private ApiAuth _appAuth;
         private IServiceProvider _serviceProvider;
-        private DatabaseConfiguration _dbConfig;
+        private IDatabaseConfiguration _dbConfig;
         private RedisCacher _cacher;
         private ManagementDbContext _db;
         private UserService _userService;
@@ -63,7 +64,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
                 _userService.CreateUser(_user, "Password-IsStrong!", _appAuth);
             }
             _cacher = fixture.GetService<RedisCacher>();
-            _dbConfig = DBConfig.GetGeneralDatabase();
+            _dbConfig = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
             _serviceProvider = fixture.GetService<IServiceProvider>();
             _modelService = fixture.GetService<ModelService>();
             _timestampService = new TimestampService(_db);
@@ -138,7 +139,16 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         }
 
         [Fact]
-        public async Task TestGeneratedUnderscoreFeatures()
+        public void TestMongoDonutJointFeatures()
+        {
+            var model = Utils.GetModel(_appAuth);
+            var features = @"MIN(Romanian.rssi)
+NUM_UNIQUE(Romanian.pm25)";
+
+        }
+
+        [Fact]
+        public void TestGeneratedUnderscoreFeatures()
         {
             var model = Utils.GetModel(_appAuth);
             var features = @"MIN(Romanian.rssi)
@@ -296,7 +306,7 @@ WEEKDAY(first_Romanian_time)";
 
         private IMongoCollection<BsonDocument> GetTestingCollection()
         {
-            var mongoList = new MongoList(_dbConfig, "_testing_collection");
+            var mongoList = new MongoList(_dbConfig.Name, "_testing_collection", _dbConfig.GetUrl());
             mongoList.Truncate();
             IMongoCollection<BsonDocument> collection = mongoList.Records;
             int i = 0;

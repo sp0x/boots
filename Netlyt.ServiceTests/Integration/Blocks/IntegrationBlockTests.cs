@@ -7,18 +7,16 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks.Dataflow;
 using Donut;
+using Donut.Blocks;
+using Donut.IntegrationSource;
 using MongoDB.Driver;
-using nvoid.db.DB.MongoDB;
-using nvoid.exec.Blocks;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Blocks;
+using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.FeatureGeneration;
-using Netlyt.Service.Format;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Blocks;
-using Netlyt.Service.IntegrationSource;
-using Netlyt.Service.Models;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
@@ -49,9 +47,9 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             var inputDirectory = Path.Combine(Environment
                 .CurrentDirectory, "TestData\\Ebag\\1156");
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>()); 
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, threadCount); 
+            var harvester = new Harvester<IntegratedDocument>(threadCount); 
             harvester.LimitEntries((uint)limit); 
-            harvester.AddIntegrationSource(fileSource, _apiAuth, null, false);
+            harvester.AddIntegrationSource(fileSource, _apiAuth, null);
             return harvester;
         }
 

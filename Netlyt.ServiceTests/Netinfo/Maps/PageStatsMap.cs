@@ -1,4 +1,5 @@
 using System;
+using Donut.Caching;
 using nvoid.db.Caching;
 using StackExchange.Redis;
 

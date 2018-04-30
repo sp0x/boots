@@ -1,39 +1,35 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using Donut;
+using Donut.Caching;
+using Donut.IntegrationSource;
+using Donut.Lex.Data;
+using Donut.Orion;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service.Data;
 using Netlyt.Service.FeatureGeneration;
-using Netlyt.Service.Format;
-using Netlyt.Service.Integration;
-using Netlyt.Service.IntegrationSource;
-using Netlyt.Service.Lex.Data;
-using Netlyt.Service.Ml;
-using Netlyt.Service.Orion;
 using Newtonsoft.Json.Linq;
+using Model = Donut.Models.Model;
 
 namespace Netlyt.Service.Donut
 {
     public class DonutOrionHandler : IDisposable
     {
-        private OrionContext _orion;
+        private IOrionContext _orion;
         private ManagementDbContext _db;
         private CompilerService _compiler;
         private ApiService _apiService;
         private IntegrationService _integrationService;
         private IServiceProvider _serviceProvider;
-        private DatabaseConfiguration _dbConfig;
-        private RedisCacher _cacher;
+        private IDatabaseConfiguration _dbConfig;
+        private IRedisCacher _cacher;
         private IEmailSender _emailService;
 
         #region Events
@@ -42,12 +38,12 @@ namespace Netlyt.Service.Donut
         #endregion
 
         public DonutOrionHandler(IFactory<ManagementDbContext> contextFactory,
-            OrionContext orion,
+            IOrionContext orion,
             CompilerService compilerService,
             IServiceProvider serviceProvider,
             ApiService apiService,
             IntegrationService integrationService,
-            RedisCacher redisCacher,
+            IRedisCacher redisCacher,
             IEmailSender emailSender)
         {
             _db = contextFactory.Create();
@@ -61,7 +57,7 @@ namespace Netlyt.Service.Donut
             _apiService = apiService;
             _integrationService = integrationService;
             _cacher = redisCacher;
-            _dbConfig = DBConfig.GetGeneralDatabase();
+            _dbConfig = new NetlytDbConfig(DBConfig.GetInstance().GetGeneralDatabase());
             _emailService = emailSender;
         }
 
@@ -184,7 +180,7 @@ namespace Netlyt.Service.Donut
             var collectioName = sourceIntegration.Collection;
             MongoSource<ExpandoObject> source = MongoSource.CreateFromCollection(collectioName, new BsonFormatter<ExpandoObject>());
             //source.ProgressInterval = 0.05;
-            var harvester = new Netlyt.Service.Harvester<IntegratedDocument>(_apiService, _integrationService, 10);
+            var harvester = new Harvester<IntegratedDocument>(10);
             //Create a donut and a donutRunner
             var donutMachine = DonutGeneratorFactory.Create<IntegratedDocument>(donutType, donutContextType, sourceIntegration, _cacher, _serviceProvider);
             harvester.AddIntegrationSource(source, sourceIntegration);//source, appAuth, "SomeIntegrationName3");
@@ -192,7 +188,8 @@ namespace Netlyt.Service.Donut
             donut.SetupCacheInterval(source.Size);
             donut.ReplayInputOnFeatures = true;
             donut.SkipFeatureExtraction = true;
-            IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType<IntegratedDocument>(donutType, donutContextType, harvester, _dbConfig, sourceIntegration.FeaturesCollection);
+            IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType<IntegratedDocument>(donutType, donutContextType,
+                harvester, _dbConfig, sourceIntegration.FeaturesCollection);
             var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);
 
             var result = await donutRunner.Run(donut, featureGenerator);
