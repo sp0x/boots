@@ -13,6 +13,7 @@ using System.IO;
 using System.Text;
 using AutoMapper;
 using Donut;
+using Donut.Data;
 using Donut.Integration;
 using Donut.Orion;
 using Microsoft.AspNetCore.Http.Features;
@@ -22,7 +23,6 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
 using Netlyt.Service.Data;
-using Netlyt.Service.Integration.Import;
 using Netlyt.Web.Helpers;
 using Netlyt.Web.Services;
 using Netlyt.Web.ViewModels;
@@ -35,7 +35,7 @@ namespace Netlyt.Web.Controllers
     {
         private ApiService _apiService;
         private RemoteDataSource<IntegratedDocument> _documentStore;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private FormOptions _defaultFormOptions;
         private UserService _userService;
         private IMapper _mapper;
@@ -47,7 +47,7 @@ namespace Netlyt.Web.Controllers
             SocialNetworkApiManager socNetManager,
             ApiService apiService,
             UserService userService,
-            IntegrationService integrationService,
+            IIntegrationService integrationService,
             IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
             IMapper mapper)
         {

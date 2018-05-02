@@ -1,4 +1,4 @@
-namespace Netlyt.Service.Integration.Import
+namespace Donut.Data
 {
     public class DestinationCollection
     {

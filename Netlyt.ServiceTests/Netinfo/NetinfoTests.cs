@@ -9,6 +9,8 @@ using System.Threading.Tasks.Dataflow;
 using Donut;
 using Donut.Blocks;
 using Donut.Caching;
+using Donut.Data;
+using Donut.FeatureGeneration;
 using Donut.IntegrationSource;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -24,9 +26,7 @@ using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Analytics;
 using Netlyt.Service.Data;
-using Netlyt.Service.FeatureGeneration;
 using Xunit;
-using Netlyt.Service.Integration.Import;
 using Netlyt.ServiceTests.Fixtures;
 using StackExchange.Redis;
 
@@ -123,7 +123,7 @@ namespace Netlyt.ServiceTests.Netinfo
             var currentDir = Environment.CurrentDirectory;
             inputDirectory = Path.Combine(currentDir, inputDirectory);
             Console.WriteLine($"Parsing data in: {inputDirectory}");
-            var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
+            var importTask = new DataImportTask<ExpandoObject>(new DataImportTaskOptions
             {
                 Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>() { Delimiter = ';' }),
                 ApiKey = _appId,
@@ -162,7 +162,7 @@ events : elements };
                 JavaScriptMode = true,
                 OutputOptions = MapReduceOutputOptions.Replace(importTask.OutputDestinationCollection.ReducedOutputCollection)
             };
-            var reduceCursor = await importResult.Collection.Records.MapReduceAsync<BsonDocument>(map, reduce, mapReduceOptions);
+            var reduceCursor = await importResult.Collection.MapReduceAsync(map, reduce, mapReduceOptions);
         }
 
 
@@ -536,7 +536,7 @@ events : elements };
             //grouper.LinkOnComplete(demographyImporter);
             //cachedReducer.AddFlowCompletionTask(insertBatcher.Completion);
 
-            harvester.AddType(type, fileSource);
+            harvester.AddIntegration(type, fileSource);
             harvester.SetDestination(cachedReducer);
             //var res1 = await harvester.ReadAll(grouper.GetInputBlock());
             var result = await harvester.Run();

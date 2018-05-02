@@ -24,7 +24,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
         private DynamicContextFactory _contextFactory;
         private ApiService _apiService;
         private ConfigurationFixture _config;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private ApiAuth _apiAuth;
 
         public GroupingBlockTests(ConfigurationFixture fixture)
@@ -32,7 +32,7 @@ namespace Netlyt.ServiceTests.Integration.Blocks
             _config = fixture;
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
             _apiService = fixture.GetService<ApiService>();
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
             _apiAuth = _apiService.Generate();
             _apiService.Register(_apiAuth);
         }

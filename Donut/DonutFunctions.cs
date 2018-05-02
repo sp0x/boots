@@ -121,6 +121,11 @@ namespace Donut
                 Type = DonutFunctionType.Group,
                 IsAggregate = false
             };
+            Functions["num_unique"] = new NumUnique("num_unique")
+            {
+                Type = DonutFunctionType.Donut,
+                IsAggregate = false
+            };
 
             //Functions["time"] = "(function(timeElem){ return timeElem.getTime() })";
         }

@@ -44,7 +44,7 @@ namespace Donut.Lex.Generation
         protected static Stream GetTemplate(string name)
         {
             if(_assembly==null) _assembly = Assembly.GetExecutingAssembly(); 
-            var resourceName = $"Netlyt.Service.Lex.Templates.{name}"; 
+            var resourceName = $"Donut.Lex.Templates.{name}"; 
             Stream stream = _assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
             {
@@ -53,7 +53,17 @@ namespace Donut.Lex.Generation
             //StreamReader reader = new StreamReader(stream);
             return stream;
         }
-
+        protected static Stream GetTemplateFromNsp(string namesp)
+        {
+            if (_assembly == null) _assembly = Assembly.GetExecutingAssembly();
+            Stream stream = _assembly.GetManifestResourceStream(namesp);
+            if (stream == null)
+            {
+                throw new Exception("Template not found!");
+            }
+            //StreamReader reader = new StreamReader(stream);
+            return stream;
+        }
 
         /// <summary>
         /// Generates variables from the given assignent expressions.

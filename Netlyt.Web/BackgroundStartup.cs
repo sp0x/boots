@@ -64,7 +64,7 @@ namespace Netlyt.Web
             services.AddTransient<TimestampService>();
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
-            services.AddTransient<IntegrationService>();
+            services.AddTransient<IIntegrationService, IntegrationService>();
             services.AddAutoMapper();
 
             services.AddSingleton<DonutOrionHandler>();

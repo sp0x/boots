@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Donut;
+using Donut.Data;
 using Donut.Integration;
 using Donut.Orion;
 using Newtonsoft.Json.Linq;
@@ -17,7 +18,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Service.Data;
-using Netlyt.Service.Integration.Import;
 using Netlyt.Web.Helpers;
 using Netlyt.Web.ViewModels;
 using Newtonsoft.Json;
@@ -32,7 +32,7 @@ namespace Netlyt.Web.Controllers
         private UserService _userService;
         private IMapper _mapper;
         private ModelService _modelService;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private SignInManager<User> _signInManager;
         private IConfiguration _configuration;
         private ManagementDbContext _db;
@@ -42,7 +42,7 @@ namespace Netlyt.Web.Controllers
             UserManager<User> userManager,
             UserService userService,
             ModelService modelService,
-            IntegrationService integrationService,
+            IIntegrationService integrationService,
             SignInManager<User> signInManager,
             IConfiguration configuration,
             ManagementDbContext db)

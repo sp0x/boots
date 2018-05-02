@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using Donut.Integration;
 using Netlyt.Interfaces;
 
@@ -21,5 +22,6 @@ namespace Donut
 
         IEnumerable<IInputSource> Shards();
         void Reset();
+        void SetFormatter(IInputFormatter resolveFormatter);
     }
 }

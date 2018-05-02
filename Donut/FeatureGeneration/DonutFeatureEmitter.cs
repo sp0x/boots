@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks.Dataflow;
-using Donut;
 using Netlyt.Interfaces;
-using Netlyt.Service.Donut;
 
-namespace Netlyt.Service.FeatureGeneration
+namespace Donut.FeatureGeneration
 {
     /// <summary>
     /// Base class for feature emitters that work on documents.

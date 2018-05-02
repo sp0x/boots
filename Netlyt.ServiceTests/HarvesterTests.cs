@@ -21,14 +21,14 @@ namespace Netlyt.ServiceTests
         private DynamicContextFactory _contextFactory;
         private ApiService _apiService;
         private ConfigurationFixture _config;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
 
         public HarvesterTests(ConfigurationFixture fixture)
         {
             _config = fixture;
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
             _apiService = fixture.GetService<ApiService>();
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace Netlyt.ServiceTests
             var outBlock = new IntegrationActionBlock<IntegratedDocument>(appId, (action, x) =>
             { });
             harvester.SetDestination(outBlock);
-            harvester.AddType(type, fileSource);
+            harvester.AddIntegration(type, fileSource);
             Assert.True(harvester.IntegrationSets.Count > 0);
             await harvester.Run();
             Assert.True(harvester.ElapsedTime().TotalMilliseconds > 0);

@@ -23,7 +23,7 @@ namespace Donut
             _context = ctx;
             _setFinder = new CacheSetFinder();
             _setSource = new CacheSetSource(); 
-            _integrationService = serviceProvider.GetService(typeof(IIntegrationService)) as IIntegrationService;
+            _integrationService = (IIntegrationService)serviceProvider.GetService(typeof(IIntegrationService));
         }
 
         public void Initialize()

@@ -35,7 +35,8 @@ namespace Donut
             string featuresCollection)
         {
             var runnerCrMethod = typeof(DonutRunnerFactory).GetMethod(nameof(DonutRunnerFactory.Create));
-            var runner = runnerCrMethod.MakeGenericMethod(donutType, donutContextType, typeof(IntegratedDocument)).Invoke(null, new object[] { harvester, db, featuresCollection });
+            var runnerCtor = runnerCrMethod.MakeGenericMethod(donutType, donutContextType, typeof(IntegratedDocument));
+            var runner = runnerCtor.Invoke(null, new object[] { harvester, db, featuresCollection });
             return runner as IDonutRunner<IntegratedDocument>;
         }
 

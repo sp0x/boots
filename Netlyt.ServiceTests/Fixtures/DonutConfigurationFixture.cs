@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using Donut;
 using Donut.Caching;
+using Donut.IntegrationSource;
+using Donut.Models;
 using Donut.Orion;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -24,11 +28,12 @@ namespace Netlyt.ServiceTests.Fixtures
 {
     public class DonutConfigurationFixture : IDisposable
     {
-        private ManagementDbContext _context;
+        protected ManagementDbContext _context;
         public DbContextOptionsBuilder<ManagementDbContext> DbOptionsBuilder { get; private set; }
         public ServiceProvider ServiceProvider { get; set; }
         private IOrionContext OrionContext { get; set; }
         public IConfigurationRoot Config { get; set; }
+
         private static Assembly _assembly = Assembly.GetExecutingAssembly();
 
         public DonutConfigurationFixture()
@@ -38,7 +43,7 @@ namespace Netlyt.ServiceTests.Fixtures
             var builder = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.Development.json", optional: false, reloadOnChange: true);
             Config = builder.Build();
-            
+
             var services = new ServiceCollection();
             var postgresConnectionString = Config.GetConnectionString("PostgreSQLConnection");
             DbOptionsBuilder = new DbContextOptionsBuilder<ManagementDbContext>()
@@ -47,7 +52,7 @@ namespace Netlyt.ServiceTests.Fixtures
             var dbConfig = DBConfig.GetInstance(Config);
 
             ConfigureServices(services);
-            ServiceProvider = services.BuildServiceProvider(); 
+            ServiceProvider = services.BuildServiceProvider();
             ServiceProvider.GetService<DonutOrionHandler>();
         }
 
@@ -93,7 +98,7 @@ namespace Netlyt.ServiceTests.Fixtures
             //s => new UserService(s.GetService<UserManager<User>>(), s.GetService<ApiService>(), null, null,
             //    s.GetService<OrganizationService>(), s.GetService<ModelService>(), _context));
             services.AddTransient<ModelService>();//s => new ModelService(_context, s.GetService<OrionContext>(), null, new TimestampService(_context)));
-            services.AddTransient<IntegrationService>();//s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>(), new TimestampService(_context)));
+            services.AddTransient<IIntegrationService, IntegrationService>();//s => new IntegrationService(_context, new ApiService(_context, null), s.GetService<UserService>(), new TimestampService(_context)));
             services.AddSingleton<IRedisCacher>(DBConfig.GetInstance().GetCacheContext());
             services.AddTransient<IEmailSender, AuthMessageSender>((sp) =>
             {
@@ -107,7 +112,7 @@ namespace Netlyt.ServiceTests.Fixtures
         public ManagementDbContext CreateContext()
         {
             return new ManagementDbContext(DbOptionsBuilder.Options);
-        } 
+        }
 
         public T GetService<T>()
         {
@@ -117,6 +122,70 @@ namespace Netlyt.ServiceTests.Fixtures
         public void Dispose()
         {
 
+        }
+
+        public async Task<Model> GetModel(ApiAuth apiAuth, string modelName = "Romanian", string integrationName = "Namex")
+        {
+            var rootIntegration = new DataIntegration(integrationName, true)
+            {
+                APIKey = apiAuth,
+                APIKeyId = apiAuth.Id,
+                Name = integrationName,
+                DataTimestampColumn = "timestamp",
+            };
+            rootIntegration.AddField<double>("humidity");
+            rootIntegration.AddField<double>("latitude");
+            rootIntegration.AddField<double>("longitude");
+            rootIntegration.AddField<double>("pm10");
+            rootIntegration.AddField<double>("pm25");
+            rootIntegration.AddField<double>("pressure");
+            rootIntegration.AddField<double>("rssi");
+            rootIntegration.AddField<double>("temperature");
+            rootIntegration.AddField<DateTime>("timestamp");
+            var firstIgn = await _context.Integrations.FirstOrDefaultAsync(x => x.Name == rootIntegration.Name);
+            if (firstIgn != null)
+            {
+                _context.Integrations.Remove(firstIgn);
+            }
+
+            var model = await GetModel(apiAuth, modelName, rootIntegration);
+            _context.Integrations.Add(firstIgn);
+            return model;
+        }
+        public async Task<Model> GetModel(ApiAuth apiAuth, string modelName, DataIntegration ign)
+        {
+            var model = new Model()
+            {
+                ModelName = modelName
+            };//_db.Models.Include(x=>x.DataIntegrations).FirstOrDefault(x => x.Id == modelId);
+            var firstModel = await _context.Models.FirstOrDefaultAsync(x => x.ModelName == modelName);
+            if (firstModel != null)
+            {
+                _context.Models.Remove(firstModel);
+            }
+            var modelIntegration = new ModelIntegration() { Model = model, Integration = ign };
+            model.DataIntegrations.Add(modelIntegration);
+            model.User = new User() { UserName = "Testuser" };
+            model.TargetAttribute = "pm10";
+            return model;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sourceFile"></param>
+        /// <param name="name"></param>
+        /// <param name="appAuth"></param>
+        /// <param name="user"></param>
+        /// <returns></returns>
+        public DataIntegration GetIntegrationByFile(string sourceFile, string name, ApiAuth appAuth,User user, out IInputSource inputSource)
+        {
+            inputSource = new FileSource(sourceFile);
+            var ignService = GetService<IIntegrationService>();
+            inputSource.SetFormatter(ignService.ResolveFormatter<ExpandoObject>(MimeResolver.Resolve(sourceFile)));
+
+            bool isNewIgn;
+            var ign = ignService.ResolveIntegration(appAuth, user, name, out isNewIgn, inputSource);
+            return ign;
         }
     }
 }

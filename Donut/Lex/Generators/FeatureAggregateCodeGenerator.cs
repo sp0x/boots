@@ -507,7 +507,7 @@ namespace Donut.Lex.Generators
                                  "});";
                 fBuilder.AppendLine(outputStep);
                 var record = "var aggOptions = new AggregateOptions(){ AllowDiskUse = true, BatchSize=1  };\n";
-                record += $"var aggregateResult = rec{_rootDataMember.GetPropertyName()}.Aggregate<BsonDocument>(pipeline, aggOptions);";
+                record += $"var aggregateResult = rootCollection.Aggregate<BsonDocument>(pipeline, aggOptions);";
                 fBuilder.AppendLine(record);
             }
             return fBuilder.ToString();

@@ -4,12 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using Donut;
-using Netlyt.Interfaces;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Models;
 
-namespace Netlyt.Service.FeatureGeneration
+namespace Donut.FeatureGeneration
 {
     /// <summary>
     /// A tpl block which deals with generating features by multiple functions

@@ -1,12 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Caching;
+using Donut.Data;
+using Donut.FeatureGeneration;
+using Donut.IntegrationSource;
+using Donut.Lex.Data;
 using Donut.Orion;
+using MongoDB.Bson;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
@@ -26,7 +32,7 @@ namespace Netlyt.ServiceTests.IntegrationTests
     {
         private CompilerService _compiler;
         private ApiService _apiService;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private ApiAuth _appAuth;
         private IServiceProvider _serviceProvider;
         private IDatabaseConfiguration _dbConfig;
@@ -38,12 +44,13 @@ namespace Netlyt.ServiceTests.IntegrationTests
         private IOrionContext _orion;
         private TimestampService _timestampService;
         private DonutOrionHandler _orionHandler;
+        private DonutConfigurationFixture _fixture;
 
         public OrionFeatureGenerationTests(DonutConfigurationFixture fixture)
         {
             _compiler = fixture.GetService<CompilerService>();
             _apiService = fixture.GetService<ApiService>();
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
             _userService = fixture.GetService<UserService>();
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
@@ -65,6 +72,48 @@ namespace Netlyt.ServiceTests.IntegrationTests
             _modelService = fixture.GetService<ModelService>();
             _timestampService = new TimestampService(_db);
             _orionHandler = fixture.GetService<DonutOrionHandler>();
+            _fixture = fixture;
+        }
+
+
+
+        [Theory]
+        [InlineData(new object[]{ "Res\\TestData\\pollution_data.csv" })]
+        public async Task TestMongoDonutJointFeatures(string sourceFile)
+        {
+            var modelName = "Romanian";
+            IInputSource inputSource;
+            var integration = _fixture.GetIntegrationByFile(sourceFile, modelName, _appAuth, _user, out inputSource);
+            var model = await _fixture.GetModel(_appAuth, modelName, integration);
+            //Run file integration
+            var features = @"MIN(Romanian.rssi)
+NUM_UNIQUE(Romanian.pm25)";
+            string[] featureBodies = features.Split('\n');
+            string donutName = $"{model.ModelName}Donut";
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", model.GetRootIntegration(), featureBodies);
+            foreach (var modelIgn in model.DataIntegrations)
+            {
+                dscript.AddIntegrations(modelIgn.Integration);
+            }
+            Type donutType, donutContextType, donutFEmitterType;
+            var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType, out donutFEmitterType);
+            Assert.NotNull(assembly);
+
+            //Create a donut and a donutRunner
+            var donutMachine = DonutGeneratorFactory.Create<IntegratedDocument>(donutType, donutContextType, integration, _cacher, _serviceProvider);
+            IDonutfile donut = donutMachine.Generate();
+            donut.SetupCacheInterval(10000);
+            donut.ReplayInputOnFeatures = true;
+            var harvester = new Harvester<IntegratedDocument>(10);
+            harvester.AddIntegration(integration, inputSource);
+            
+            IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType(donutType, donutContextType, harvester, _dbConfig, integration.FeaturesCollection);
+
+            var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);
+
+            var result = await donutRunner.Run(donut, featureGenerator);
+            integration.GetMongoFeaturesCollection<BsonDocument>().Drop();
+            integration.GetMongoCollection<BsonDocument>().Drop();
         }
 
 
@@ -77,7 +126,7 @@ namespace Netlyt.ServiceTests.IntegrationTests
             var targetAttribute = "pm10";
             var integrationResult = await _integrationService.CreateOrAppendToIntegration(sourceFile, _appAuth, _user, modelName);
             var newIntegration = DataIntegration.Wrap(integrationResult?.Integration);
-            var model = Utils.GetModel(_appAuth, modelName, newIntegration);
+            var model = await _fixture.GetModel(_appAuth, modelName, newIntegration);
 
             _db.Models.Add(model);
             var collections = model.GetFeatureGenerationCollections(targetAttribute);

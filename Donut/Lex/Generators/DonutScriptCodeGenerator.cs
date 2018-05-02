@@ -73,7 +73,9 @@ namespace Donut.Lex.Generators
             {
                 donutTemplate = reader.ReadToEnd();
                 if (string.IsNullOrEmpty(donutTemplate)) throw new Exception("Template empty!");
-                donutTemplate = $"//Generated on {DateTime.UtcNow} UTC\n" + donutTemplate;
+                var donutComment = $"//Generated on {DateTime.UtcNow} UTC\n";
+                donutComment += $"//Root collection on {script.GetRootIntegration().Collection}\n";
+                donutTemplate = $"{donutComment}\n" + donutTemplate;
                 donutTemplate = donutTemplate.Replace("$Namespace", @namespace);
                 donutTemplate = donutTemplate.Replace("$ClassName", baseName);
                 donutTemplate = donutTemplate.Replace("$ContextTypeName", conutextName);

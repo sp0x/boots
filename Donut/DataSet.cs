@@ -1,11 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 
 namespace Donut
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public abstract class DataSet<T> : IDataSet<T>
         where T : class
     {
@@ -23,7 +29,9 @@ namespace Donut
 
         public void SetSource(string collection)
         {
-            throw new NotImplementedException();
+            Database = MongoHelper.GetDatabase();;
+            var cinst = Database.GetCollection<T>(collection);
+            Records = cinst;
         }
 
         public void SetAggregateKeys(IEnumerable<IAggregateKey> keys)

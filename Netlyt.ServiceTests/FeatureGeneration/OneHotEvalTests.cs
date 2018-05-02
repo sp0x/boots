@@ -18,7 +18,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
     public class OneHotEvalTests
     {
         private ApiService _apiService;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private ApiAuth _appAuth;
         private ManagementDbContext _db;
         private UserService _userService;
@@ -27,7 +27,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         public OneHotEvalTests(DonutConfigurationFixture fixture)
         {
             _apiService = fixture.GetService<ApiService>();
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
             _userService = fixture.GetService<UserService>();
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");

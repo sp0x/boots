@@ -18,6 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Auth\" />
+    <Folder Include="Integration\Import\" />
     <Folder Include="Lex\" />
     <Folder Include="Models\CacheMaps\" />
     <Folder Include="Network\" />

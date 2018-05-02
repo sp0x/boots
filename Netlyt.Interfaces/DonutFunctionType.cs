@@ -2,6 +2,7 @@
 {
     public enum DonutFunctionType
     {
-        Standard, Group, Project, GroupKey, Filter
+        Standard, Group, Project, GroupKey, Filter,
+        Donut
     }
 }

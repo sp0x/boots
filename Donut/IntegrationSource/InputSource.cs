@@ -24,7 +24,8 @@ namespace Donut.IntegrationSource
         {
             get
             {
-                return 100 * ((double)Formatter.Position() / Math.Max(1, Size));
+                var pgs = 100 * ((double) Formatter.Position() / Math.Max(1, Size));
+                return Math.Max(0,pgs);
             }
         }
 

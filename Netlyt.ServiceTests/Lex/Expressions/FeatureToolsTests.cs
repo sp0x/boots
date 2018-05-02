@@ -17,13 +17,13 @@ namespace Netlyt.ServiceTests.Lex.Expressions
     public class FeatureToolsTests
     {
         private ApiService _apiService;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private ApiAuth _appId;
 
         public FeatureToolsTests(ConfigurationFixture fixture)
         {
             _apiService = fixture.GetService<ApiService>();
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
             _appId = _apiService.Generate();
             _apiService.Register(_appId);
         }

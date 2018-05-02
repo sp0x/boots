@@ -130,7 +130,7 @@ namespace Netlyt.Web
             services.AddTransient<TimestampService>();
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
-            services.AddTransient<IntegrationService>();
+            services.AddTransient<IIntegrationService, IntegrationService>();
             //services.AddSingleton<DonutOrionHandler>();
 
             SetupAuthentication(services);

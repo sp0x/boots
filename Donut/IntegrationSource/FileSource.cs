@@ -31,7 +31,7 @@ namespace Donut.IntegrationSource
         public FileSource(string file) : base()
         {
             _lock = new object();
-            Path = file; 
+            Path = file;
         }
 
         public FileSource(Stream fileStream) : this()

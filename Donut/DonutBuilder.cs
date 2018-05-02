@@ -48,7 +48,7 @@ namespace Donut
             _tContext = typeof(TContext);
             _serviceProvider = serviceProvider;
             var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = "Netlyt.Service.Lex.Templates.Donutfile.txt";
+            var resourceName = "Donut.Lex.Templates.Donutfile.txt";
             _cacher = cacher;
             _integration = integration; 
             using (Stream stream = assembly.GetManifestResourceStream(resourceName))

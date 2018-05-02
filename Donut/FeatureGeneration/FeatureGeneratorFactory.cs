@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using Donut;
 using Netlyt.Interfaces;
-using Netlyt.Service.Donut;
-using Netlyt.Service.Integration;
 
-namespace Netlyt.Service.FeatureGeneration
+namespace Donut.FeatureGeneration
 {
     public class FeatureGeneratorFactory<TData>
     where TData : class, IIntegratedDocument

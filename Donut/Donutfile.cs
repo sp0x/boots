@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Donut.Blocks;
 using Donut.Caching;
 using Netlyt.Interfaces;
-using Netlyt.Service.Donut;
 
 namespace Donut
 {

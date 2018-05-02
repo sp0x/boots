@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Caching;
+using Donut.FeatureGeneration;
 using Donut.IntegrationSource;
 using Donut.Lex.Data;
 using Donut.Orion;
@@ -15,7 +16,6 @@ using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service.Data;
-using Netlyt.Service.FeatureGeneration;
 using Newtonsoft.Json.Linq;
 using Model = Donut.Models.Model;
 
@@ -27,7 +27,7 @@ namespace Netlyt.Service.Donut
         private ManagementDbContext _db;
         private CompilerService _compiler;
         private ApiService _apiService;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private IServiceProvider _serviceProvider;
         private IDatabaseConfiguration _dbConfig;
         private IRedisCacher _cacher;
@@ -43,7 +43,7 @@ namespace Netlyt.Service.Donut
             CompilerService compilerService,
             IServiceProvider serviceProvider,
             ApiService apiService,
-            IntegrationService integrationService,
+            IIntegrationService integrationService,
             IDatabaseConfiguration dbc,
             IRedisCacher redisCacher,
             IEmailSender emailSender)

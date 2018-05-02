@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Caching;
+using Donut.FeatureGeneration;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
 using Donut.Lex.Generators;
@@ -32,7 +33,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
     {
         private CompilerService _compiler;
         private ApiService _apiService;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private ApiAuth _appAuth;
         private IServiceProvider _serviceProvider;
         private IDatabaseConfiguration _dbConfig;
@@ -43,12 +44,13 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         private User _user;
         private IOrionContext _orion;
         private TimestampService _timestampService;
+        private DonutConfigurationFixture _fixture;
 
         public FeatureGenerationTests(DonutConfigurationFixture fixture)
         {
             _compiler = fixture.GetService<CompilerService>();
             _apiService = fixture.GetService<ApiService>();
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
             _userService = fixture.GetService<UserService>();
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
@@ -66,9 +68,10 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             }
             _cacher = fixture.GetService<RedisCacher>();
             _dbConfig = (DBConfig.GetInstance().GetGeneralDatabase()).ToDonutDbConfig();
-            _serviceProvider = fixture.GetService<IServiceProvider>();
+            _serviceProvider = fixture.ServiceProvider;//GetService<IServiceProvider>();
             _modelService = fixture.GetService<ModelService>();
             _timestampService = new TimestampService(_db);
+            _fixture = fixture;
         }
 
         
@@ -79,7 +82,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         [Fact]
         public async Task CreateFeatureGenerationRequest()
         { 
-            var newModel = Utils.GetModel(_appAuth);
+            var newModel = await _fixture.GetModel(_appAuth);
             var targetAttribute = "pm10";
             var rootIgn = newModel.GetRootIntegration();
             var fldCategory = rootIgn.AddField<string>("category", FieldDataEncoding.BinaryIntId);
@@ -102,7 +105,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         [Fact]
         public async Task TrainGeneratedFeatures()
         {
-            Model model = Utils.GetModel(_appAuth);
+            Model model = await _fixture.GetModel(_appAuth);
             DataIntegration ign = model.GetRootIntegration();
             var query = OrionQuery.Factory.CreateTrainQuery(model, ign);
             //var payload = query.Serialize();
@@ -139,19 +142,11 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             Console.ReadLine();//We hang on here, waiting for the features to be generated ..
         }
 
-        [Fact]
-        public void TestMongoDonutJointFeatures()
-        {
-            var model = Utils.GetModel(_appAuth);
-            var features = @"MIN(Romanian.rssi)
-NUM_UNIQUE(Romanian.pm25)";
-
-        }
 
         [Fact]
-        public void TestGeneratedUnderscoreFeatures()
+        public async Task TestGeneratedUnderscoreFeatures()
         {
-            var model = Utils.GetModel(_appAuth);
+            var model = await _fixture.GetModel(_appAuth);
             var features = @"MIN(Romanian.rssi)
 DAY(first_Romanian_time)
 YEAR(first_Romanian_time)
@@ -172,7 +167,7 @@ WEEKDAY(first_Romanian_time)";
         [Fact]
         public async Task TestGeneratedNestedFeatures()
         {
-            var model = Utils.GetModel(_appAuth);
+            var model = await _fixture.GetModel(_appAuth);
             string features = @"MIN(Romanian.WEEKDAY(timestamp))";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
@@ -192,7 +187,7 @@ WEEKDAY(first_Romanian_time)";
         [Fact]
         public async Task TestGeneratedNestedDotFeatures()
         {
-            var model = Utils.GetModel(_appAuth, "feature_test.csv", "feature_test.csv");
+            var model = await _fixture.GetModel(_appAuth, "feature_test.csv", "feature_test.csv");
             string features = @"SUM(feature_test.csv.humidity)";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";

@@ -6,6 +6,8 @@ using System.IO;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Caching;
+using Donut.Data;
+using Donut.FeatureGeneration;
 using Donut.IntegrationSource;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -17,8 +19,6 @@ using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.FeatureGeneration;
-using Netlyt.Service.Integration.Import;
 using Netlyt.Service.Time;
 using Netlyt.ServiceTests.Fixtures;
 using Netlyt.ServiceTests.Netinfo;
@@ -36,7 +36,7 @@ namespace Netlyt.ServiceTests.Lex
         private DynamicContextFactory _contextFactory;
         private ManagementDbContext _context;
         private ApiService _apiService;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private ApiAuth _appAuth;
         private RedisCacher _cacher;
         private IDatabaseConfiguration _dbConfig;
@@ -52,7 +52,7 @@ namespace Netlyt.ServiceTests.Lex
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
             _context = _contextFactory.Create();
             _apiService = fixture.GetService<ApiService>();
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
             //_appAuth = _apiService.Generate();
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
@@ -121,7 +121,7 @@ namespace Netlyt.ServiceTests.Lex
         private async Task<DataImportResult> AddDemographyData()
         {
             var inputFile = "TestData\\Ebag\\demograpy.csv";
-            var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
+            var importTask = new DataImportTask<ExpandoObject>(new DataImportTaskOptions
             {
                 Source = FileSource.CreateFromFile(Path.Combine(Environment.CurrentDirectory, inputFile), new CsvFormatter<ExpandoObject>()
                 {
@@ -144,7 +144,7 @@ namespace Netlyt.ServiceTests.Lex
         public async void TestDataSourceInput(string inputFile)
         {  
             uint entryLimit = 0;
-            var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
+            var importTask = new DataImportTask<ExpandoObject>(new DataImportTaskOptions
             {
                 Source = FileSource.CreateFromFile(Path.Combine(Environment.CurrentDirectory, inputFile), new CsvFormatter<ExpandoObject>()
                 {
@@ -186,7 +186,7 @@ namespace Netlyt.ServiceTests.Lex
             inputDirectory = Path.Combine(currentDir, inputDirectory);
             Console.WriteLine($"Parsing data in: {inputDirectory}");
             uint entryLimit = 100;
-            var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
+            var importTask = new DataImportTask<ExpandoObject>(new DataImportTaskOptions
             {
                 Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>() { Delimiter = ';' }),
                 ApiKey = _appAuth,
@@ -200,7 +200,7 @@ namespace Netlyt.ServiceTests.Lex
             var reducedDocsCount = reducedCollection.Size;
             Assert.Equal(64, reducedDocsCount);
             //Cleanup
-            importResult.Collection.Trash();
+            importResult.Collection.Drop();
             reducedCollection.Trash();
         }
 

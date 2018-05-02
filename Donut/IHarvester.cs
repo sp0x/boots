@@ -18,7 +18,7 @@ namespace Donut
 
         IIntegration AddIntegrationSource(IInputSource inputSource, ApiAuth appAuth, string name, string outputCollection = null);
         void AddIntegrationSource(IInputSource inputSource, IIntegration integration);
-        IHarvester<TDocument> AddType(IIntegration input, IInputSource source);
+        IHarvester<TDocument> AddIntegration(IIntegration input, IInputSource source);
         TimeSpan ElapsedTime();
         void LimitEntries(uint max);
         void LimitShards(uint max);

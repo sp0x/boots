@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks.Dataflow;
 using Donut;
 using Donut.Blocks;
+using Donut.FeatureGeneration;
 using Donut.IntegrationSource;
 using MongoDB.Driver;
 using Netlyt.Interfaces;
@@ -16,7 +17,6 @@ using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.FeatureGeneration;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 

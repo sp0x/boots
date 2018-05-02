@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Dynamic;
 using System.IO;
+using Donut;
+using Donut.Data;
 using Donut.IntegrationSource;
 using Donut.Lex;
 using Donut.Lex.Expressions;
@@ -15,7 +17,6 @@ using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Integration.Import;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
@@ -26,12 +27,12 @@ namespace Netlyt.ServiceTests.Lex.Expressions
     {
         private ApiService _apiService;
         private ApiAuth _appId;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
 
         public MapReduceExpressionTests(ConfigurationFixture fixture)
         {
             _apiService = fixture.GetService<ApiService>();
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
             _appId = _apiService.Generate();
             _apiService.Register(_appId);
         }
@@ -122,7 +123,7 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             inputDirectory = Path.Combine(currentDir, inputDirectory);
             Console.WriteLine($"Parsing data in: {inputDirectory}");
             uint entryLimit = 100;
-            var importTask = new DataImportTask<ExpandoObject>(_apiService, _integrationService, new DataImportTaskOptions
+            var importTask = new DataImportTask<ExpandoObject>(new DataImportTaskOptions
             {
                 Source = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>() { Delimiter = ';' }),
                 ApiKey = _appId,
@@ -137,7 +138,7 @@ namespace Netlyt.ServiceTests.Lex.Expressions
             var reducedDocsCount = reducedCollection.Size;
             Assert.Equal(64, reducedDocsCount);
             //Cleanup
-            importResult.Collection.Trash();
+            importResult.Collection.Drop();
             reducedCollection.Trash();
         }
 

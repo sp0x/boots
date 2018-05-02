@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Caching;
+using Donut.FeatureGeneration;
 using Donut.IntegrationSource;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
@@ -18,7 +19,6 @@ using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.FeatureGeneration;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
 
@@ -29,7 +29,7 @@ namespace Netlyt.ServiceTests.Lex
     {
         private ApiService _apiService;
         private ApiAuth _appAuth;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private CompilerService _compiler;
         private RedisCacher _cacher;
         private IServiceProvider _serviceProvider;
@@ -40,7 +40,7 @@ namespace Netlyt.ServiceTests.Lex
         {
             _compiler = fixture.GetService<CompilerService>();
             _apiService = fixture.GetService<ApiService>();
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
             _cacher = fixture.GetService<RedisCacher>();

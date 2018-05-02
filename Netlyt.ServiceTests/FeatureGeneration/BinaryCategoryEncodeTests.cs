@@ -22,7 +22,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
     public class BinaryCategoryEncodeTests
     {
         private ApiService _apiService;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private ApiAuth _appAuth;
         private ManagementDbContext _db;
         private UserService _userService;
@@ -32,7 +32,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         public BinaryCategoryEncodeTests(ConfigurationFixture fixture)
         {
             _apiService = fixture.GetService<ApiService>();
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
             _userService = fixture.GetService<UserService>();
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null)

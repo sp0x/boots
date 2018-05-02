@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Donut;
 using Donut.Caching;
+using Donut.Data;
 using MongoDB.Bson;
-using nvoid.db.Caching;
 using nvoid.db.DB;
 using nvoid.extensions;
 using Netlyt.Interfaces;
-using Netlyt.Service.Donut;
-using Netlyt.Service.Integration; 
 using Netlyt.Service.Time;
 
 namespace Netlyt.ServiceTests.Netinfo
@@ -26,7 +23,7 @@ namespace Netlyt.ServiceTests.Netinfo
         public NetinfoDonutfile(RedisCacher cacher, IServiceProvider serviceProvider) : base(cacher, serviceProvider)
         {
             ReplayInputOnFeatures = true;
-
+            Context.Integration.GetMongoCollection<BsonDocument>();
         }
 
         #region Overrides

@@ -22,12 +22,13 @@ namespace Netlyt.ServiceTests
     public class IntegrationTest
     {
         
-        private ConfigurationFixture _config;
+        private ConfigurationFixture _fixture;
 
         public IntegrationTest(ConfigurationFixture fixture)
         {
-            _config = fixture;
+            _fixture = fixture;
         }
+
 
         [Theory]
         [InlineData("testHarvesterInput")]

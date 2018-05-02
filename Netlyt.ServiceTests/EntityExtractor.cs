@@ -83,7 +83,7 @@ namespace Netlyt.ServiceTests
         ////            var featureBlock = featureGen.GetBlock();
         ////            featureBlock.LinkTo(saver, new DataflowLinkOptions{ PropagateCompletion = true}); //We modify the entity to fill all it's data, then generate feature, and then save
         ////            harvester.SetDestination(modifier);
-        ////            harvester.AddType(type, fileSource);
+        ////            harvester.AddIntegration(type, fileSource);
         ////            harvester.Run();
         //        } 
 
@@ -137,7 +137,7 @@ namespace Netlyt.ServiceTests
             });
             
             harvester.SetDestination(grouper);
-            harvester.AddType(type, fileSource);
+            harvester.AddIntegration(type, fileSource);
             Task.WaitAll(harvester.Run(), saver.ProcessingCompletion);
 
             //Task.WaitAll(grouper.Completion, featureGen.Completion, );

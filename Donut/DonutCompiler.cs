@@ -14,6 +14,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Emit;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Netlyt.Interfaces;
 using Netlyt.Service.Donut;
 
 namespace Donut
@@ -66,6 +67,7 @@ namespace Donut
             builder.AddReferenceFromType(typeof(System.Linq.Enumerable));
             builder.AddReferenceFromType(typeof(TransformBlock<,>));
             builder.AddReferenceFromType(typeof(IMongoCollection<>));
+            builder.AddReferenceFromType(typeof(IRedisCacher));
             var clrDep =
                 Assembly.Load("netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
             var asmCollections = Assembly.Load("System.Collections");

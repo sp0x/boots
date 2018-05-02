@@ -40,7 +40,7 @@ namespace Donut.Lex.Data
 
         public IEnumerable<DatasetMember> GetDatasetMembers()
         {
-            var dtSources = Integrations.Where(x => x != null);//.Skip(1);
+            var dtSources = Integrations.Where(x => x != null).Skip(1); //Skip the root integration
             foreach (var source in dtSources)
             {
                 yield return new DatasetMember(source);

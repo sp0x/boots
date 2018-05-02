@@ -59,7 +59,7 @@ namespace Donut
         /// </summary>
         /// <param name="input">Details about the type</param>
         /// <param name="source">The source from which to pull the input</param>
-        public IHarvester<TDocument> AddType(IIntegration input, IInputSource source)
+        public IHarvester<TDocument> AddIntegration(IIntegration input, IInputSource source)
         {
             if (input == null) throw new ArgumentException(nameof(input));
             var newSet = new IntegrationSet(input, source);
@@ -79,7 +79,7 @@ namespace Donut
         //
         //            DataIntegration type = Integration.DataIntegration.Factory.CreateNamed(appId, name);
         //            _integrationService.SaveOrFetchExisting(ref type);  
-        //            this.AddType(type, source); 
+        //            this.AddIntegration(type, source); 
         //            return type;
         //        }
 
@@ -99,7 +99,7 @@ namespace Donut
             {
                 throw new InvalidOperationException("Integration needs to have at least 1 field.");
             }
-            AddType(integration, inputSource);
+            AddIntegration(integration, inputSource);
         }
         /// <summary>
         /// Resolves the integration type from the input, persists it to the DB, and adds it as an integration set from the given source.
@@ -139,7 +139,7 @@ namespace Donut
 //                if (integration.APIKey == null) throw new Exception("Integration has no api key assigned!");
 //                _integrationService.SaveOrFetchExisting(ref integration); 
 //            }
-            AddType(integration, inputSource);
+            AddIntegration(integration, inputSource);
             return integration;
         }
         

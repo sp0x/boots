@@ -111,7 +111,10 @@ namespace Netlyt.Interfaces.Data.Format
 
         public void Reset()
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            _position = -1;
+            _reader?.Close();
+            _reader = null;
         }
 
         public long Position()

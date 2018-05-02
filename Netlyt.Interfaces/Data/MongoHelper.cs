@@ -13,7 +13,20 @@ namespace Netlyt.Interfaces.Data
             var config = DonutDbConfig.GetConfig();
             return GetCollection(config, collectionName);
         }
-
+        public static IMongoCollection<T> GetCollection<T>(string collectionName)
+        {
+            var config = DonutDbConfig.GetConfig();
+            return GetCollection<T>(config, collectionName);
+        }
+        public static IMongoCollection<T> GetCollection<T>(IDatabaseConfiguration dbc, string collectionName)
+        {
+            var db = GetDatabase(dbc);
+            IMongoCollection<T> records;
+            if (null == (records = db.GetCollection<T>(collectionName)))
+                db.CreateCollection(collectionName);
+            records = db.GetCollection<T>(collectionName);
+            return records;
+        }
         public static IMongoCollection<BsonDocument> GetCollection(IDatabaseConfiguration dbc, string collectionName)
         {
             var db = GetDatabase(dbc);

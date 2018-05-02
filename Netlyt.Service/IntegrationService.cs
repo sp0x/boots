@@ -1,26 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
 using System.Threading.Tasks;
 using Donut;
+using Donut.Data;
 using Donut.Integration;
 using Donut.IntegrationSource;
 using Microsoft.EntityFrameworkCore;
-using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
-using nvoid.Integration;
-using Netlyt.Data;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service.Data;
 using Netlyt.Service.Exceptions;
-using Netlyt.Service.Integration;
-using Netlyt.Service.Integration.Import;
 
 namespace Netlyt.Service
 {
@@ -153,10 +146,10 @@ namespace Netlyt.Service
             if (filePath[0] != '/' && filePath[1] != ':')
             {
                 var relativePath = Environment.CurrentDirectory;
-                filePath = System.IO.Path.Combine(relativePath, filePath);
+                filePath = Path.Combine(relativePath, filePath);
             }
             var mime = MimeResolver.Resolve(filePath);
-            using (var fsStream = System.IO.File.Open(filePath, FileMode.Open))
+            using (var fsStream = File.Open(filePath, FileMode.Open))
             {
                 return await CreateOrAppendToIntegration(fsStream, apiKey, user, mime, name);
             }
@@ -225,7 +218,7 @@ namespace Netlyt.Service
             options.Source = source;
             options.ApiKey = apiKey;
             options.Integration = ign;
-            var importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
+            var importTask = new DataImportTask<ExpandoObject>(options);
             var result = await importTask.Import();
             return result;
         }
@@ -250,7 +243,7 @@ namespace Netlyt.Service
             options.Source = source;
             options.ApiKey = apiKey;
             options.Integration = ign;
-            var importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
+            var importTask = new DataImportTask<ExpandoObject>(options);
             var result = await importTask.Import();
             _context.SaveChanges();
             return result;
@@ -298,6 +291,17 @@ namespace Netlyt.Service
             return newTask;
         }
 
+        /// <summary>
+        /// Creates a new task to import data.
+        /// </summary>
+        /// <param name="inputData"></param>
+        /// <param name="apiKey"></param>
+        /// <param name="owner"></param>
+        /// <param name="mime"></param>
+        /// <param name="name"></param>
+        /// <param name="isNewIntegration"></param>
+        /// <param name="importTask"></param>
+        /// <returns></returns>
         public DataIntegration CreateIntegrationImportTask(Stream inputData,
             ApiAuth apiKey, 
             User owner,
@@ -315,6 +319,28 @@ namespace Netlyt.Service
             }
 
             var source = InMemorySource.Create(inputData, formatter);
+            var integrationInfo = ResolveIntegration(apiKey, owner, name, out isNewIntegration, source);
+
+            options.Source = source;
+            options.ApiKey = apiKey;
+            options.IntegrationName = integrationInfo.Name;
+            options.Integration = integrationInfo;
+            importTask = new DataImportTask<ExpandoObject>(options);
+            return integrationInfo;
+        }
+
+        /// <summary>
+        /// Resolves an integration from a source
+        /// </summary>
+        /// <param name="apiKey"></param>
+        /// <param name="owner"></param>
+        /// <param name="name"></param>
+        /// <param name="isNewIntegration"></param>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public DataIntegration ResolveIntegration(ApiAuth apiKey, User owner, string name, out bool isNewIntegration,
+            IInputSource source)
+        {
             DataIntegration integrationInfo = source.ResolveIntegrationDefinition() as DataIntegration;
             DataIntegration exitingIntegration = null;
             isNewIntegration = false;
@@ -336,17 +362,10 @@ namespace Netlyt.Service
                     integrationInfo.DataTimestampColumn = timestampCol;
                 }
             }
-
             if (integrationInfo == null)
             {
                 throw new Exception("No integration found!");
             }
-
-            options.Source = source;
-            options.ApiKey = apiKey;
-            options.IntegrationName = integrationInfo.Name;
-            options.Integration = integrationInfo;
-            importTask = new DataImportTask<ExpandoObject>(_apiService, this, options);
             return integrationInfo;
         }
 
@@ -385,7 +404,7 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="mimeType">The mime type of the data.</param>
         /// <returns></returns>
-        private IInputFormatter<T> ResolveFormatter<T>(string mimeType)
+        public IInputFormatter<T> ResolveFormatter<T>(string mimeType)
             where T : class
         {
             if (!string.IsNullOrEmpty(mimeType))

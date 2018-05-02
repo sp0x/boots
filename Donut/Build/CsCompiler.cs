@@ -182,7 +182,7 @@ namespace Donut.Build
         protected static Stream GetTemplate(string name)
         {
             if (_assembly == null) _assembly = Assembly.GetExecutingAssembly();
-            var resourceName = $"Netlyt.Service.Build.Templates.{name}";
+            var resourceName = $"Donut.Build.Templates.{name}";
             Stream stream = _assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
             {
