@@ -10,7 +10,7 @@ namespace Donut
             base.IsAggregate = false;
             this.Content = content;
             this.GroupValue = content;
-            base.Type = DonutFunctionType.Group;
+            base.Type = DonutFunctionType.GroupField;
         }
     }
 }

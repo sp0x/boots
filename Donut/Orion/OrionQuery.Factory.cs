@@ -20,7 +20,7 @@ namespace Donut.Orion
             /// <param name="relations"></param>
             /// <param name="targetAttribute">A collection's attribute to target. Example `Users.someField` </param>
             /// <returns></returns>
-            public static OrionQuery CreateFeatureGenerationQuery(Model model,
+            public static OrionQuery CreateFeatureDefinitionGenerationQuery(Model model,
                 IEnumerable<FeatureGenerationCollectionOptions> collections,
                 IEnumerable<FeatureGenerationRelation> relations,
                 string targetAttribute)

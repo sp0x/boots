@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Netlyt.Interfaces;
 
-namespace Donut
+namespace Donut.Features
 {
     /// <summary>
     /// Wraps a document and it's features.

@@ -9,6 +9,7 @@ using System.Threading.Tasks.Dataflow;
 using Donut;
 using Donut.Blocks;
 using Donut.FeatureGeneration;
+using Donut.Features;
 using Donut.IntegrationSource;
 using MongoDB.Driver;
 using Netlyt.Interfaces;

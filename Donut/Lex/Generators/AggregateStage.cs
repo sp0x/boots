@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Donut.Crypto;
+using Donut.Features;
 using Donut.Lex.Expressions;
 using Netlyt.Interfaces;
 using Newtonsoft.Json;
@@ -25,7 +26,7 @@ namespace Donut.Lex.Generators
             switch (function.Type)
             {
                 case DonutFunctionType.Project: Type = AggregateStageType.Project; break;
-                case DonutFunctionType.Group: Type = AggregateStageType.Group; break;
+                case DonutFunctionType.GroupField: Type = AggregateStageType.Group; break;
             }
         }
         public IEnumerable<AggregateStage> GetGroupings()
@@ -69,7 +70,12 @@ namespace Donut.Lex.Generators
             template = DonutFunctionToMongoAggregateElement(lstParameters, template);
             return template;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="lstParameters"></param>
+        /// <param name="template"></param>
+        /// <returns></returns>
         public string DonutFunctionToMongoAggregateElement(List<IParameterExpression> lstParameters, string template)
         {
             for (int i = 0; i < lstParameters.Count; i++)
@@ -77,7 +83,7 @@ namespace Donut.Lex.Generators
                 var parameter = lstParameters[i];
                 object paramOutputObj;
                 var pValue = parameter.Value;
-                var argExpVisitor = new DonutFeatureGeneratingExpressionVisitor(_script);
+                var argExpVisitor = new AggregateFeatureGeneratingExpressionVisitor(_script);
                 //If we visit functions here, note that in the pipeline
                 var paramStr = argExpVisitor.Visit(parameter as IExpression, out paramOutputObj);
                 var subAggregateTree = argExpVisitor.AggregateTree;
@@ -97,7 +103,7 @@ namespace Donut.Lex.Generators
                 ChildStages.AddRange(subAggregateTree.Stages);
                 if (pValue is CallExpression || paramOutputObj is IDonutTemplateFunction)
                 {
-                    if (Function.Type == DonutFunctionType.Group)
+                    if (Function.Type == DonutFunctionType.GroupField)
                     {
                         if (paramOutputObj is IDonutTemplateFunction iDonutFn &&
                             iDonutFn.Type == DonutFunctionType.Project)

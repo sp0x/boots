@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using Donut.Features;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
 using Donut.Lex.Generation;
@@ -11,12 +12,12 @@ namespace Donut.Lex.Generators
 {
     public class DonutScriptCodeGenerator : CodeGenerator
     {
-        private DonutFeatureGeneratingExpressionVisitor _expVisitor;
+        private AggregateFeatureGeneratingExpressionVisitor _expVisitor;
         //private DataIntegration _integration;
 
         public DonutScriptCodeGenerator(DonutScript script)
         {
-            _expVisitor = new DonutFeatureGeneratingExpressionVisitor(script);
+            _expVisitor = new AggregateFeatureGeneratingExpressionVisitor(script);
             //_integration = integration;
         }
         public override string GenerateFromExpression(Expression contextExpressionInfo)
@@ -80,15 +81,35 @@ namespace Donut.Lex.Generators
                 donutTemplate = donutTemplate.Replace("$ClassName", baseName);
                 donutTemplate = donutTemplate.Replace("$ContextTypeName", conutextName);
                 donutTemplate = donutTemplate.Replace("$ExtractionBody", GetFeaturePrepContent(script));
-                donutTemplate = donutTemplate.Replace("$PrepareExtraction", GeneratePrepareExtractionContent(script));
+                var prepareScript = GeneratePrepareExtractionContent(script);
+                var propertiesContent = GenerateDonutPropertiesContent(!string.IsNullOrEmpty(prepareScript));
+                donutTemplate = donutTemplate.Replace("$PrepareExtraction", prepareScript);
+                donutTemplate = donutTemplate.Replace("$DonutProperties", propertiesContent);
                 donutTemplate = donutTemplate.Replace("$OnFinished", GenerateOnDounutFinishedContent(script));
-                donutTemplate += "\n\n\n" +
+                donutTemplate += "\n\n" +
                                  "/* Donut script: \n" + script.ToString() +
                                  "\n*/"; 
                 //Items: $ClassName, $ContextTypeName, $ExtractionBody, $OnFinished
             }
             return donutTemplate;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="hasPrepareStage"></param>
+        /// <returns></returns>
+        private string GenerateDonutPropertiesContent(bool hasPrepareStage)
+        {
+            var buff = new StringBuilder();
+            var donutType = typeof(Donutfile<,>);
+            if (hasPrepareStage)
+            {
+                buff.AppendLine("  HasPrepareStage = true;");
+            }
+            return buff.ToString();
+        }
+
 
         private string GenerateOnDounutFinishedContent(DonutScript script)
         {
@@ -111,8 +132,12 @@ namespace Donut.Lex.Generators
             //Get our record variables
             GetIntegrationRecordVars(script, fBuilder);
 
-            var aggregates = new FeatureAggregateCodeGenerator(script, _expVisitor);
-            aggregates.AddAll(script.Features);
+            var aggregates = new AggregateFeatureCodeGenerator(script, _expVisitor);
+            var donutFeatureGen = new DonutFeatureCodeGenerator(script, _expVisitor);
+            var aggFeatures = script.Features.Where(x => x.IsDonutAggregateFeature());
+            var donutFeatures = script.Features.Where(x => x.IsDonutNativeFeature());
+            aggregates.AddAll(aggFeatures);
+            donutFeatureGen.AddAll(donutFeatures);
             var aggregatePipeline = aggregates.GetScriptContent();
             fBuilder.Append(aggregatePipeline);
             return fBuilder.ToString();

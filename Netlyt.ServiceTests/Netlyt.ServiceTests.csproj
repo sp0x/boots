@@ -55,7 +55,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="bin\" />
-    <Folder Include="DonutExample\" />
     <Folder Include="Donut\" />
   </ItemGroup>
 </Project>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Donut;
 using Donut.Caching;
+using Donut.Features;
 using Donut.Lex.Data;
 using Donut.Lex.Generation;
 using Donut.Lex.Generators;
@@ -37,7 +38,7 @@ namespace Netlyt.ServiceTests.Lex.Generators
         private ModelService _modelService;
         private DonutScriptCodeGenerator _codeGen;
         private DonutConfigurationFixture _fixture;
-        private DonutFeatureGeneratingExpressionVisitor _expVisitor;
+        private AggregateFeatureGeneratingExpressionVisitor _expVisitor;
 
         public FeatureAggregateCodeGeneratorTests(DonutConfigurationFixture fixture)
         {
@@ -70,7 +71,7 @@ WEEKDAY(first_Romanian_time)";
             string donutName = $"{model.ModelName}Donut";
             _dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", model.GetRootIntegration(), featureBodies);
             _codeGen = _dscript.GetCodeGenerator() as DonutScriptCodeGenerator;
-            _expVisitor = new DonutFeatureGeneratingExpressionVisitor(_dscript);
+            _expVisitor = new AggregateFeatureGeneratingExpressionVisitor(_dscript);
         }
         private Model GetModel()
         {
@@ -106,7 +107,7 @@ WEEKDAY(first_Romanian_time)";
         [Fact]
         public void GetScriptContentTest()
         {
-            var aggregates = new FeatureAggregateCodeGenerator(_dscript, _expVisitor);
+            var aggregates = new AggregateFeatureCodeGenerator(_dscript, _expVisitor);
             aggregates.AddAll(_dscript.Features);
             var aggregatePipeline = aggregates.GetScriptContent();
             var codeHash = HashAlgos.Adler32(aggregatePipeline);

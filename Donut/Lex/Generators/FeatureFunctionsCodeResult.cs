@@ -15,7 +15,7 @@ namespace Donut.Lex.Generators
         }
         public FeatureFunctionsCodeResult(DonutFunctionType functionType, string content)
         {
-            if (functionType == DonutFunctionType.Group)
+            if (functionType == DonutFunctionType.GroupField)
             {
                 GroupFields = content;
             }

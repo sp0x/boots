@@ -37,6 +37,7 @@ namespace Donut
         /// </summary>
         public bool ReplayInputOnFeatures { get; set; }
         public bool SkipFeatureExtraction { get; set; }
+        public bool HasPrepareStage { get; set; }
         /// <summary>
         /// 
         /// </summary>

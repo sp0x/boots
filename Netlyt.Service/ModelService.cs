@@ -103,7 +103,7 @@ namespace Netlyt.Service
         public async Task GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, string targetAttribute)
         {
             var collections = newModel.GetFeatureGenerationCollections(targetAttribute);
-            var query = OrionQuery.Factory.CreateFeatureGenerationQuery(newModel, collections, relations, targetAttribute);
+            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(newModel, collections, relations, targetAttribute);
             var result = await _orion.Query(query);
 //            var newTask = new FeatureGenerationTask();
 //            newTask.OrionTaskId = result["task_id"].ToString();

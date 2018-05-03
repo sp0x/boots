@@ -2,6 +2,9 @@
 
 namespace Donut.Parsing.Tokenizers
 {
+    /// <summary>
+    /// Token definitions for featuretools features.
+    /// </summary>
     public class FeatureToolsTokenDefinitions : TokenDefinitionCollection
     {
         public FeatureToolsTokenDefinitions()

@@ -15,19 +15,19 @@ namespace Donut
             Functions = new Dictionary<string, IDonutFunction>();
             Functions["sum"] = new DonutFunction("sum")
             {
-                Type = DonutFunctionType.Group,
+                Type = DonutFunctionType.GroupField,
                 IsAggregate = true,
                 GroupValue = (new BsonDocument { { "$sum", "{0}" } }).ToString()
             };
             Functions["max"] = new DonutFunction("max")
             {
-                Type = DonutFunctionType.Group,
+                Type = DonutFunctionType.GroupField,
                 IsAggregate = true,
                 GroupValue = (new BsonDocument { { "$max", "{0}" } }).ToString()
             };
             Functions["min"] = new DonutFunction("min")
             {
-                Type = DonutFunctionType.Group,
+                Type = DonutFunctionType.GroupField,
                 IsAggregate = true,
                 GroupValue = (new BsonDocument { { "$min", "{0}" } }).ToString()
             };
@@ -35,19 +35,19 @@ namespace Donut
             { IsAggregate = true };
             Functions["std"] = new DonutFunction("std")//Disables because mongo doesn't handle it right
             {
-                Type = DonutFunctionType.Group,
+                Type = DonutFunctionType.GroupField,
                 IsAggregate = true,
                 GroupValue = (new BsonDocument { { "$stdDevPop", "{0}" } }).ToString()
             };
             Functions["mean"] = new DonutFunction("mean")
             {
-                Type = DonutFunctionType.Group,
+                Type = DonutFunctionType.GroupField,
                 IsAggregate = true,
                 GroupValue = (new BsonDocument { { "$avg", "{0}" } }).ToString()
             };
             Functions["avg"] = new DonutFunction("avg")
             {
-                Type = DonutFunctionType.Group,
+                Type = DonutFunctionType.GroupField,
                 IsAggregate = true,
                 GroupValue = (new BsonDocument { { "$avg", "{0}" } }).ToString()
             };
@@ -105,20 +105,20 @@ namespace Donut
             { IsAggregate = false };
             Functions["first"] = new DonutFunction("first")
             {
-                Type = DonutFunctionType.Group,
+                Type = DonutFunctionType.GroupField,
                 IsAggregate = true,
                 Projection = (new BsonDocument{ { "$first", "{0}"} }).ToString()
             };
             Functions["last"] = new DonutFunction("last")
             {
-                Type = DonutFunctionType.Group,
+                Type = DonutFunctionType.GroupField,
                 IsAggregate = true,
                 Projection = (new BsonDocument { { "$last", "{0}" } }).ToString()
             };
             //Custom functions
             Functions["dstime"] = new DsTime("dstime")
             {
-                Type = DonutFunctionType.Group,
+                Type = DonutFunctionType.GroupField,
                 IsAggregate = false
             };
             Functions["num_unique"] = new NumUnique("num_unique")

@@ -7,9 +7,9 @@ using Donut.Lex.Expressions;
 using Donut.Lex.Generators;
 using Netlyt.Interfaces;
 
-namespace Donut
+namespace Donut.Features
 {
-    public class DonutFeatureGeneratingExpressionVisitor : ExpressionVisitor
+    public class AggregateFeatureGeneratingExpressionVisitor : ExpressionVisitor
     { 
         public Dictionary<VariableExpression, string> Variables { get; private set; }
         private DonutFunctions _functionDict;
@@ -19,7 +19,7 @@ namespace Donut
         public Queue<IDonutFunction> FeatureFunctions { get; set; }
         public AggregateJobTree AggregateTree => _aggTree;
 
-        public DonutFeatureGeneratingExpressionVisitor(IDonutScript script) : base()
+        public AggregateFeatureGeneratingExpressionVisitor(IDonutScript script) : base()
         {
             Variables = new Dictionary<VariableExpression, string>();
             Aggregates = new Queue<IDonutFunction>();

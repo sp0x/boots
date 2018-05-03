@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Donut;
+using Donut.Features;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
-using Donut.Lex.Generation;
 using Donut.Lex.Generators;
 using MongoDB.Bson;
 using Netlyt.Interfaces;
@@ -16,14 +16,13 @@ namespace Donut.Lex.Generators
     /// <summary>
     /// Helps with generating aggregation pipelines from a collection of features.
     /// </summary>
-    public class FeatureAggregateCodeGenerator : CodeGenerator
+    public class AggregateFeatureCodeGenerator : FeatureCodeGenerator
     {
-        private DonutScript _script;
         private DataIntegration _rootIntegration;
         private DonutFunctions _donutFnResolver;
         private DatasetMember _rootDataMember;
         private string _outputCollection;
-        private DonutFeatureGeneratingExpressionVisitor _expVisitor;
+        private AggregateFeatureGeneratingExpressionVisitor _expVisitor;
         private List<AggregateJobTree> _aggregateJobTrees;
 
         public bool HasProjection { get; private set; }
@@ -31,9 +30,9 @@ namespace Donut.Lex.Generators
         public bool HasGroupingKeys { get; private set; }
         public bool HasFilters { get; private set; }
 
-        public FeatureAggregateCodeGenerator(DonutScript script, DonutFeatureGeneratingExpressionVisitor expVisitor)
+        public AggregateFeatureCodeGenerator(DonutScript script, AggregateFeatureGeneratingExpressionVisitor expVisitor)
+            : base(script)
         {
-            _script = script;
             _donutFnResolver = new DonutFunctions();
             _rootIntegration = script.Integrations.FirstOrDefault();
             if (_rootIntegration == null)
@@ -70,7 +69,7 @@ namespace Donut.Lex.Generators
         /// <param name="feature"></param>
         /// <returns></returns>
         private AggregateJobTree AddAggregateTreeFromCall(CallExpression callExpression, AssignmentExpression feature = null)
-        { 
+        {
             //            var isAggregate = fnDict.IsAggregate(callExpression);
             //            var functionType = fnDict.GetFunctionType(callExpression);
             Clean();
@@ -78,36 +77,6 @@ namespace Donut.Lex.Generators
             var strValues = VisitCall(callExpression, null, _expVisitor);
             var outputTree = _expVisitor.AggregateTree.Clone();
             return outputTree;
-            //            if (string.IsNullOrEmpty(strValues))
-            //            {
-            //                return null;
-            //            }
-            //            if (isAggregate)
-            //            {
-            //                var aggregateField = new BsonDocument();
-            //                if (feature == null)
-            //                {
-            //                    try
-            //                    {
-            //                        aggregateField = BsonDocument.Parse(strValues);
-            //                    }
-            //                    catch (Exception ex)
-            //                    {
-            //                        Trace.WriteLine($"Failed to parse expression: {callExpression}\nError: {ex.Message}");
-            //                        return null;
-            //                    }
-            //                }
-            //                else
-            //                {
-            //                    aggregateField[feature.Member.ToString()] = BsonDocument.Parse(strValues);
-            //                }
-            //                var result = new FeatureFunctionsCodeResult(functionType, aggregateField.ToString());
-            //                return result;
-            //            }
-            //            else
-            //            {
-            //                return new FeatureFunctionsCodeResult(strValues);
-            //            }
         }
 
         /// <summary>
@@ -156,50 +125,11 @@ namespace Donut.Lex.Generators
             }
         }
 
-
-
-        public void AddAll(IEnumerable<AssignmentExpression> featureAssignments)
-        {
-            foreach (var f in featureAssignments)
-            {
-                try
-                {
-                    Add(f);
-                }
-                catch (DonutFunctionNotImplementedException ex)
-                {
-                    Trace.WriteLine(ex.Message);
-#if DEBUG
-                    Debug.WriteLine(ex.Message);
-#endif
-                }
-                
-            }
-        }
-
-        private string GetFeatureName(AssignmentExpression feature)
-        {
-            string fName = feature.Member.ToString();
-            IExpression fExpression = feature.Value;
-            var featureFType = fExpression.GetType();
-            if (featureFType == typeof(VariableExpression))
-            {
-                var member = (fExpression as VariableExpression).Member?.ToString();
-                //In some cases we might just use the field
-                if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
-                if (member == _script.TargetAttribute)
-                {
-                    fName = member;
-                }
-            }
-            return fName;
-        }
-
         /// <summary>
         /// Add a feature assignment to the aggregate pipeline
         /// </summary>
         /// <param name="feature"></param>
-        public void Add(AssignmentExpression feature)
+        public override void Add(AssignmentExpression feature)
         {
             IExpression fExpression = feature.Value;
             string fName = GetFeatureName(feature);//feature.Member.ToString();
@@ -211,170 +141,41 @@ namespace Donut.Lex.Generators
                 var aggTree = AddAggregateTreeFromField(fExpression as VariableExpression);
                 aggTree.Name = fName;
                 _aggregateJobTrees.Add(aggTree);
-//                var member = (fExpression as VariableExpression).Member?.ToString();
-//                //In some cases we might just use the field
-//                if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
-//                featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"$" + member + "\" } };";
+                //                var member = (fExpression as VariableExpression).Member?.ToString();
+                //                //In some cases we might just use the field
+                //                if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
+                //                featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"$" + member + "\" } };";
             }
-            else if (featureFType == typeof(CallExpression))
+            else if (fExpression.IsDonutAggregateFunction())
             {
-                if (_donutFnResolver.IsAggregate(fExpression as CallExpression))
+                //We're dealing with an aggregate call 
+                var aggregateTree = AddAggregateTreeFromCall(fExpression as CallExpression);
+                aggregateTree.Name = fName;
+                _aggregateJobTrees.Add(aggregateTree);
+                var functionType = _donutFnResolver.GetFunctionType(fExpression as CallExpression);
+                switch (functionType)
                 {
-                    //We're dealing with an aggregate call 
-                    var aggregateTree = AddAggregateTreeFromCall(fExpression as CallExpression);
-                    aggregateTree.Name = fName;
-                    _aggregateJobTrees.Add(aggregateTree);
-                    var functionType = _donutFnResolver.GetFunctionType(fExpression as CallExpression);  
-                    switch (functionType)
-                    {
-                        case DonutFunctionType.Group:
-                            HasGroupingFields = true;
-                            break;
-                        case DonutFunctionType.Project:
-                            HasProjection = true;
-                            break;
-                        case DonutFunctionType.GroupKey:
-                            HasGroupingKeys = true;
-                            break;
-                        case DonutFunctionType.Filter:
-                            HasFilters = true;
-                            break;
-                    }
-                    }
-                else
-                {
-                    throw new DonutFunctionNotImplementedException(fExpression.ToString());
+                    case DonutFunctionType.GroupField:
+                        HasGroupingFields = true;
+                        break;
+                    case DonutFunctionType.Project:
+                        HasProjection = true;
+                        break;
+                    case DonutFunctionType.GroupKey:
+                        HasGroupingKeys = true;
+                        break;
+                    case DonutFunctionType.Filter:
+                        HasFilters = true;
+                        break;
                 }
             }
             else
             {
-                throw new NotImplementedException();
+                //This is not a donut aggregate
+                throw new NotImplementedException(fExpression.ToString());
             }
         }
 
-        /// <summary>
-        /// Parses a feature assignment expression, to a string.
-        /// </summary>
-        /// <param name="feature"></param>
-        /// <returns></returns>
-        public string AddAndParse(AssignmentExpression feature)
-        {
-            IExpression fExpression = feature.Value;
-            string fName = feature.Member.ToString();
-
-            var featureFType = fExpression.GetType();
-            string featureContent = null;
-            if (featureFType == typeof(VariableExpression))
-            {
-                var member = (fExpression as VariableExpression).Member?.ToString();
-                //In some cases we might just use the field
-                if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
-                if (member == _script.TargetAttribute)
-                {
-                    fName = member;
-                }
-                featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"$" + member + "\" } };";
-            }
-            else if (featureFType == typeof(CallExpression))
-            {
-                if (_donutFnResolver.IsAggregate(fExpression as CallExpression))
-                {
-                    //We're dealing with an aggregate call 
-                    var aggregateContent = GenerateFeatureFunctionCall(fExpression as CallExpression);
-                    var functionType = _donutFnResolver.GetFunctionType(fExpression as CallExpression);
-                    var aggregateValue = aggregateContent?.GetValue().Replace("$" + _rootIntegration.Name + ".", "$");
-                    if (aggregateValue != null) aggregateValue = aggregateValue.Replace("\"", "\\\"");
-                    switch (functionType)
-                    {
-                        case DonutFunctionType.Group:
-                            featureContent = $"groupFields[\"{fName}\"] = BsonDocument.Parse(\"{aggregateValue}\");";
-                            HasGroupingFields = true;
-                            break;
-                        case DonutFunctionType.Project:
-                            featureContent = $"projections[\"{fName}\"] = \"{aggregateValue}\";";
-                            HasProjection = true;
-                            break;
-                        case DonutFunctionType.GroupKey:
-                            if (!string.IsNullOrEmpty(aggregateValue))
-                            {
-                                featureContent = $"groupKeys[\"{fName}\"] = \"{aggregateValue}\";";
-                                HasGroupingKeys = true;
-                            }
-                            break;
-                        case DonutFunctionType.Standard:
-                            var variableName = GetFeatureVariableName(feature);
-                            if (!string.IsNullOrEmpty(variableName))
-                            {
-                                var fieldInfo = _rootIntegration.Fields?.FirstOrDefault(x => x.Name == variableName);
-                                var dttype = typeof(DateTime);
-                                if (fieldInfo.Type == dttype.FullName)
-                                {
-                                    featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", " +
-                                                     "new BsonDocument { { \"$dayOfYear\" , \"$" + variableName + "\" } }" +
-                                                     " }};";
-                                }
-                                else
-                                {
-                                    featureContent = $"groupFields[\"{fName}\"] = new BsonDocument" + "{{ \"$first\", \"$" + variableName + "\" }};";
-                                }
-
-                            }
-                            break;
-                    }
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-            return featureContent;
-        }
-
-        /// <summary>
-        /// Gets the name of the field from feature assignment.
-        /// </summary>
-        /// <param name="feature"></param>
-        /// <returns></returns>
-        private string GetFeatureVariableName(AssignmentExpression feature)
-        {
-            var seed = feature.Value;
-            var itemQueue = new Queue<IExpression>();
-            itemQueue.Enqueue(seed);
-            while (itemQueue.Count > 0)
-            {
-                var item = itemQueue.Dequeue();
-                var memberInfo = item.GetType();
-                if (memberInfo == typeof(CallExpression))
-                {
-                    var subItems = (item as CallExpression).Parameters;
-                    foreach (var param in subItems) itemQueue.Enqueue(param as IExpression);
-                }
-                else if (memberInfo == typeof(VariableExpression))
-                {
-                    var mInfo = (item as VariableExpression).Member;
-                    if (mInfo != null && mInfo.Parent != null && mInfo.Parent.GetType() == typeof(CallExpression))
-                    {
-                        var callExpParams = (mInfo.Parent as CallExpression).Parameters;
-                        foreach (var param in callExpParams) itemQueue.Enqueue(param as IExpression);
-                    }
-                    else
-                    {
-                        var member = mInfo?.ToString();
-                        string memberName = !string.IsNullOrEmpty(member) ? member : (item as VariableExpression).Name;
-                        return memberName;
-                    }
-                }
-                else if (memberInfo == typeof(ParameterExpression))
-                {
-                    itemQueue.Enqueue((item as ParameterExpression).Value);
-                }
-            }
-            return null;
-        }
         /// <summary>
         ///  
         /// </summary>
@@ -427,6 +228,7 @@ namespace Donut.Lex.Generators
             fBuilder.Append(aggregatePipeline);
             return fBuilder.ToString();
         }
+
         /// <summary>
         /// 
         /// </summary>
@@ -521,12 +323,5 @@ namespace Donut.Lex.Generators
         public void Clean()
         {
         }
-    }
-}
-
-public class DonutFunctionNotImplementedException : Exception
-{
-    public DonutFunctionNotImplementedException(string message) : base($"Donut fn not implemented: ${message}")
-    {
     }
 }

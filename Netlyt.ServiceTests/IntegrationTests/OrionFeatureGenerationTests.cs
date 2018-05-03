@@ -23,6 +23,7 @@ using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
 using Netlyt.Service.Models;
 using Netlyt.ServiceTests.Fixtures;
+using Romanian;
 using Xunit;
 
 namespace Netlyt.ServiceTests.IntegrationTests
@@ -98,6 +99,9 @@ NUM_UNIQUE(Romanian.pm25)";
             Type donutType, donutContextType, donutFEmitterType;
             var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType, out donutFEmitterType);
             Assert.NotNull(assembly);
+            donutType = typeof(RomanianDonut);
+            donutContextType = typeof(RomanianDonutContext);
+            donutFEmitterType = typeof(RomanianFeatureGenerator);
 
             //Create a donut and a donutRunner
             var donutMachine = DonutGeneratorFactory.Create<IntegratedDocument>(donutType, donutContextType, integration, _cacher, _serviceProvider);
@@ -136,7 +140,7 @@ NUM_UNIQUE(Romanian.pm25)";
             Assert.Equal(FieldDataEncoding.BinaryIntId,
                 categoryField.DataEncoding);
             _db.SaveChanges();
-            var query = OrionQuery.Factory.CreateFeatureGenerationQuery(model, collections, null, targetAttribute);
+            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(model, collections, null, targetAttribute);
             var featuresAwaiter = new SemaphoreSlim(0, 1);
             _orionHandler.ModelFeaturesGenerated += (sender, updatedModel) =>
             {
