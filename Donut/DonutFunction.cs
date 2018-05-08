@@ -114,5 +114,10 @@ namespace Donut
             if (!string.IsNullOrEmpty(GroupValue)) return GroupValue;
             return null;
         }
+
+        public static DonutFunction Wrap(IDonutFunction df)
+        {
+            return df as DonutFunction;
+        }
     }
 }

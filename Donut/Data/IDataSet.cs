@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Netlyt.Interfaces
+namespace Donut.Data
 {
     public interface IDataSet
     {

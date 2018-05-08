@@ -1,6 +1,7 @@
 ﻿using System;
+using Netlyt.Interfaces;
 
-namespace Netlyt.Interfaces
+namespace Donut.Data
 {
     public interface ISetCollection
     {

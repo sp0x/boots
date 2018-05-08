@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using Netlyt.Interfaces;
 
-namespace Netlyt.Interfaces
+namespace Donut.Data
 {
     public interface ICacheSet<T> : ICacheSet
         where T : class

@@ -1,9 +1,9 @@
-﻿namespace Netlyt.Interfaces
+﻿namespace Donut.Data
 {
     public interface IAggregateKey
     {
         string Arguments { get; set; }
         string Name { get; set; }
-        IDonutFunction Operation { get; set; }
+        DonutFunction Operation { get; set; }
     }
 }

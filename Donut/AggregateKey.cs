@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Donut.Data;
 using Donut.Lex.Generators;
 using MongoDB.Bson;
 using Netlyt.Interfaces;
@@ -12,9 +13,9 @@ namespace Donut
     public class AggregateKey : IAggregateKey
     {
         public string Name { get; set; }
-        public IDonutFunction Operation { get; set; }
+        public DonutFunction Operation { get; set; }
         public string Arguments { get; set; }
-
+        public AggregateKey() { }
         public AggregateKey(string name, string fn, string argumments)
         {
             this.Name = name;
@@ -22,7 +23,7 @@ namespace Donut
             if (fn != null)
             {
                 var fns = (new DonutFunctions());
-                Operation = fns.GetFunction(fn);
+                Operation = DonutFunction.Wrap(fns.GetFunction(fn));
             }
         }
         /// <summary>
