@@ -7,13 +7,13 @@ namespace Donut.Models
         public long ModelId { get; set; }
         public Donut.Models.Model Model { get; set; } 
         public long IntegrationId { get; set; }
-        public DataIntegration Integration { get; set; }
+        public Data.DataIntegration Integration { get; set; }
 
         public ModelIntegration()
         {
 
         }
-        public ModelIntegration(Donut.Models.Model model, DataIntegration integration)
+        public ModelIntegration(Donut.Models.Model model, Data.DataIntegration integration)
         {
             this.Model = model;
             this.Integration = integration;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Donut.Features;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
@@ -11,13 +12,13 @@ namespace Donut.Lex.Generators
     public class DonutFeatureCodeGenerator : FeatureCodeGenerator
     {
         private DonutFunctions _donutFnResolver;
-        private DataIntegration _rootIntegration;
+        private Donut.Data.DataIntegration _rootIntegration;
         private DatasetMember _rootDataMember;
         private string _outputCollection;
-        private AggregateFeatureGeneratingExpressionVisitor _expVisitor;
-        private List<AggregateJobTree> _aggregateJobTrees;
+        private DonutFeatureGeneratingExpressionVisitor _expVisitor;
+        private List<IDonutFunction> _functions;
 
-        public DonutFeatureCodeGenerator(DonutScript script, AggregateFeatureGeneratingExpressionVisitor expVisitor) : base(script)
+        public DonutFeatureCodeGenerator(DonutScript script, DonutFeatureGeneratingExpressionVisitor expVisitor) : base(script)
         {
             _donutFnResolver = new DonutFunctions();
             _rootIntegration = script.Integrations.FirstOrDefault();
@@ -32,7 +33,7 @@ namespace Donut.Lex.Generators
                 throw new InvalidOperationException("Root integration must have a features collection set.");
             }
             _expVisitor = expVisitor ?? throw new ArgumentNullException(nameof(expVisitor));
-            _aggregateJobTrees = new List<AggregateJobTree>();
+            _functions = new List<IDonutFunction>();
         }
 
         public override string GenerateFromExpression(Expression mapReduce)
@@ -46,7 +47,8 @@ namespace Donut.Lex.Generators
             string fName = GetFeatureName(feature);//feature.Member.ToString();
             if (fExpression is CallExpression donutFnCall)
             {
-                AddFeatureFromFunctionCall(donutFnCall);
+                var newFn = AddFeatureFromFunctionCall(donutFnCall);
+                _functions.Add(newFn);
             }
             else
             {
@@ -54,19 +56,48 @@ namespace Donut.Lex.Generators
             }
         }
 
-        private void AddFeatureFromFunctionCall(CallExpression donutFnCall)
+        private IDonutFunction AddFeatureFromFunctionCall(CallExpression donutFnCall)
         {
             //            var isAggregate = fnDict.IsAggregate(callExpression);
             //            var functionType = fnDict.GetFunctionType(callExpression);
             Clean();
             _expVisitor.Clear();
             var strValues = VisitCall(donutFnCall, null, _expVisitor);
-            var outputTree = _expVisitor.AggregateTree.Clone();
+            var fn = _expVisitor.FeatureFunctions.FirstOrDefault();
+            return fn;
         }
 
 
         public void Clean()
         {
+        }
+
+
+        public DonutCodeFeatureDefinition GetScriptContent(string donutfileContent)
+        {
+            var prepareBuff = new StringBuilder();
+            var extractBuff = new StringBuilder();
+            foreach (var fn in _functions)
+            {
+                if (fn is IDonutTemplateFunction<string>)
+                {
+                    var value = fn.GetValue();
+                    prepareBuff.AppendLine(value);
+                }
+                else if(fn is IDonutTemplateFunction<DonutCodeFeatureDefinition> codeFn)
+                {
+                    var content = codeFn.Content as DonutCodeFeatureDefinition;
+                    prepareBuff.AppendLine(content.PrepareScript);
+                    extractBuff.AppendLine(content.ExtractionScript);
+                }
+            }
+
+            var def = new DonutCodeFeatureDefinition()
+            {
+                PrepareScript = prepareBuff.ToString(),
+                ExtractionScript = extractBuff.ToString()
+            };
+            return def;
         }
     }
 }

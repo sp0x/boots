@@ -4,6 +4,7 @@ using Donut.Models;
 using Donut.Source;
 using Netlyt.Interfaces;
 using Netlyt.Web.ViewModels;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Web
 {

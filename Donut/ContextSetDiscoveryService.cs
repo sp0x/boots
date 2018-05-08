@@ -3,7 +3,6 @@ using System.Linq;
 using Donut.Caching;
 using Donut.Integration;
 using Netlyt.Interfaces;
-using Netlyt.Service.Donut;
 
 namespace Donut
 {

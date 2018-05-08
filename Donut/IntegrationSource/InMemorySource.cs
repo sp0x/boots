@@ -12,7 +12,7 @@ namespace Donut.IntegrationSource
         public Stream Content { get; private set; } 
         private object _lock = new object();
         private dynamic _cachedInstance;
-        private DataIntegration _cachedIntegration;
+        private Data.DataIntegration _cachedIntegration;
 
         public InMemorySource(string content) : base()
         {

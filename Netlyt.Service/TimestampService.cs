@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service
 {

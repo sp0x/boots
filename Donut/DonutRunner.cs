@@ -9,7 +9,6 @@ using MongoDB.Driver;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Batching;
 using Netlyt.Interfaces.Data;
-using Netlyt.Service.Donut;
 
 namespace Donut
 {
@@ -125,7 +124,7 @@ namespace Donut
             {
                 if (!donut.SkipFeatureExtraction)
                 {
-
+                    await donut.CompleteExtraction();
                 }
             }
 

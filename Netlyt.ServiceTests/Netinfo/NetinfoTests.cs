@@ -29,6 +29,7 @@ using Netlyt.Service.Data;
 using Xunit;
 using Netlyt.ServiceTests.Fixtures;
 using StackExchange.Redis;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.ServiceTests.Netinfo
 {

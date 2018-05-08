@@ -4,14 +4,16 @@ using Netlyt.Interfaces;
 
 namespace Donut.Lex.Expressions
 {
-    
-    public class VariableExpression : Expression
+    /// <summary>
+    /// A name expression
+    /// </summary>
+    public class NameExpression : Expression
     {
 
         public string Name { get; private set; }
         public MemberExpression Member { get; set; }
 
-        public VariableExpression(string name)
+        public NameExpression(string name)
         {
             this.Name = name;
         }
@@ -31,5 +33,7 @@ namespace Donut.Lex.Expressions
             }
             return buff.ToString();
         }
+
+        
     }
 }

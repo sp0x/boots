@@ -24,8 +24,8 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             Assert.Equal("f", x.Name);
             Assert.True(x.Parameters.Count > 0);
             var parameterExpression = x.Parameters.First();
-            Assert.IsType<VariableExpression>(parameterExpression.Value);
-            Assert.Equal("a", ((VariableExpression) parameterExpression.Value).Name);
+            Assert.IsType<NameExpression>(parameterExpression.Value);
+            Assert.Equal("a", ((NameExpression) parameterExpression.Value).Name);
         }
 
         [Theory]
@@ -145,10 +145,10 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             Assert.True(x.Parameters.Count >= 2);
             var param1 = x.Parameters.First();
             var param2 = x.Parameters.Skip(1).First();
-            Assert.IsType<VariableExpression>(param1.Value);
-            Assert.IsType<VariableExpression>(param2.Value);
-            Assert.Equal("a", ((VariableExpression) param1.Value).Name);
-            Assert.Equal("b",((VariableExpression) param2.Value).Name);
+            Assert.IsType<NameExpression>(param1.Value);
+            Assert.IsType<NameExpression>(param2.Value);
+            Assert.Equal("a", ((NameExpression) param1.Value).Name);
+            Assert.Equal("b",((NameExpression) param2.Value).Name);
         }
 
         [Theory]
@@ -161,10 +161,10 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             Assert.True(x.Parameters.Count >= 2);
             var param1 = x.Parameters.First();
             var param2 = x.Parameters.Skip(1).First();
-            Assert.IsType<VariableExpression>(param1.Value);
-            Assert.IsType<VariableExpression>(param2.Value);
-            Assert.Equal("a.one",((VariableExpression)param1.Value).ToString()); 
-            Assert.Equal("b", ((VariableExpression)param2.Value).Name); 
+            Assert.IsType<NameExpression>(param1.Value);
+            Assert.IsType<NameExpression>(param2.Value);
+            Assert.Equal("a.one",((NameExpression)param1.Value).ToString()); 
+            Assert.Equal("b", ((NameExpression)param2.Value).Name); 
         }
 
         [Theory]
@@ -178,14 +178,14 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             var param1 = x.Parameters.First();
             var param2 = x.Parameters.Skip(1).First();
             Assert.IsType<CallExpression>(param1.Value);
-            Assert.IsType<VariableExpression>(param2.Value);
+            Assert.IsType<NameExpression>(param2.Value);
             Assert.Equal("g", ((CallExpression)param1.Value).Name);
             Assert.True(((CallExpression) param1.Value).Parameters.Count == 2);
-            VariableExpression fnp1Param1= (VariableExpression)((CallExpression)param1.Value).Parameters.First().Value;
-            VariableExpression fnp1Param2 = (VariableExpression)((CallExpression)param1.Value).Parameters.Skip(1).First().Value;
+            NameExpression fnp1Param1= (NameExpression)((CallExpression)param1.Value).Parameters.First().Value;
+            NameExpression fnp1Param2 = (NameExpression)((CallExpression)param1.Value).Parameters.Skip(1).First().Value;
             Assert.Equal("a.one", fnp1Param1.ToString());
             Assert.Equal("c", fnp1Param2.Name);
-            Assert.Equal("b", ((VariableExpression)param2.Value).Name);
+            Assert.Equal("b", ((NameExpression)param2.Value).Name);
         }
 
         [Theory]
@@ -198,13 +198,13 @@ namespace Netlyt.ServiceTests.Lex.Parsing.Tokenizers
             BinaryExpression firstExp = expressions.First() as BinaryExpression;
             Assert.True(firstExp.Token.TokenType == TokenType.Add);
             Assert.IsType<BinaryExpression>(firstExp.Left);
-            Assert.IsType<VariableExpression>(firstExp.Right);
+            Assert.IsType<NameExpression>(firstExp.Right);
             BinaryExpression divisionLeft = firstExp.Left as BinaryExpression;
-            Assert.IsType<VariableExpression>(divisionLeft.Right);
+            Assert.IsType<NameExpression>(divisionLeft.Right);
             var fn1 = ((CallExpression)divisionLeft.Left);
             Assert.Equal("max", fn1.Name);
             Assert.Equal("max(c, 1 + a.b)", fn1.ToString());
-            Assert.Equal("b", ((VariableExpression)divisionLeft.Right).Name); 
+            Assert.Equal("b", ((NameExpression)divisionLeft.Right).Name); 
         }
 
         [Theory]

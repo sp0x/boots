@@ -3,7 +3,6 @@ using System.IO;
 using System.Reflection;
 using Donut.Integration;
 using Netlyt.Interfaces;
-using Netlyt.Service.Donut;
 
 namespace Donut
 {
@@ -20,7 +19,7 @@ namespace Donut
             var builderType = typeof(DonutBuilder<,,>).MakeGenericType(new Type[] { donutType, donutContextType, typeof(TData) });
             //DataIntegration integration, RedisCacher cacher, IServiceProvider serviceProvider
             var builderCtor = builderType.GetConstructor(new Type[]
-                {typeof(DataIntegration), typeof(IRedisCacher), typeof(IServiceProvider)});
+                {typeof(Data.DataIntegration), typeof(IRedisCacher), typeof(IServiceProvider)});
             if (builderCtor == null) throw new Exception("DonutBuilder<> has invalid ctor parameters.");
             var builder = Activator.CreateInstance(builderType, integration, cacher, serviceProvider);
             return builder as IDonutBuilder;
@@ -39,11 +38,11 @@ namespace Donut
     {
         private string _template;
         private IRedisCacher _cacher;
-        private DataIntegration _integration;
+        private Data.DataIntegration _integration;
         private Type _tContext;
         private IServiceProvider _serviceProvider;
 
-        public DonutBuilder(DataIntegration integration, IRedisCacher cacher, IServiceProvider serviceProvider)
+        public DonutBuilder(Data.DataIntegration integration, IRedisCacher cacher, IServiceProvider serviceProvider)
         {
             _tContext = typeof(TContext);
             _serviceProvider = serviceProvider;

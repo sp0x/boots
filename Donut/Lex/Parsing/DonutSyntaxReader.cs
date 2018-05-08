@@ -15,7 +15,7 @@ namespace Donut.Lex.Parsing
     { 
         private List<string> _sourceIntegrations;
 
-        private DataIntegration[] _integrations;
+        private Donut.Data.DataIntegration[] _integrations;
         //private MatchCondition _currentMatchCondition;
 
         private const string ExpectedObjectErrorText = "Expected =, !=, IN or NOT IN but found: ";
@@ -28,11 +28,11 @@ namespace Donut.Lex.Parsing
             _sourceIntegrations = new List<string>();
         }
 
-        public DonutSyntaxReader(IEnumerable<DslToken> tokens, params DataIntegration[] contextIntegrations)
+        public DonutSyntaxReader(IEnumerable<DslToken> tokens, params Donut.Data.DataIntegration[] contextIntegrations)
             : this()
         {
             _integrations = contextIntegrations;
-            if (_integrations == null) _integrations = new DataIntegration[] { };
+            if (_integrations == null) _integrations = new Donut.Data.DataIntegration[] { };
             Load(tokens);
         }
 
@@ -78,7 +78,7 @@ namespace Donut.Lex.Parsing
                     throw new NotImplementedException();
                 }
             }
-            newScript.AddIntegrations(_sourceIntegrations.Select(i=> new DataIntegration(i)).ToArray());
+            newScript.AddIntegrations(_sourceIntegrations.Select(i=> new Donut.Data.DataIntegration(i)).ToArray());
 
             return newScript;
         }
@@ -326,7 +326,7 @@ namespace Donut.Lex.Parsing
             {
                 case TokenType.Assign:
                     var right = ReadValueExpression(terminatingPredicate);
-                    var aop = new AssignmentExpression(left as VariableExpression, right);
+                    var aop = new AssignmentExpression(left as NameExpression, right);
                     op = aop;
                     break;
                 default:
@@ -374,12 +374,12 @@ namespace Donut.Lex.Parsing
                    || tt == TokenType.Assign;
         }
 
-        public VariableExpression ReadVariable()
+        public NameExpression ReadVariable()
         {
-            VariableExpression exp = null; 
+            NameExpression exp = null; 
             //Read the symbol
             var token = Reader.DiscardToken(TokenType.Symbol);
-            exp = new VariableExpression(token.Value);
+            exp = new NameExpression(token.Value);
             if (Reader.Current.TokenType == TokenType.MemberAccess)
             {
                 var memberChain = ReadMemberChainExpression();
@@ -434,7 +434,7 @@ namespace Donut.Lex.Parsing
             else
             {
                 var memberSymbol = Reader.DiscardToken(TokenType.Symbol);
-                var variableExp = new VariableExpression(memberSymbol.Value);
+                var variableExp = new NameExpression(memberSymbol.Value);
                 MemberExpression member = new MemberExpression(variableExp);
                 return member;
             }

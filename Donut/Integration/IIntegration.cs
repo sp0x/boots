@@ -15,6 +15,7 @@ namespace Donut.Integration
         ApiAuth APIKey { get; set; }
         string Collection { get; set; }
         string FeaturesCollection { get; set; }
+        string DataTimestampColumn { get; set; }
         /// <summary>
         /// The type of origin of this type
         /// </summary>
@@ -24,7 +25,15 @@ namespace Donut.Integration
         ICollection<IntegrationExtra> Extras { get; } 
 
         IIntegratedDocument CreateDocument<T>(T data);
-
+        /// <summary>
+        /// Gets the keys that are used to aggregate the data in this collection.
+        /// </summary>
+        /// <returns></returns>
+        //IEnumerable<AggregateKey> GetAggregateKeys();
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         string GetReducedCollectionName();
     }
 }

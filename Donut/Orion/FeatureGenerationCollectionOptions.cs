@@ -12,6 +12,6 @@ namespace Donut.Orion
         public string IndexBy { get; set; }
         public string TimestampField { get; set; }
         public InternalEntity InternalEntity { get; set; }
-        public DataIntegration Integration { get; set; }
+        public Data.DataIntegration Integration { get; set; }
     }
 }

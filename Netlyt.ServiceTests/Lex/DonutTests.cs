@@ -23,6 +23,7 @@ using Netlyt.Service.Time;
 using Netlyt.ServiceTests.Fixtures;
 using Netlyt.ServiceTests.Netinfo;
 using Xunit;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.ServiceTests.Lex
 {

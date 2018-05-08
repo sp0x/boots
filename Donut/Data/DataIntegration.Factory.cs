@@ -2,7 +2,7 @@
 using Donut.Source;
 using Netlyt.Interfaces;
 
-namespace Donut
+namespace Donut.Data
 {
     public partial class DataIntegration
     {
@@ -13,10 +13,10 @@ namespace Donut
             /// </summary>
             /// <param name="fileSrc"></param>
             /// <returns></returns>
-            public static DataIntegration CreateFromSource(IInputSource fileSrc)
+            public static Data.DataIntegration CreateFromSource(IInputSource fileSrc)
             {
                 var structure = fileSrc.ResolveIntegrationDefinition();
-                return structure as DataIntegration;
+                return structure as Data.DataIntegration;
             }
 
             /// <summary>
@@ -24,10 +24,10 @@ namespace Donut
             /// </summary>
             /// <typeparam name="T"></typeparam>
             /// <returns></returns>
-            public static DataIntegration CreateFromType<T>(string name, ApiAuth apiObj)
+            public static Data.DataIntegration CreateFromType<T>(string name, ApiAuth apiObj)
             {
                 var type = typeof(T);
-                var typedef = new DataIntegration(type.Name);
+                var typedef = new Data.DataIntegration(type.Name);
                 typedef.APIKey = apiObj;
                 typedef.DataFormatType = "dynamic";
                 typedef.DataEncoding = System.Text.Encoding.Default.CodePage;
@@ -42,9 +42,9 @@ namespace Donut
                 typedef.Name = name;
                 return typedef;
             }
-            public static DataIntegration CreateNamed(string key, string name)
+            public static Data.DataIntegration CreateNamed(string key, string name)
             {
-                var typedef = new DataIntegration(name);
+                var typedef = new Data.DataIntegration(name);
                 typedef.APIKey = new ApiAuth() { AppId = key };
                 return typedef;
             }

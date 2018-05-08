@@ -12,7 +12,7 @@ namespace Donut.Lex.Data
         {
             IExpression fExpression = fExpr.Value;
             if (fExpression.IsDonutAggregateFunction()) return true;
-            if (fExpression is VariableExpression varExpr)
+            if (fExpression is NameExpression varExpr)
             {
                 return true;
             }

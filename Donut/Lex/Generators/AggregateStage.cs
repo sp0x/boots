@@ -87,7 +87,7 @@ namespace Donut.Lex.Generators
                 //If we visit functions here, note that in the pipeline
                 var paramStr = argExpVisitor.Visit(parameter as IExpression, out paramOutputObj);
                 var subAggregateTree = argExpVisitor.AggregateTree;
-                if (pValue is VariableExpression varValue && varValue.Member != null)
+                if (pValue is NameExpression varValue && varValue.Member != null)
                 {
                     var isRootIntegrationVar = varValue.Name == _script.GetRootIntegration().Name;
                     //Strip the root integration name in cases of [IntegrationName].[Function].
@@ -101,11 +101,11 @@ namespace Donut.Lex.Generators
                     pValue = memberValue.Parent;
                 }
                 ChildStages.AddRange(subAggregateTree.Stages);
-                if (pValue is CallExpression || paramOutputObj is IDonutTemplateFunction)
+                if (pValue is CallExpression || paramOutputObj is IDonutTemplateFunction<string>)
                 {
                     if (Function.Type == DonutFunctionType.GroupField)
                     {
-                        if (paramOutputObj is IDonutTemplateFunction iDonutFn &&
+                        if (paramOutputObj is IDonutTemplateFunction<string> iDonutFn &&
                             iDonutFn.Type == DonutFunctionType.Project)
                         {
                             throw new System.Exception(

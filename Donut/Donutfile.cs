@@ -93,6 +93,11 @@ namespace Donut
 
         }
 
+        public async virtual Task CompleteExtraction()
+        {
+
+        }
+
         public async virtual Task OnFinished()
         {
 

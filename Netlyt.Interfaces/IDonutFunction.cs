@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
-using Donut;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using MongoDB.Bson;
 
 namespace Netlyt.Interfaces
 {
@@ -9,7 +11,8 @@ namespace Netlyt.Interfaces
         List<IParameterExpression> Parameters { get; set; }
         bool IsAggregate { get; set; }
         DonutFunctionType Type { get; set; }
-        string Content { get; set; }
+        Expression<Func<BsonValue, object>> Eval { get; set; }
+        IDonutFeatureDefinition Content { get; set; }
         string Name { get; set; }
         string Body { get; set; }
         string Projection { get; set; }
@@ -17,5 +20,9 @@ namespace Netlyt.Interfaces
         string GetAggregateValue();
         string GetValue();
         int GetHashCode();
+        object EvalValue(BsonValue val);
+        Expression GetEvalBody();
+        LambdaExpression GetEvalLambda();
+        string GetCallCode(string varName);
     }
 }

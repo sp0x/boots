@@ -4,6 +4,7 @@ using Donut.Source;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service.Data
 {
@@ -21,6 +22,7 @@ namespace Netlyt.Service.Data
         public DbSet<DonutScriptInfo> DonutScripts { get; set; }
         public DbSet<ModelTrainingPerformance> ModelTrainingPerformance { get; set; }
         public DbSet<TrainingTask> TrainingTasks { get; set; }
+        public DbSet<AggregateKey> AggregateKeys { get; set; }
 
         public ManagementDbContext(DbContextOptions<ManagementDbContext> options)
             : base(options)

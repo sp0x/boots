@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
@@ -14,6 +15,7 @@ using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service.Data;
 using Netlyt.Service.Exceptions;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service
 {
@@ -54,6 +56,29 @@ namespace Netlyt.Service
             {
                 type = exitingIntegration;
             }
+        }
+
+        /// <summary>
+        /// Gets the aggregate keys for this integration.
+        /// If a timestamp column is present, it's used as a key (day of year and hour).
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<AggregateKey> GetAggregateKeys(IIntegration integration)
+        {
+            //if (_aggregateKeys != null) return _aggregateKeys;
+            var lsOut = new List<AggregateKey>();
+            var tsKey = integration.DataTimestampColumn;
+            if (!string.IsNullOrEmpty(tsKey))
+            {
+                lsOut.Add(new AggregateKey("tsHour", "hour", tsKey));
+                lsOut.Add(new AggregateKey("tsDayyr", "dayOfYear", tsKey));
+            }
+            else
+            {
+                lsOut.Add(new AggregateKey("_id", null, "_id"));
+            }
+            //_aggregateKeys = lsOut;
+            return lsOut;
         }
 
         /// <summary>
@@ -361,6 +386,7 @@ namespace Netlyt.Service
                 {
                     integrationInfo.DataTimestampColumn = timestampCol;
                 }
+                integrationInfo.AggregateKeys = this.GetAggregateKeys(integrationInfo).ToList();
             }
             if (integrationInfo == null)
             {

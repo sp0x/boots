@@ -115,7 +115,7 @@ namespace Donut
             string name,
             string outputCollection = null)
         {
-            var integration = inputSource.ResolveIntegrationDefinition() as DataIntegration;
+            var integration = inputSource.ResolveIntegrationDefinition() as Data.DataIntegration;
             if (integration==null)
             {
                 throw new Exception("Could not resolve type!");

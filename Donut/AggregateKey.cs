@@ -1,8 +1,14 @@
-﻿using Donut.Lex.Generators;
+﻿using System;
+using System.Collections.Generic;
+using Donut.Lex.Generators;
+using MongoDB.Bson;
 using Netlyt.Interfaces;
 
 namespace Donut
 {
+    /// <summary>
+    /// The key that's used to aggregate data.
+    /// </summary>
     public class AggregateKey : IAggregateKey
     {
         public string Name { get; set; }
@@ -18,6 +24,36 @@ namespace Donut
                 var fns = (new DonutFunctions());
                 Operation = fns.GetFunction(fn);
             }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public object GetValue(BsonDocument obj)
+        {
+            if (Operation?.Eval == null) return null;
+            try
+            {
+                var bsonDocument = obj[Arguments];
+                return Operation.EvalValue(bsonDocument);
+            }catch(Exception ex)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="doc"></param>
+        /// <returns></returns>
+        public KeyValuePair<string, object> GetKeyValuePair(BsonDocument doc)
+        {
+            var val = GetValue(doc);
+            var kvp = new KeyValuePair<string, object>(Arguments, val);
+            return kvp;
         }
 
         public override string ToString()
@@ -38,5 +74,6 @@ namespace Donut
                 return skey;
             }
         }
+
     }
 }

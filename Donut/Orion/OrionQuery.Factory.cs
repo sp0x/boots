@@ -105,7 +105,7 @@ namespace Donut.Orion
                 return "r2";
             }
 
-            public static OrionQuery CreateTrainQuery(Model model, DataIntegration ign)
+            public static OrionQuery CreateTrainQuery(Model model, Data.DataIntegration ign)
             {
                 var rootIntegration = ign;
                 var qr = new global::Donut.Orion.OrionQuery(OrionOp.Train);

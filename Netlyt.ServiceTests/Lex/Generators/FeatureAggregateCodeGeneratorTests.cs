@@ -17,6 +17,7 @@ using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.ServiceTests.Fixtures;
 using Xunit;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.ServiceTests.Lex.Generators
 {

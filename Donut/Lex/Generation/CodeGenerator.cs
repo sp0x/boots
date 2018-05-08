@@ -83,7 +83,7 @@ namespace Donut.Lex.Generation
         /// <param name="expressions"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        protected static string VisitVar(VariableExpression expression, StringBuilder value, ExpressionVisitor visitor)
+        protected static string VisitVar(NameExpression expression, StringBuilder value, ExpressionVisitor visitor)
         {
             var visitResult = visitor.Visit(expression);
             return visitResult;

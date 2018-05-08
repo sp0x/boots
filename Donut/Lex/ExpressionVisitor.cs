@@ -56,9 +56,9 @@ namespace Donut.Lex
             {
                 return VisitNumberExpression(expression as NumberExpression, out visitObjResult);
             }
-            else if (expType == typeof(VariableExpression))
+            else if (expType == typeof(NameExpression))
             {
-                return VisitVariableExpression(expression as VariableExpression, out visitObjResult);
+                return VisitVariableExpression(expression as NameExpression, out visitObjResult);
             }
             else
             {
@@ -67,7 +67,7 @@ namespace Donut.Lex
             
         }
 
-        protected virtual string VisitVariableExpression(VariableExpression exp, out object resultObj)
+        protected virtual string VisitVariableExpression(NameExpression exp, out object resultObj)
         {
             resultObj = null;
             return null;

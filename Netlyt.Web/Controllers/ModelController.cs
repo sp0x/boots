@@ -21,6 +21,7 @@ using Netlyt.Service.Data;
 using Netlyt.Web.Helpers;
 using Netlyt.Web.ViewModels;
 using Newtonsoft.Json;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Web.Controllers
 {

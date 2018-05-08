@@ -23,6 +23,7 @@ using Netlyt.Interfaces.Data;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.ServiceTests.Fixtures
 {
@@ -185,6 +186,7 @@ namespace Netlyt.ServiceTests.Fixtures
 
             bool isNewIgn;
             var ign = ignService.ResolveIntegration(appAuth, user, name, out isNewIgn, inputSource);
+            var keys = ign.AggregateKeys;
             return ign;
         }
     }

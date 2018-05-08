@@ -22,7 +22,7 @@ namespace Donut.Source
         public FieldDataEncoding DataEncoding { get; set; }
         [ForeignKey("Integration")]
         public long IntegrationId { get; set; }
-        public DataIntegration Integration { get; set; }
+        public Data.DataIntegration Integration { get; set; }
         public FieldDefinition()
         {
         }

@@ -14,7 +14,7 @@ namespace Donut.Lex.Data
         {
             Filters = new List<MatchCondition>();
             Features = new List<AssignmentExpression>();
-            Integrations = new HashSet<DataIntegration>();
+            Integrations = new HashSet<Donut.Data.DataIntegration>();
         }
         /// <summary>
         /// 
@@ -23,14 +23,14 @@ namespace Donut.Lex.Data
         public IList<MatchCondition> Filters { get; set; }
         public List<AssignmentExpression> Features { get; set; }
         public OrderByExpression StartingOrderBy { get; set; }
-        public HashSet<DataIntegration> Integrations { get; set; }
+        public HashSet<Donut.Data.DataIntegration> Integrations { get; set; }
         public string TargetAttribute { get; set; }
 
-        public void AddIntegrations(params DataIntegration[] sourceIntegrations)
+        public void AddIntegrations(params Donut.Data.DataIntegration[] sourceIntegrations)
         {
             if (this.Integrations == null)
             {
-                this.Integrations = new HashSet<DataIntegration>(sourceIntegrations);
+                this.Integrations = new HashSet<Donut.Data.DataIntegration>(sourceIntegrations);
             }
             else
             {
@@ -75,7 +75,7 @@ namespace Donut.Lex.Data
             /// <param name="integration"></param>
             /// <param name="featureBodies"></param>
             /// <returns></returns>
-            public static DonutScript CreateWithFeatures(string donutName, string target, DataIntegration integration, params string[] featureBodies)
+            public static DonutScript CreateWithFeatures(string donutName, string target, Donut.Data.DataIntegration integration, params string[] featureBodies)
             {
                 var ds = new DonutScript();
                 ValidateIntegrations(integration);
@@ -101,7 +101,7 @@ namespace Donut.Lex.Data
                             featureName = target;
                         }
 
-                        var expFeature = new AssignmentExpression(new VariableExpression(featureName), expFeatureBody);
+                        var expFeature = new AssignmentExpression(new NameExpression(featureName), expFeatureBody);
                         ds.Features.Add(expFeature);
                     }
                     catch (Exception ex)
@@ -113,7 +113,7 @@ namespace Donut.Lex.Data
                 return ds;
             }
 
-            private static void ValidateIntegrations(params DataIntegration[] integrations)
+            private static void ValidateIntegrations(params Donut.Data.DataIntegration[] integrations)
             {
                 foreach (var intg in integrations)
                 {
@@ -138,7 +138,7 @@ namespace Donut.Lex.Data
             return null;
         }
 
-        public DataIntegration GetRootIntegration()
+        public Donut.Data.DataIntegration GetRootIntegration()
         {
             return Integrations.FirstOrDefault();
         }

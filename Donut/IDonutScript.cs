@@ -9,15 +9,15 @@ namespace Donut
     {
         List<AssignmentExpression> Features { get; set; }
         IList<MatchCondition> Filters { get; set; }
-        HashSet<DataIntegration> Integrations { get; set; }
+        HashSet<Data.DataIntegration> Integrations { get; set; }
         OrderByExpression StartingOrderBy { get; set; }
         string TargetAttribute { get; set; }
         ScriptTypeInfo Type { get; set; }
 
-        void AddIntegrations(params DataIntegration[] sourceIntegrations);
+        void AddIntegrations(params Data.DataIntegration[] sourceIntegrations);
         DatasetMember GetDatasetMember(string dsName);
         IEnumerable<DatasetMember> GetDatasetMembers();
-        DataIntegration GetRootIntegration();
+        Data.DataIntegration GetRootIntegration();
         string ToString();
     }
 }

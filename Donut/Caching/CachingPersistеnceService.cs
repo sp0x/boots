@@ -145,16 +145,26 @@ namespace Donut.Caching
             var element = map.DeserializeHash(ret);
             return element;
         }
-
-        public long Count(string key)
+        /// <summary>
+        /// Gets the size of a set
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public long GetSetSize(string key)
         {
-            return _cacher.SetItemCount(key);
+            return _cacher.GetSetItemCount(key);
         }
 
         public void Truncate(string key)
         {
             _cacher.RemoveAll($"{key}:*");
             _cacher.RemoveAll($"{key}");
+        }
+
+        public int AddHashWithIndex(string prefix, Dictionary<string, object> aggKeyBuff)
+        {
+            var key = $"{prefix}:cacheGroup";
+            throw new NotImplementedException();
         }
     }
 }

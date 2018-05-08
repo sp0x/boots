@@ -1,5 +1,4 @@
 ﻿using Netlyt.Interfaces;
-using Netlyt.Service.Donut;
 
 namespace Donut
 {
@@ -8,7 +7,7 @@ namespace Donut
         public InternalDonutFunctionProxy(string nm, string content) : base(nm)
         {
             base.IsAggregate = false;
-            this.Content = content;
+            this.Content = new DonutFeatureDefinition(content);
             this.GroupValue = content;
             base.Type = DonutFunctionType.GroupField;
         }

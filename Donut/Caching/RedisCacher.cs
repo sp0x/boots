@@ -620,8 +620,12 @@ namespace Donut.Caching
             Connect();
             _db.SortedSetAdd(key, entries.ToArray());
         }
-
-        public long SetItemCount(string key)
+        /// <summary>
+        /// Gets the count of elements in a set
+        /// </summary>
+        /// <param name="key">The name of the set</param>
+        /// <returns></returns>
+        public long GetSetItemCount(string key)
         {
             Connect();
             return _db.SetLength(key);

@@ -35,7 +35,7 @@ namespace Netlyt.Interfaces
         void SetHashes(string key, IEnumerable<HashEntry> hashElements, IDistributedCacheEntryOptions options);
         Task SetHashesAsync(string key, IEnumerable<HashEntry> hashElements);
         Task SetHashesAsync(string key, IEnumerable<HashEntry> hashElements, IDistributedCacheEntryOptions options);
-        long SetItemCount(string key);
+        long GetSetItemCount(string key);
         void SortedSetAdd(string kv, RedisValue value, double score);
         void SortedSetAddAll(string key, IEnumerable<SortedSetEntry> entries);
     }

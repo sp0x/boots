@@ -11,11 +11,11 @@ namespace Donut.Lex
     /// </summary>
     public class JsGeneratingExpressionVisitor : ExpressionVisitor
     { 
-        public Dictionary<VariableExpression, string> Variables { get; private set; }
+        public Dictionary<NameExpression, string> Variables { get; private set; }
         public JsGeneratingExpressionVisitor()
             : base()
         {
-            Variables = new Dictionary<VariableExpression, string>();
+            Variables = new Dictionary<NameExpression, string>();
         } 
 
         protected override string VisitNumberExpression(NumberExpression exp, out object retObject)
@@ -58,7 +58,7 @@ namespace Donut.Lex
 
         
 
-        private void AddVariable(VariableExpression expMember, string expValue)
+        private void AddVariable(NameExpression expMember, string expValue)
         {
             Variables.Add(expMember, expValue);
         }
@@ -125,7 +125,7 @@ namespace Donut.Lex
             return sb.ToString();
         }
 
-        protected override string VisitVariableExpression(VariableExpression exp, out object  retObject)
+        protected override string VisitVariableExpression(NameExpression exp, out object  retObject)
         {
             retObject = null;
             var val = exp.ToString();
@@ -144,7 +144,7 @@ namespace Donut.Lex
 
     public class ExpressionVisitResult
     {
-        public Dictionary<VariableExpression, string> Variables { get; set; }
+        public Dictionary<NameExpression, string> Variables { get; set; }
         public string Value { get; set; }
     }
 }

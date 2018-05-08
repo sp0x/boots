@@ -2,11 +2,10 @@
 using System.Linq;
 using Donut.Crypto;
 using Donut.Lex.Expressions;
-using Netlyt.Service.Donut;
 
 namespace Donut
 {
-    public class DsTime : DonutFunction, IDonutTemplateFunction
+    public class DsTime : DonutFunction, IDonutTemplateFunction<string>
     {
         public DsTime(string nm) : base(nm)
         {
@@ -15,7 +14,7 @@ namespace Donut
         public string GetTemplate(CallExpression exp, DonutCodeContext ctx)
         {
             var callParam = exp.Parameters.FirstOrDefault();
-            VariableExpression dsName = callParam.Value as VariableExpression;
+            NameExpression dsName = callParam.Value as NameExpression;
             var targetExpression = ctx.Script.GetDatasetMember(dsName.Name);
             if (targetExpression != null)
             {
@@ -25,7 +24,7 @@ namespace Donut
             {
                 throw new Exception("Integration not found");
             }
-        }
+        } 
 
         public override int GetHashCode()
         {

@@ -3,8 +3,12 @@ using Netlyt.Interfaces;
 
 namespace Donut
 {
-    public interface IDonutTemplateFunction : IDonutFunction
+    public interface IDonutTemplateFunction
     {
-        string GetTemplate(CallExpression exp, DonutCodeContext context);
+
+    }
+    public interface IDonutTemplateFunction<T> : IDonutTemplateFunction, IDonutFunction
+    {
+        T GetTemplate(CallExpression exp, DonutCodeContext context);
     }
 }

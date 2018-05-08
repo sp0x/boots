@@ -2,11 +2,9 @@
 
 namespace Netlyt.Interfaces
 {
-    public interface IParameterExpression
+    public interface IParameterExpression : IExpression
     {
         IExpression Value { get; }
-
-        IEnumerable<IExpression> GetChildren();
         string ToString();
     }
 }

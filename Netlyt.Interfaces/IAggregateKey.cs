@@ -1,6 +1,4 @@
-﻿using Netlyt.Interfaces;
-
-namespace Donut
+﻿namespace Netlyt.Interfaces
 {
     public interface IAggregateKey
     {

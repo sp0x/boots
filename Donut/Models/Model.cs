@@ -39,7 +39,7 @@ namespace Donut.Models
             TrainingTasks = new List<TrainingTask>();
         }
 
-        public DataIntegration GetRootIntegration()
+        public Data.DataIntegration GetRootIntegration()
         {
             return DataIntegrations.FirstOrDefault()?.Integration;
         }

@@ -3,8 +3,8 @@
     public class DatasetMember
     {
         public string Name { get; private set; }
-        public DataIntegration Integration { get; private set; }
-        public DatasetMember(DataIntegration integration)
+        public Data.DataIntegration Integration { get; private set; }
+        public DatasetMember(Data.DataIntegration integration)
         {
             this.Name = integration.Name;
             this.Integration = integration;

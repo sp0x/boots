@@ -6,6 +6,7 @@ using Donut.Features;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
 using Donut.Lex.Generation;
+using MongoDB.Bson;
 using Netlyt.Interfaces;
 
 namespace Donut.Lex.Generators
@@ -80,15 +81,16 @@ namespace Donut.Lex.Generators
                 donutTemplate = donutTemplate.Replace("$Namespace", @namespace);
                 donutTemplate = donutTemplate.Replace("$ClassName", baseName);
                 donutTemplate = donutTemplate.Replace("$ContextTypeName", conutextName);
-                donutTemplate = donutTemplate.Replace("$ExtractionBody", GetFeaturePrepContent(script));
                 var prepareScript = GeneratePrepareExtractionContent(script);
-                var propertiesContent = GenerateDonutPropertiesContent(!string.IsNullOrEmpty(prepareScript));
                 donutTemplate = donutTemplate.Replace("$PrepareExtraction", prepareScript);
+                donutTemplate = ProcessFeaturePrepContent(donutTemplate, script); //donutTemplate.Replace("$ExtractionBody", GetFeaturePrepContent(donutTemplate, script));
+                donutTemplate = donutTemplate.Replace("$CompleteExtraction", GetFeatureExtractionCompletion(script));
+                var propertiesContent = GenerateDonutPropertiesContent(!string.IsNullOrEmpty(prepareScript));
                 donutTemplate = donutTemplate.Replace("$DonutProperties", propertiesContent);
                 donutTemplate = donutTemplate.Replace("$OnFinished", GenerateOnDounutFinishedContent(script));
                 donutTemplate += "\n\n" +
                                  "/* Donut script: \n" + script.ToString() +
-                                 "\n*/"; 
+                                 "\n*/";
                 //Items: $ClassName, $ContextTypeName, $ExtractionBody, $OnFinished
             }
             return donutTemplate;
@@ -128,16 +130,12 @@ namespace Donut.Lex.Generators
             if (rootIntegration == null)
                 throw new InvalidIntegrationException("Script has no integrations");
             if (rootIntegration.Fields == null || rootIntegration.Fields.Count == 0)
-                throw new InvalidIntegrationException("Integration has no fields"); 
+                throw new InvalidIntegrationException("Integration has no fields");
             //Get our record variables
             GetIntegrationRecordVars(script, fBuilder);
-
             var aggregates = new AggregateFeatureCodeGenerator(script, _expVisitor);
-            var donutFeatureGen = new DonutFeatureCodeGenerator(script, _expVisitor);
             var aggFeatures = script.Features.Where(x => x.IsDonutAggregateFeature());
-            var donutFeatures = script.Features.Where(x => x.IsDonutNativeFeature());
             aggregates.AddAll(aggFeatures);
-            donutFeatureGen.AddAll(donutFeatures);
             var aggregatePipeline = aggregates.GetScriptContent();
             fBuilder.Append(aggregatePipeline);
             return fBuilder.ToString();
@@ -153,7 +151,7 @@ namespace Donut.Lex.Generators
             }
         }
 
-        
+
 
         public string GenerateFeatureGenerator(string @namespace, DonutScript script)
         {
@@ -185,9 +183,9 @@ namespace Donut.Lex.Generators
                 string fName = feature.Member.ToString();
                 string featureContent = "";
                 var featureFType = accessor.GetType();
-                if (featureFType == typeof(VariableExpression))
+                if (featureFType == typeof(NameExpression))
                 {
-                    var member = (accessor as VariableExpression).Member?.ToString();
+                    var member = (accessor as NameExpression).Member?.ToString();
                     //In some cases we might just use the field
                     if (string.IsNullOrEmpty(member)) member = accessor.ToString();
                     featureContent = $"yield return pair(\"{fName}\", doc[\"{member}\"]);";
@@ -210,7 +208,7 @@ namespace Donut.Lex.Generators
                 {
                     throw new NotImplementedException();
                 }
-                if(!string.IsNullOrEmpty(featureContent)) fBuilder.AppendLine(featureContent);
+                if (!string.IsNullOrEmpty(featureContent)) fBuilder.AppendLine(featureContent);
             }
             return fBuilder.ToString();
         }
@@ -222,14 +220,66 @@ namespace Donut.Lex.Generators
             {
                 if (typeFilter != null && aggregate.Type != typeFilter.Value) continue;
                 var str = aggregate.Content;
-                sb.AppendLine(str);
+                sb.AppendLine(str.GetValue());
             }
             return sb.ToString();
         }
 
-        private string GetFeaturePrepContent(DonutScript script)
+        /// <summary>
+        /// Generates the code that processes each incoming document, in order to gather information for features.
+        /// </summary>
+        /// <param name="script"></param>
+        /// <returns></returns>
+        private string ProcessFeaturePrepContent(string donutfileContent, DonutScript script)
         {
-            return "";
+            string aggregateKeyContent = GetAggregateKeyExtraction(script, "aggKeyBuff");
+            var placeholder = "$ExtractionBody";
+            var donutCV = new DonutFeatureGeneratingExpressionVisitor(script);
+            var donutFeatureGen = new DonutFeatureCodeGenerator(script, donutCV);
+            var donutFeatures = script.Features.Where(x => x.IsDonutNativeFeature());
+            donutFeatureGen.AddAll(donutFeatures);
+            var donutFeatureCode = donutFeatureGen.GetScriptContent(donutfileContent);
+            donutFeatureCode.PrepareScript = aggregateKeyContent + donutFeatureCode.PrepareScript;
+            donutfileContent = donutfileContent.Replace(placeholder, donutFeatureCode.PrepareScript);
+            return donutfileContent;
+        }
+
+        /// <summary>
+        /// Gets the content of aggregate keys
+        /// </summary>
+        /// <param name="script"></param>
+        /// <param name="keyBuffName"></param>
+        /// <returns></returns>
+        private string GetAggregateKeyExtraction(DonutScript script, string keyBuffName)
+        {
+            var rootIgn = script.GetRootIntegration();
+            var ignKeys = rootIgn.AggregateKeys;
+            if (ignKeys != null || !ignKeys.Any())
+            {
+                throw new Exception("Integration has no aggregate keys!");
+            }
+            var keys = ignKeys.Where(x=>x.Operation.Eval!=null);
+            var buffer = new StringBuilder();
+            int iKey = 0;
+            buffer.AppendLine($"var {keyBuffName} = new Dictionary<string, object>();");
+            foreach (var key in keys)
+            {
+                var keyName = $"aggKey{iKey}";
+                var evalFnName = $"{keyName}_fn";
+                var evalFn = key.Operation.GetCallCode(evalFnName).ToString();
+                //var keyVar = $"var {keyName} = {evalFnName}(document[\"{key.Arguments}\"]);";
+                var keyLine = $"{keyBuffName}[\"{key.Name}\"] = {evalFnName}(document[\"{key.Arguments}\"]);";
+                buffer.AppendLine(evalFn);
+                buffer.AppendLine(keyLine);
+                iKey++;
+            }
+            return buffer.ToString();
+        }
+
+        private string GetFeatureExtractionCompletion(DonutScript script)
+        {
+            var code = "";
+            return code;
         }
 
         private string GetContextTypeMappers(DonutScript dscript)

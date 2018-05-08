@@ -11,7 +11,7 @@ namespace Donut.Features
 {
     public class AggregateFeatureGeneratingExpressionVisitor : ExpressionVisitor
     { 
-        public Dictionary<VariableExpression, string> Variables { get; private set; }
+        public Dictionary<NameExpression, string> Variables { get; private set; }
         private DonutFunctions _functionDict;
         private IDonutScript _script;
         AggregateJobTree _aggTree;
@@ -21,7 +21,7 @@ namespace Donut.Features
 
         public AggregateFeatureGeneratingExpressionVisitor(IDonutScript script) : base()
         {
-            Variables = new Dictionary<VariableExpression, string>();
+            Variables = new Dictionary<NameExpression, string>();
             Aggregates = new Queue<IDonutFunction>();
             FeatureFunctions = new Queue<IDonutFunction>();
             _functionDict = new DonutFunctions();
@@ -40,23 +40,23 @@ namespace Donut.Features
             string result;
             var aggStage = _aggTree.AddFunction(donutFn);
 
-            if (donutFn is IDonutTemplateFunction fnTemplate)
+            if (donutFn is IDonutTemplateFunction<string> fnTemplate)
             {
                 FeatureFunctions.Enqueue(donutFn);
                 var codeContext = new DonutCodeContext(_script);
                 result = fnTemplate.GetTemplate(exp, codeContext); 
-                donutFn.Content = result;
+                donutFn.Content = new DonutFeatureDefinition(result);
                 resultObj = donutFn;
             }
             else if (donutFn.IsAggregate)
             {
-                var aggregateResult = donutFn.GetValue();
+                string aggregateResult = donutFn.GetValue();
                 if (aggregateResult == null)
                 {
                     resultObj = null;
                     return "";
                 }
-                donutFn.Content = aggregateResult = aggStage.GetValue();//FillCallParameters(donutFn, exp.Parameters);
+                donutFn.Content = new DonutFeatureDefinition(aggregateResult = aggStage.GetValue());//FillCallParameters(donutFn, exp.Parameters);
                 resultObj = donutFn;
                 Aggregates.Enqueue(donutFn);
                 result = aggregateResult;
@@ -148,9 +148,9 @@ namespace Donut.Features
                 var value = VisitFunctionCall(paramValue as CallExpression, out resultObj);
                 sb.Append(value);
             }
-            else if (paramValueType == typeof(VariableExpression))
+            else if (paramValueType == typeof(NameExpression))
             {
-                IExpression subExpression = (paramValue as VariableExpression).Member;
+                IExpression subExpression = (paramValue as NameExpression).Member;
                 CallExpression foundCallExpression = null;
                 while (subExpression!=null)
                 {
@@ -168,7 +168,7 @@ namespace Donut.Features
                         {
                             subExpression = memberExp as MemberExpression;
                         }
-                        else if (memberExp is VariableExpression)
+                        else if (memberExp is NameExpression)
                         {
                             if ((subExpression as MemberExpression)?.ChildMember != null)
                             {
@@ -194,7 +194,7 @@ namespace Donut.Features
                 }
                 else
                 {
-                    var vex = ((VariableExpression)paramValue);
+                    var vex = ((NameExpression)paramValue);
                     var varValue = VisitVariableExpression(vex, out resultObj);
                     sb.Append(varValue);
                 }
@@ -207,16 +207,13 @@ namespace Donut.Features
             return sb.ToString();
         } 
 
-        protected override string VisitVariableExpression(VariableExpression vex, out object resultObj)
+        protected override string VisitVariableExpression(NameExpression vex, out object resultObj)
         {
             resultObj = null;
             var output = vex.ToString();
             if (vex.Member != null) output = vex.Member.ToString();
             var donutFn = new InternalDonutFunctionProxy(output, output);
             resultObj = donutFn;
-            string result;
-            //Dont add variables as a stage
-            //var aggStage = _aggTree.AddFunction(donutFn);
             return output;
         }
 

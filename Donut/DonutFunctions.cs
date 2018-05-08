@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Donut.Lex.Expressions;
 using MongoDB.Bson;
 using Netlyt.Interfaces;
-using Netlyt.Service.Donut;
 
 namespace Donut
 {
@@ -63,43 +62,50 @@ namespace Donut
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$dayOfMonth", "{0}" } }).ToString()
+                Projection = (new BsonDocument { { "$dayOfMonth", "{0}" } }).ToString(),
+                Eval = (x)=> x.AsDateTime.Day
             };
             Functions["hour"] = new DonutFunction("hour")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$hour", "{0}" } }).ToString()
+                Projection = (new BsonDocument { { "$hour", "{0}" } }).ToString(),
+                Eval = (x) => x.AsDateTime.Hour
             };
             Functions["month"] = new DonutFunction("month")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$month", "{0}" } }).ToString()
+                Projection = (new BsonDocument { { "$month", "{0}" } }).ToString(),
+                Eval = (x) => x.AsDateTime.Month
             };
             Functions["year"] = new DonutFunction("year")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$year", "{0}" } }).ToString()
+                Projection = (new BsonDocument { { "$year", "{0}" } }).ToString(),
+                Eval = (x) => x.AsDateTime.Year
             };
             Functions["weekday"] = new DonutFunction("weekday")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$dayOfWeek", "{0}" } }).ToString()
+                Projection = (new BsonDocument { { "$dayOfWeek", "{0}" } }).ToString(),
+                Eval = (x) => x.AsDateTime.DayOfWeek
             };
             Functions["yearday"] = new DonutFunction("yearday")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$dayOfYear", "{0}" } }).ToString()
+                Projection = (new BsonDocument { { "$dayOfYear", "{0}" } }).ToString(),
+                Eval = (x) => x.AsDateTime.DayOfYear
             };
             Functions["dayofyear"] = new DonutFunction("dayOfYear")
             {
                 Type = DonutFunctionType.Project,
                 IsAggregate = true,
-                Projection = (new BsonDocument { { "$dayOfYear", "{0}" } }).ToString()
+                Projection = (new BsonDocument { { "$dayOfYear", "{0}" } }).ToString(),
+                Eval = (x) => x.AsDateTime.DayOfYear
             };
             Functions["mode"] = new DonutFunction("mode")
             { IsAggregate = false };

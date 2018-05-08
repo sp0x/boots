@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Donut.Caching;
 using Donut.Integration;
 using MongoDB.Driver;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
-using Netlyt.Service.Donut;
 using StackExchange.Redis;
 
 namespace Donut
 {
  
     /// <summary>
-    /// 
+    /// Contains all data references for a donut
     /// </summary>
     public class DonutContext : EntityMetaContext, ISetCollection, IDisposable, IDonutContext
     {
@@ -35,7 +35,7 @@ namespace Donut
         /// The entity interval on which to cache the values.
         /// </summary>
         public int CacheRunInterval { get; private set; }
-        public DonutContext(IRedisCacher cacher, DataIntegration integration, IServiceProvider serviceProvider)
+        public DonutContext(IRedisCacher cacher, Data.DataIntegration integration, IServiceProvider serviceProvider)
         {
             _cacher = cacher;
             ApiAuth = integration.APIKey;
@@ -46,6 +46,7 @@ namespace Donut
             ConfigureCacheMap();
             Prefix = $"integration_context:{Integration.Id}";
             new ContextSetDiscoveryService(this, serviceProvider).Initialize();
+            _cachingService = new CachingPersistеnceService(this);
             if (integration != null && !string.IsNullOrEmpty(integration.FeaturesCollection))
             {
 //                var dbConfig = DBConfig.GetGeneralDatabase();
@@ -58,7 +59,17 @@ namespace Donut
                 IMongoDatabase db = MongoHelper.GetDatabase();
                 db.CreateCollection(integration.FeaturesCollection);
             }
-            _cachingService = new CachingPersistеnceService(this);
+        }
+
+        /// <summary>
+        /// Saves a group
+        /// </summary>
+        /// <param name="aggKeyBuff"></param>
+        /// <returns></returns>
+        public int AddMetaGroup(Dictionary<string, object> aggKeyBuff)
+        {
+            var index = _cachingService.AddHashWithIndex(Prefix, aggKeyBuff);
+            return index;
         }
 
         public void SetCacheRunInterval(int interval)
@@ -75,7 +86,12 @@ namespace Donut
             }
             return set;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
         public IDataSet GetOrAddDataSet(ICacheSetSource source, Type type)
         {
             if (!_dataSets.TryGetValue(type, out var set))
@@ -184,14 +200,23 @@ namespace Donut
             var key = $"{Prefix}:{subKey}";
             _cachingService.Truncate(key);
         }
+        /// <summary>
+        /// Gets the set of a size.
+        /// </summary>
+        /// <param name="setKey"></param>
+        /// <returns></returns>
+        public long GetSetSize(string setKey)
+        {
+            return _cachingService.GetSetSize(setKey);
+        }
 
         /// <summary>
-        /// Caches all the meta categories and values
+        /// Caches all the meta categories and values.
         /// </summary>
         private void CacheMetaContext()
         {
             //metaCategory->(meta value->score)
-            var metaCategoryScores = base.GetMetaValues();
+            var metaCategoryScores = base.GetMetaValuesWithScores();
             foreach (var categoryPair in metaCategoryScores)
             {
                 var categoryId = categoryPair.Key;
@@ -221,7 +246,15 @@ namespace Donut
                         //Generate scores from x
                         _cacher.SortedSetAddAll(fullKey, set.Select(x =>
                         {
-                            var score = (double)double.Parse(x);
+                            double score = 0;
+                            try
+                            {
+                                score = (double) double.Parse(x);
+                            }
+                            catch (Exception ex)
+                            {
+                                Trace.WriteLine($"Malformed data (double): {ex.Message}");
+                            }
                             var entry = new SortedSetEntry((RedisValue) x, score);
                             return entry;
                         }));

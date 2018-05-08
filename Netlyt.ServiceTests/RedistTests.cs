@@ -53,7 +53,7 @@ namespace Netlyt.ServiceTests
         {
             var kv = "__key1";
             for (var i=0; i<10; i++) _cache.SetAdd(kv,i);
-            var kcount = _cache.SetItemCount(kv);
+            var kcount = _cache.GetSetItemCount(kv);
             _cache.Remove("__key1");
             Assert.Equal(10, kcount);
         }

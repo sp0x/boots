@@ -25,6 +25,7 @@ using Netlyt.Service.Models;
 using Netlyt.ServiceTests.Fixtures;
 using Romanian;
 using Xunit;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.ServiceTests.IntegrationTests
 {
@@ -37,7 +38,7 @@ namespace Netlyt.ServiceTests.IntegrationTests
         private ApiAuth _appAuth;
         private IServiceProvider _serviceProvider;
         private IDatabaseConfiguration _dbConfig;
-        private RedisCacher _cacher;
+        private IRedisCacher _cacher;
         private ManagementDbContext _db;
         private UserService _userService;
         private ModelService _modelService;
@@ -67,7 +68,7 @@ namespace Netlyt.ServiceTests.IntegrationTests
                 _user = new User() { FirstName = "tester1231", Email = "mail@lol.co" };
                 _userService.CreateUser(_user, "Password-IsStrong!", _appAuth);
             }
-            _cacher = fixture.GetService<RedisCacher>();
+            _cacher = fixture.GetService<IRedisCacher>();
             _dbConfig = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
             _serviceProvider = fixture.GetService<IServiceProvider>();
             _modelService = fixture.GetService<ModelService>();
@@ -97,8 +98,8 @@ NUM_UNIQUE(Romanian.pm25)";
                 dscript.AddIntegrations(modelIgn.Integration);
             }
             Type donutType, donutContextType, donutFEmitterType;
-            var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType, out donutFEmitterType);
-            Assert.NotNull(assembly);
+//            var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType, out donutFEmitterType);
+//            Assert.NotNull(assembly);
             donutType = typeof(RomanianDonut);
             donutContextType = typeof(RomanianDonutContext);
             donutFEmitterType = typeof(RomanianFeatureGenerator);

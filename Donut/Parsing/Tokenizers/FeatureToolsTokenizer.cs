@@ -12,10 +12,10 @@ namespace Donut.Parsing.Tokenizers
     public class FeatureToolsTokenizer : ITokenizer
     {
         private List<TokenDefinition> _tokenDefinitions;
-        private DataIntegration[] _integrations;
-        private DataIntegration _currentIntegration;
+        private Data.DataIntegration[] _integrations;
+        private Data.DataIntegration _currentIntegration;
 
-        public FeatureToolsTokenizer(params DataIntegration[] integrations)
+        public FeatureToolsTokenizer(params Data.DataIntegration[] integrations)
         {
             var defs = new FeatureToolsTokenDefinitions();
             _tokenDefinitions = new List<TokenDefinition>();
@@ -27,7 +27,7 @@ namespace Donut.Parsing.Tokenizers
                 _tokenDefinitions.Add(ignToken);
             }
         }
-        public FeatureToolsTokenizer(FeatureToolsTokenDefinitions toks, params DataIntegration[] integrations)
+        public FeatureToolsTokenizer(FeatureToolsTokenDefinitions toks, params Data.DataIntegration[] integrations)
         {
             _tokenDefinitions = new List<TokenDefinition>();
             _tokenDefinitions.AddRange(toks.GetAll());
@@ -73,12 +73,12 @@ namespace Donut.Parsing.Tokenizers
             TokenMatch lastMatch = null;
             var output = new Stack<DslToken>();
             bool isSubstring = false;
-            DataIntegration matchedIntegration = null;
+            Data.DataIntegration matchedIntegration = null;
             for (int i = 0; i < definitions.Count; i++)
             {
                 var orderedEnumerable = definitions[i].OrderBy(x => x.Precedence);
                 var bestMatch = orderedEnumerable.First();
-                DataIntegration tokensTargetDataset=null;
+                Data.DataIntegration tokensTargetDataset=null;
                 if (lastMatch != null && bestMatch.StartIndex < lastMatch.EndIndex
                                       && bestMatch.Line == lastMatch.Line)
                 {
@@ -149,7 +149,7 @@ namespace Donut.Parsing.Tokenizers
 
         private string GetParameterSymbol(TokenMatch bestMatch, IGrouping<TokenPosition, TokenMatch> nextBestMatches,
             List<TokenMatch> nextTokens,
-            out DataIntegration dataIntegration,
+            out Data.DataIntegration dataIntegration,
             ref int cntReadTokens)
         {
             int offset = 0;
@@ -181,7 +181,7 @@ namespace Donut.Parsing.Tokenizers
 
         private bool ParseParameterSubstring(List<TokenMatch> nextTokens, 
             string nextDefVal,
-            out DataIntegration matchingIntegration,
+            out Data.DataIntegration matchingIntegration,
             out string outputExpValue,
             ref int cntReadTokens)
         {
@@ -233,7 +233,7 @@ namespace Donut.Parsing.Tokenizers
             return false;
         }
 
-        private IEnumerable<DslToken> ConstructTimeTokens(DataIntegration tkTargetDataset, uint startLine, int startIndex,
+        private IEnumerable<DslToken> ConstructTimeTokens(Data.DataIntegration tkTargetDataset, uint startLine, int startIndex,
             int i, Stack<DslToken> output)
         {
             var matches = new List<DslToken>();
@@ -274,7 +274,7 @@ namespace Donut.Parsing.Tokenizers
             return output;
         }
 
-        private bool HandleExpressionSubstring(TokenMatch parent, TokenMatch child, out DataIntegration targetDataSet)
+        private bool HandleExpressionSubstring(TokenMatch parent, TokenMatch child, out Data.DataIntegration targetDataSet)
         {
             targetDataSet = null;
             if (child.TokenType != TokenType.DatasetTime) return false;

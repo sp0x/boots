@@ -1,6 +1,9 @@
-﻿namespace Romanian
+﻿using System.Collections.Generic;
+
+namespace Romanian
 {
     using Donut;
+    using Donut.Data;
     using Donut.Caching;
     using Netlyt.Interfaces;
     using System;
@@ -14,7 +17,7 @@
 
 
 
-        public RomanianDonutContext(RedisCacher cacher, DataIntegration intd, IServiceProvider serviceProvider)
+        public RomanianDonutContext(IRedisCacher cacher, DataIntegration intd, IServiceProvider serviceProvider)
             : base(cacher, intd, serviceProvider)
         {
         }

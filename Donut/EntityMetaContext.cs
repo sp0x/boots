@@ -7,6 +7,9 @@ using Netlyt.Interfaces;
 
 namespace Donut
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class EntityMetaContext
     {
         /// <summary>
@@ -14,26 +17,32 @@ namespace Donut
         /// </summary>
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         /// <summary>
-        /// /
+        /// Category -> value, score. Stored in hashes.
         /// </summary>
         private ConcurrentDictionary<int, Dictionary<string, Score>> _metaValues;
-
+        /// <summary>
+        /// Category -> value, flag
+        /// </summary>
         private ConcurrentDictionary<int, Dictionary<string, SetFlags>> _setFlags;
         /// <summary>
-        /// A dict of metaCategory , ( metaValue, userIds )
+        /// A dict of metaCategory , ( metaValue, values ). Stored in sets.
         /// </summary>
-        private ConcurrentDictionary<int, Dictionary<string, HashSet<string>>> _entityMetaValues; 
+        private ConcurrentDictionary<int, Dictionary<string, HashSet<string>>> _entityMetaValues;
         //private RedisCacher _cacher;
 
         public EntityMetaContext()
-        { 
+        {
             _metaValues = new ConcurrentDictionary<int, Dictionary<string, Score>>();
             _entityMetaValues = new ConcurrentDictionary<int, Dictionary<string, HashSet<string>>>();
             _setFlags = new ConcurrentDictionary<int, Dictionary<string, SetFlags>>();
             //_entityMetaValues = new ConcurrentDictionary<string, Dictionary<int, HashSet<string>>>();
         }
 
-        public ConcurrentDictionary<int, Dictionary<string, Score>> GetMetaValues()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public ConcurrentDictionary<int, Dictionary<string, Score>> GetMetaValuesWithScores()
         {
             return _metaValues;
         }
@@ -43,6 +52,12 @@ namespace Donut
             return _entityMetaValues;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public bool SetIsSorted(int category, string key)
         {
             if (!_setFlags.ContainsKey(category)) return false;
@@ -79,7 +94,7 @@ namespace Donut
             AddEntityMetaCategory(entitykey, metaCategory, metaValue.ToString(), sorted);
         }
         /// <summary>
-        /// 
+        /// Adds a meta value of a given category and entity to a cache set.
         /// </summary>
         /// <param name="entitykey"></param>
         /// <param name="metaCategory"></param>
@@ -125,17 +140,21 @@ namespace Donut
             HashSet<string> collection = _entityMetaValues[category][key];
             return collection;
         }
-         
+        /// <summary>
+        /// 
+        /// </summary>
         protected void ClearMetaValues()
         {
             _metaValues.Clear();
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
         protected void ClearEntityMetaValues()
         {
             _entityMetaValues.Clear();
         }
-         
+
 
         /// <summary>
         /// Gets the key to a meta value
@@ -146,7 +165,7 @@ namespace Donut
         protected string GetValueKey(int category, string key)
         {
             var fqkey = $"_mv:{category}";
-            if(!string.IsNullOrEmpty(key)) fqkey += $":{key}";
+            if (!string.IsNullOrEmpty(key)) fqkey += $":{key}";
             return fqkey;
         }
     }

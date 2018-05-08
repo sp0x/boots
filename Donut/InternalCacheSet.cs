@@ -105,7 +105,7 @@ namespace Donut
 
         public override long Count()
         {
-            return _cachingService.Count(Name);
+            return _cachingService.GetSetSize(Name);
         }
 
         public override void Truncate()

@@ -18,7 +18,7 @@ namespace Donut.Lex.Generators
     /// </summary>
     public class AggregateFeatureCodeGenerator : FeatureCodeGenerator
     {
-        private DataIntegration _rootIntegration;
+        private Donut.Data.DataIntegration _rootIntegration;
         private DonutFunctions _donutFnResolver;
         private DatasetMember _rootDataMember;
         private string _outputCollection;
@@ -49,7 +49,7 @@ namespace Donut.Lex.Generators
             _aggregateJobTrees = new List<AggregateJobTree>();
         }
 
-        private AggregateJobTree AddAggregateTreeFromField(VariableExpression expression)
+        private AggregateJobTree AddAggregateTreeFromField(NameExpression expression)
         {
             Clean();
             _expVisitor.Clear();
@@ -136,12 +136,12 @@ namespace Donut.Lex.Generators
 
             var featureFType = fExpression.GetType();
             string featureContent = null;
-            if (featureFType == typeof(VariableExpression))
+            if (featureFType == typeof(NameExpression))
             {
-                var aggTree = AddAggregateTreeFromField(fExpression as VariableExpression);
+                var aggTree = AddAggregateTreeFromField(fExpression as NameExpression);
                 aggTree.Name = fName;
                 _aggregateJobTrees.Add(aggTree);
-                //                var member = (fExpression as VariableExpression).Member?.ToString();
+                //                var member = (fExpression as NameExpression).Member?.ToString();
                 //                //In some cases we might just use the field
                 //                if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
                 //                featureContent = $"groupFields[\"{fName}\"] = " + "new BsonDocument { { \"$first\", \"$" + member + "\" } };";
@@ -268,7 +268,11 @@ namespace Donut.Lex.Generators
             if (!HasGroupingKeys && HasGroupingFields)
             {
                 var groupKey = "";
-                var ignKeys = _rootIntegration?.GetAggregateKeys();
+                var ignKeys = _rootIntegration.AggregateKeys;
+                if (ignKeys != null || !ignKeys.Any())
+                {
+                    throw new Exception("Integration has no aggregate keys!");
+                }
                 var tsKey = _rootIntegration?.DataTimestampColumn;
                 if (_rootIntegration != null && ignKeys != null)
                 {

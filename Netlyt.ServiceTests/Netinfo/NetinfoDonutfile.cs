@@ -23,7 +23,6 @@ namespace Netlyt.ServiceTests.Netinfo
         public NetinfoDonutfile(RedisCacher cacher, IServiceProvider serviceProvider) : base(cacher, serviceProvider)
         {
             ReplayInputOnFeatures = true;
-            Context.Integration.GetMongoCollection<BsonDocument>();
         }
 
         #region Overrides
@@ -181,7 +180,7 @@ namespace Netlyt.ServiceTests.Netinfo
                 var visitingTimeFrac = (double)(completeBrowsingDuration.TotalSeconds == 0
                     ? 0
                     : (timeSpentOnTargetDomain.TotalSeconds / completeBrowsingDuration.TotalSeconds));
-                Context.AddEntityMetaCategory("spent_time", META_SPENT_TIME, visitingTimeFrac,true);  
+                Context.AddEntityMetaCategory("spent_time", META_SPENT_TIME, visitingTimeFrac, true);  
             }
             userStats.BrowsingTime = (int)completeBrowsingDuration.TotalSeconds;
             userStats.DomainChanges = (int)domainChanges;

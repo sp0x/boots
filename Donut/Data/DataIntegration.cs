@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
 using Donut.Integration;
 using Donut.Models;
@@ -12,10 +13,11 @@ using Netlyt.Service.Integration;
 
 //using Netlyt.Service.Ml; 
 
-namespace Donut
+namespace Donut.Data
 {
     public partial class DataIntegration : IIntegration
     {
+        private List<AggregateKey> _aggregateKeys;
         public long Id { get; set; }
         public virtual ICollection<ModelIntegration> Models { get; set; }
         public User Owner { get; set; }
@@ -27,6 +29,7 @@ namespace Donut
         public ApiAuth APIKey { get; set; }
         public long? PublicKeyId { get; set; }
         public virtual ApiAuth PublicKey { get; set; }
+        public virtual ICollection<AggregateKey> AggregateKeys { get; set; }
         /// <summary>
         /// the type of the data e.g stream or file
         /// </summary>
@@ -58,6 +61,7 @@ namespace Donut
             Fields = new HashSet<FieldDefinition>(new FieldDefinitionComparer());
             Models = new HashSet<ModelIntegration>();
             Extras = new HashSet<IntegrationExtra>();
+            AggregateKeys = new HashSet<AggregateKey>();
             this.PublicKey = ApiAuth.Generate();
         }
         public DataIntegration(string name, bool generateCollections = false)
@@ -168,25 +172,11 @@ namespace Donut
             return fdef;
         }
 
-        /// <summary>
-        /// Gets the aggregate keys for this integration.
-        /// If a timestamp column is present, it's used as a key (day of year and hour).
-        /// TODO: Implement field key flags.
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerable<AggregateKey> GetAggregateKeys()
-        {
-            var tsKey = DataTimestampColumn;
-            if (!string.IsNullOrEmpty(tsKey))
-            {
-                yield return new AggregateKey("tsHour", "hour", tsKey);
-                yield return new AggregateKey("tsDayyr", "dayOfYear", tsKey);
-            }
-            else
-            {
-                yield return new AggregateKey("_id", null, "_id");
-            }
-        }
+//        public void SetAggregatekeys(IEnumerable<AggregateKey> keys)
+//        {
+//            _aggregateKeys = keys.ToList();
+//        }
+
 
         public static DataIntegration Wrap(IIntegration ign)
         {

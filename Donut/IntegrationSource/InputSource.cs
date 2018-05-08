@@ -124,12 +124,12 @@ namespace Donut.IntegrationSource
         /// <param name="firstInstance"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        protected DataIntegration CreateIntegrationFromObj(dynamic firstInstance, string name)
+        protected Data.DataIntegration CreateIntegrationFromObj(dynamic firstInstance, string name)
         {
-            DataIntegration typeDef = null;
+            Data.DataIntegration typeDef = null;
             if (firstInstance != null)
             {
-                typeDef = new DataIntegration();
+                typeDef = new Data.DataIntegration();
                 typeDef.DataEncoding = Encoding.CodePage;
                 typeDef.DataFormatType = Formatter.Name;
                 typeDef.SetFieldsFromType(firstInstance);

@@ -26,6 +26,7 @@ using Netlyt.Service.Models;
 using Netlyt.ServiceTests.Fixtures;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.ServiceTests.FeatureGeneration
 {

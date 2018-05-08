@@ -8,10 +8,10 @@ namespace Donut.Lex.Expressions
     public class AssignmentExpression
         : Expression
     {
-        public VariableExpression Member { get; private set; }
+        public NameExpression Member { get; private set; }
         public IExpression Value { get; private set; }
 
-        public AssignmentExpression(VariableExpression memberExpression, IExpression valueExpression)
+        public AssignmentExpression(NameExpression memberExpression, IExpression valueExpression)
             : base()
         {
             this.Member = memberExpression;

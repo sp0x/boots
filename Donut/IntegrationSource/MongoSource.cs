@@ -69,7 +69,7 @@ namespace Donut.IntegrationSource
             try
             {
                 var firstInstance = _cachedInstance = firstElement;
-                DataIntegration typedef = null;
+                Data.DataIntegration typedef = null;
                 if (firstInstance != null)
                 {
                     if (_project != null) firstInstance = _project(firstInstance);

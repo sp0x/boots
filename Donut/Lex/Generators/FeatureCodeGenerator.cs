@@ -58,9 +58,9 @@ namespace Donut.Lex.Generators
             string fName = feature.Member.ToString();
             IExpression fExpression = feature.Value;
             var featureFType = fExpression.GetType();
-            if (featureFType == typeof(VariableExpression))
+            if (featureFType == typeof(NameExpression))
             {
-                var member = (fExpression as VariableExpression).Member?.ToString();
+                var member = (fExpression as NameExpression).Member?.ToString();
                 //In some cases we might just use the field
                 if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
                 if (member == Script.TargetAttribute)
