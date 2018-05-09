@@ -67,7 +67,7 @@ namespace Donut
         /// </summary>
         /// <param name="aggKeyBuff"></param>
         /// <returns></returns>
-        public int AddMetaGroup(Dictionary<string, object> aggKeyBuff)
+        public uint AddMetaGroup(Dictionary<string, object> aggKeyBuff)
         {
             var index = _cachingService.AddHashWithIndex(Prefix, aggKeyBuff);
             return index;
@@ -235,7 +235,7 @@ namespace Donut
             var metaCategoryValueSets = base.GetEntityMetaValues();
             foreach (var categoryPair in metaCategoryValueSets)
             {
-                int categoryId = categoryPair.Key;
+                uint categoryId = categoryPair.Key;
                 var categoryKey = $"{Prefix}:_mv:{categoryId}";
                 foreach (var metaVal in categoryPair.Value)
                 {

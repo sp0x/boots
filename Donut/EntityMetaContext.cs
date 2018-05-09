@@ -23,18 +23,18 @@ namespace Donut
         /// <summary>
         /// Category -> value, flag
         /// </summary>
-        private ConcurrentDictionary<int, Dictionary<string, SetFlags>> _setFlags;
+        private ConcurrentDictionary<uint, Dictionary<string, SetFlags>> _setFlags;
         /// <summary>
         /// A dict of metaCategory , ( metaValue, values ). Stored in sets.
         /// </summary>
-        private ConcurrentDictionary<int, Dictionary<string, HashSet<string>>> _entityMetaValues;
+        private ConcurrentDictionary<uint, Dictionary<string, HashSet<string>>> _entityMetaValues;
         //private RedisCacher _cacher;
 
         public EntityMetaContext()
         {
             _metaValues = new ConcurrentDictionary<int, Dictionary<string, Score>>();
-            _entityMetaValues = new ConcurrentDictionary<int, Dictionary<string, HashSet<string>>>();
-            _setFlags = new ConcurrentDictionary<int, Dictionary<string, SetFlags>>();
+            _entityMetaValues = new ConcurrentDictionary<uint, Dictionary<string, HashSet<string>>>();
+            _setFlags = new ConcurrentDictionary<uint, Dictionary<string, SetFlags>>();
             //_entityMetaValues = new ConcurrentDictionary<string, Dictionary<int, HashSet<string>>>();
         }
 
@@ -47,7 +47,7 @@ namespace Donut
             return _metaValues;
         }
 
-        public ConcurrentDictionary<int, Dictionary<string, HashSet<string>>> GetEntityMetaValues()
+        public ConcurrentDictionary<uint, Dictionary<string, HashSet<string>>> GetEntityMetaValues()
         {
             return _entityMetaValues;
         }
@@ -58,7 +58,7 @@ namespace Donut
         /// <param name="category"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public bool SetIsSorted(int category, string key)
+        public bool SetIsSorted(uint category, string key)
         {
             if (!_setFlags.ContainsKey(category)) return false;
             if (!_setFlags[category].ContainsKey(key)) return false;
@@ -89,7 +89,7 @@ namespace Donut
             if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
         }
 
-        public void AddEntityMetaCategory(string entitykey, int metaCategory, double metaValue, bool sorted = false)
+        public void AddEntityMetaCategory(string entitykey, uint metaCategory, double metaValue, bool sorted = false)
         {
             AddEntityMetaCategory(entitykey, metaCategory, metaValue.ToString(), sorted);
         }
@@ -99,7 +99,7 @@ namespace Donut
         /// <param name="entitykey"></param>
         /// <param name="metaCategory"></param>
         /// <param name="metaValue"></param>
-        public void AddEntityMetaCategory(string entitykey, int metaCategory, string metaValue, bool sorted = false)
+        public void AddEntityMetaCategory(string entitykey, uint metaCategory, string metaValue, bool sorted = false)
         {
             _lock.EnterWriteLock();
             if (!_entityMetaValues.ContainsKey(metaCategory))
@@ -126,7 +126,7 @@ namespace Donut
             if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
         }
 
-        public HashSet<String> GetEntityMetaValues(string key, int category)
+        public HashSet<String> GetEntityMetaValues(string key, uint category)
         {
             _lock.EnterWriteLock();
             if (!_entityMetaValues.ContainsKey(category))

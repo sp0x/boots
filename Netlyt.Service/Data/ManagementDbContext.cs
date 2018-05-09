@@ -41,6 +41,8 @@ namespace Netlyt.Service.Data
             builder.Entity<ModelRule>().HasKey(t => new {t.ModelId, t.RuleId});
             builder.Entity<ModelIntegration>().HasKey(t => new {t.ModelId, t.IntegrationId});
             builder.Entity<ApiUser>().HasKey(t => new {t.ApiId, t.UserId});
+            builder.Entity<DonutFunction>()
+                .Property(x => x._Parameters).HasColumnName("Parameters");
             base.OnModelCreating(builder);
         }
 

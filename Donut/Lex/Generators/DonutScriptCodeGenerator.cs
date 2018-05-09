@@ -273,6 +273,8 @@ namespace Donut.Lex.Generators
                 buffer.AppendLine(keyLine);
                 iKey++;
             }
+
+            buffer.AppendLine($"var groupKey = Context.AddMetaGroup({keyBuffName});");
             return buffer.ToString();
         }
 

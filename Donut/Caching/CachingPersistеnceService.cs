@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Donut.Crypto;
 using Donut.Data;
+using Jil;
 using nvoid.db.Caching;
 using Netlyt.Interfaces;
+using Newtonsoft.Json;
 using StackExchange.Redis;
 
 namespace Donut.Caching
@@ -16,10 +19,13 @@ namespace Donut.Caching
     {
         private ISetCollection _context;
         private IRedisCacher _cacher;
+        private Random _rand;
+
         public CachingPersistеnceService(ISetCollection ctx)
         {
             _context = ctx;
             _cacher = ctx.Database;
+            _rand = new Random();
         }
 
         /// <summary>
@@ -162,10 +168,13 @@ namespace Donut.Caching
             _cacher.RemoveAll($"{key}");
         }
 
-        public int AddHashWithIndex(string prefix, Dictionary<string, object> aggKeyBuff)
+        public uint AddHashWithIndex(string prefix, Dictionary<string, object> aggKeyBuff)
         {
-            var key = $"{prefix}:cacheGroup";
-            throw new NotImplementedException();
+            var hashItem = JsonConvert.SerializeObject(aggKeyBuff);
+            var hashIx = HashAlgos.Adler32(hashItem);
+            var key = $"{prefix}:cacheGroup:{hashIx}";
+            _cacher.SetAdd(key, hashItem);
+            return hashIx;
         }
     }
 }

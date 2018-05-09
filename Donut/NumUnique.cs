@@ -30,7 +30,7 @@ namespace Donut
             var buffExtract = new StringBuilder();
             var paramHash = HashAlgos.Adler32(callParam.ToString());
             string featureKey = $"nu_{rootIgn.Name}_{paramHash}"; 
-            var categoryValue = 0;
+            var categoryValue = "groupKey"; //Use the group key generated from DonutScriptCodeGenerator..
             string ordered = "true";
             string varCategory = $"{featureKey}_cat";
             string varValue = $"{featureKey}_val";

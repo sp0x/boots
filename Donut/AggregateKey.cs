@@ -12,6 +12,7 @@ namespace Donut
     /// </summary>
     public class AggregateKey : IAggregateKey
     {
+        public long Id { get; set; }
         public string Name { get; set; }
         public DonutFunction Operation { get; set; }
         public string Arguments { get; set; }

@@ -1,21 +1,46 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq.Expressions;
 using MongoDB.Bson;
 using Netlyt.Interfaces;
+using Newtonsoft.Json;
 
 namespace Donut
 {
     public class DonutFunction : IDonutFunction
     {
+        public long Id { get; set; }
         public string Name { get; set; }
         public bool IsAggregate { get; set; }
-        public List<IParameterExpression> Parameters { get; set; }
+
+        [NotMapped]
+        public List<IParameterExpression> Parameters
+        {
+            get
+            {
+                return _Parameters == null ? null : JsonConvert.DeserializeObject<List<IParameterExpression>>(_Parameters);
+            }
+            set
+            {
+                _Parameters = JsonConvert.SerializeObject(value);
+            }
+        }
+
+        public string _Parameters { get; set; }
+
         public string Body { get; set; }
         public string Projection { get; set; }
         public string GroupValue { get; set; }
+
+        /// <summary>
+        /// The content of the function
+        /// </summary>
+        [NotMapped]
+        public IDonutFeatureDefinition Content { get; set; }
         private Expression<Func<BsonValue, object>> _eval;
         private Func<BsonValue, object> _compiledEval;
+        [NotMapped]
         public Expression<Func<BsonValue, object>> Eval
         {
             get { return _eval; }
@@ -56,11 +81,6 @@ namespace Donut
             var output = $"Func<BsonValue, {outType}> {varName} = {lambda};";
             return output;
         }
-
-        /// <summary>
-        /// The content of the function
-        /// </summary>
-        public IDonutFeatureDefinition Content { get; set; }
 
         public DonutFunction(string nm)
         {
