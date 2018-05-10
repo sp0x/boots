@@ -24,7 +24,7 @@ namespace Donut.Encoding
             _integration = ign;
             _encodedFields = ign.Fields.Where(x => x.DataEncoding != FieldDataEncoding.None);
             _encoders = _encodedFields.GroupBy(x => x.DataEncoding)
-                .Select(x => FieldEncoding.Factory.Create(ign, x.Key));
+                .Select(x => FieldEncoding.Factory.Create(ign, x.Key)).ToList();
         }
 
         public class Factory

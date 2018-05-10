@@ -96,9 +96,10 @@ namespace Donut.Data
                     if (value == null) continue;
                     DateTime timeValue;
                     double? doubleValue;
-                    var isDateTime = dateParser.TryParse(value.ToString(), out timeValue, out doubleValue);
-                    if (doubleValue != null) value = doubleValue;
-                    else if (isDateTime) value = timeValue;
+                    //The formatter is responsible for parsing the type, we don`t care about it..
+                    //var isDateTime = dateParser.TryParse(value.ToString(), out timeValue, out doubleValue);
+                    //if (doubleValue != null) value = doubleValue;
+                    //else if (isDateTime) value = timeValue;
                     Type memberType = value.GetType();
                     var fieldDefinition = new FieldDefinition(memberName, memberType);
                     //TODO: move this to a factory method

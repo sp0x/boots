@@ -4,6 +4,7 @@
     {
         None,
         OneHot,
-        BinaryIntId
+        BinaryIntId,
+        Id
     }
 }

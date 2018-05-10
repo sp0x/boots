@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Netlyt.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Netlyt.Interfaces.Data.Format
+namespace Donut.Data.Format
 { 
     public class JsonFormatter<T> : IInputFormatter<T>
         where T : class
@@ -16,7 +17,6 @@ namespace Netlyt.Interfaces.Data.Format
         private JsonTextReader _jsReader;
         private StreamReader _reader;
         private long _position = -1;
-
         public JsonFormatter()
         {
             _serializer = new JsonSerializer();

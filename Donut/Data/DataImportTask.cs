@@ -42,8 +42,10 @@ namespace Donut.Data
             }
         }
         public DestinationCollection OutputDestinationCollection { get; private set; }
-        private FieldEncoder _oneHotEncoding;
+        private FieldEncoder _encoder;
         public bool EncodeOnImport { get; set; } = true;
+        public DataImportTaskOptions Options => _options;
+
         /// <summary>
         /// 
         /// </summary>
@@ -81,7 +83,7 @@ namespace Donut.Data
             OutputDestinationCollection = outCollection;
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
             if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit);
-            _oneHotEncoding = FieldEncoder.Factory.Create(_integration);// new OneHotEncoding(new FieldEncodingOptions { Integration = _integration });
+            _encoder = FieldEncoder.Factory.Create(_integration);// new OneHotEncoding(new FieldEncodingOptions { Integration = _integration });
         }
 
         /// <summary>
@@ -91,6 +93,8 @@ namespace Donut.Data
         /// <returns></returns>
         public async Task<DataImportResult> Import(CancellationToken? cancellationToken = null, bool truncateDestination = false)
         {
+            if (Options.TotalEntryLimit > 0) _harvester.LimitEntries(Options.TotalEntryLimit);
+            if (Options.ShardLimit > 0) _harvester.LimitShards(Options.ShardLimit);
 
             var database = MongoHelper.GetDatabase();
             if (truncateDestination)
@@ -135,7 +139,7 @@ namespace Donut.Data
 
         private void EncodeImportDocument(BsonDocument doc)
         {
-            _oneHotEncoding.Apply(doc);
+            _encoder.Apply(doc);
         }
 
         /// <summary>
@@ -165,7 +169,7 @@ namespace Donut.Data
         public async Task Encode(IMongoCollection<BsonDocument> collection, CancellationToken? ct = null)
         {
             if (ct == null) ct = CancellationToken.None;
-            await _oneHotEncoding.ApplyToAllFields(collection, ct);
+            await _encoder.ApplyToAllFields(collection, ct);
         }
     }
 }

@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks.Dataflow;
+using Donut.Data.Format;
+using Donut.Encoding;
 using Donut.Integration;
+using Donut.Source;
 using Netlyt.Interfaces;
 
 namespace Donut.IntegrationSource
@@ -19,6 +23,17 @@ namespace Donut.IntegrationSource
         public System.Text.Encoding Encoding { get; set; } = System.Text.Encoding.UTF8;
         public IInputFormatter Formatter { get; protected set; }
         public bool SupportsSeeking { get; set; }
+        private Dictionary<string, FieldOptionsBuilder> _fieldOptions;
+
+        public InputSource()
+        {
+            _fieldOptions = new Dictionary<string, FieldOptionsBuilder>();
+        }
+        public FieldOptionsBuilder Field(string name)
+        {
+            _fieldOptions[name] = new FieldOptionsBuilder(this);
+            return _fieldOptions[name];
+        }
 
         public double Progress
         {
@@ -133,6 +148,33 @@ namespace Donut.IntegrationSource
                 typeDef.DataEncoding = Encoding.CodePage;
                 typeDef.DataFormatType = Formatter.Name;
                 typeDef.SetFieldsFromType(firstInstance);
+            }
+            //Apply field options
+            foreach (var fieldOp in _fieldOptions)
+            {
+                var targetField = typeDef.Fields.FirstOrDefault(x => x.Name == fieldOp.Key);
+                if (targetField == null)
+                {
+                    continue; //Maybe throw?
+                }
+                if (fieldOp.Value.IgnoreField)
+                {
+                    typeDef.Fields.Remove(targetField);
+                    continue;
+                }
+                var ops = fieldOp.Value;
+                var stringName = typeof(String).Name;
+                if (ops.IsString) targetField.Type = stringName;
+                if (ops.Encoding != null)
+                {
+                    FieldEncoding.SetEncoding(typeDef, targetField, ops.Encoding);
+                }
+                if (targetField.Type == stringName && targetField.Extras ==null)
+                {
+                    targetField.DataEncoding = FieldDataEncoding.BinaryIntId;
+                    targetField.Extras = new FieldExtras();
+                    targetField.Extras.Field = targetField;
+                }
             }
             return typeDef;
         }

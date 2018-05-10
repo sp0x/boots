@@ -6,13 +6,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Data;
+using Donut.Data.Format;
 using Donut.Integration;
 using Donut.IntegrationSource;
 using Microsoft.EntityFrameworkCore;
 using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
-using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service.Data;
 using Netlyt.Service.Exceptions;
 using DataIntegration = Donut.Data.DataIntegration;
@@ -91,6 +91,7 @@ namespace Netlyt.Service
         public bool IntegrationExists(IIntegration type, string appId, out DataIntegration existingDefinition)
         {
             var localFields = type.Fields;
+
             existingDefinition = (from x in _context.Integrations
                                   where x.APIKey.AppId == appId
                                         && x.Name == type.Name
@@ -316,6 +317,34 @@ namespace Netlyt.Service
             return newTask;
         }
 
+        public DataImportTask<ExpandoObject> CreateIntegrationImportTask(IInputSource input,
+            ApiAuth apiKey,
+            User owner,
+            string name)
+        {
+            DataImportTask<ExpandoObject> importTask;
+            bool isNewOne;
+            CreateIntegrationImportTask(input, apiKey, owner, name, out isNewOne, out importTask);
+            return importTask;
+        }
+        public DataIntegration CreateIntegrationImportTask(IInputSource input,
+            ApiAuth apiKey,
+            User owner,
+            string name,
+            out bool isNewIntegration,
+            out DataImportTask<ExpandoObject> importTask)
+        {
+            var options = new DataImportTaskOptions();
+            if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
+            var integrationInfo = ResolveIntegration(apiKey, owner, name, out isNewIntegration, input);
+            options.Source = input;
+            options.ApiKey = apiKey;
+            options.IntegrationName = integrationInfo.Name;
+            options.Integration = integrationInfo;
+            importTask = new DataImportTask<ExpandoObject>(options);
+            return integrationInfo;
+        }
+
         /// <summary>
         /// Creates a new task to import data.
         /// </summary>
@@ -335,24 +364,16 @@ namespace Netlyt.Service
             out bool isNewIntegration, 
             out DataImportTask<ExpandoObject> importTask)
         {
-            var options = new DataImportTaskOptions();
             if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
             var formatter = ResolveFormatter<ExpandoObject>(mime);
             if (formatter == null)
             {
                 throw new Exception("Could not resolve formatter for the given content type!");
             }
-
             var source = InMemorySource.Create(inputData, formatter);
-            var integrationInfo = ResolveIntegration(apiKey, owner, name, out isNewIntegration, source);
-
-            options.Source = source;
-            options.ApiKey = apiKey;
-            options.IntegrationName = integrationInfo.Name;
-            options.Integration = integrationInfo;
-            importTask = new DataImportTask<ExpandoObject>(options);
-            return integrationInfo;
+            return CreateIntegrationImportTask(source, apiKey, owner, name, out isNewIntegration, out importTask);
         }
+
 
         /// <summary>
         /// Resolves an integration from a source
@@ -424,7 +445,18 @@ namespace Netlyt.Service
             _context.SaveChanges();
             return await Task.FromResult(newIntegration);
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filepath"></param>
+        /// <returns></returns>
+        public IInputFormatter<T> ResolveFormatterFromFile<T>(string filepath)
+            where T : class
+        {
+            var mime = MimeResolver.Resolve(filepath);
+            return ResolveFormatter<T>(mime);
+        }
         /// <summary>
         /// Resolves the needed formatter to read the data.
         /// </summary>

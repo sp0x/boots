@@ -9,9 +9,12 @@ using System.Threading.Tasks.Dataflow;
 using Donut;
 using Donut.Blocks;
 using Donut.Data;
+using Donut.Data.Format;
+using Donut.Encoding;
 using Donut.FeatureGeneration;
 using Donut.Features;
 using Donut.IntegrationSource;
+using Donut.Orion;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using nvoid.db.DB;
@@ -22,7 +25,6 @@ using nvoid.extensions;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Batching;
 using Netlyt.Interfaces.Data;
-using Netlyt.Interfaces.Data.Format;
 using Netlyt.Service;
 using Netlyt.Service.Analytics;
 using Netlyt.Service.Data;
@@ -33,35 +35,53 @@ using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.ServiceTests.Netinfo
 {
-    [Collection("Entity Parsers")]
+    [Collection("DonutTests")]
     public class NetinfoTests
     {
         public const byte VisitTypedValue = 1;
-        private ConfigurationFixture _config;
+        private DonutConfigurationFixture _config;
         //private CrossSiteAnalyticsHelper _helper;
         private IMongoCollection<IntegratedDocument> _documentStore;
         private ApiAuth _appId;  
         private DynamicContextFactory _contextFactory;
         private ApiService _apiService; 
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
         private IRedisCacher _redisCacher;
         private IConnectionMultiplexer _redisConnection;
         private IDatabaseConfiguration _dbConfig;
+        private ApiAuth _appAuth;
+        private ManagementDbContext _db;
+        private OrionContext _orion;
+        private UserService _userService;
+        private User _user;
 
-        public NetinfoTests(ConfigurationFixture fixture)
+        public NetinfoTests(DonutConfigurationFixture fixture)
         {
             _config = fixture;
             //_helper = new CrossSiteAnalyticsHelper();
-            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().AsMongoDbQueryable(); 
+            _documentStore = MongoHelper.GetCollection<IntegratedDocument>(typeof(IntegratedDocument).Name);
+            //typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().AsMongoDbQueryable(); 
             _contextFactory = new DynamicContextFactory(() => _config.CreateContext()); 
             _apiService = fixture.GetService<ApiService>(); 
-            _integrationService = fixture.GetService<IntegrationService>();
+            _integrationService = fixture.GetService<IIntegrationService>();
             _appId = _apiService.Generate();
             _apiService.Register(_appId);
-            var cacheConfig = _config.Configuration.GetSection("cache");
-            _redisConnection = cacheConfig.GetCacheConnection();
-            _redisCacher = cacheConfig.GetCacheContext();
+            _redisCacher = fixture.GetService<IRedisCacher>();
             _dbConfig = DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig();
+            _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
+            _userService = fixture.GetService<UserService>();
+            if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
+            _db = fixture.GetService<ManagementDbContext>();
+            _orion = fixture.GetService<OrionContext>();
+            //            var orionCtx = new Mock<IOrionContext>();
+            //            orionCtx.Setup(m => m.Query(It.IsAny<OrionQuery>())).ReturnsAsync(new JObject { {"id", 1} });
+            //            _orion = orionCtx.Object;
+            _user = _userService.GetByApiKey(_appAuth);
+            if (_user == null)
+            {
+                _user = new User() { FirstName = "tester1231", Email = "mail@lol.co" };
+                _userService.CreateUser(_user, "Password-IsStrong!", _appAuth);
+            }
         }
 
         [Theory]
@@ -286,7 +306,9 @@ events : elements };
             harvester.SetDestination(dictEval);
             var result = await harvester.Run();
             Debug.WriteLine(result.ProcessedEntries);
-        } 
+        }
+
+
 
         [Theory]
         [InlineData(new object[] { "057cecc6-0c1b-44cd-adaa-e1089f10cae8_reduced" })]
@@ -305,9 +327,9 @@ events : elements };
             harvester.AddIntegrationSource(source, apiObj, "NetInfoUserFeatures_7_8");
             var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", apiObj);
             typeDef.AddField("is_paying", typeof(int));
-            DataIntegration existingTypeDef;
-            if (!_integrationService.IntegrationExists(typeDef, appId, out existingTypeDef)) typeDef.Save();
-            else typeDef = existingTypeDef;
+            //DataIntegration existingTypeDef;
+            //if (!_integrationService.IntegrationExists(typeDef, appId, out existingTypeDef)) typeDef.Save();
+            //else typeDef = existingTypeDef;
             var dictEval = new EvalDictionaryBlock(
                 (document) => $"{document.GetString("uuid")}_{document.GetInt("day")}",
                 (rootElement, newDoc) => AccumulateUserDocumentLite(rootElement, newDoc),
@@ -438,7 +460,7 @@ events : elements };
             ApiAuth apiObject = _apiService.GetApi(userAPIId);
             var typeDef = DataIntegration.Factory.CreateFromType<DomainUserSessionCollection>("NetInfoUserSessions_7_8", apiObject);
             typeDef.AddField("is_paying", typeof(int)); 
-            _integrationService.SaveOrFetchExisting(ref typeDef);
+           // _integrationService.SaveOrFetchExisting(ref typeDef);
             var entityPairs = entityBlock.Elements;
             try
             {
@@ -481,6 +503,51 @@ events : elements };
             }
         }
 
+        [Theory]
+        [InlineData(new object[] { "TestData\\Ebag\\JoinedData" })]
+        public async Task RestructureSheets(string inputDirectory)
+        {
+            inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
+            var formatter = new CsvFormatter<ExpandoObject>() { Delimiter = ';' };
+            var fileSource = FileSource.CreateFromDirectory(inputDirectory, formatter);
+            //formatter.FieldsToIgnore.Add("uuid");
+            fileSource.Field("value").TreatAsString();
+            fileSource.Field("uuid").EncodeWith<IdEncoding>();
+
+            //_integrationService.ResolveFormatter<ExpandoObject>("text/csv");
+
+            fileSource.SetFormatter(formatter);
+            var ignName = "NetinfoJoinedData";
+            DataImportTask<ExpandoObject> importTask = _integrationService.CreateIntegrationImportTask(fileSource, _appAuth, _user, ignName);
+            var ign = DataIntegration.Wrap(importTask.Integration);
+            _db.Integrations.Add(ign);
+            _db.SaveChanges();
+            importTask.Options.ShardLimit = 1;
+            var importResult = await importTask.Import();
+            PipelineDefinition<BsonDocument,BsonDocument> pipeline = new BsonDocument[] {
+                new BsonDocument { { "$sort", new BsonDocument("ondate", 1) } },
+            };
+            AggregateOptions options = new AggregateOptions()
+            {
+                AllowDiskUse = true,
+                BatchSize = 1000
+            };
+            var sortedEvents = importResult.Collection.Aggregate(pipeline, options)
+                .ToEnumerable();
+            DateTime? firstTime = null;
+            BsonDocument lastDoc = null;
+            foreach (var ev in sortedEvents)
+            {
+                if (firstTime == null) firstTime = ev["ondate"].AsDateTime;
+                lastDoc = ev;
+            }
+            var dateDiff = lastDoc["ondate"].AsDateTime - firstTime.Value;
+            importResult.Collection.Drop();
+        }
+
+
+
+
 
         [Theory]
         [InlineData(new object[] { "TestData\\Ebag\\JoinedData", "TestData\\Ebag\\demograpy.csv" })]
@@ -489,9 +556,9 @@ events : elements };
             inputDirectory = Path.Combine(Environment.CurrentDirectory, inputDirectory);
             var fileSource = FileSource.CreateFromDirectory(inputDirectory, new CsvFormatter<ExpandoObject>(){ Delimiter = ';' });
 
-            var appId = "123123123";
             int threadCount = 12;
             var harvester = new Harvester<ExpandoObject>(10);
+            var appId = "123123123";
             var apiObj = _apiService.GetApi(appId);
             var type = harvester.AddIntegrationSource(fileSource, apiObj, null);
             var cachedReducer = new ReduceCacheBlock(_appId, _redisConnection,

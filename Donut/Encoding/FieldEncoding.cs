@@ -1,8 +1,10 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Donut.Data;
 using Donut.Integration;
 using Donut.Source;
 using MongoDB.Bson;
@@ -21,6 +23,9 @@ namespace Donut.Encoding
         public FieldDataEncoding Encoding { get; set; }
         protected List<FieldDefinition> TargetFields => _targetFields;
         protected IIntegration Integration => _integration;
+        /// <summary>
+        /// TODO: Manage the cache, because it might get too large after being used for long..
+        /// </summary>
         protected Dictionary<string, ConcurrentDictionary<string, FieldExtra>> FieldCache
         {
             get { return _fieldDict; }
@@ -31,7 +36,7 @@ namespace Donut.Encoding
             this.Encoding = encoding;
             _options = options;
             _integration = _options.Integration;
-            var collection = MongoHelper.GetCollection(_integration.Collection);
+            //var collection = MongoHelper.GetCollection(_integration.Collection);
             _targetFields = _integration.Fields.Where(x => x.DataEncoding == encoding).ToList();
             _fieldDict = new Dictionary<string, ConcurrentDictionary<string, FieldExtra>>();
             foreach (var fld in TargetFields)
@@ -83,6 +88,7 @@ namespace Donut.Encoding
         {
             public static FieldEncoding Create(IIntegration integration, FieldDataEncoding fldDataEncoding)
             {
+                //TODO: Replace this with attributes.
                 var ops = new FieldEncodingOptions { Integration = integration };
                 if (fldDataEncoding==FieldDataEncoding.OneHot)
                 {
@@ -92,9 +98,13 @@ namespace Donut.Encoding
                 {
                     return new BinaryCategoryEncoding(ops);
                 }
+                else if (fldDataEncoding == FieldDataEncoding.Id)
+                {
+                    return new IdEncoding(ops);
+                }
                 else
                 {
-                    return null;
+                    throw new NotImplementedException($"Field encoding not implemented: {fldDataEncoding}");
                 }
             }
         }
@@ -122,6 +132,22 @@ namespace Donut.Encoding
         public virtual IEnumerable<string> GetEncodedFieldNames(IFieldDefinition fld)
         {
             yield break;
+        }
+
+        public static void SetEncoding(DataIntegration ign, FieldDefinition targetField, Type opsEncoding)
+        {
+            var ctor = opsEncoding.GetConstructor(new Type[] {typeof(FieldEncodingOptions)});
+            FieldEncoding encoding = ctor.Invoke(new object[]{new FieldEncodingOptions
+            {
+                Integration = ign
+            }}) as FieldEncoding;
+            if (encoding == null)
+            {
+                throw new Exception($"Could not create encoding for field: {targetField.Name}");
+            }
+            targetField.DataEncoding = encoding.Encoding;
+            targetField.Extras = new FieldExtras();
+            targetField.Extras.Field = targetField;
         }
     }
 }

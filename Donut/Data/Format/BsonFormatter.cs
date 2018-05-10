@@ -6,8 +6,9 @@ using System.Threading;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using Netlyt.Interfaces;
 
-namespace Netlyt.Interfaces.Data.Format
+namespace Donut.Data.Format
 {
     public class BsonFormatter<T> : IInputFormatter<T>
         where T : class
@@ -16,8 +17,7 @@ namespace Netlyt.Interfaces.Data.Format
         IAsyncCursor<BsonDocument> _cursor;
         private List<BsonDocument> _elementCache;
         private int _position = -1;
-        
-        
+
         private object _lock;
         private long _passedElements = 0;
 
@@ -53,6 +53,9 @@ namespace Netlyt.Interfaces.Data.Format
         {
             throw new NotImplementedException();
         }
+
+        
+
         public IEnumerable<T> GetIterator(Stream fs, bool reset)
         {
             throw new NotImplementedException();

@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
 using LumenWorks.Framework.IO.Csv;
+using Netlyt.Interfaces;
 using Netlyt.Service.Integration;
 
-namespace Netlyt.Interfaces.Data.Format
-{ 
+namespace Donut.Data.Format
+{
     public class CsvFormatter<T> : IInputFormatter<T>, IDisposable
         where T : class
     {
@@ -52,7 +53,8 @@ namespace Netlyt.Interfaces.Data.Format
             if (!fs.CanRead)
             {
                 yield break;
-            } 
+            }
+            
             _reader = (!reset && _reader != null) ? _reader : new StreamReader(fs);
             _csvReader = (!reset && _csvReader != null) ? _csvReader : new CsvReader(_reader, true, Delimiter);
             if (!SkipHeader && (_headers == null || reset))
@@ -76,7 +78,7 @@ namespace Netlyt.Interfaces.Data.Format
                     DateTime tmValue;
                     fldValue = fldValue.Trim('"', '\t', '\n', '\r', '\'');
                     bool isDate = _dateTimeParser.TryParse(fldValue, out tmValue, out dValue);
-                    if (dValue!=null)
+                    if (dValue != null)
                     {
                         if (fldValue.Contains(".") || fldValue.Contains(","))
                         {
@@ -86,7 +88,7 @@ namespace Netlyt.Interfaces.Data.Format
                         {
                             outputObject.Add(fldName, (long)dValue);
                         }
-                    } 
+                    }
                     else if (isDate)
                     {
                         outputObject.Add(fldName, tmValue);
@@ -106,6 +108,7 @@ namespace Netlyt.Interfaces.Data.Format
         {
             var formatter = new CsvFormatter<T>();
             formatter.Delimiter = this.Delimiter;
+            //formatter._fieldOptions = _fieldOptions;
             return formatter;
         }
 

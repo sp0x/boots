@@ -1,4 +1,4 @@
-﻿namespace Netlyt.Interfaces.Data.Format
+﻿namespace Donut.Data.Format
 {
     /// <summary>
     /// 

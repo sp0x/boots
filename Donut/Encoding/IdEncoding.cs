@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Donut.Integration;
@@ -8,13 +7,13 @@ using Donut.Source;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Netlyt.Interfaces;
-using Netlyt.Interfaces.Data;
 
 namespace Donut.Encoding
 {
-    public class BinaryCategoryEncoding : FieldEncoding
+    public class IdEncoding : FieldEncoding
     {
-        public BinaryCategoryEncoding(FieldEncodingOptions options) : base(options, FieldDataEncoding.BinaryIntId)
+        
+        public IdEncoding(FieldEncodingOptions options) : base(options, FieldDataEncoding.Id)
         {
 
         }
@@ -30,7 +29,7 @@ namespace Donut.Encoding
                 {
                     var newExtra = new FieldExtra()
                     {
-                        Key = EncodeKey(categories.Count + 1),
+                        Key = (categories.Count + 1).ToString(),
                         Value = docFieldVal
                     };
                     if (field.Extras == null)
@@ -40,20 +39,12 @@ namespace Donut.Encoding
                     field.Extras.Extra.Add(newExtra);
                     return newExtra;
                 });
-                //doc[field.Name] = uint.Parse(extrasCategory.Key);
                 doc[field.Name] = extrasCategory.Key;
             }
         }
 
-        protected override string EncodeKey(int i)
-        {
-            var bvinary = Convert.ToString(i, 2).PadLeft(8, '0');
-            bvinary = "1" + bvinary;
-            return bvinary;
-        }
-
-        public override async Task<BulkWriteResult<BsonDocument>> ApplyToField(IFieldDefinition field,
-            IMongoCollection<BsonDocument> collection,
+        public override async Task<BulkWriteResult<BsonDocument>> ApplyToField(IFieldDefinition field, 
+            IMongoCollection<BsonDocument> collection, 
             CancellationToken? cancellationToken = null)
         {
             if (cancellationToken == null) cancellationToken = CancellationToken.None;
@@ -77,41 +68,10 @@ namespace Donut.Encoding
             return result;
         }
 
+
         public override IIntegration GetEncodedIntegration(bool truncateDestination = false)
         {
-            var collection = Integration.Collection;
-            var db = MongoHelper.GetDatabase();
-            if (truncateDestination)
-            {
-                db.DropCollection(collection);
-            }
-            var records = db.GetCollection<BsonDocument>(collection);
-            foreach (var oneHotField in TargetFields)
-            {
-                var fld = oneHotField;
-                //Run a group aggregate
-                var pipeline = new List<BsonDocument>();
-                var group = new BsonDocument();
-                group["$group"] = new BsonDocument() { { "_id", $"${fld.Name}" } };
-                pipeline.Add(group);
-                var uniqueColumnResults = records.Aggregate<BsonDocument>(pipeline).ToList();
-                int iVariation = fld.Extras.Extra == null ? 1 : fld.Extras.Extra.Count + 1;
-                foreach (var uniqueValue in uniqueColumnResults)
-                {
-                    var columnVal = uniqueValue["_id"].ToString();
-                    if (fld.Extras.Extra.Any(y => y.Key == columnVal)) continue;
-                    var fieldExtra = new FieldExtra()
-                    {
-                        Field = fld as FieldDefinition,
-                        Key = EncodeKey(iVariation++),
-                        Value = columnVal,
-                        Type = FieldExtraType.Dummy
-                    };
-                    if (fld.Extras == null) fld.Extras = new FieldExtras();
-                    fld.Extras.Extra.Add(fieldExtra);
-                }
-            }
-            return Integration;
+            throw new System.NotImplementedException();
         }
 
         public override IEnumerable<string> GetEncodedFieldNames(IFieldDefinition fld)
@@ -119,6 +79,4 @@ namespace Donut.Encoding
             yield return fld.Name;
         }
     }
-
 }
-

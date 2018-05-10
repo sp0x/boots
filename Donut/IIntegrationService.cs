@@ -40,6 +40,18 @@ namespace Donut
             out bool isNewIntegration,
             out DataImportTask<ExpandoObject> importTask);
 
+        DataIntegration CreateIntegrationImportTask(IInputSource input,
+            ApiAuth apiKey,
+            User owner,
+            string name,
+            out bool isNewIntegration,
+            out DataImportTask<ExpandoObject> importTask);
+
+        DataImportTask<ExpandoObject> CreateIntegrationImportTask(IInputSource input,
+            ApiAuth apiKey,
+            User owner,
+            string name);
+
         Task<Data.DataIntegration> Create(string integrationName, string formatType);
         IInputFormatter<T> ResolveFormatter<T>(string mimeType) where T : class;
 
