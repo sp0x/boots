@@ -9,5 +9,6 @@ namespace Donut.Source
         long Id { get; set; }
         bool Nullable { get; set; }
         bool Unique { get; set; }
+        bool IsFake { get; set; }
     }
 }

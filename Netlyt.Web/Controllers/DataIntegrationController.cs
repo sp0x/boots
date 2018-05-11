@@ -33,14 +33,14 @@ namespace Netlyt.Web.Controllers
     { 
         private RemoteDataSource<IntegratedDocument> _documentStore; 
         private ApiService _apiService;
-        private IntegrationService _integrationService;
+        private IIntegrationService _integrationService;
 
         public DataIntegrationController(UserManager<User> userManager,
             IUserStore<User> userStore,
-            OrionContext behaviourCtx,
+            IOrionContext behaviourCtx,
             ManagementDbContext context,
             SocialNetworkApiManager socNetManager,
-            IntegrationService integrationService,
+            IIntegrationService integrationService,
             ApiService apiService,
             IActionDescriptorCollectionProvider actionDescriptorCollectionProvider)
         {  

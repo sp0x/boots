@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using Netlyt.Interfaces;
 using Newtonsoft.Json;
@@ -7,11 +8,10 @@ using Newtonsoft.Json.Linq;
 
 namespace Donut.Data.Format
 { 
-    public class JsonFormatter<T> : IInputFormatter<T>
+    public class JsonFormatter<T> : InputFormatter<T>
         where T : class
     {
         public LineMode LineMode { get; set; }
-        public string Name => "Json";
 
         private JsonSerializer _serializer;
         private JsonTextReader _jsReader;
@@ -26,13 +26,14 @@ namespace Donut.Data.Format
         {
             var streamReader = new StreamReader(fs);
             _jsReader = new JsonTextReader(streamReader);
+            Name = "Json";
         }
         /// <summary>
         /// Gets the structure of the input stream
         /// </summary>
         /// <param name="fs"></param>
         /// <returns></returns>
-        public IEnumerable<dynamic> GetIterator(Stream fs, bool resetRead = false, Type targetType = null)
+        public override IEnumerable<dynamic> GetIterator(Stream fs, bool resetRead = false, Type targetType = null)
         {
             return GetIterator(fs, resetRead);
         }
@@ -44,7 +45,7 @@ namespace Donut.Data.Format
         /// <typeparam name="T">The type to which to cast the input object</typeparam>
         /// <param name="fs"></param>
         /// <returns></returns>
-        public IEnumerable<T> GetIterator(Stream fs, bool resetRead = false)
+        public override IEnumerable<T> GetIterator(Stream fs, bool resetRead = false)
         {
             while (true)
             {
@@ -61,6 +62,7 @@ namespace Donut.Data.Format
                         string nextLine = _reader.ReadLine();
                         T json = JsonConvert.DeserializeObject<T>(nextLine);
                         _position++;
+                        base.FormatFields(json as ExpandoObject);
                         yield return json;
                         break;
                     case LineMode.None:
@@ -82,6 +84,7 @@ namespace Donut.Data.Format
                                 }
                                 _position++;
                                 var value = obj == null ? default(T) : obj.ToObject<T>();
+                                base.FormatFields(value as ExpandoObject);
                                 yield return value;
                             }
                             //                        } else if (startedObject && jsonReader.TokenType == JsonToken.EndObject && startedDepth == jsonReader.Depth)
@@ -97,25 +100,25 @@ namespace Donut.Data.Format
             }
         }
 
-        public IInputFormatter Clone()
+        public override IInputFormatter Clone()
         {
             var jsf = new JsonFormatter<T>();
             return jsf;
         }
 
-        public void Reset()
+        public override void Reset()
         {
             throw new NotImplementedException();
         }
 
-        public long Position()
+        public override long Position()
         {
             return _position;
         }
 
         public double Progress => 0;
 
-        public void Dispose()
+        public override void Dispose()
         {
             ((IDisposable) _jsReader)?.Dispose();
             _reader?.Dispose();

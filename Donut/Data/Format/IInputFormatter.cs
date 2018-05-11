@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace Netlyt.Interfaces
+namespace Donut.Data.Format
 {
     public interface IInputFormatter : IDisposable
     {
@@ -11,6 +11,7 @@ namespace Netlyt.Interfaces
         long Position(); 
         IEnumerable<dynamic> GetIterator(Stream fs, bool reset, Type targetType = null);
         IInputFormatter Clone();
+        void SetFieldOptions(Dictionary<string,FieldOptionsBuilder> fieldOptions);
     }
 
     /// <summary>

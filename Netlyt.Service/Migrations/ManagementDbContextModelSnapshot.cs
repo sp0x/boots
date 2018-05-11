@@ -302,6 +302,8 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
+                    b.Property<bool>("IsFake");
+
                     b.Property<bool>("Nullable");
 
                     b.Property<bool>("Unique");

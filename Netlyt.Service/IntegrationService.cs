@@ -387,6 +387,7 @@ namespace Netlyt.Service
         public DataIntegration ResolveIntegration(ApiAuth apiKey, User owner, string name, out bool isNewIntegration,
             IInputSource source)
         {
+            source.Formatter.SetFieldOptions(source.FieldOptions);
             DataIntegration integrationInfo = source.ResolveIntegrationDefinition() as DataIntegration;
             DataIntegration exitingIntegration = null;
             isNewIntegration = false;

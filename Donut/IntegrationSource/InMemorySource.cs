@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Donut.Data.Format;
 using Donut.Integration;
 using Netlyt.Interfaces;
 
@@ -78,14 +79,14 @@ namespace Donut.IntegrationSource
             lock (_lock)
             {
                 IEnumerable<T> iterator = null;
-                var resetNeeded = _cachedInstance != null;
+                bool resetNeeded = _cachedInstance != null;
                 //Probably throw?
                 if (resetNeeded && Content.CanSeek)
                 {
                     Content.Position = 0;
                     _cachedInstance = null;
                 }
-                iterator = ((IInputFormatter<T>) Formatter).GetIterator(Content, resetNeeded);
+                iterator = base.GetIterator<T>(Content, resetNeeded);
                 return iterator;
             }
         }

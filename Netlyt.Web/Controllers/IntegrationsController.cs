@@ -42,7 +42,7 @@ namespace Netlyt.Web.Controllers
         // GET: /<controller>/
         public IntegrationsController(UserManager<User> userManager,
             IUserStore<User> userStore,
-            OrionContext behaviourCtx,
+            IOrionContext behaviourCtx,
             ManagementDbContext context,
             SocialNetworkApiManager socNetManager,
             ApiService apiService,

@@ -12,6 +12,7 @@ namespace Donut.Source
         public bool Unique { get; set; }
         public bool Nullable { get; set; }
         public FieldDefinition Field { get; set; }
+        public bool IsFake { get; set; }
 
         public FieldExtras()
         {

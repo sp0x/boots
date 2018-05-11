@@ -32,6 +32,11 @@ namespace Donut.Source
             Name = fName;
             Type = fType.FullName;
         }
+        public FieldDefinition(string fName, string fType)
+        {
+            Name = fName;
+            Type = fType;
+        }
 
     }
 }

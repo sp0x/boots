@@ -22,6 +22,17 @@ namespace Donut.IntegrationSource
         private string[] _filesCache;
         private Stream _fileStream;
         private readonly object _lock;
+        /// <summary>
+        ///     The initial path that was used for this source.
+        /// </summary>
+        public string Path { get; set; }
+
+        public string CurrentPath { get; private set; }
+
+        public FileSourceMode Mode { get; set; }
+
+        public bool IsOpen => _fileStream != null && (_fileStream.CanRead || _fileStream.CanWrite);
+        public string FileName => System.IO.Path.GetFileNameWithoutExtension(Path);
 
         public FileSource()
         {
@@ -39,23 +50,23 @@ namespace Donut.IntegrationSource
             _fileStream = fileStream;
         }
 
-        public FileSource(FileStream fileStream) : this((Stream) fileStream)
+        public FileSource(FileStream fileStream) : this((Stream)fileStream)
         {
             Path = fileStream.Name;
             _fileStream = fileStream;
         }
 
-        public bool IsOpen => _fileStream != null && (_fileStream.CanRead || _fileStream.CanWrite);
-        public string FileName => System.IO.Path.GetFileNameWithoutExtension(Path);
-
-        /// <summary>
-        ///     The initial path that was used for this source.
-        /// </summary>
-        public string Path { get; }
-
-        public string CurrentPath { get; private set; }
-
-        public FileSourceMode Mode { get; set; }
+        protected override IInputSource Clone()
+        {
+            var instance = base.Clone() as FileSource;
+            instance.Path = Path;
+            instance.CurrentPath = CurrentPath;
+            instance.Mode = Mode;
+            instance._fileStream = _fileStream;
+            instance._filesCache = _filesCache;
+            instance._cachedInstance = _cachedInstance;
+            return instance;
+        }
 
         /// <summary>
         ///     Gets the type definition of this source.
@@ -132,7 +143,7 @@ namespace Donut.IntegrationSource
         /// <param name="fileName"></param>
         /// <param name="formatter"></param>
         /// <returns></returns>
-        public static FileSource CreateFromFile(string fileName, IInputFormatter formatter = null) 
+        public static FileSource CreateFromFile(string fileName, IInputFormatter formatter = null)
         {
             var src = new FileSource(fileName);
             src.SetFormatter(formatter);
@@ -193,7 +204,7 @@ namespace Donut.IntegrationSource
         {
             lock (_lock)
             {
-                dynamic lastInstance = null;
+                IEnumerable<dynamic> lastIter = null;
                 //If there was a previous run and there's cache open but the stream is not open, reset !
                 var resetNeeded = _cachedInstance != null && !IsOpen || !IsOpen;
                 if (resetNeeded)
@@ -202,17 +213,18 @@ namespace Donut.IntegrationSource
                     _cachedInstance = null;
                 }
                 //The stream position is increased, so there's no need for anything else.
-                lastInstance = Formatter.GetIterator(_fileStream, resetNeeded);
+                lastIter = Formatter.GetIterator(_fileStream, resetNeeded);
                 //If there are no more records in the current file source, and we're using a whole directory as a source
                 //and we have any remaining files to check
-                if (lastInstance == null && Mode == FileSourceMode.Directory && _fileIndex < _filesCache.Length - 1)
+                if (lastIter == null && Mode == FileSourceMode.Directory && _fileIndex < _filesCache.Length - 1)
                 {
                     _fileIndex++;
                     _fileStream.Close();
                     //We reset, because the stream changed
-                    lastInstance = Formatter.GetIterator(Open(), true);
-                } 
-                return lastInstance;
+                    lastIter = Formatter.GetIterator(Open(), true);
+                }
+                lastIter = base.GetIterator<dynamic>(lastIter);
+                return lastIter;
             }
         }
 
@@ -224,7 +236,7 @@ namespace Donut.IntegrationSource
         {
             if (Mode == FileSourceMode.File)
             {
-                var inputSource = new FileSource(Path);
+                var inputSource = this.Clone(); //new FileSource(Path);
                 inputSource.SetFormatter(Formatter);
                 yield return inputSource;
             }
@@ -238,11 +250,11 @@ namespace Donut.IntegrationSource
                         var source = new FileSource(file);
                         source.SetFormatter(Formatter.Clone());
                         source.Encoding = Encoding;
+                        source.FieldOptions = FieldOptions;
                         yield return source;
                     }
             }
         }
-
         /// <summary>
         /// </summary>
         /// <inheritdoc/>

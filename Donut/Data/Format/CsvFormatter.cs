@@ -8,10 +8,9 @@ using Netlyt.Service.Integration;
 
 namespace Donut.Data.Format
 {
-    public class CsvFormatter<T> : IInputFormatter<T>, IDisposable
+    public class CsvFormatter<T> : InputFormatter<T>, IDisposable
         where T : class
     {
-        public string Name => "Csv";
         public char Delimiter { get; set; } = ';';
         private string[] _headers;
         private StreamReader _reader;
@@ -35,6 +34,7 @@ namespace Donut.Data.Format
         public CsvFormatter()
         {
             _dateTimeParser = new DateParser();
+            Name = "Csv";
         }
 
         /// <summary>
@@ -43,12 +43,12 @@ namespace Donut.Data.Format
         /// <param name="fs"></param>
         /// <param name="reset"></param>
         /// <returns></returns>
-        public IEnumerable<dynamic> GetIterator(Stream fs, bool reset = false, Type targetType = null)
+        public override IEnumerable<dynamic> GetIterator(Stream fs, bool reset = false, Type targetType = null)
         {
             return GetIterator(fs, reset);
         }
 
-        public IEnumerable<T> GetIterator(Stream fs, bool reset = false)
+        public override IEnumerable<T> GetIterator(Stream fs, bool reset = false)
         {
             if (!fs.CanRead)
             {
@@ -78,6 +78,7 @@ namespace Donut.Data.Format
                     DateTime tmValue;
                     fldValue = fldValue.Trim('"', '\t', '\n', '\r', '\'');
                     bool isDate = _dateTimeParser.TryParse(fldValue, out tmValue, out dValue);
+
                     if (dValue != null)
                     {
                         if (fldValue.Contains(".") || fldValue.Contains(","))
@@ -100,11 +101,12 @@ namespace Donut.Data.Format
                 }
 
                 _position++;
+                base.FormatFields(outputObject);
                 yield return outputObject as T;
             }
         }
 
-        public IInputFormatter Clone()
+        public override IInputFormatter Clone()
         {
             var formatter = new CsvFormatter<T>();
             formatter.Delimiter = this.Delimiter;
@@ -112,7 +114,7 @@ namespace Donut.Data.Format
             return formatter;
         }
 
-        public void Reset()
+        public override void Reset()
         {
             //throw new NotImplementedException();
             _position = -1;
@@ -120,7 +122,7 @@ namespace Donut.Data.Format
             _reader = null;
         }
 
-        public long Position()
+        public override long Position()
         {
             return _position;
         }
@@ -128,7 +130,7 @@ namespace Donut.Data.Format
         public double Progress => 0;
 
 
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

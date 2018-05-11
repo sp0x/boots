@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks.Dataflow;
 using Donut.Data.Format;
@@ -23,16 +24,17 @@ namespace Donut.IntegrationSource
         public System.Text.Encoding Encoding { get; set; } = System.Text.Encoding.UTF8;
         public IInputFormatter Formatter { get; protected set; }
         public bool SupportsSeeking { get; set; }
-        private Dictionary<string, FieldOptionsBuilder> _fieldOptions;
-
+        public Dictionary<string, FieldOptionsBuilder> FieldOptions { get; set; }
+    
         public InputSource()
         {
-            _fieldOptions = new Dictionary<string, FieldOptionsBuilder>();
+            FieldOptions = new Dictionary<string, FieldOptionsBuilder>();
         }
         public FieldOptionsBuilder Field(string name)
         {
-            _fieldOptions[name] = new FieldOptionsBuilder(this);
-            return _fieldOptions[name];
+            if (FieldOptions.ContainsKey(name)) return FieldOptions[name];
+            FieldOptions[name] = new FieldOptionsBuilder(this);
+            return FieldOptions[name];
         }
 
         public double Progress
@@ -44,9 +46,28 @@ namespace Donut.IntegrationSource
             }
         }
 
+
+        protected virtual IInputSource Clone()
+        {
+            var type = this.GetType();
+            var ctor = type.GetConstructor(new Type[] { });
+            var instance = ctor.Invoke(new object[] { }) as InputSource;
+            instance.FieldOptions = FieldOptions;
+            instance.Formatter = Formatter;
+            instance.SupportsSeeking = this.SupportsSeeking;
+            instance.Encoding = Encoding;
+            instance.Size = Size;
+            instance._disposed = _disposed;
+            return instance;
+        }
+
         public void SetFormatter(IInputFormatter formatter) 
         {
             this.Formatter = formatter;
+            if (formatter != null)
+            {
+                formatter.SetFieldOptions(FieldOptions);
+            }
         }
 //        public InputSource(IInputFormatter formatter)
 //        {
@@ -101,6 +122,19 @@ namespace Donut.IntegrationSource
         {
             return GetEnumerator();
         }
+
+        internal IEnumerable<T> GetIterator<T>(Stream content, bool resetNeeded) where T : class
+        {
+            var iterator = ((IInputFormatter<T>) Formatter).GetIterator(content, resetNeeded);
+            return GetIterator(iterator);
+        }
+
+        internal IEnumerable<T> GetIterator<T>(IEnumerable<T> iter) where T : class
+        {
+            Formatter.SetFieldOptions(FieldOptions);
+            return iter;
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -150,19 +184,30 @@ namespace Donut.IntegrationSource
                 typeDef.SetFieldsFromType(firstInstance);
             }
             //Apply field options
-            foreach (var fieldOp in _fieldOptions)
+            foreach (var fieldOpPair in FieldOptions)
             {
-                var targetField = typeDef.Fields.FirstOrDefault(x => x.Name == fieldOp.Key);
+                FieldDefinition targetField = typeDef.Fields.FirstOrDefault(x => x.Name == fieldOpPair.Key);
+                var fieldOp = fieldOpPair.Value;
                 if (targetField == null)
                 {
-                    continue; //Maybe throw?
+                    if (fieldOp.ValueEvaluater != null)
+                    {
+                        var targetType = fieldOp.ValueEvaluater.ReturnType;
+                        var virtField = targetField = new FieldDefinition(fieldOpPair.Key, targetType);
+                        virtField.Extras = new FieldExtras() {IsFake = true};
+                        typeDef.Fields.Add(virtField);
+                    }
+                    else
+                    {
+                        continue; //Maybe throw?
+                    }
                 }
-                if (fieldOp.Value.IgnoreField)
+                if (fieldOp.IgnoreField)
                 {
                     typeDef.Fields.Remove(targetField);
                     continue;
                 }
-                var ops = fieldOp.Value;
+                var ops = fieldOp;
                 var stringName = typeof(String).Name;
                 if (ops.IsString) targetField.Type = stringName;
                 if (ops.Encoding != null)
@@ -175,8 +220,18 @@ namespace Donut.IntegrationSource
                     targetField.Extras = new FieldExtras();
                     targetField.Extras.Field = targetField;
                 }
+
+                if (ops.Duplicates.Count>0)
+                {
+                    foreach (var duplicate in ops.Duplicates)
+                    {
+                        var dupField = new FieldDefinition(duplicate, targetField.Type);
+                        typeDef.Fields.Add(dupField);
+                    }
+                }
             }
             return typeDef;
         }
+
     }
 }

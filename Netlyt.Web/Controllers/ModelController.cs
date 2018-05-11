@@ -29,7 +29,7 @@ namespace Netlyt.Web.Controllers
     [Authorize]
     public class ModelController : Controller
     {
-        private OrionContext _orionContext;
+        private IOrionContext _orionContext;
         private UserService _userService;
         private IMapper _mapper;
         private ModelService _modelService;
@@ -39,7 +39,7 @@ namespace Netlyt.Web.Controllers
         private ManagementDbContext _db;
 
         public ModelController(IMapper mapper,
-            OrionContext behaviourCtx,
+            IOrionContext behaviourCtx,
             UserManager<User> userManager,
             UserService userService,
             ModelService modelService,
@@ -334,14 +334,15 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/model/{id}/[action]")]
         public async Task<IActionResult> Train(long id)
         {
-            var json = await Request.GetRawBodyString();
-            JObject query = JObject.Parse(json);
+            var model = _modelService.GetById(id);
+            //var json = await Request.GetRawBodyString();
+            var trainRequest = OrionQuery.Factory.CreateTrainQuery(model, model.GetRootIntegration());
             //kick off background async task to train
             // return 202 with wait at endpoint
             //async task
             // do training
             // set current model to the id of whatever came back
-            var m_id = await _orionContext.Query(query);
+            var m_id = await _orionContext.Query(trainRequest);
             return Accepted(m_id);
         }
 

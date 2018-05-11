@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -10,7 +11,7 @@ using Netlyt.Interfaces;
 
 namespace Donut.Data.Format
 {
-    public class BsonFormatter<T> : IInputFormatter<T>
+    public class BsonFormatter<T> : InputFormatter<T>
         where T : class
     {
         IAsyncCursorSource<BsonDocument> _finder = null;
@@ -24,9 +25,10 @@ namespace Donut.Data.Format
         public BsonFormatter()
         {
             _lock = new object();
+            Name = "BsonFormatter";
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (_cursor != null)
             {
@@ -36,27 +38,26 @@ namespace Donut.Data.Format
         }
 
         
-        public string Name { get; } = "BsonFormatter";
-        public void Reset()
+        public override void Reset()
         {
             _position = 0;
             _passedElements = 0;
             GetCache(true);
         }
 
-        public long Position()
+        public override long Position()
         {
             return _passedElements + _position;
         }
 
-        public IEnumerable<dynamic> GetIterator(Stream fs, bool reset, Type targetType = null)
+        public override IEnumerable<dynamic> GetIterator(Stream fs, bool reset, Type targetType = null)
         {
             throw new NotImplementedException();
         }
 
         
 
-        public IEnumerable<T> GetIterator(Stream fs, bool reset)
+        public override IEnumerable<T> GetIterator(Stream fs, bool reset)
         {
             throw new NotImplementedException();
         }
@@ -75,8 +76,10 @@ namespace Donut.Data.Format
                 while(_elementCache.Count>0)
                 {
                     foreach (var element in _elementCache)
-                    { 
-                        yield return BsonSerializer.Deserialize<T>(element);
+                    {
+                        var deserialized = BsonSerializer.Deserialize<T>(element);
+                        base.FormatFields(deserialized as ExpandoObject);
+                        yield return deserialized;
                         Interlocked.Increment(ref _position);
                     }
                     GetCache(false); 
@@ -111,7 +114,7 @@ namespace Donut.Data.Format
         }
 
 
-        public IInputFormatter Clone()
+        public override IInputFormatter Clone()
         {
             var formatter = new BsonFormatter<T>();
             formatter._finder = _finder;

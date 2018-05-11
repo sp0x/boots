@@ -44,7 +44,6 @@ namespace Donut.Blocks
             CacheItems = new List<string[]>();
             var _reader = new StreamReader(_fs);
             var _csvReader = new CsvReader(_reader, true, Delimiter);
-            
             if (_inputMapper != null)
             { 
                 foreach (var row in _csvReader)
