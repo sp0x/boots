@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization; 
-using nvoid.extensions;
+using System.Runtime.Serialization;
 
 namespace Netlyt.Service.Analytics
 {
@@ -98,7 +97,8 @@ namespace Netlyt.Service.Analytics
             public void UpdateSelf(List<KeyValuePair<string, double>> chain)
             {
                 this.Visits++;
-                var data = chain.Pop();
+                var data = chain[chain.Count - 1];
+                chain.RemoveAt(chain.Count - 1);
                 this.Time = data.Value;
                 if (chain.Count == 0) return;
                 var n = chain[0].Key;

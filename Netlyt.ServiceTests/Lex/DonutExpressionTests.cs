@@ -139,7 +139,6 @@ namespace Netlyt.ServiceTests.Lex
             var genericDonutfileRoot = typeof(Donutfile<,>).MakeGenericType(donutContextType, typeof(IntegratedDocument));
             var fgenDonutProperty = donutFGen.GetProperty("Donut");
             var asm2 = _compiler.Compile(dscript, asmName, out donutType, out donutContextType, out donutFGen);
-            asm2 = asm2;
         }
 
         [Theory]

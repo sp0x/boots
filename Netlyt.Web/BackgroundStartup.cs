@@ -21,6 +21,7 @@ namespace Netlyt.Web
     public partial class Startup
     {
         public ServiceProvider BackgroundServiceProvider { get; set; }
+        public DonutOrionHandler OrionHandler { get; set; }
         public void ConfigureBackgroundServices()
         {
             var services = new ServiceCollection();
@@ -70,7 +71,8 @@ namespace Netlyt.Web
             services.AddSingleton<DonutOrionHandler>();
 
             BackgroundServiceProvider = services.BuildServiceProvider();
-            BackgroundServiceProvider.GetService<DonutOrionHandler>();
+            OrionHandler = BackgroundServiceProvider.GetOrionHandler();
+            OrionHandler = OrionHandler;
         }
 
     }

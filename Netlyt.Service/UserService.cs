@@ -1,24 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.Loader;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Donut;
 using Donut.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using nvoid.Integration;
 using Netlyt.Data;
 using Netlyt.Interfaces;
 using Netlyt.Service.Data;
-using Netlyt.Service.Integration;
 using Netlyt.Service.Models.Account;
 using DataIntegration = Donut.Data.DataIntegration;
 

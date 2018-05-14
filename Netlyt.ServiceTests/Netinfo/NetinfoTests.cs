@@ -81,7 +81,7 @@ namespace Netlyt.ServiceTests.Netinfo
             if (_user == null)
             {
                 _user = new User() { FirstName = "tester1231", Email = "mail@lol.co" };
-                _userService.CreateUser(_user, "Password-IsStrong!", _appAuth);
+                _userService.CreateUser(_user, "Password-IsStrong!", _appAuth).Wait();
             }
         }
 

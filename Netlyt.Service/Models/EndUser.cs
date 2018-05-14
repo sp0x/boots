@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using MongoDB.Bson;
-using nvoid.Documents;
-using nvoid.Social;
 using Netlyt.Service.Analytics;
 
 namespace Netlyt.Service.Models
@@ -37,21 +34,34 @@ namespace Netlyt.Service.Models
         public EndUser() : base()
         {
         }
+        
 
-        public void UpdateSocialData(ISocialUser social)
-        {
-            
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public override EntityDocument GetXlsConverter()
-        {
-            var converter = new XlsConverter<EndUser>(base.GetXlsConverter());
-            converter.MapAllProperties().Ignore(x => x.Alias).Ignore(x => x.RelatedDocuments);
-            return converter;
-        }
+//        /// <summary>
+//        /// 
+//        /// </summary>
+//        /// <returns></returns>
+//        public override EntityDocument GetXlsConverter()
+//        {
+//            var converter = new XlsConverter<EndUser>(base.GetXlsConverter());
+//            converter.MapAllProperties().Ignore(x => x.Alias).Ignore(x => x.RelatedDocuments);
+//            return converter;
+//        }
+//        /// <summary>
+//        /// 
+//        /// </summary>
+//        /// <typeparam name="T"></typeparam>
+//        /// <returns></returns>
+//        public virtual EntityDocument GetXlsConverter()
+//        {
+//            var converter = new XlsConverter<ExtendableObject>();
+//
+//            foreach (var key in Properties.Keys)
+//            {
+//                Func<ExtendableObject, object> getter = (x) => x[key];
+//                converter.Members.Add(key, getter);
+//            }
+//            converter.Ignore(x => x.Properties).Ignore("Item");
+//            return converter;
+//        }
     }
 }

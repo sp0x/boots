@@ -1,4 +1,5 @@
-﻿using Donut.Lex.Parsing;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using Donut.Lex.Parsing;
 using Donut.Parsing.Tokenizers;
 using Model = Donut.Models.Model;
 
@@ -9,6 +10,8 @@ namespace Donut
         public long Id { get; set; }
         public string AssemblyPath { get; set; }
         public string DonutScriptContent { get; set; }
+        [ForeignKey("Model")]
+        public long ModelId { get; set; }
         public Model Model { get; set; }
 
         public DonutScriptInfo()

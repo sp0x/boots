@@ -3,11 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Bogus;
-using nvoid.Documents;
-using nvoid.Entities.Social;
-using nvoid.Integration;
-using nvoid.Social;
-using nvoid.Social.FBNet;
 using Netlyt.Interfaces;
 using Netlyt.Service.Models;
 
@@ -18,10 +13,10 @@ namespace Netlyt.Service.Analytics
     /// </summary>
     public class UserbaseGenerator
     {
-        private FBManager _network;
+        //private FBManager _network;
         public UserbaseGenerator()
         {
-            _network = new FBManager();
+            //_network = new FBManager();
         }
 
         /// <summary>
@@ -31,13 +26,14 @@ namespace Netlyt.Service.Analytics
         /// <returns>True if everything went ok.</returns>
         public bool SetApiKey(ApiAuth auth)
         {
-            return _network.AuthorizeWith(auth);
+            //return _network.AuthorizeWith(auth);
+            return false;
         }
 
         public IEnumerable<EndUser> GetUsers(int limit)
         {
-            SocialAccount myUser = _network.GetMyUser();
-            var friends = _network.GetMyFriends();
+            //SocialAccount myUser = _network.GetMyUser();
+            //var friends = _network.GetMyFriends();
             return null;
         }
 
@@ -67,15 +63,15 @@ namespace Netlyt.Service.Analytics
         {
             var destinationDir = Path.Combine(baseDir);
             var destinationFile = Path.Combine(destinationDir, "profile.xlsx");
-            XlsConverter<EndUser> converter = new XlsConverter<EndUser>(user.GetXlsConverter());
-            converter.Append = true;
-            converter.Convert(user, destinationFile, "User");
+            //XlsConverter<EndUser> converter = new XlsConverter<EndUser>(user.GetXlsConverter());
+           // converter.Append = true;
+            //converter.Convert(user, destinationFile, "User");
             if (behaviour != null)
             {
                 var behaviourFile = Path.Combine(destinationDir, "behaviour.xlsx");
-                var behaviourConverter = new XlsConverter<EndUserBehaviour>(behaviour.FirstOrDefault().GetXlsConverter());
-                behaviourConverter.Append = true;
-                behaviourConverter.Convert(behaviour, behaviourFile, "Behaviour");
+                //var behaviourConverter = new XlsConverter<EndUserBehaviour>(behaviour.FirstOrDefault().GetXlsConverter());
+                //behaviourConverter.Append = true;
+                //behaviourConverter.Convert(behaviour, behaviourFile, "Behaviour");
             }
 
             return destinationDir;
@@ -100,13 +96,13 @@ namespace Netlyt.Service.Analytics
             {
                 return null;
             } 
-            XlsConverter<EndUser> converter = new XlsConverter<EndUser> (user.GetXlsConverter());
-            converter.Convert(user, destinationFile, "User");
+           // XlsConverter<EndUser> converter = new XlsConverter<EndUser> (user.GetXlsConverter());
+            //converter.Convert(user, destinationFile, "User");
             if (behaviour != null)
             {
                 var behaviourFile = Path.Combine(destinationDir, "behaviour.xlsx");
-                var behaviourConverter = new XlsConverter<EndUserBehaviour>(behaviour.FirstOrDefault().GetXlsConverter());
-                behaviourConverter.Convert(behaviour, behaviourFile, "Behaviour");
+                //var behaviourConverter = new XlsConverter<EndUserBehaviour>(behaviour.FirstOrDefault().GetXlsConverter());
+                //behaviourConverter.Convert(behaviour, behaviourFile, "Behaviour");
             }
 
             return destinationDir;

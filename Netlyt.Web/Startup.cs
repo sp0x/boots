@@ -131,8 +131,6 @@ namespace Netlyt.Web
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
-            //services.AddSingleton<DonutOrionHandler>();
-
             SetupAuthentication(services);
             services.AddAutoMapper();
             services.AddMvc();
@@ -203,7 +201,6 @@ namespace Netlyt.Web
 
         private void InitializeDatabase(IApplicationBuilder app)
         {
-            app.ApplicationServices.GetService<DonutOrionHandler>();
             using (var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
             {
                 var managementDbContext = scope.ServiceProvider.GetRequiredService<ManagementDbContext>();

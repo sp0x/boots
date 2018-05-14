@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using nvoid.Integration;
 using Netlyt.Interfaces;
 using Netlyt.Service.Data;
 

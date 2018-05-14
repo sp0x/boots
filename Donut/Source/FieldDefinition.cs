@@ -17,7 +17,8 @@ namespace Donut.Source
         /// </summary>
         [BsonSerializer(typeof(TypeSerializer))]
         public string Type { get; set; }
-        
+        [ForeignKey("Extras")]
+        public long ExtrasId { get; set; }
         public FieldExtras Extras { get; set; }
         public FieldDataEncoding DataEncoding { get; set; }
         [ForeignKey("Integration")]

@@ -21,11 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bogus", "Bogus\Source\Bogus
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Netlyt.Service", "Netlyt.Service\Netlyt.Service.csproj", "{0485F7C7-BAB8-449E-9513-BFCAF81DAD6F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegrationDaemon", "IntegrationDaemon\IntegrationDaemon\IntegrationDaemon.csproj", "{6B4AC9A1-8764-4DBE-A505-AA59FC717119}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{6E763F49-007D-45FB-962A-AF96BB6715D6}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegrationDaemon.Tests", "IntegrationDaemon\IntegrationDaemon.Tests\IntegrationDaemon.Tests.csproj", "{38735859-0C42-4457-A0FA-1CCEEFF31648}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Netlyt.ServiceTests", "Netlyt.ServiceTests\Netlyt.ServiceTests.csproj", "{DB403379-26CC-4B0D-8992-FC153B64C5A5}"
 EndProject

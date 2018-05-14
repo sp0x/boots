@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using nvoid.Documents;
 
 namespace Netlyt.Service.Models
 {
@@ -74,22 +73,5 @@ namespace Netlyt.Service.Models
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public virtual EntityDocument GetXlsConverter()
-        {
-            var converter = new XlsConverter<ExtendableObject>();
-            
-            foreach (var key in Properties.Keys)
-            {
-                Func<ExtendableObject, object> getter = (x) => x[key];
-                converter.Members.Add(key, getter);
-            }
-            converter.Ignore(x => x.Properties).Ignore("Item");
-            return converter;
-        }
     }
 }

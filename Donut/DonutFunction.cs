@@ -82,6 +82,11 @@ namespace Donut
             return output;
         }
 
+        public DonutFunction()
+        {
+
+        }
+
         public DonutFunction(string nm)
         {
             Name = nm;

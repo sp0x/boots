@@ -5,14 +5,13 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Donut;
-using Donut.Caching;
 using Donut.Data.Format;
 using Donut.FeatureGeneration;
 using Donut.IntegrationSource;
 using Donut.Lex.Data;
 using Donut.Orion;
 using Microsoft.EntityFrameworkCore;
-using nvoid.db.DB.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Service.Data;
@@ -21,6 +20,15 @@ using Model = Donut.Models.Model;
 
 namespace Netlyt.Service.Donut
 {
+    public static class Extensions
+    {
+        public static DonutOrionHandler GetOrionHandler(this IServiceProvider services)
+        {
+            var svc = services.GetService<DonutOrionHandler>();
+            if (svc == null) throw new Exception("Orion handler service not registered!");
+            return svc;
+        }
+    }
     public class DonutOrionHandler : IDisposable
     {
         private IOrionContext _orion;
@@ -61,6 +69,7 @@ namespace Netlyt.Service.Donut
             _cacher = redisCacher;
             _dbConfig = dbc;
             _emailService = emailSender;
+            Console.WriteLine("Initialized orion handler..");
         }
 
         private async void _orion_TrainingComplete(JObject trainingCompleteNotification)

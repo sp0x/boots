@@ -1,5 +1,4 @@
 ﻿using System;
-using nvoid.Documents;
 
 namespace Netlyt.Service.Models
 {
@@ -19,11 +18,11 @@ namespace Netlyt.Service.Models
         public string Referrer { get; set; }
         public string Url { get; set; }
 
-        public override EntityDocument GetXlsConverter()
-        {
-            var converter = new XlsConverter<EndUserBehaviour>(base.GetXlsConverter());
-            converter.MapAllProperties();
-            return converter;
-        }
+//        public override EntityDocument GetXlsConverter()
+//        {
+//            var converter = new XlsConverter<EndUserBehaviour>(base.GetXlsConverter());
+//            converter.MapAllProperties();
+//            return converter;
+//        }
     }
 }

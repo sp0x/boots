@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.Internal;
 using Netlyt.Service.Data;
 using System;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Netlyt.Service.Migrations
 {

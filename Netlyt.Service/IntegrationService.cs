@@ -10,7 +10,6 @@ using Donut.Data.Format;
 using Donut.Integration;
 using Donut.IntegrationSource;
 using Microsoft.EntityFrameworkCore;
-using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Service.Data;
@@ -131,8 +130,8 @@ namespace Netlyt.Service
             _context.SaveChanges();
             if (!string.IsNullOrEmpty(importTaskIntegration.Collection))
             {
-                var collection = new MongoList(_dbConfig.Name, importTaskIntegration.Collection, _dbConfig.GetUrl());
-                collection.Trash();
+                var collection = MongoHelper.GetCollection(importTaskIntegration.Collection);
+                collection.Drop();
                 collection = null;
             }
         }

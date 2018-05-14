@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Migrations;
 using System;
 using System.Collections.Generic;
-
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Netlyt.Service.Migrations
 {
     public partial class ModelTrainingPerformance : Migration
