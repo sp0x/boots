@@ -26,7 +26,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.0.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.7.0" />
     <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="2.0.2" />
-    <PackageReference Include="NetMQ" Version="4.0.0.156-pre" />
+    <PackageReference Include="NetMQ" Version="4.0.0.1" />
     <PackageReference Include="StackExchange.Redis.Extensions.JilCore" Version="1.0.1" />
   </ItemGroup>
 
