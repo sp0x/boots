@@ -4,12 +4,15 @@ using Netlyt.Interfaces;
 
 namespace Donut.Lex.Expressions
 {
-    public class LambdaExpression 
-        : Expression
+    public class LambdaExpression : Expression
     {
         public List<ParameterExpression> Parameters { get; set; }
         public IEnumerable<IExpression> Body { get; private set; }
 
+        public LambdaExpression()
+        {
+
+        }
         public LambdaExpression(IEnumerable<IExpression> fBody)
         {
             Body = fBody;

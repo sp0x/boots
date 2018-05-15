@@ -13,6 +13,10 @@ namespace Donut.Lex.Expressions
         public string Name { get; private set; }
         public MemberExpression Member { get; set; }
 
+        public NameExpression()
+        {
+
+        }
         public NameExpression(string name)
         {
             this.Name = name;

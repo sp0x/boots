@@ -8,13 +8,17 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Donut;
 using Donut.Blocks;
+using Donut.Caching;
 using Donut.Data;
 using Donut.Data.Format;
 using Donut.Encoding;
 using Donut.FeatureGeneration;
 using Donut.Features;
 using Donut.IntegrationSource;
+using Donut.Lex.Data;
 using Donut.Orion;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -31,6 +35,7 @@ using Netlyt.Service.Analytics;
 using Netlyt.Service.Data;
 using Xunit;
 using Netlyt.ServiceTests.Fixtures;
+using Romanian;
 using StackExchange.Redis;
 using DataIntegration = Donut.Data.DataIntegration;
 
@@ -40,7 +45,7 @@ namespace Netlyt.ServiceTests.Netinfo
     public class NetinfoTests
     {
         public const byte VisitTypedValue = 1;
-        private DonutConfigurationFixture _config;
+        private DonutConfigurationFixture _fixture;
         //private CrossSiteAnalyticsHelper _helper;
         private IMongoCollection<IntegratedDocument> _documentStore;
         private ApiAuth _appId;
@@ -55,14 +60,17 @@ namespace Netlyt.ServiceTests.Netinfo
         private OrionContext _orion;
         private UserService _userService;
         private User _user;
+        private CompilerService _compiler;
+        private IRedisCacher _cacher;
+        private ServiceProvider _serviceProvider;
 
         public NetinfoTests(DonutConfigurationFixture fixture)
         {
-            _config = fixture;
+            _fixture = fixture;
             //_helper = new CrossSiteAnalyticsHelper();
             _documentStore = MongoHelper.GetCollection<IntegratedDocument>(typeof(IntegratedDocument).Name);
             //typeof(IntegratedDocument).GetDataSource<IntegratedDocument>().AsMongoDbQueryable(); 
-            _contextFactory = new DynamicContextFactory(() => _config.CreateContext());
+            _contextFactory = new DynamicContextFactory(() => _fixture.CreateContext());
             _apiService = fixture.GetService<ApiService>();
             _integrationService = fixture.GetService<IIntegrationService>();
             _appId = _apiService.Generate();
@@ -74,6 +82,9 @@ namespace Netlyt.ServiceTests.Netinfo
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
             _db = fixture.GetService<ManagementDbContext>();
             _orion = fixture.GetService<OrionContext>();
+            _compiler = fixture.GetService<CompilerService>();
+            _cacher = fixture.GetService<IRedisCacher>();
+            _serviceProvider = fixture.ServiceProvider;//GetService<IServiceProvider>();
             //            var orionCtx = new Mock<IOrionContext>();
             //            orionCtx.Setup(m => m.Query(It.IsAny<OrionQuery>())).ReturnsAsync(new JObject { {"id", 1} });
             //            _orion = orionCtx.Object;
@@ -84,6 +95,97 @@ namespace Netlyt.ServiceTests.Netinfo
                 _userService.CreateUser(_user, "Password-IsStrong!", _appAuth).Wait();
             }
         }
+
+        [Theory]
+        [InlineData(new object[] { "Res\\TestData\\pollution_data.csv" })]
+        public async Task TestMongoDonutJointFeaturesLong(string sourceFile)
+        {
+            var modelName = "NetinfoJoinedData";
+            IInputSource inputSource;
+            var integration = _db.Integrations
+                .Include(x=>x.Models)
+                .Include(x=>x.Fields)
+                .Include(x=>x.AggregateKeys)
+                .FirstOrDefault(x=>x.Id == 250);
+            var modId = integration.Models.FirstOrDefault()?.ModelId;
+            var model = _db.Models
+                .Include(x=> x.DonutScript)
+                .Include(x=>x.DataIntegrations)
+                .FirstOrDefault(x=>x.Id==modId);
+            //Run file integration
+            var features = @"paid
+SUM(NetinfoJoinedData_csv.event)
+SUM(NetinfoJoinedData_csv.type)
+STD(NetinfoJoinedData_csv.event)
+STD(NetinfoJoinedData_csv.type)
+MAX(NetinfoJoinedData_csv.event)
+MAX(NetinfoJoinedData_csv.type)
+SKEW(NetinfoJoinedData_csv.event)
+SKEW(NetinfoJoinedData_csv.type)
+MIN(NetinfoJoinedData_csv.event)
+MIN(NetinfoJoinedData_csv.type)
+MEAN(NetinfoJoinedData_csv.event)
+MEAN(NetinfoJoinedData_csv.type)
+COUNT(NetinfoJoinedData_csv)
+NUM_UNIQUE(NetinfoJoinedData_csv.value0)
+NUM_UNIQUE(NetinfoJoinedData_csv.value1)
+NUM_UNIQUE(NetinfoJoinedData_csv.value2)
+NUM_UNIQUE(NetinfoJoinedData_csv.value3)
+NUM_UNIQUE(NetinfoJoinedData_csv.value4)
+NUM_UNIQUE(NetinfoJoinedData_csv.value5)
+NUM_UNIQUE(NetinfoJoinedData_csv.value6)
+NUM_UNIQUE(NetinfoJoinedData_csv.value7)
+MODE(NetinfoJoinedData_csv.value0)
+MODE(NetinfoJoinedData_csv.value1)
+MODE(NetinfoJoinedData_csv.value2)
+MODE(NetinfoJoinedData_csv.value3)
+MODE(NetinfoJoinedData_csv.value4)
+MODE(NetinfoJoinedData_csv.value5)
+MODE(NetinfoJoinedData_csv.value6)
+MODE(NetinfoJoinedData_csv.value7)
+DAY(first_NetinfoJoinedData_csv_time)
+YEAR(first_NetinfoJoinedData_csv_time)
+MONTH(first_NetinfoJoinedData_csv_time)
+WEEKDAY(first_NetinfoJoinedData_csv_time)
+NUM_UNIQUE(NetinfoJoinedData_csv.DAY(ondate))
+NUM_UNIQUE(NetinfoJoinedData_csv.YEAR(ondate))
+NUM_UNIQUE(NetinfoJoinedData_csv.MONTH(ondate))
+NUM_UNIQUE(NetinfoJoinedData_csv.WEEKDAY(ondate))
+MODE(NetinfoJoinedData_csv.DAY(ondate))
+MODE(NetinfoJoinedData_csv.YEAR(ondate))
+MODE(NetinfoJoinedData_csv.MONTH(ondate))
+MODE(NetinfoJoinedData_csv.WEEKDAY(ondate))
+";
+            string[] featureBodies = features.Split('\n');
+            string donutName = $"{model.ModelName}Donut";
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.TargetAttribute, model.GetRootIntegration(), featureBodies);
+            foreach (var modelIgn in model.DataIntegrations)
+            {
+                dscript.AddIntegrations(modelIgn.Integration);
+            }
+            Type donutType, donutContextType, donutFEmitterType;
+            var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType, out donutFEmitterType);
+            Assert.NotNull(assembly);
+
+            //Create a donut and a donutRunner
+            var donutMachine = DonutGeneratorFactory.Create<IntegratedDocument>(donutType, donutContextType, integration,
+                _cacher, _serviceProvider);
+            IDonutfile donut = donutMachine.Generate();
+            donut.SetupCacheInterval(10000);
+            donut.ReplayInputOnFeatures = true;
+            var harvester = new Harvester<IntegratedDocument>(10);
+            //harvester.AddIntegration(integration, inputSource);
+
+            IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType(donutType, donutContextType, harvester, 
+                _dbConfig, integration.FeaturesCollection);
+
+            var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);
+
+            var result = await donutRunner.Run(donut, featureGenerator);
+            integration.GetMongoFeaturesCollection<BsonDocument>().Drop();
+            integration.GetMongoCollection<BsonDocument>().Drop();
+        }
+
 
         [Theory]
         [InlineData(new object[] { "TestData\\Ebag\\NewData" })]

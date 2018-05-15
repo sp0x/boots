@@ -9,11 +9,11 @@ namespace Donut.Lex.Expressions
         : Expression
     {
         public string Name { get; set; }
-        public List<IParameterExpression> Parameters { get; private set; }
+        public List<ParameterExpression> Parameters { get; private set; }
 
         public CallExpression()
         {
-            Parameters = new List<IParameterExpression>();
+            Parameters = new List<ParameterExpression>();
         }
 
         public override IEnumerable<IExpression> GetChildren() => Parameters.Cast<IExpression>();

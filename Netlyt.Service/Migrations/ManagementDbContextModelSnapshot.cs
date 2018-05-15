@@ -21,7 +21,7 @@ namespace Netlyt.Service.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
-                .HasAnnotation("ProductVersion", "2.0.1-rtm-125");
+                .HasAnnotation("ProductVersion", "2.0.3-rtm-10026");
 
             modelBuilder.Entity("Donut.AggregateKey", b =>
                 {
@@ -119,7 +119,7 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("DonutScriptContent");
 
-                    b.Property<long?>("ModelId");
+                    b.Property<long>("ModelId");
 
                     b.HasKey("Id");
 
@@ -155,6 +155,8 @@ namespace Netlyt.Service.Migrations
                     b.Property<string>("ClassifierType");
 
                     b.Property<string>("CurrentModel");
+
+                    b.Property<long?>("DonutScriptId");
 
                     b.Property<string>("HyperParams");
 
@@ -265,8 +267,7 @@ namespace Netlyt.Service.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExtrasId")
-                        .IsUnique();
+                    b.HasIndex("ExtrasId");
 
                     b.HasIndex("IntegrationId");
 
@@ -301,6 +302,8 @@ namespace Netlyt.Service.Migrations
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
+
+                    b.Property<long>("FieldId");
 
                     b.Property<bool>("IsFake");
 
@@ -642,7 +645,8 @@ namespace Netlyt.Service.Migrations
                 {
                     b.HasOne("Donut.Models.Model", "Model")
                         .WithOne("DonutScript")
-                        .HasForeignKey("Donut.DonutScriptInfo", "ModelId");
+                        .HasForeignKey("Donut.DonutScriptInfo", "ModelId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Donut.Models.FeatureGenerationTask", b =>
@@ -704,8 +708,8 @@ namespace Netlyt.Service.Migrations
             modelBuilder.Entity("Donut.Source.FieldDefinition", b =>
                 {
                     b.HasOne("Donut.Source.FieldExtras", "Extras")
-                        .WithOne("Field")
-                        .HasForeignKey("Donut.Source.FieldDefinition", "ExtrasId");
+                        .WithMany()
+                        .HasForeignKey("ExtrasId");
 
                     b.HasOne("Donut.Data.DataIntegration", "Integration")
                         .WithMany("Fields")

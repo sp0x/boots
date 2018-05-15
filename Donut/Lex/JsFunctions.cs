@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Donut.Lex.Expressions;
 using Netlyt.Interfaces;
 
 namespace Donut.Lex
@@ -20,7 +21,7 @@ namespace Donut.Lex
             Functions["if"] = "(function(condition, ifTrue, ifElse){ return condition ? (ifTrue) : (ifElse); })";
             Functions["any"] = "(function(array){ return array.length>0; })";
         }
-        public static string Resolve(string function, List<IParameterExpression> expParameters)
+        public static string Resolve(string function, List<ParameterExpression> expParameters)
         {
             string output = null;
             if (Functions.ContainsKey(function))

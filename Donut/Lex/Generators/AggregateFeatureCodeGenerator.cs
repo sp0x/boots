@@ -269,7 +269,7 @@ namespace Donut.Lex.Generators
             {
                 var groupKey = "";
                 var ignKeys = _rootIntegration.AggregateKeys;
-                if (ignKeys != null || !ignKeys.Any())
+                if (ignKeys == null || !ignKeys.Any())
                 {
                     throw new Exception("Integration has no aggregate keys!");
                 }

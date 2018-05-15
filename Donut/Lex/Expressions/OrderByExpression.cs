@@ -12,6 +12,11 @@ namespace Donut.Lex.Expressions
     {
         public IEnumerable<IExpression> ByClause { get; set; }
 
+        public OrderByExpression()
+        {
+
+        }
+
         public OrderByExpression(IEnumerable<IExpression> tree)
         {
             this.ByClause = tree;

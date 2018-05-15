@@ -17,7 +17,7 @@ namespace Donut.Data
 {
     public partial class DataIntegration : IIntegration
     {
-        private List<AggregateKey> _aggregateKeys;
+        //private List<AggregateKey> _aggregateKeys;
         public long Id { get; set; }
         public virtual ICollection<ModelIntegration> Models { get; set; }
         public User Owner { get; set; }
@@ -107,7 +107,7 @@ namespace Donut.Data
                     {
                         fieldDefinition.DataEncoding = FieldDataEncoding.BinaryIntId;
                         fieldDefinition.Extras = new FieldExtras();
-                        fieldDefinition.Extras.Field = fieldDefinition;
+                        //fieldDefinition.Extras.Field = fieldDefinition;
                     }
                     Fields.Add(fieldDefinition);
                 }

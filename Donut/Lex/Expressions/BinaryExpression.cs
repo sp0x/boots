@@ -11,6 +11,10 @@ namespace Donut.Lex.Expressions
         public IExpression Right { get; set; }
         public DslToken Token { get; private set; }
 
+        public BinaryExpression()
+        {
+
+        }
         public BinaryExpression(DslToken token)
         {
             this.Token = token;

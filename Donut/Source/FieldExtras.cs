@@ -12,9 +12,9 @@ namespace Donut.Source
         public ICollection<FieldExtra> Extra { get; set; } 
         public bool Unique { get; set; }
         public bool Nullable { get; set; }
-        [ForeignKey("Field")]
+        //[ForeignKey("Field")]
         public long FieldId { get; set; }
-        public FieldDefinition Field { get; set; }
+        //public FieldDefinition Field { get; set; }
         public bool IsFake { get; set; }
 
         public FieldExtras()

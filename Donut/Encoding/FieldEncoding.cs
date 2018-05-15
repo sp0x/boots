@@ -147,7 +147,7 @@ namespace Donut.Encoding
             }
             targetField.DataEncoding = encoding.Encoding;
             targetField.Extras = new FieldExtras();
-            targetField.Extras.Field = targetField;
+            //targetField.Extras.Field = targetField;
         }
     }
 }

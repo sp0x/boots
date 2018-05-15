@@ -4,12 +4,15 @@ using Netlyt.Interfaces;
 
 namespace Donut.Lex.Expressions
 {
-    public class UnaryExpression 
-        : Expression
+    public class UnaryExpression : Expression
     {
         public IExpression Operand { get; set; }
         public DslToken Token { get; set; }
 
+        public UnaryExpression()
+        {
+
+        }
         public UnaryExpression(DslToken token)
         {
             this.Token = token;

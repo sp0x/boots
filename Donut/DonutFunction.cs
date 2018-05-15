@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.IO;
 using System.Linq.Expressions;
 using MongoDB.Bson;
 using Netlyt.Interfaces;
 using Newtonsoft.Json;
-
+using ParameterExpression = Donut.Lex.Expressions.ParameterExpression;
 namespace Donut
 {
     public class DonutFunction : IDonutFunction
@@ -15,15 +16,28 @@ namespace Donut
         public bool IsAggregate { get; set; }
 
         [NotMapped]
-        public List<IParameterExpression> Parameters
+        public List<ParameterExpression> Parameters
         {
             get
             {
-                return _Parameters == null ? null : JsonConvert.DeserializeObject<List<IParameterExpression>>(_Parameters);
+                if (_Parameters == null) return null;
+                else
+                {
+                    var serializer = new JsonSerializer();
+                    serializer.Converters.Add(new PropertyExpressionConverter());
+                    var reader = new JsonTextReader(new StringReader(_Parameters));
+                    var output = serializer.Deserialize<List<ParameterExpression>>(reader);
+                    return output;
+                }
             }
             set
             {
-                _Parameters = JsonConvert.SerializeObject(value);
+                var serializer = new JsonSerializer();
+                serializer.Converters.Add(new PropertyExpressionConverter());
+                var tw = new StringWriter();
+                var writer = new JsonTextWriter(tw);
+                serializer.Serialize(writer, value);
+                _Parameters = tw.ToString();
             }
         }
 

@@ -39,7 +39,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         private ApiAuth _appAuth;
         private IServiceProvider _serviceProvider;
         private IDatabaseConfiguration _dbConfig;
-        private RedisCacher _cacher;
+        private IRedisCacher _cacher;
         private ManagementDbContext _db;
         private UserService _userService;
         private ModelService _modelService;
@@ -68,9 +68,9 @@ namespace Netlyt.ServiceTests.FeatureGeneration
                 _user = new User() { FirstName = "tester1231", Email = "mail@lol.co" };
                 _userService.CreateUser(_user, "Password-IsStrong!", _appAuth);
             }
-            _cacher = fixture.GetService<RedisCacher>();
-            _dbConfig = (DBConfig.GetInstance().GetGeneralDatabase()).ToDonutDbConfig();
+            _cacher = fixture.GetService<IRedisCacher>();
             _serviceProvider = fixture.ServiceProvider;//GetService<IServiceProvider>();
+            _dbConfig = (DBConfig.GetInstance().GetGeneralDatabase()).ToDonutDbConfig();
             _modelService = fixture.GetService<ModelService>();
             _timestampService = new TimestampService(_db);
             _fixture = fixture;

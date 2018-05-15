@@ -218,7 +218,7 @@ namespace Donut.IntegrationSource
                 {
                     targetField.DataEncoding = FieldDataEncoding.BinaryIntId;
                     targetField.Extras = new FieldExtras();
-                    targetField.Extras.Field = targetField;
+                    //targetField.Extras.Field = targetField;
                 }
 
                 if (ops.Duplicates.Count>0)

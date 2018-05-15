@@ -4,13 +4,15 @@ using Netlyt.Interfaces;
 
 namespace Donut.Lex.Expressions
 {
-    public class MemberExpression
-        : Expression
+    public class MemberExpression : Expression
     { 
         public IExpression ChildMember { get; set; }
         //public IExpression Parent { get; set; }
         //public TypeExpression Type { get; private set; }
+        public MemberExpression()
+        {
 
+        }
         public MemberExpression(IExpression parent)
         {
             this.Parent = parent;

@@ -254,11 +254,11 @@ namespace Donut.Lex.Generators
         {
             var rootIgn = script.GetRootIntegration();
             var ignKeys = rootIgn.AggregateKeys;
-            if (ignKeys != null || !ignKeys.Any())
+            if (ignKeys == null || !ignKeys.Any())
             {
                 throw new Exception("Integration has no aggregate keys!");
             }
-            var keys = ignKeys.Where(x=>x.Operation.Eval!=null);
+            var keys = ignKeys.Where(x=>x.Operation?.Eval!=null);
             var buffer = new StringBuilder();
             int iKey = 0;
             buffer.AppendLine($"var {keyBuffName} = new Dictionary<string, object>();");

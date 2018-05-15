@@ -66,7 +66,7 @@ namespace Donut.Lex.Generators
                 return null;
             }
             var lstParameters = Function?.Parameters?.ToList();
-            if (lstParameters == null) lstParameters = new List<IParameterExpression>();
+            if (lstParameters == null) lstParameters = new List<ParameterExpression>();
             template = DonutFunctionToMongoAggregateElement(lstParameters, template);
             return template;
         }
@@ -76,7 +76,7 @@ namespace Donut.Lex.Generators
         /// <param name="lstParameters"></param>
         /// <param name="template"></param>
         /// <returns></returns>
-        public string DonutFunctionToMongoAggregateElement(List<IParameterExpression> lstParameters, string template)
+        public string DonutFunctionToMongoAggregateElement(List<ParameterExpression> lstParameters, string template)
         {
             for (int i = 0; i < lstParameters.Count; i++)
             {

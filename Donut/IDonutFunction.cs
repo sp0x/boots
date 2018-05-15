@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using MongoDB.Bson;
+using Netlyt.Interfaces;
 
-namespace Netlyt.Interfaces
+namespace Donut
 {
     public interface IDonutFunction
     {
         IDonutFunction Clone();
-        List<IParameterExpression> Parameters { get; set; }
+        List<Donut.Lex.Expressions.ParameterExpression> Parameters { get; set; }
         bool IsAggregate { get; set; }
         DonutFunctionType Type { get; set; }
         Expression<Func<BsonValue, object>> Eval { get; set; }

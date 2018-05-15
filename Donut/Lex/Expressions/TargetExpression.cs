@@ -4,6 +4,10 @@
     {
         public string Attribute { get; set; }
 
+        public TargetExpression()
+        {
+
+        }
         public TargetExpression(string name)
         {
             Attribute = name;
