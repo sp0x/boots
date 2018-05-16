@@ -18,6 +18,7 @@ using Moq;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
@@ -46,6 +47,7 @@ namespace Netlyt.ServiceTests.Fixtures
             var services = new ServiceCollection();
             var postgresConnectionString = Config.GetConnectionString("PostgreSQLConnection");
             DbOptionsBuilder = new DbContextOptionsBuilder<ManagementDbContext>()
+                .UseLazyLoadingProxies()
                 .UseNpgsql(postgresConnectionString);
             _context = CreateContext();
             var dbConfig = DBConfig.GetInstance(Config);

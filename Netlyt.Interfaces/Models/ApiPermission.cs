@@ -1,4 +1,4 @@
-﻿namespace Netlyt.Interfaces
+﻿namespace Netlyt.Interfaces.Models
 {
     public class ApiPermission
     {

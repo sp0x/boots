@@ -12,6 +12,7 @@ using Donut.IntegrationSource;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Exceptions;
 using DataIntegration = Donut.Data.DataIntegration;

@@ -15,6 +15,7 @@ using MongoDB.Driver;
 using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.ServiceTests.Fixtures;

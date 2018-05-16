@@ -20,6 +20,7 @@ using nvoid.db.DB.Configuration;
 using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models;

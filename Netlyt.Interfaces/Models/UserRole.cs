@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace Netlyt.Interfaces
+namespace Netlyt.Interfaces.Models
 {
     public class UserRole : IdentityRole
     {

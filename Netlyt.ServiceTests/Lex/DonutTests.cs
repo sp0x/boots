@@ -17,6 +17,7 @@ using nvoid.db.DB.MongoDB;
 using nvoid.db.Extensions;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Time;

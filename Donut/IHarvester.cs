@@ -7,6 +7,7 @@ using System.Threading.Tasks.Dataflow;
 using Donut.Integration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Blocks;
+using Netlyt.Interfaces.Models;
 
 namespace Donut
 {

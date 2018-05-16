@@ -15,8 +15,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Netlyt.Service.Migrations
 {
     [DbContext(typeof(ManagementDbContext))]
-    [Migration("20180515051357_ModelOptionalDonutScriptId")]
-    partial class ModelOptionalDonutScriptId
+    [Migration("20180515202641_AggregateKeyOp")]
+    partial class AggregateKeyOp
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -36,7 +36,7 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Name");
 
-                    b.Property<long?>("OperationId");
+                    b.Property<long>("OperationId");
 
                     b.HasKey("Id");
 
@@ -624,7 +624,8 @@ namespace Netlyt.Service.Migrations
 
                     b.HasOne("Donut.DonutFunction", "Operation")
                         .WithMany()
-                        .HasForeignKey("OperationId");
+                        .HasForeignKey("OperationId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Donut.Data.DataIntegration", b =>

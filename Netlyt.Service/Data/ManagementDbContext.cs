@@ -4,6 +4,7 @@ using Donut.Source;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service.Data
@@ -27,6 +28,7 @@ namespace Netlyt.Service.Data
         public ManagementDbContext(DbContextOptions<ManagementDbContext> options)
             : base(options)
         {
+            
             //Console.WriteLine("Initialized context with options: " + options.ToString());
         }
 
@@ -41,6 +43,8 @@ namespace Netlyt.Service.Data
             builder.Entity<ModelRule>().HasKey(t => new {t.ModelId, t.RuleId});
             builder.Entity<ModelIntegration>().HasKey(t => new {t.ModelId, t.IntegrationId});
             builder.Entity<ApiUser>().HasKey(t => new {t.ApiId, t.UserId});
+            builder.Entity<AggregateKey>()
+                .HasOne(x => x.Operation);
             builder.Entity<DonutFunction>()
                 .Property(x => x._Parameters).HasColumnName("Parameters");
             base.OnModelCreating(builder);

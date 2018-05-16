@@ -8,6 +8,7 @@ using Donut.Data.Format;
 using Donut.Integration;
 using Donut.IntegrationSource;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 
 namespace Donut
 {

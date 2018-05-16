@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Bogus;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service.Models;
 
 namespace Netlyt.Service.Analytics

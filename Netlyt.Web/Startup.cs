@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using AutoMapper;
 using Donut;
-using Donut.Caching;
 using Donut.Orion;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -12,17 +10,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDB.Driver.Core.Operations;
-using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
-using nvoid.db.DB.MongoDB;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Donut;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
@@ -86,6 +79,7 @@ namespace Netlyt.Web
             services.AddDbContext<ManagementDbContext>(options =>
                 {
                     options.UseNpgsql(postgresConnectionString);
+                    options.UseLazyLoadingProxies();
                 }
             );
             //services.AddScoped<IDataAccessProvider, DataAccessPostgreSqlProvider.DataAccessPostgreSqlProvider>();

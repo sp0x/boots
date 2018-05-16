@@ -13,6 +13,7 @@ using MongoDB.Driver;
 using nvoid.db;
 using nvoid.db.Extensions;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;

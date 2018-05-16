@@ -12,7 +12,7 @@ namespace Donut
         public string DonutScriptContent { get; set; }
         [ForeignKey("Model")]
         public long ModelId { get; set; }
-        public Model Model { get; set; }
+        public virtual Model Model { get; set; }
 
         public DonutScriptInfo()
         {

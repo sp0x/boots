@@ -14,6 +14,7 @@ namespace Donut
         public long Id { get; set; }
         public string Name { get; set; }
         public bool IsAggregate { get; set; }
+        public virtual AggregateKey AggregateKey { get; set; }
 
         [NotMapped]
         public List<ParameterExpression> Parameters

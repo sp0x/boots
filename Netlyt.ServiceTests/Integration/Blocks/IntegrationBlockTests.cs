@@ -16,6 +16,7 @@ using MongoDB.Driver;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Blocks;
 using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.ServiceTests.Fixtures;

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Donut.Data;
 using Donut.Lex.Generators;
 using MongoDB.Bson;
@@ -14,7 +16,10 @@ namespace Donut
     {
         public long Id { get; set; }
         public string Name { get; set; }
-        public DonutFunction Operation { get; set; }
+        [ForeignKey("Operation")]
+        public long OperationId { get; set; }
+        [Required]
+        public virtual DonutFunction Operation { get; set; }
         public string Arguments { get; set; }
         public AggregateKey() { }
         public AggregateKey(string name, string fn, string argumments)

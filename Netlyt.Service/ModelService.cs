@@ -10,6 +10,7 @@ using Donut.Orion;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models;
 using DataIntegration = Donut.Data.DataIntegration;

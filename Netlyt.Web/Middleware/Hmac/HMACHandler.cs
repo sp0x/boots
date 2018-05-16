@@ -17,6 +17,7 @@ using nvoid.db;
 using nvoid.db.Extensions;
 using nvoid.Integration;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 
 namespace Netlyt.Web.Middleware.Hmac

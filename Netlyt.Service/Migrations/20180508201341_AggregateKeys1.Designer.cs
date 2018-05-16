@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.ValueGeneration;
 using Netlyt.Interfaces;
 using Netlyt.Service.Data;
 using System;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 
 namespace Netlyt.Service.Migrations

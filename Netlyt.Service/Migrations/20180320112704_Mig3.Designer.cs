@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore.ValueGeneration;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models;
 using System;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 
 namespace Netlyt.Service.Migrations

@@ -11,7 +11,7 @@ namespace Donut.Models
         public long Id { get; set; }
         [ForeignKey("Model")]
         public long ModelId { get; set; }
-        public Donut.Models.Model Model { get; set; }
+        public virtual Donut.Models.Model Model { get; set; }
         public DateTime TrainedTs { get; set; }
         public double Accuracy { get; set; }
         public string FeatureImportance { get; set; }

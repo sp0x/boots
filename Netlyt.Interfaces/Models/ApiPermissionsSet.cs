@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Netlyt.Interfaces
+namespace Netlyt.Interfaces.Models
 {
     public class ApiPermissionsSet
     {
         public long Id { get; set; }
-        public ICollection<ApiPermission> Required { get; set; }
+        public virtual ICollection<ApiPermission> Required { get; set; }
         public string Type { get; set; }
 
         public ApiPermissionsSet()

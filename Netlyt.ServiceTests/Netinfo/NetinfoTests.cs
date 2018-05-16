@@ -30,6 +30,7 @@ using nvoid.extensions;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Batching;
 using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Analytics;
 using Netlyt.Service.Data;
@@ -107,6 +108,8 @@ namespace Netlyt.ServiceTests.Netinfo
                 .Include(x=>x.Fields)
                 .Include(x=>x.AggregateKeys)
                 .FirstOrDefault(x=>x.Id == 250);
+
+            var ops = integration.AggregateKeys.Select(x =>  x.Operation ).ToList();
             var modId = integration.Models.FirstOrDefault()?.ModelId;
             var model = _db.Models
                 .Include(x=> x.DonutScript)

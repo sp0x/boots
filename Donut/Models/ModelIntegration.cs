@@ -5,9 +5,9 @@ namespace Donut.Models
     public class ModelIntegration
     { 
         public long ModelId { get; set; }
-        public Donut.Models.Model Model { get; set; } 
+        public virtual Donut.Models.Model Model { get; set; } 
         public long IntegrationId { get; set; }
-        public Data.DataIntegration Integration { get; set; }
+        public virtual Data.DataIntegration Integration { get; set; }
 
         public ModelIntegration()
         {

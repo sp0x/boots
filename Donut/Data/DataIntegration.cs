@@ -9,6 +9,7 @@ using Donut.Models;
 using Donut.Source;
 using Dynamitey;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service.Integration;
 
 //using Netlyt.Service.Ml; 
@@ -20,7 +21,7 @@ namespace Donut.Data
         //private List<AggregateKey> _aggregateKeys;
         public long Id { get; set; }
         public virtual ICollection<ModelIntegration> Models { get; set; }
-        public User Owner { get; set; }
+        public virtual User Owner { get; set; }
         public string FeatureScript { get; set; }
         public string Name { get; set; }
         public int DataEncoding { get; set; }
@@ -50,8 +51,8 @@ namespace Donut.Data
         public string DataTimestampColumn { get; set; }
         public string FeaturesCollection { get; set; }
 
-        public ICollection<FieldDefinition> Fields { get; set; }
-        public ICollection<IntegrationExtra> Extras { get; set; }
+        public virtual ICollection<FieldDefinition> Fields { get; set; }
+        public virtual ICollection<IntegrationExtra> Extras { get; set; }
 
         public static DataIntegration Empty { get; set; } = new DataIntegration("Empty");
 
@@ -64,6 +65,18 @@ namespace Donut.Data
             AggregateKeys = new HashSet<AggregateKey>();
             this.PublicKey = ApiAuth.Generate();
         }
+
+        public DataIntegration(ICollection<FieldDefinition> fields, ICollection<ModelIntegration> models, 
+            ICollection<IntegrationExtra> extras,
+            ICollection<AggregateKey> aggregatekeys)
+        {
+            Fields = fields ?? new HashSet<FieldDefinition>(new FieldDefinitionComparer());
+            Models = models ?? new HashSet<ModelIntegration>();
+            Extras = extras ?? new HashSet<IntegrationExtra>();
+            AggregateKeys = aggregatekeys ?? new HashSet<AggregateKey>();
+            this.PublicKey = ApiAuth.Generate();
+        }
+
         public DataIntegration(string name, bool generateCollections = false)
             : this()
         {

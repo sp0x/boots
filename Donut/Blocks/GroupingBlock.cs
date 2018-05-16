@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Blocks;
+using Netlyt.Interfaces.Models;
 
 namespace Donut.Blocks
 {

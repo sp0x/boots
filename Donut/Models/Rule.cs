@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 
 namespace Donut.Models
 {
@@ -11,8 +12,8 @@ namespace Donut.Models
         public long Id { get; set; }
         public string RuleName { get; set; }
         public string Type { get; set; }
-        public List<Donut.Models.ModelRule> Models { get; set; }
-        public User Owner { get; set; }
+        public virtual ICollection<Donut.Models.ModelRule> Models { get; set; }
+        public virtual User Owner { get; set; }
         public bool IsActive { get; set; }
 
     }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 
-namespace Netlyt.Interfaces
+namespace Netlyt.Interfaces.Models
 {
     /// <summary>
     /// Represents a universal API OAuth object, holding authentication tokens.
@@ -30,7 +30,7 @@ namespace Netlyt.Interfaces
         /// <summary>
         /// 
         /// </summary>
-        public ICollection<ApiPermissionsSet> Permissions { get; set; }
+        public virtual ICollection<ApiPermissionsSet> Permissions { get; set; }
 
 
         public ApiAuth()

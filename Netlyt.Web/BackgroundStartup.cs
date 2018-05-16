@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;

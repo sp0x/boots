@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using Donut.Models;
 using Netlyt.Interfaces;
-namespace Donut
+
+namespace Donut.Models
 {
     public class TrainingTask
     {
@@ -9,7 +9,7 @@ namespace Donut
         //public string OrionTaskId { get; set; }
         [ForeignKey("Model")]
         public long ModelId { get; set; }
-        public Model Model { get; set; }
+        public virtual Model Model { get; set; }
         public TrainingTaskStatus Status { get; set; }
     }
 }

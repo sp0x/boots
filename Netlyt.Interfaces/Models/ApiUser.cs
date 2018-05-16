@@ -1,11 +1,13 @@
+using Netlyt.Interfaces.Models;
+
 namespace Netlyt.Interfaces
 {
     public class ApiUser
     {
         public string UserId { get; set; }
-        public User User { get; set; }
+        public virtual User User { get; set; }
         public long ApiId { get; set; }
-        public ApiAuth Api { get; set; }
+        public virtual ApiAuth Api { get; set; }
 
         public ApiUser()
         {

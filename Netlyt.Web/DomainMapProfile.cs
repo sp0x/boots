@@ -3,6 +3,7 @@ using Donut;
 using Donut.Models;
 using Donut.Source;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Web.ViewModels;
 using DataIntegration = Donut.Data.DataIntegration;
 

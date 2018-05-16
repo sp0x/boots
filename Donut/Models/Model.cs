@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq; 
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 
 namespace Donut.Models
 {
@@ -10,15 +11,15 @@ namespace Donut.Models
         public long Id { get; set; }
         [ForeignKey("User")]
         public string UserId { get; set; }
-        public User User { get; set; }
-        public ModelTrainingPerformance Performance { get; set; }
+        public virtual User User { get; set; }
+        public virtual ModelTrainingPerformance Performance { get; set; }
         public virtual ICollection<ModelIntegration> DataIntegrations { get; set; }
         public virtual ICollection<ModelRule> Rules { get; set; }
         public virtual ICollection<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
         public virtual ICollection<TrainingTask> TrainingTasks { get; set; }
-        //[ForeignKey("DonutScript")]
+        [ForeignKey("DonutScript")]
         public long? DonutScriptId { get; set; }
-        public DonutScriptInfo DonutScript {get; set;}
+        public virtual DonutScriptInfo DonutScript {get; set;}
 
         public string ModelName { get; set; }
         /// <summary>

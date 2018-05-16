@@ -4,6 +4,7 @@ using Donut;
 using Donut.Models;
 using nvoid.DB;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 
 namespace Netlyt.Web.Models
 {

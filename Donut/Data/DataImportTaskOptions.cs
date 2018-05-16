@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 
 namespace Donut.Data
 {

@@ -17,6 +17,7 @@ using nvoid.Integration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Batching;
 using Netlyt.Interfaces.Blocks;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Integration;

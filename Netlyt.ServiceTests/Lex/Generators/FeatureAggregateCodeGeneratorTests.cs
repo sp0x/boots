@@ -13,6 +13,7 @@ using nvoid.Crypto;
 using nvoid.db.Caching;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.ServiceTests.Fixtures;
