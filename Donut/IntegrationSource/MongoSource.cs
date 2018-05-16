@@ -22,7 +22,7 @@ namespace Donut.IntegrationSource
             return source;
         }
     }
-    public class MongoSource<T> : Donut.IntegrationSource.InputSource where T : class
+    public class MongoSource<T> : InputSource where T : class
     {
         private IMongoCollection<BsonDocument> _collection;
         private T _cachedInstance;
@@ -145,6 +145,7 @@ namespace Donut.IntegrationSource
                     throw new Exception("Formatter could not be used with the given type!");
                 }
                 IEnumerable<T> formatterIterator = bsonFormatter?.GetIterator(_cursorSource, resetNeeded);
+                formatterIterator = base.GetIterator<T>(formatterIterator);
                 foreach (var formattedItem in formatterIterator)
                 {
                     var item = formattedItem; 

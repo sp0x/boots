@@ -107,6 +107,11 @@ namespace Donut.Encoding
             }
         }
 
+        public override IEnumerable<KeyValuePair<string, int>> GetDecodedFieldpairs(FieldDefinition field, BsonDocument document)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public override IEnumerable<string> GetEncodedFieldNames(IFieldDefinition fld)
         {
             if (fld.Extras == null)

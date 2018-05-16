@@ -199,7 +199,7 @@ namespace Netlyt.Service.Donut
             donut.SetupCacheInterval(source.Size);
             donut.ReplayInputOnFeatures = true;
             donut.SkipFeatureExtraction = true;
-            IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType<IntegratedDocument>(donutType, donutContextType,
+            IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType<IntegratedDocument, IntegratedDocument>(donutType, donutContextType,
                 harvester, _dbConfig, sourceIntegration.FeaturesCollection);
             var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);
 

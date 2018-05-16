@@ -129,6 +129,22 @@ namespace Donut.Encoding
             }
         }
 
+        public IEnumerable<KeyValuePair<string, int>> GetFieldpairs(BsonDocument document)
+        {
+            foreach (var field in TargetFields)
+            {
+                if (!document.Contains(field.Name)) continue;
+                var pairs = GetDecodedFieldpairs(field, document);
+                foreach (var pair in pairs)
+                {
+                    yield return pair;
+                }
+            }
+        }
+
+        public abstract IEnumerable<KeyValuePair<string, int>> GetDecodedFieldpairs(FieldDefinition field,
+            BsonDocument document);
+
         public virtual IEnumerable<string> GetEncodedFieldNames(IFieldDefinition fld)
         {
             yield break;

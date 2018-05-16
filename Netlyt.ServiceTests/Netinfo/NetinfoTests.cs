@@ -102,14 +102,12 @@ namespace Netlyt.ServiceTests.Netinfo
         public async Task TestMongoDonutJointFeaturesLong(string sourceFile)
         {
             var modelName = "NetinfoJoinedData";
-            IInputSource inputSource;
             var integration = _db.Integrations
                 .Include(x=>x.Models)
                 .Include(x=>x.Fields)
+                .Include(x=>x.APIKey)
                 .Include(x=>x.AggregateKeys)
                 .FirstOrDefault(x=>x.Id == 250);
-
-            var ops = integration.AggregateKeys.Select(x =>  x.Operation ).ToList();
             var modId = integration.Models.FirstOrDefault()?.ModelId;
             var model = _db.Models
                 .Include(x=> x.DonutScript)
@@ -175,12 +173,12 @@ MODE(NetinfoJoinedData_csv.WEEKDAY(ondate))
                 _cacher, _serviceProvider);
             IDonutfile donut = donutMachine.Generate();
             donut.SetupCacheInterval(10000);
-            donut.ReplayInputOnFeatures = true;
+            donut.ReplayInputOnFeatures = false;
             var harvester = new Harvester<IntegratedDocument>(10);
-            //harvester.AddIntegration(integration, inputSource);
+            harvester.AddIntegration(integration, integration.GetCollectionSource());
 
-            IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType(donutType, donutContextType, harvester, 
-                _dbConfig, integration.FeaturesCollection);
+            IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType(donutType,
+                donutContextType, harvester, _dbConfig, integration.FeaturesCollection);
 
             var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);
 

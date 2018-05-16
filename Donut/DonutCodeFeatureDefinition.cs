@@ -11,6 +11,12 @@ namespace Donut
         public string PrepareScript { get; set; }
 
         public string ExtractionScript { get; set; }
+
+        public static DonutCodeFeatureDefinition Empty { get; set; } = new DonutCodeFeatureDefinition()
+        {
+
+        };
+
         public string GetValue()
         {
             return PrepareScript;

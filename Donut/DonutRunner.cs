@@ -32,7 +32,7 @@ namespace Donut
         /// 
         /// </summary>
         /// <param name="harvester"></param>
-        /// <param name="collection"></param>
+        /// <param name="db"></param>
         /// <param name="featuresCollection"></param>
         public DonutRunner(
             Harvester<TData> harvester,
@@ -48,9 +48,11 @@ namespace Donut
             _featuresCollection = MongoHelper.GetCollection(db.Value);
         }
 
-        public async Task<IHarvesterResult> Run(IDonutfile donut, IFeatureGenerator<TData> featureGenerator) => await Run(donut as TDonut, featureGenerator);
+        public async Task<IHarvesterResult> Run(IDonutfile donut, IFeatureGenerator<TData> featureGenerator) 
+            => await Run(donut as TDonut, featureGenerator);
+
         /// <summary>
-        /// 
+        /// Runs the donut.
         /// </summary>
         /// <param name="donut"></param>
         /// <param name="getFeatureGenerator"></param>
@@ -58,6 +60,7 @@ namespace Donut
         public async Task<IHarvesterResult> Run(TDonut donut, IFeatureGenerator<TData> getFeatureGenerator)
         {
             var integration = donut.Context.Integration;
+            //Create our destination block
             var donutBlock = donut.CreateDataflowBlock(getFeatureGenerator);
             var dataProcessingBlock = donutBlock.FlowBlock;
             _featuresBlock = donutBlock.FeaturePropagator;
@@ -114,7 +117,7 @@ namespace Donut
             }
             if (donut.ReplayInputOnFeatures && !donut.SkipFeatureExtraction)
             {
-                var featuresFlow = new InternalFlowBlock<TData, FeaturesWrapper<TData>>
+                var featuresFlow = new TransformFlowBlock<TData, FeaturesWrapper<TData>>
                     (_featuresBlock);
                 _harvester.Reset();
                 _harvester.SetDestination(featuresFlow);

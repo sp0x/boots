@@ -46,6 +46,10 @@ namespace Donut.Features
                 FeatureFunctions.Enqueue(donutFn);
                 var codeContext = new DonutCodeContext(_script);
                 var donutFeatureDefinition = fnTemplate.GetTemplate(exp, codeContext);
+                if (donutFeatureDefinition == DonutCodeFeatureDefinition.Empty)
+                {
+                    return null;
+                }
                 //result = donutFeatureDefinition.ToString();
                 donutFn.Content = donutFeatureDefinition;
                 resultObj = donutFn;

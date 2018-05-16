@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Donut.Blocks;
 using Donut.Caching;
+using Donut.Encoding;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Blocks;
 
 namespace Donut
 {
@@ -65,21 +68,20 @@ namespace Donut
         public abstract void ProcessRecord(TData intDoc);
 
         /// <summary>
-        /// 
+        /// Creates a dataflow block encapsulating raw integrated document reading -> feature extraction.
         /// </summary>
         /// <returns></returns>
         public IDonutBlock<TData> CreateDataflowBlock(IFeatureGenerator<TData> featureGen)
         {
             var featuresBlock = featureGen.CreateFeaturesBlock();
             var metaBlock = new MemberVisitingBlock<TData>(ProcessRecord);
-            //metaBlock.ContinueWith(RunFeatureExtraction);
-            //_featuresBlock.LinkTo(insertCreator, new DataflowLinkOptions { PropagateCompletion = true });
-            //insertCreator.LinkTo(insertBatcher.BatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            //metaBlock.AddCompletionTask(featuresBlock.Completion);
-            //var metaBlockInternal = metaBlock.GetInputBlock();
-            //Encapsulate our input and features block, so they're usable.
-            //var resultingBlock = DataflowBlock.Encapsulate<IntegratedDocument, FeaturesWrapper<IntegratedDocument>>(metaBlockInternal, featuresBlock);
-            return new DonutBlock<TData>(metaBlock, featuresBlock);
+            var decodeBlock = new TransformFlowBlock<TData, TData>(new TransformBlock<TData, TData>(f =>
+            {
+                Context.DecodeFields(f);
+                return f;
+            }));
+            decodeBlock.LinkTo(metaBlock.GetInputBlock());
+            return new DonutBlock<TData>(decodeBlock, featuresBlock);
         }
 
         public void Complete()

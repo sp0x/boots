@@ -4,7 +4,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using Donut.Data.Format;
 using Donut.Integration;
+using Donut.IntegrationSource;
 using Donut.Models;
 using Donut.Source;
 using Dynamitey;
@@ -169,7 +171,7 @@ namespace Donut.Data
             var doc = new IntegratedDocument();
             doc.SetDocument(data);
             doc.IntegrationId = Id;
-            doc.APIId = this.APIKey.Id;
+            if(this.APIKey!=null) doc.APIId = this.APIKey.Id;
             return doc;
         }
 
@@ -195,6 +197,17 @@ namespace Donut.Data
         public static DataIntegration Wrap(IIntegration ign)
         {
             return ign as DataIntegration;
+        }
+
+        /// <summary>
+        /// Gets the collection of the integration as a source.
+        /// </summary>
+        /// <returns></returns>
+        public IInputSource GetCollectionSource()
+        {
+            var inputFormatter = new BsonFormatter<ExpandoObject>();
+            var mongoSource = MongoSource.CreateFromCollection(Collection, inputFormatter);
+            return mongoSource;
         }
     }
 

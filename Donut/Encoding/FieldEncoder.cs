@@ -43,6 +43,29 @@ namespace Donut.Encoding
                 encoding.Apply(doc);
             }
         }
+        public void Apply<TData>(TData doc) where TData : class, IIntegratedDocument
+        {
+            var internalDoc = doc.Document?.Value;
+            if (internalDoc == null) return;
+            foreach (var encoding in _encoders)
+            {
+                encoding.Apply(internalDoc);
+            }
+        }
+
+        public IEnumerable<KeyValuePair<string, int>> GetFieldpairs<TData>(TData doc) where TData : class, IIntegratedDocument
+        {
+            var internalDoc = doc.Document?.Value;
+            if (internalDoc == null) yield break;
+            foreach (var encoding in _encoders)
+            {
+                var fields = encoding.GetFieldpairs(internalDoc).ToList();
+                foreach (var field in fields)
+                {
+                    yield return field;
+                }
+            }
+        }
 
         public async Task ApplyToAllFields(IMongoCollection<BsonDocument> collection, CancellationToken? ct)
         {
@@ -52,5 +75,6 @@ namespace Donut.Encoding
                 if (ct != null && ct.Value.IsCancellationRequested) break;
             }
         }
+
     }
 }

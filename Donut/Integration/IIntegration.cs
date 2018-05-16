@@ -36,5 +36,6 @@ namespace Donut.Integration
         /// </summary>
         /// <returns></returns>
         string GetReducedCollectionName();
+        
     }
 }

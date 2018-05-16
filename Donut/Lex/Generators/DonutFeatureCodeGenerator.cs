@@ -79,6 +79,7 @@ namespace Donut.Lex.Generators
             var extractBuff = new StringBuilder();
             foreach (var fn in _functions)
             {
+                if (fn == null) continue;
                 if (fn is IDonutTemplateFunction<string>)
                 {
                     var value = fn.GetValue();
@@ -87,6 +88,7 @@ namespace Donut.Lex.Generators
                 else if(fn is IDonutTemplateFunction<DonutCodeFeatureDefinition> codeFn)
                 {
                     var content = codeFn.Content as DonutCodeFeatureDefinition;
+                    if (content == null) continue;
                     prepareBuff.AppendLine(content.PrepareScript);
                     extractBuff.AppendLine(content.ExtractionScript);
                 }

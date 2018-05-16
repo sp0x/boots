@@ -401,6 +401,7 @@ namespace Donut
                                     {
                                         valueToSend = entry as TDocument; //Or deserialize it in some way
                                     }
+
                                     Task<bool> sendTask = null;
                                     if (Destination == null)
                                     {

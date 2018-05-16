@@ -33,7 +33,7 @@ namespace Donut.Data
                 typedef.DataFormatType = "dynamic";
                 typedef.DataEncoding = System.Text.Encoding.Default.CodePage;
                 var properties = type.GetProperties();
-                //var fields = type.GetFields(); 
+                //var fields = type.GetFieldpairs(); 
                 foreach (var member in properties)
                 {
                     Type memberType = member.PropertyType;

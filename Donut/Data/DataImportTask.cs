@@ -137,6 +137,10 @@ namespace Donut.Data
             return output;
         }
 
+        /// <summary>
+        /// Applies encoding to a single imported documment.
+        /// </summary>
+        /// <param name="doc"></param>
         private void EncodeImportDocument(BsonDocument doc)
         {
             _encoder.Apply(doc);
@@ -165,7 +169,12 @@ namespace Donut.Data
             var collection = MongoHelper.GetCollection(OutputDestinationCollection.OutputCollection);
             await collection.MapReduceAsync<BsonDocument>(script.Map, script.Reduce, mapReduceOptions);
         }
-
+        /// <summary>
+        /// Encodes a collection
+        /// </summary>
+        /// <param name="collection"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         public async Task Encode(IMongoCollection<BsonDocument> collection, CancellationToken? ct = null)
         {
             if (ct == null) ct = CancellationToken.None;

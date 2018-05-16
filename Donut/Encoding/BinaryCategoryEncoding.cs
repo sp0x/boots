@@ -114,6 +114,18 @@ namespace Donut.Encoding
             return Integration;
         }
 
+        public override IEnumerable<KeyValuePair<string, int>> GetDecodedFieldpairs(FieldDefinition field, BsonDocument document)
+        {
+            var fieldValue = document[field.Name].ToString();
+            fieldValue = fieldValue.Substring(1);
+            for (var i = 0; i < fieldValue.Length; i++)
+            {
+                var vfldVal = fieldValue[i].ToString();
+                var vfldName = field.Name + i;
+                yield return new KeyValuePair<string, int>(vfldName, int.Parse(vfldVal));
+            }
+        }
+
         public override IEnumerable<string> GetEncodedFieldNames(IFieldDefinition fld)
         {
             yield return fld.Name;

@@ -74,6 +74,11 @@ namespace Donut.Encoding
             throw new System.NotImplementedException();
         }
 
+        public override IEnumerable<KeyValuePair<string, int>> GetDecodedFieldpairs(FieldDefinition field, BsonDocument document)
+        {
+            yield return new KeyValuePair<string, int>(field.Name, document[field.Name].AsInt32);
+        }
+
         public override IEnumerable<string> GetEncodedFieldNames(IFieldDefinition fld)
         {
             yield return fld.Name;

@@ -72,6 +72,11 @@ namespace Donut
 
         public Expression GetEvalBody()
         {
+            if (Eval == null)
+            {
+                var df = new DonutFunctions().GetFunction(this.Name);
+                if (df != null) Eval = df.Eval;
+            }
             if (Eval == null) return null;
             UnaryExpression bd = Eval.Body as UnaryExpression;
             return bd.Operand;
@@ -88,8 +93,8 @@ namespace Donut
 
         public string GetCallCode(string varName)
         {
-            if (Eval == null) return null;
             var body = GetEvalBody();
+            if (body == null) return null;
             var paramX = Expression.Parameter(typeof(BsonValue), "x");
             var lambda = Expression.Lambda(body, paramX);
             var outType = body.Type.ToString();

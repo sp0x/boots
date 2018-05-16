@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Linq;
 using Donut.Caching;
 using Donut.Data;
+using Donut.Encoding;
 using Donut.Integration;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
@@ -31,6 +33,7 @@ namespace Donut
         public IRedisCacher Database => _cacher;
         private int _currentCacheRunIndex;
         private CachingPersistеnceService _cachingService;
+        private FieldEncoder _encoder;
 
         /// <summary>
         /// The entity interval on which to cache the values.
@@ -50,6 +53,7 @@ namespace Donut
             _cachingService = new CachingPersistеnceService(this);
             if (integration != null && !string.IsNullOrEmpty(integration.FeaturesCollection))
             {
+                _encoder = FieldEncoder.Factory.Create(Integration);
 //                var dbConfig = DBConfig.GetGeneralDatabase();
 //                var mongoList = new MongoList(dbConfig, integration.FeaturesCollection);//Make sure the collection exists
 //                var murlBuilder = new MongoUrlBuilder("");
@@ -57,11 +61,22 @@ namespace Donut
 //                var murl = murlBuilder.ToMongoUrl();
 //                var connection = new MongoClient(murl);
 //                var database = connection.GetDatabase("");
-                IMongoDatabase db = MongoHelper.GetDatabase();
-                db.CreateCollection(integration.FeaturesCollection);
+//IMongoDatabase db = MongoHelper.GetDatabase();
+//db.CreateCollection(integration.FeaturesCollection);
             }
         }
 
+        public virtual void DecodeFields<TData>(TData f) where TData : class, IIntegratedDocument
+        {
+            var internalDoc = f.Document?.Value;
+            if (internalDoc == null) return;
+            var fields = _encoder.GetFieldpairs(f).ToList();
+            foreach (var field in fields)
+            {
+                internalDoc[field.Key] = field.Value;
+            }
+        }
+         
         /// <summary>
         /// Saves a group
         /// </summary>

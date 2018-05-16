@@ -258,11 +258,11 @@ namespace Donut.Lex.Generators
             {
                 throw new Exception("Integration has no aggregate keys!");
             }
-            var keys = ignKeys.Where(x=>x.Operation?.Eval!=null);
-            if (keys == null || !keys.Any())
-            {
-                throw new Exception("Integration has no evaluable aggregate keys!");
-            }
+            var keys = ignKeys.Where(x=>x.Operation!=null);
+//            if (keys == null || !keys.Any())
+//            {
+//                throw new Exception("Integration has no evaluable aggregate keys!");
+//            }
             var buffer = new StringBuilder();
             int iKey = 0;
             buffer.AppendLine($"var {keyBuffName} = new Dictionary<string, object>();");

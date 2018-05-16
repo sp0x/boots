@@ -26,6 +26,10 @@ namespace Donut
             var expVisitor = new DonutFeatureGeneratingExpressionVisitor(ctx.Script);
             var callParam = exp.Parameters.FirstOrDefault();
             var parameterTarget = expVisitor.Visit(callParam);
+            if (parameterTarget.ToString() == "document[\"\"]")
+            {
+                return DonutCodeFeatureDefinition.Empty;
+            }
             var buffGather = new StringBuilder();
             var buffExtract = new StringBuilder();
             var paramHash = HashAlgos.Adler32(callParam.ToString());
