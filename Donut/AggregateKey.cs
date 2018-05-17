@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using Donut.Data;
 using Donut.Lex.Generators;
 using MongoDB.Bson;
@@ -26,7 +27,7 @@ namespace Donut
         {
             this.Name = name;
             this.Arguments = argumments;
-            if (fn != null)
+            if (!String.IsNullOrEmpty(fn))
             {
                 var fns = (new DonutFunctions());
                 Operation = DonutFunction.Wrap(fns.GetFunction(fn));
@@ -46,6 +47,7 @@ namespace Donut
                 return Operation.EvalValue(bsonDocument);
             }catch(Exception ex)
             {
+                Trace.WriteLine(ex.Message);
                 return null;
             }
         }

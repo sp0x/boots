@@ -130,6 +130,7 @@ namespace Netlyt.Service.Donut
                 .Include(x => x.Models)
                 .Include(x => x.Owner)
                 .Include(x => x.PublicKey)
+                .Include(x=>x.AggregateKeys)
                 .FirstOrDefault(x => x.Id == modelIntegration.IntegrationId);
             if (sourceIntegration == null)
             {
@@ -147,6 +148,7 @@ namespace Netlyt.Service.Donut
                         .Include(x => x.Fields)
                         .Include(x => x.Extras)
                         .Include(x => x.APIKey)
+                        .Include(x=>x.AggregateKeys)
                         .Include(x => x.PublicKey)
                         .FirstOrDefault(x => x.Id == integration.IntegrationId);
                     dscript.AddIntegrations(ign);
@@ -184,21 +186,22 @@ namespace Netlyt.Service.Donut
                 .Include(x => x.Extras)
                 .Include(x => x.Models)
                 .Include(x => x.APIKey)
+                .Include(x=>x.AggregateKeys)
                 .FirstOrDefault(x => x.Id == sourceIntegration.Id);
             var appAuth = sourceIntegration.APIKey;
             if (appAuth == null) appAuth = sourceIntegration.PublicKey;
 
             var collectioName = sourceIntegration.Collection;
-            MongoSource<ExpandoObject> source = MongoSource.CreateFromCollection(collectioName, new BsonFormatter<ExpandoObject>());
+            IInputSource source = sourceIntegration.GetCollectionSource();
             //source.ProgressInterval = 0.05;
             var harvester = new Harvester<IntegratedDocument>(10);
             //Create a donut and a donutRunner
             var donutMachine = DonutGeneratorFactory.Create<IntegratedDocument>(donutType, donutContextType, sourceIntegration, _cacher, _serviceProvider);
-            harvester.AddIntegrationSource(source, sourceIntegration);//source, appAuth, "SomeIntegrationName3");
+            harvester.AddIntegration(sourceIntegration, source);//source, appAuth, "SomeIntegrationName3");
             IDonutfile donut = donutMachine.Generate();
             donut.SetupCacheInterval(source.Size);
-            donut.ReplayInputOnFeatures = true;
-            donut.SkipFeatureExtraction = true;
+            donut.ReplayInputOnFeatures = false;
+            //donut.SkipFeatureExtraction = true;
             IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType<IntegratedDocument, IntegratedDocument>(donutType, donutContextType,
                 harvester, _dbConfig, sourceIntegration.FeaturesCollection);
             var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);

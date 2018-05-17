@@ -198,7 +198,14 @@ namespace Netlyt.Web
             using (var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
             {
                 var managementDbContext = scope.ServiceProvider.GetRequiredService<ManagementDbContext>();
-                managementDbContext.Database.Migrate();
+                try
+                {
+                    managementDbContext.Database.Migrate();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Migration failed: " + ex.Message);
+                }
             }
         }
 

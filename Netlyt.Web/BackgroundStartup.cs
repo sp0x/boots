@@ -29,6 +29,7 @@ namespace Netlyt.Web
             var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection");
             services.AddDbContext<ManagementDbContext>(options =>
                 {
+                    options.UseLazyLoadingProxies();
                     options.UseNpgsql(postgresConnectionString);
                 }
             );
@@ -56,7 +57,9 @@ namespace Netlyt.Web
             services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
                 new DynamicContextFactory(() =>
                 {
-                    var opsBuilder = new DbContextOptionsBuilder<ManagementDbContext>().UseNpgsql(postgresConnectionString);
+                    var opsBuilder = new DbContextOptionsBuilder<ManagementDbContext>()
+                        .UseNpgsql(postgresConnectionString)
+                        .UseLazyLoadingProxies();
                     return new ManagementDbContext(opsBuilder.Options);
                 })
             );

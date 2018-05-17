@@ -183,8 +183,6 @@ MODE(NetinfoJoinedData_csv.WEEKDAY(ondate))
             var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);
 
             var result = await donutRunner.Run(donut, featureGenerator);
-            integration.GetMongoFeaturesCollection<BsonDocument>().Drop();
-            integration.GetMongoCollection<BsonDocument>().Drop();
         }
 
 

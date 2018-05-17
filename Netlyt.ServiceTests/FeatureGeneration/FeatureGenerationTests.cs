@@ -58,7 +58,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             _appAuth = _apiService.GetApi("d4af4a7e3b1346e5a406123782799da1");
             if (_appAuth == null) _appAuth = _apiService.Create("d4af4a7e3b1346e5a406123782799da1");
             _db = fixture.GetService<ManagementDbContext>();
-            _orion = fixture.GetService<OrionContext>();
+            _orion = fixture.GetService<IOrionContext>();
 //            var orionCtx = new Mock<IOrionContext>();
 //            orionCtx.Setup(m => m.Query(It.IsAny<OrionQuery>())).ReturnsAsync(new JObject { {"id", 1} });
 //            _orion = orionCtx.Object;
@@ -108,11 +108,13 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         [Fact]
         public async Task TrainGeneratedFeatures()
         {
-            Model model = await _fixture.GetModel(_appAuth);
+            Model model = _db.Models.Find((long)265);
             DataIntegration ign = model.GetRootIntegration();
             var query = OrionQuery.Factory.CreateTrainQuery(model, ign);
             //var payload = query.Serialize();
+            var m_id = await _orion.Query(query);
             Assert.True(query.Operation == OrionOp.Train);
+
         }
 
 

@@ -27,13 +27,13 @@ namespace Donut
         /// <summary>
         /// A dict of metaCategory , ( metaValue, values ). Stored in sets.
         /// </summary>
-        private ConcurrentDictionary<uint, Dictionary<string, HashSet<string>>> _entityMetaValues;
+        private ConcurrentDictionary<uint, ConcurrentDictionary<string, HashSet<string>>> _entityMetaValues;
         //private RedisCacher _cacher;
 
         public EntityMetaContext()
         {
             _metaValues = new ConcurrentDictionary<int, Dictionary<string, Score>>();
-            _entityMetaValues = new ConcurrentDictionary<uint, Dictionary<string, HashSet<string>>>();
+            _entityMetaValues = new ConcurrentDictionary<uint, ConcurrentDictionary<string, HashSet<string>>>();
             _setFlags = new ConcurrentDictionary<uint, Dictionary<string, SetFlags>>();
             //_entityMetaValues = new ConcurrentDictionary<string, Dictionary<int, HashSet<string>>>();
         }
@@ -47,7 +47,7 @@ namespace Donut
             return _metaValues;
         }
 
-        public ConcurrentDictionary<uint, Dictionary<string, HashSet<string>>> GetEntityMetaValues()
+        public ConcurrentDictionary<uint, ConcurrentDictionary<string, HashSet<string>>> GetEntityMetaValues()
         {
             return _entityMetaValues;
         }
@@ -104,7 +104,7 @@ namespace Donut
             _lock.EnterWriteLock();
             if (!_entityMetaValues.ContainsKey(metaCategory))
             {
-                _entityMetaValues[metaCategory] = new Dictionary<string, HashSet<string>>();
+                _entityMetaValues[metaCategory] = new ConcurrentDictionary<string, HashSet<string>>();
             }
             if (!_entityMetaValues[metaCategory].ContainsKey(entitykey))
             {
@@ -131,7 +131,7 @@ namespace Donut
             _lock.EnterWriteLock();
             if (!_entityMetaValues.ContainsKey(category))
             {
-                _entityMetaValues[category] = new Dictionary<string, HashSet<string>>();
+                _entityMetaValues[category] = new ConcurrentDictionary<string, HashSet<string>>();
             }
             if (!_entityMetaValues[category].ContainsKey(key))
             {

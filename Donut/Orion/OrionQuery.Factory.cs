@@ -2,8 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using Donut.Encoding;
+using Donut.Integration;
 using Donut.Models;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Newtonsoft.Json.Linq;
 
 namespace Donut.Orion
@@ -47,31 +51,7 @@ namespace Donut.Orion
                     collection["internal_entity_keys"] = null;
                     var binFields =
                         cl.Integration.Fields.Where(x => x.DataEncoding == FieldDataEncoding.BinaryIntId);
-                    collection["fields"] = new JArray();
-                    foreach (var fld in cl.Integration.Fields)
-                    {
-                        var isEncoded = fld.DataEncoding != FieldDataEncoding.None;
-                        if (!isEncoded)
-                        {
-                            var jField = new JObject();
-                            jField["name"] = fld.Name;
-                            (collection["fields"] as JArray).Add(jField);
-                        }
-                        else
-                        {
-                            var encoding = FieldEncoding.Factory.Create(cl.Integration, fld.DataEncoding);
-                            var encodedFields = encoding.GetFieldNames(fld);
-                            foreach (var encField in encodedFields)
-                            {
-                                var newField = new JObject
-                                {
-                                    {"name" as string, encField},
-                                    {"encoding" as string, fld.DataEncoding.ToString().ToLower()}
-                                };
-                                (collection["fields"] as JArray).Add(newField);
-                            }
-                        }
-                    }
+                    collection["fields"] = GetFieldsOptions(cl.Integration);
                     if (cl.InternalEntity != null)
                     {
                         var intEntity = new JObject();
@@ -100,6 +80,37 @@ namespace Donut.Orion
                 return qr;
             }
 
+            private static JArray GetFieldsOptions(IIntegration cl)
+            {
+                var fields = new JArray();
+                foreach (var fld in cl.Fields)
+                {
+                    var isEncoded = fld.DataEncoding != FieldDataEncoding.None;
+                    if (!isEncoded)
+                    {
+                        var jField = new JObject();
+                        jField["name"] = fld.Name;
+                        (fields).Add(jField);
+                    }
+                    else
+                    {
+                        var encoding = FieldEncoding.Factory.Create(cl, fld.DataEncoding);
+                        var encodedFields = encoding.GetFieldNames(fld);
+                        foreach (var encField in encodedFields)
+                        {
+                            var newField = new JObject
+                            {
+                                {"name" as string, encField},
+                                {"encoding" as string, fld.DataEncoding.ToString().ToLower()}
+                            };
+                            (fields).Add(newField);
+                        }
+                    }
+                }
+
+                return fields;
+            }
+
             public static string GetDefaultScoring()
             {
                 return "r2";
@@ -108,7 +119,7 @@ namespace Donut.Orion
             public static OrionQuery CreateTrainQuery(Model model, Data.DataIntegration ign)
             {
                 var rootIntegration = ign;
-                var qr = new global::Donut.Orion.OrionQuery(OrionOp.Train);
+                var qr = new OrionQuery(OrionOp.Train);
                 var parameters = new JObject();
                 var models = new JObject();
                 var dataOptions = new JObject();
@@ -122,7 +133,15 @@ namespace Donut.Orion
                 dataOptions["start"] = null; //DateTime.MinValue;
                 dataOptions["end"] = null;// DateTime.MaxValue;
                 dataOptions["scoring"] = scoring;
-
+                BsonDocument featuresDoc = MongoHelper.GetCollection(ign.FeaturesCollection).AsQueryable().FirstOrDefault();
+                var fields = new JArray();
+                foreach (var field in featuresDoc.Elements.Where(x=>x.Name!="_id"))
+                {
+                    var jsfld = new JObject();
+                    jsfld["name"] = field.Name;
+                    fields.Add(jsfld);
+                }
+                dataOptions["fields"] = fields;
 
                 parameters["models"] = models;
                 parameters["options"] = dataOptions;

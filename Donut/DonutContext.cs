@@ -252,7 +252,8 @@ namespace Donut
             {
                 uint categoryId = categoryPair.Key;
                 var categoryKey = $"{Prefix}:_mv:{categoryId}";
-                foreach (var metaVal in categoryPair.Value)
+                var categoryValues = categoryPair.Value;
+                foreach (var metaVal in categoryValues)
                 {
                     var isSorted = SetIsSorted(categoryId, metaVal.Key);
                     var fullKey = $"{categoryKey}:{metaVal.Key}";
