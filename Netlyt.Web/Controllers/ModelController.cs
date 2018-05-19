@@ -101,7 +101,7 @@ namespace Netlyt.Web.Controllers
             var mapped = _mapper.Map<ModelViewModel>(item);
             mapped.ApiKey = fIntegration.APIKey.AppId;
             mapped.ApiSecret = fIntegration.APIKey.AppSecret;
-            mapped.Endpoint = "http://api.netlyt.com/model/infer/" + item.Id;
+            mapped.Endpoint = $"http://api.netlyt.com/model/{item.Id}/infer";
             if (item.Performance != null)
             {
                 mapped.Performance.IsRegression = true;
@@ -195,6 +195,7 @@ namespace Netlyt.Web.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("/model/createAuto")]
+        [RequestSizeLimit(100_000_000)]
         public async Task<IActionResult> CreateAuto([FromBody]CreateAutomaticModelViewModel modelData)
         {
             var user = await _userService.GetCurrentUser();
@@ -287,6 +288,28 @@ namespace Netlyt.Web.Controllers
                 return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
             }
             return null;
+        }
+
+        [HttpPost("/model/{id}/infer")]
+        public async Task<IActionResult> Infer(long id)
+        {
+            var model = _modelService.GetById(id);
+            if (model == null) return NotFound();
+            var rootIgn = model.GetRootIntegration();
+            //TODO:
+            //Integrate the input to the root integration(DataImportTask)
+            //Run feature extraction
+            //Ask orion to make a prediction on the selected feature
+
+
+            var trainRequest = OrionQuery.Factory.CreatePredictionQuery(model, model.GetRootIntegration());
+            //kick off background async task to train
+            // return 202 with wait at endpoint
+            //async task
+            // do training
+            // set current model to the id of whatever came back
+            var m_id = await _orionContext.Query(trainRequest);
+            return Accepted(m_id);
         }
 
         [HttpGet("/model/{id}/featureGenerationStatus")]

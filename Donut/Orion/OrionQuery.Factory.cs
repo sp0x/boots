@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Donut.Data;
 using Donut.Encoding;
 using Donut.Integration;
 using Donut.Models;
@@ -149,6 +150,11 @@ namespace Donut.Orion
 
                 qr["params"] = parameters;
                 return qr;
+            }
+
+            public static OrionQuery CreatePredictionQuery(Model model, DataIntegration getRootIntegration)
+            {
+                throw new NotImplementedException();
             }
         }
     }
