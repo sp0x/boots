@@ -54,3 +54,4 @@ storage.ide
 /Netlyt.Web.Old
 /TmpAuth
 **/donutAssemblies/**
+/Netlyt.Web/published
