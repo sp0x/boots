@@ -1,0 +1,57 @@
+﻿using System;
+using System.Collections.Generic;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using System.Threading.Tasks;
+using Donut;
+using Donut.Data;
+using Donut.Caching;
+
+namespace $Namespace
+{
+    public class $ClassName : Donutfile<$ContextTypeName, IntegratedDocument>
+    { 
+
+        public $ClassName(RedisCacher cacher, IServiceProvider serviceProvider) : base(cacher, serviceProvider)
+        {
+            //ReplayInputOnFeatures = true;
+			$DonutProperties
+        }
+        
+        protected override void OnCreated()
+        {
+            base.OnCreated();
+            //Perform any initial cleanup
+        }
+        
+        protected override void OnMetaComplete()
+        {
+        }
+        
+        public override async Task PrepareExtraction()
+        {
+            var groupKeys = new BsonDocument();
+            var groupFields = new BsonDocument();
+            var projections = new BsonDocument();
+            var pipeline = new List<BsonDocument>(); 
+			var rootCollection = Context.Integration.GetMongoCollection<BsonDocument>();
+            $PrepareExtraction
+        }
+
+		public override async Task OnFinished()
+        {
+            $OnFinished
+        }
+
+		public override async Task CompleteExtraction()
+		{
+			$CompleteExtraction
+		}
+
+        public override void ProcessRecord(IntegratedDocument document){
+            //Extraction goes in here
+            $ExtractionBody
+        }
+
+    }
+}

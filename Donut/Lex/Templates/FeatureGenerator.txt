@@ -1,0 +1,27 @@
+﻿using System;
+using System.Collections.Generic;
+using Donut;
+using MongoDB.Bson;
+using Donut.FeatureGeneration;
+
+namespace $Namespace
+{
+    public class FeatureGenerator : DonutFeatureEmitter<$DonutType, $DonutContextType, IntegratedDocument>
+    {
+		public FeatureGenerator($DonutType donut) : base(donut)
+		{
+			
+		}
+
+		public override IEnumerable<KeyValuePair<string, object>> GetFeatures(IntegratedDocument intDoc)
+		{
+			Func<string, object, KeyValuePair<string, object>> pair = (x, y) => new KeyValuePair<string, object>(x, y);
+			BsonDocument intDocDocument = intDoc.GetDocument();
+            var doc = intDocDocument;
+
+			$FeatureYields
+
+			yield break;
+		}
+    }
+}

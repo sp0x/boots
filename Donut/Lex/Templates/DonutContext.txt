@@ -1,0 +1,27 @@
+﻿namespace $Namespace
+{
+	using Donut;
+	using Donut.Data;
+	using Donut.Caching;
+	using Netlyt.Interfaces;	
+    using System;
+    using MongoDB.Bson;
+
+    public class $ClassName : DonutContext
+    {
+		$CacheMembers
+
+		$DataSetMembers
+		 
+        public $ClassName(IRedisCacher cacher, DataIntegration intd, IServiceProvider serviceProvider)
+            : base(cacher, intd, serviceProvider)
+        { 
+        }
+
+		protected override void ConfigureCacheMap()
+        { 
+			$Mappers
+        }
+
+    }
+}
