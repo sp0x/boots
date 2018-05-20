@@ -14,10 +14,18 @@ namespace Donut.Encoding
 {
     public class BinaryCategoryEncoding : FieldEncoding
     {
+
+        private FieldExtra EmptyFieldExtra;
         public BinaryCategoryEncoding(FieldEncodingOptions options) : base(options, FieldDataEncoding.BinaryIntId)
         {
-
+            Limit = 8;
+            EmptyFieldExtra= new FieldExtra
+            {
+                Key = EncodeKey(9),
+                Value = "none"
+            };
         }
+
 
         public override void Apply(BsonDocument doc)
         {
@@ -26,20 +34,28 @@ namespace Donut.Encoding
                 var docFieldVal = doc[field.Name].ToString();
                 var categories = FieldCache[field.Name];
                 IFieldExtra extrasCategory = null;
-                extrasCategory = categories.GetOrAdd(docFieldVal, (key) =>
+                if (categories.Count >= Limit)
                 {
-                    var newExtra = new FieldExtra()
+                    extrasCategory = EmptyFieldExtra;
+                }
+                else
+                {
+                    extrasCategory = categories.GetOrAdd(docFieldVal, (key) =>
                     {
-                        Key = EncodeKey(categories.Count + 1),
-                        Value = docFieldVal
-                    };
-                    if (field.Extras == null)
-                    {
-                        field.Extras = new FieldExtras();
-                    }
-                    field.Extras.Extra.Add(newExtra);
-                    return newExtra;
-                });
+                        var newExtra = new FieldExtra()
+                        {
+                            Key = EncodeKey(categories.Count + 1),
+                            Value = docFieldVal
+                        };
+                        if (field.Extras == null)
+                        {
+                            field.Extras = new FieldExtras();
+                        }
+                        field.Extras.Extra.Add(newExtra);
+                        return newExtra;
+                    });
+                }
+                
                 //doc[field.Name] = uint.Parse(extrasCategory.Key);
                 doc[field.Name] = extrasCategory.Key;
             }

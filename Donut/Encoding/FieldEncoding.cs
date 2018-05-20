@@ -20,6 +20,7 @@ namespace Donut.Encoding
         private IIntegration _integration;
         private List<FieldDefinition> _targetFields;
         private Dictionary<string, ConcurrentDictionary<string, FieldExtra>> _fieldDict;
+        public int Limit { get; set; } = 8;
         public FieldDataEncoding Encoding { get; set; }
         protected List<FieldDefinition> TargetFields => _targetFields;
         protected IIntegration Integration => _integration;

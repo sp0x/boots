@@ -44,8 +44,7 @@ namespace Netlyt.ServiceTests.Netinfo
 {
     [Collection("DonutTests")]
     public class NetinfoTests
-    {
-        public const byte VisitTypedValue = 1;
+    { 
         private DonutConfigurationFixture _fixture;
         //private CrossSiteAnalyticsHelper _helper;
         private IMongoCollection<IntegratedDocument> _documentStore;

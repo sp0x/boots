@@ -41,6 +41,7 @@ services:
       dockerfile: Dockerfile
     container_name: redis.netlyt.com
     hostname: redis.netlyt.com
+    restart: always
     ports:
       - 6399:6399
     volumes:
