@@ -18,8 +18,7 @@ namespace Donut
         public long Id { get; set; }
         public string Name { get; set; }
         [ForeignKey("Operation")]
-        public long OperationId { get; set; }
-        [Required]
+        public long? OperationId { get; set; }
         public virtual DonutFunction Operation { get; set; }
         public string Arguments { get; set; }
         public AggregateKey() { }

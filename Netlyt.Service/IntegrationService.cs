@@ -75,7 +75,7 @@ namespace Netlyt.Service
             }
             else
             {
-                lsOut.Add(new AggregateKey("_id", null, "_id"));
+                lsOut.Add(new AggregateKey("_id", null, "$_id"));
             }
             //_aggregateKeys = lsOut;
             return lsOut;
@@ -291,7 +291,14 @@ namespace Netlyt.Service
                 await importTask.Encode(collection);
                 _context.Integrations.Add(integrationInfo);
             }
-            _context.SaveChanges(); //Save any changes done to the integration.
+            try
+            {
+                _context.SaveChanges(); //Save any changes done to the integration.
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
             return result;
         }
 

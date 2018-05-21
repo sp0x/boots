@@ -40,7 +40,8 @@ namespace Donut.Orion
                 {
                     if (string.IsNullOrEmpty(cl.TimestampField))
                     {
-                        throw new InvalidOperationException("Collections with timestamp columns are allowed only!");
+                        //throw new InvalidOperationException("Collections with timestamp columns are allowed only!");
+                        Console.WriteLine("Warn: Collections with timestamp columns are allowed only!");
                     }
                     var collection = new JObject();
                     collection["name"] = cl.Name;

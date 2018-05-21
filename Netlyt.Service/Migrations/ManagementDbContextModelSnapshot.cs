@@ -30,7 +30,7 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Name");
 
-                    b.Property<long>("OperationId");
+                    b.Property<long?>("OperationId");
 
                     b.HasKey("Id");
 
@@ -620,8 +620,7 @@ namespace Netlyt.Service.Migrations
 
                     b.HasOne("Donut.DonutFunction", "Operation")
                         .WithOne("AggregateKey")
-                        .HasForeignKey("Donut.AggregateKey", "OperationId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("Donut.AggregateKey", "OperationId");
                 });
 
             modelBuilder.Entity("Donut.Data.DataIntegration", b =>
