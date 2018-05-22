@@ -78,7 +78,7 @@ namespace Donut.Data.Format
                     DateTime tmValue;
                     fldValue = fldValue.Trim('"', '\t', '\n', '\r', '\'');
                     bool isDate = _dateTimeParser.TryParse(fldValue, out tmValue, out dValue);
-
+                    fldName = base.FormatFieldName(fldName);
                     if (dValue != null)
                     {
                         if (fldValue.Contains(".") || fldValue.Contains(","))

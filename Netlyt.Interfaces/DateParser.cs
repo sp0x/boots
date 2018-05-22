@@ -20,6 +20,10 @@ namespace Netlyt.Service.Integration
             {
                 return true;
             }
+            else if (DateTime.TryParseExact(value, "dd-MM-yy", pvd, DateTimeStyles.AssumeUniversal, out timeValue))
+            {
+                return true;
+            }
             else if (DateTime.TryParseExact(value, "dd/MM/yyyy H:mm:ss", pvd, DateTimeStyles.AssumeUniversal, out timeValue))
             {
                 return true;

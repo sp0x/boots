@@ -30,9 +30,15 @@ namespace Donut.Source
 
         public FieldDefinition(string fName, Type fType)
         {
-            Name = fName;
+            Name = CleanupName(fName);
             Type = fType.FullName;
         }
+
+        private string CleanupName(string fName)
+        {
+            return fName.Replace("-", "_").Replace(".", "_");
+        }
+
         public FieldDefinition(string fName, string fType)
         {
             Name = fName;
