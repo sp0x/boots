@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Donut;
+using Donut.Data;
 using Donut.Integration;
 using Donut.Models;
 using Donut.Orion;
@@ -70,14 +71,14 @@ namespace Netlyt.Service
             string callbackUrl,
             bool generateFeatures,
             IEnumerable<FeatureGenerationRelation> relations, 
-            string targetAttribute
+            ModelTargets targets
             )
         {
             var newModel = new Model();
             newModel.UserId = user.Id;
             newModel.ModelName = name;
             newModel.Callback = callbackUrl;
-            newModel.TargetAttribute = targetAttribute;
+            newModel.Targets = targets;
             if (integrations != null)
             {
                 newModel.DataIntegrations = integrations.Select(ign => new ModelIntegration(newModel, DataIntegration.Wrap(ign))).ToList(); 
@@ -94,7 +95,7 @@ namespace Netlyt.Service
             }
             if (generateFeatures)
             {
-                await GenerateFeatures(newModel, relations, targetAttribute);
+                await GenerateFeatures(newModel, relations, targets);
                 //newModel.FeatureGenerationTasks.Add(newTask);
                 //_context.FeatureGenerationTasks.Add(newTask);
                 //_context.SaveChanges();
@@ -102,10 +103,10 @@ namespace Netlyt.Service
             return newModel;
         }
 
-        public async Task GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, string targetAttribute)
+        public async Task GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, ModelTargets targets)
         {
-            var collections = newModel.GetFeatureGenerationCollections(targetAttribute);
-            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(newModel, collections, relations, targetAttribute);
+            var collections = newModel.GetFeatureGenerationCollections(targets);
+            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(newModel, collections, relations, targets);
             var result = await _orion.Query(query);
 //            var newTask = new FeatureGenerationTask();
 //            newTask.OrionTaskId = result["task_id"].ToString();

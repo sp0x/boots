@@ -140,8 +140,8 @@ namespace Netlyt.Service.Donut
             {
                 var featureBodies = features.Select(x => x.ToString()).ToArray();
                 string donutName = $"{model.ModelName}Donut";
-                DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.TargetAttribute, sourceIntegration, featureBodies);
-                dscript.TargetAttribute = model.TargetAttribute;
+                DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.Targets, sourceIntegration, featureBodies);
+                dscript.Targets = model.Targets;
                 foreach (var integration in model.DataIntegrations)
                 {
                     var ign = _db.Integrations

@@ -26,6 +26,7 @@ namespace Donut.Integration
         ICollection<IntegrationExtra> Extras { get; } 
 
         IIntegratedDocument CreateDocument<T>(T data);
+        FieldDefinition GetField(string name);
         /// <summary>
         /// Gets the keys that are used to aggregate the data in this collection.
         /// </summary>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Donut.Data;
 using Donut.Lex.Expressions;
 using Donut.Lex.Parsing;
 using Donut.Parsing.Tokenizers;
@@ -24,7 +25,7 @@ namespace Donut.Lex.Data
         public List<AssignmentExpression> Features { get; set; }
         public OrderByExpression StartingOrderBy { get; set; }
         public HashSet<Donut.Data.DataIntegration> Integrations { get; set; }
-        public string TargetAttribute { get; set; }
+        public ModelTargets Targets { get; set; }
 
         public void AddIntegrations(params Donut.Data.DataIntegration[] sourceIntegrations)
         {
@@ -58,9 +59,9 @@ namespace Donut.Lex.Data
                 output += strFtr;
             }
 
-            if (!string.IsNullOrEmpty(TargetAttribute))
+            if (Targets!=null)
             {
-                output += "target " + TargetAttribute + "\n";
+                output += "target " + Targets.ToDonutScript() + "\n";
             }
             return output;
         }
@@ -75,7 +76,7 @@ namespace Donut.Lex.Data
             /// <param name="integration"></param>
             /// <param name="featureBodies"></param>
             /// <returns></returns>
-            public static DonutScript CreateWithFeatures(string donutName, string target, Donut.Data.DataIntegration integration, params string[] featureBodies)
+            public static DonutScript CreateWithFeatures(string donutName, ModelTargets targets, Donut.Data.DataIntegration integration, params string[] featureBodies)
             {
                 var ds = new DonutScript();
                 ValidateIntegrations(integration);
@@ -86,7 +87,7 @@ namespace Donut.Lex.Data
                 var tokenizer = new FeatureToolsTokenizer(integration);
                 int i = 0;
                 ds.AddIntegrations(integration);
-                ds.TargetAttribute = target;
+                ds.Targets = targets;
                 foreach (var fstring in featureBodies)
                 {
                     if (string.IsNullOrEmpty(fstring)) continue;
@@ -96,9 +97,9 @@ namespace Donut.Lex.Data
                         var parser = new DonutSyntaxReader(tokenizer.Tokenize(fstring));
                         IExpression expFeatureBody = parser.ReadExpression();
                         if (expFeatureBody == null) continue;
-                        if (!string.IsNullOrEmpty(target) && expFeatureBody.ToString() == target)
+                        if (targets!=null && targets.Has(expFeatureBody.ToString()))
                         {
-                            featureName = target;
+                            featureName = targets.Columns.First().Name;
                         }
 
                         var expFeature = new AssignmentExpression(new NameExpression(featureName), expFeatureBody);

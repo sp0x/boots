@@ -5,6 +5,7 @@ using System.Linq;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
 using Donut.Parsing.Tokens;
+using Donut.Source;
 using Netlyt.Interfaces;
 
 namespace Donut.Lex.Parsing
@@ -71,7 +72,8 @@ namespace Donut.Lex.Parsing
                 }
                 else if (expressionType == typeof(TargetExpression))
                 {
-                    newScript.TargetAttribute = (expression as TargetExpression).Attribute;
+                    var targetField = new FieldDefinition((expression as TargetExpression).Attribute, typeof(Int32));
+                    newScript.Targets = new Donut.Data.ModelTargets().AddTarget(targetField);
                 }
                 else
                 {

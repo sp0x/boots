@@ -9,6 +9,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Donut.Orion
@@ -28,12 +29,15 @@ namespace Donut.Orion
             public static OrionQuery CreateFeatureDefinitionGenerationQuery(Model model,
                 IEnumerable<FeatureGenerationCollectionOptions> collections,
                 IEnumerable<FeatureGenerationRelation> relations,
-                string targetAttribute)
+                ModelTargets targetAttribute)
             {
                 var qr = new global::Donut.Orion.OrionQuery(global::Donut.Orion.OrionOp.GenerateFeatures);
                 var parameters = new JObject();
                 parameters["model_name"] = model.ModelName;
                 parameters["model_id"] = model.Id;
+                parameters["client"] = model.User.UserName;
+                parameters["verbose"] = true;
+                parameters["export_features"] = true;
                 var collectionsArray = new JArray();
                 var internalEntities = new JArray();
                 foreach (var cl in collections)
@@ -66,7 +70,8 @@ namespace Donut.Orion
                     }
                     collectionsArray.Add(collection);
                 }
-                parameters["collections"] = collectionsArray;
+                //Use first collection only
+                parameters["collection"] = collectionsArray[0];
                 var relationsArray = new JArray();
                 if (relations != null)
                 {
@@ -75,8 +80,12 @@ namespace Donut.Orion
                         relationsArray.Add(new JArray(new object[] { relation.Attribute1, relation.Attribute2 }));
                     }
                 }
+                //Targets
+                var targetsObj = new JObject();
+
+
                 parameters["relations"] = relationsArray;
-                parameters["target"] = targetAttribute;
+                parameters["targets"] = targetsObj;
                 parameters["internal_entities"] = internalEntities;
                 qr["params"] = parameters;
                 return qr;
@@ -128,7 +137,7 @@ namespace Donut.Orion
                 var autoModel = new JObject();
                 var scoring = GetDefaultScoring();
                 parameters["client"] = model.User.UserName;
-                parameters["target"] = model.TargetAttribute;
+                parameters["targets"] = JObject.FromObject(model.Targets);
                 models["auto"] = autoModel; // GridSearchCV - param_grid
 
                 dataOptions["db"] = rootIntegration.FeaturesCollection;
@@ -156,6 +165,52 @@ namespace Donut.Orion
             public static OrionQuery CreatePredictionQuery(Model model, DataIntegration getRootIntegration)
             {
                 throw new NotImplementedException();
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="url"></param>
+            /// <param name="formatting"></param>
+            /// <returns></returns>
+            public static OrionQuery CreateFileAnalyzeRequest(string url, JObject formatting)
+            {
+                var qr = new OrionQuery(OrionOp.AnalyzeFile);
+                var fileParams = new JObject();
+                fileParams["file"] = url;
+                fileParams["formatting"] = formatting;
+                qr["msg"] = fileParams;
+                return qr;
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="url"></param>
+            /// <param name="formatting"></param>
+            /// <returns></returns>
+            public static OrionQuery CreateProjectGenerationRequest(string url, JObject formatting)
+            {
+                var qr = new OrionQuery(OrionOp.GenerateProject);
+                var fileParams = new JObject();
+                var groupBy = new JObject();
+                groupBy["hour"] = 0.5;
+                groupBy["day_unix"] = true;
+
+                fileParams["target"] = new JObject();
+                fileParams["cleanup"] = new JObject();
+                fileParams["feature_settings"] = new JObject();
+                fileParams["aggregation"] = new JObject();
+                fileParams["target"]["constraints"] = null;
+                fileParams["target"]["columns"] = null;
+                fileParams["cleanup"]["pre_features"] = null;
+                fileParams["cleanup"]["train"] = null;
+                fileParams["field_formatting"] = null;
+                fileParams["features_source_file"] = url;
+                fileParams["feature_settings"]["use_features"] = false;
+                fileParams["aggregation"]["group_by"] = groupBy;
+                qr["msg"] = fileParams;
+                return qr;
             }
         }
     }

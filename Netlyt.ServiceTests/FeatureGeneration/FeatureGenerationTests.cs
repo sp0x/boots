@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Caching;
+using Donut.Data;
 using Donut.FeatureGeneration;
 using Donut.Features;
 using Donut.Lex.Data;
@@ -87,6 +88,7 @@ namespace Netlyt.ServiceTests.FeatureGeneration
         { 
             var newModel = await _fixture.GetModel(_appAuth);
             var targetAttribute = "pm10";
+            
             var rootIgn = newModel.GetRootIntegration();
             var fldCategory = rootIgn.AddField<string>("category", FieldDataEncoding.BinaryIntId);
             fldCategory.Extras = new FieldExtras();
@@ -96,8 +98,9 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             fldEvent.Extras = new FieldExtras();
             fldEvent.Extras.Extra.Add(new FieldExtra("event1", "visit"));
             fldEvent.Extras.Extra.Add(new FieldExtra("event2", "stay"));
-            var collections = newModel.GetFeatureGenerationCollections(targetAttribute);
-            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(newModel, collections, null, targetAttribute);
+            var modelTargets = new ModelTargets().AddTarget(rootIgn.GetField("pm10"));
+            var collections = newModel.GetFeatureGenerationCollections(modelTargets);
+            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(newModel, collections, null, modelTargets);
             //var queryResult = await _orion.Query(query);
             var jsQuery = query.Serialize();
             var jsFields = jsQuery["params"]["collections"][0]["fields"];
@@ -132,16 +135,14 @@ namespace Netlyt.ServiceTests.FeatureGeneration
             //            }
             string modelName = "Rommol1";
             string modelCallback = "http://localhost:9999";
-            string targetAttribute = "pm10"; //"Events.is_paying";
-            //item.Relations?.Select(x => new FeatureGenerationRelation(x[0], x[1]));
-            //This really needs a builder..
+            var targets = new ModelTargets().AddTarget(integration.GetField("pm10"));
             var newModel = await _modelService.CreateModel(_user,
                 modelName,
                 new List<DataIntegration>(new[] { integration }),
                 modelCallback,
                 true,
                 relations,
-                targetAttribute);
+                targets);
             Assert.NotNull(newModel);
 
             Console.ReadLine();//We hang on here, waiting for the features to be generated ..
@@ -159,7 +160,9 @@ MONTH(first_Romanian_time)
 WEEKDAY(first_Romanian_time)";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", model.GetRootIntegration(), featureBodies);
+            var rootIntegration = model.GetRootIntegration();
+            var target = new ModelTargets().AddTarget(rootIntegration.GetField("pm10"));
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, target, rootIntegration, featureBodies);
             foreach (var modelIgn in model.DataIntegrations)
             {
                 dscript.AddIntegrations(modelIgn.Integration);
@@ -176,7 +179,9 @@ WEEKDAY(first_Romanian_time)";
             string features = @"MIN(Romanian.WEEKDAY(timestamp))";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", model.GetRootIntegration(), featureBodies);
+            var rootIntegration = model.GetRootIntegration();
+            var targets = new ModelTargets().AddTarget(rootIntegration.GetField("pm10"));
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, targets, rootIntegration, featureBodies);
             foreach (var modelIgn in model.DataIntegrations)
             {
                 dscript.AddIntegrations(modelIgn.Integration);
@@ -196,7 +201,10 @@ WEEKDAY(first_Romanian_time)";
             string features = @"SUM(feature_test.csv.humidity)";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", model.GetRootIntegration(), featureBodies);
+
+            var rootIntegration = model.GetRootIntegration();
+            var targets = new ModelTargets().AddTarget(rootIntegration.GetField("pm10"));
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName,targets, rootIntegration, featureBodies);
             foreach (var modelIgn in model.DataIntegrations)
             {
                 dscript.AddIntegrations(modelIgn.Integration);
@@ -226,7 +234,9 @@ WEEKDAY(first_Romanian_time)";
             var pm10Field = new FieldDefinition("pm10", typeof(Double));
             ign.Fields.Add(tsField);
             ign.Fields.Add(pm10Field);
-            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", "pm10", ign, featureBody);
+
+            var targets = new ModelTargets().AddTarget(ign.GetField("pm10"));
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", targets, ign, featureBody);
             var parser = new DonutScriptCodeGenerator(null);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;
@@ -258,8 +268,9 @@ WEEKDAY(first_Romanian_time)";
             var pm10Field = new FieldDefinition("pm10", typeof(Double));
             ign.Fields.Add(tsField);
             ign.Fields.Add(hdField);
-            ign.Fields.Add(pm10Field);
-            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", "pm10", ign, featureBody);
+            ign.Fields.Add(pm10Field); 
+            var targets = new ModelTargets().AddTarget(ign.GetField("pm10"));
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", targets, ign, featureBody);
             var parser = new DonutScriptCodeGenerator(null);
             var firstFeature = script.Features.FirstOrDefault();
             var maxCall = firstFeature?.Value as CallExpression;
@@ -288,7 +299,8 @@ WEEKDAY(first_Romanian_time)";
             var pm10Field = new FieldDefinition("pm10", typeof(Double));
             ign.Fields.Add(tsField);
             ign.Fields.Add(pm10Field);
-            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", "pm10", ign, featureBody);
+            var targets = new ModelTargets().AddTarget(ign.GetField("pm10"));
+            var script = DonutScript.Factory.CreateWithFeatures("SomeDonut", targets, ign, featureBody);
 
             script.Integrations.Add(ign);
             var parser = new DonutScriptCodeGenerator(script);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Donut;
 using Donut.Caching;
+using Donut.Data;
 using Donut.Features;
 using Donut.Lex.Data;
 using Donut.Lex.Generation;
@@ -71,7 +72,9 @@ WEEKDAY(first_Romanian_time)";
             var model = GetModel();
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
-            _dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", model.GetRootIntegration(), featureBodies);
+            var ign = model.GetRootIntegration();
+            var targets = new ModelTargets().AddTarget(ign.GetField("pm10"));
+            _dscript = DonutScript.Factory.CreateWithFeatures(donutName, targets, ign, featureBodies);
             _codeGen = _dscript.GetCodeGenerator() as DonutScriptCodeGenerator;
             _expVisitor = new AggregateFeatureGeneratingExpressionVisitor(_dscript);
         }

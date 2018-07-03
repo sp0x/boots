@@ -63,7 +63,7 @@ namespace Donut.Lex.Generators
                 var member = (fExpression as NameExpression).Member?.ToString();
                 //In some cases we might just use the field
                 if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
-                if (member == Script.TargetAttribute)
+                if (Script.Targets.Has(member))
                 {
                     fName = member;
                 }

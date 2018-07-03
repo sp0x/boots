@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Donut.Data;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
 using Netlyt.Interfaces;
@@ -11,7 +12,7 @@ namespace Donut
         IList<MatchCondition> Filters { get; set; }
         HashSet<Data.DataIntegration> Integrations { get; set; }
         OrderByExpression StartingOrderBy { get; set; }
-        string TargetAttribute { get; set; }
+        ModelTargets Targets { get; set; }
         ScriptTypeInfo Type { get; set; }
 
         void AddIntegrations(params Data.DataIntegration[] sourceIntegrations);

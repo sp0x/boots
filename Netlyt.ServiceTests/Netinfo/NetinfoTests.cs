@@ -158,7 +158,7 @@ MODE(NetinfoJoinedData_csv.WEEKDAY(ondate))
 ";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.TargetAttribute, model.GetRootIntegration(), featureBodies);
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.Targets, model.GetRootIntegration(), featureBodies);
             foreach (var modelIgn in model.DataIntegrations)
             {
                 dscript.AddIntegrations(modelIgn.Integration);

@@ -7,7 +7,9 @@
         Train = 103,
         ParamList = 104,
         GetModelList = 105,
-        GenerateFeatures = 107
+        GenerateFeatures = 107,
+        AnalyzeFile = 108,
+        GenerateProject = 109
     }
      
 }

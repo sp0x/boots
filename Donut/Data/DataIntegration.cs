@@ -209,6 +209,11 @@ namespace Donut.Data
             var mongoSource = MongoSource.CreateFromCollection(Collection, inputFormatter);
             return mongoSource;
         }
+
+        public FieldDefinition GetField(string fieldName)
+        {
+            return Fields.FirstOrDefault(x => x.Name == fieldName);
+        }
     }
 
     public class FieldDefinitionComparer : IEqualityComparer<IFieldDefinition>

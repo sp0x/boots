@@ -155,6 +155,7 @@ namespace Netlyt.Web.Controllers
             var user = await _userService.GetCurrentUser();
             var integration = _userService.GetUserIntegration(user, item.DataSource);
             var relations = item.Relations?.Select(x => new FeatureGenerationRelation(x[0], x[1]));
+            var targets = new ModelTargets().AddTarget(integration.GetField(item.TargetAttribute));
             //This really needs a builder..
             var newModel = await _modelService.CreateModel(user,
                 item.Name,
@@ -162,7 +163,7 @@ namespace Netlyt.Web.Controllers
                 item.Callback,
                 item.GenerateFeatures,
                 relations,
-                item.TargetAttribute);
+                targets);
             return CreatedAtRoute("GetById", new { id = newModel.Id }, item);
         }
         [AllowAnonymous]
@@ -218,13 +219,14 @@ namespace Netlyt.Web.Controllers
                 return NotFound("Integration not found.");
             }
             var modelName = modelData.Name.Replace(".", "_");
+            var targets = new ModelTargets().AddTarget(integration.GetField(modelData.Target.Name));
             var newModel = await _modelService.CreateModel(user,
                 modelData.Name,
                 new List<DataIntegration>(new[] { integration }),
                 "",
                 true,
                 relations,
-                modelData.Target.Name);
+                targets);
             return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
         }
 
@@ -278,13 +280,14 @@ namespace Netlyt.Web.Controllers
             {
                 System.IO.File.Delete(targetFilePath);
                 var relations = new List<FeatureGenerationRelation>();
+                var targets = new ModelTargets().AddTarget(newIntegration.GetField(modelParams.Target));
                 var newModel = await _modelService.CreateModel(user,
                     modelParams.Name,
                     new List<IIntegration>(new[] { newIntegration }),
                     "",
                     true,
                     relations,
-                    modelParams.Target);
+                    targets);
                 return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
             }
             return null;

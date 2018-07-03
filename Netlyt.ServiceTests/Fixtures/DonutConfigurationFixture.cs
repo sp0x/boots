@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using Donut;
+using Donut.Data;
 using Donut.IntegrationSource;
 using Donut.Models;
 using Donut.Orion;
@@ -167,7 +168,7 @@ namespace Netlyt.ServiceTests.Fixtures
             var modelIntegration = new ModelIntegration() { Model = model, Integration = ign };
             model.DataIntegrations.Add(modelIntegration);
             model.User = new User() { UserName = "Testuser" };
-            model.TargetAttribute = "pm10";
+            model.Targets = new ModelTargets().AddTarget(ign.GetField("pm10"));
             return model;
         }
         /// <summary>

@@ -93,7 +93,9 @@ namespace Netlyt.ServiceTests.IntegrationTests
 NUM_UNIQUE(Romanian.pm25)";
             string[] featureBodies = features.Split('\n');
             string donutName = $"{model.ModelName}Donut";
-            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, "pm10", model.GetRootIntegration(), featureBodies);
+            var ign = model.GetRootIntegration();
+            var targets = new ModelTargets().AddTarget(ign.GetField("pm10"));
+            DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, targets, model.GetRootIntegration(), featureBodies);
             foreach (var modelIgn in model.DataIntegrations)
             {
                 dscript.AddIntegrations(modelIgn.Integration);
@@ -133,16 +135,17 @@ NUM_UNIQUE(Romanian.pm25)";
             var integrationResult = await _integrationService.CreateOrAppendToIntegration(sourceFile, _appAuth, _user, modelName);
             var newIntegration = DataIntegration.Wrap(integrationResult?.Integration);
             var model = await _fixture.GetModel(_appAuth, modelName, newIntegration);
+            var modelTargets = new ModelTargets().AddTarget(newIntegration.GetField(targetAttribute));
 
             _db.Models.Add(model);
-            var collections = model.GetFeatureGenerationCollections(targetAttribute);
+            var collections = model.GetFeatureGenerationCollections(modelTargets);
             //Assert the category field has a DataEncoding of BinaryIntId
             var categoryField = newIntegration.Fields.FirstOrDefault(x => x.Name == "category");
             Assert.NotNull(categoryField);
             Assert.Equal(FieldDataEncoding.BinaryIntId,
                 categoryField.DataEncoding);
             _db.SaveChanges();
-            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(model, collections, null, targetAttribute);
+            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(model, collections, null, modelTargets);
             var featuresAwaiter = new SemaphoreSlim(0, 1);
             _orionHandler.ModelFeaturesGenerated += (sender, updatedModel) =>
             {
