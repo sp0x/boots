@@ -55,10 +55,7 @@ namespace Donut.Lex.Parsing
             DonutScript newScript  = new DonutScript();
             Reader.DiscardToken(TokenType.Define);
             var newSymbolName = Reader.DiscardToken(TokenType.Symbol);
-            newScript.Type = new ScriptTypeInfo()
-            {
-                Name = newSymbolName.Value
-            }; 
+            newScript.Type = new ScriptTypeInfo(newSymbolName.Value);
             _sourceIntegrations = ReadFrom();
             var orderBy = ReadOrderBy(); 
             var expressions = ReadExpressions();

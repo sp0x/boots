@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Donut;
 using Donut.Data;
 using Donut.Integration;
+using Donut.Lex.Data;
 using Donut.Models;
 using Donut.Orion;
 using Microsoft.AspNetCore.Http;
@@ -24,16 +25,19 @@ namespace Netlyt.Service
         private ManagementDbContext _context;
         private IOrionContext _orion;
         private TimestampService _timestampService;
+        private ManagementDbContext _dbContext;
 
         public ModelService(ManagementDbContext context,
             IOrionContext orionContext,
             IHttpContextAccessor ctxAccessor,
-            TimestampService timestampService)
+            TimestampService timestampService,
+            ManagementDbContext dbContext)
         {
             _contextAccessor = ctxAccessor;
             _context = context;
             _orion = orionContext;
             _timestampService = timestampService;
+            _dbContext = dbContext;
         }
 
         public IEnumerable<Model> GetAllForUser(User user, int page)
@@ -74,11 +78,10 @@ namespace Netlyt.Service
             ModelTargets targets
             )
         {
-            var newModel = new Model();
+            var newModel = new Model() { UseFeatures = generateFeatures, ModelName = name, Callback = callbackUrl };
             newModel.UserId = user.Id;
-            newModel.ModelName = name;
-            newModel.Callback = callbackUrl;
             newModel.Targets = targets;
+
             if (integrations != null)
             {
                 newModel.DataIntegrations = integrations.Select(ign => new ModelIntegration(newModel, DataIntegration.Wrap(ign))).ToList(); 
@@ -100,7 +103,19 @@ namespace Netlyt.Service
                 //_context.FeatureGenerationTasks.Add(newTask);
                 //_context.SaveChanges();
             }
+            else
+            {
+                newModel.SetScript(GenerateDonutScriptForModel(newModel));
+            }
             return newModel;
+        }
+
+        private DonutScript GenerateDonutScriptForModel(Model model)
+        {
+            var donutName = $"{model.ModelName}Donut";
+            var rootIntegration = model.GetRootIntegration();
+            var script = DonutScript.Factory.Create(donutName, model.Targets, rootIntegration);
+            return script;
         }
 
         public async Task GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, ModelTargets targets)
@@ -137,12 +152,47 @@ namespace Netlyt.Service
             return model.FeatureGenerationTasks.LastOrDefault();
         }
 
+        public ModelPrepStatus GetModelPrepStatus(long id)
+        {
+            var model = _context.Models
+                .Include(x => x.FeatureGenerationTasks)
+                .FirstOrDefault(x => x.Id == id);
+            if (model == null) return ModelPrepStatus.Invalid;
+            if (!model.UseFeatures) return ModelPrepStatus.Done;
+            else
+            {
+                var task = model.FeatureGenerationTasks.LastOrDefault();
+                if (task == null) return ModelPrepStatus.GeneratingFeatures;
+                else
+                {
+                    return task.Status == FeatureGenerationTaskStatus.Done
+                        ? ModelPrepStatus.Done
+                        : ModelPrepStatus.GeneratingFeatures;
+                }
+            }
+        }
+
         public TrainingTask GetTrainingStatus(long id)
         {
             var model = _context.Models.Include(x => x.TrainingTasks)
                 .FirstOrDefault(x => x.Id == id);
             if (model == null) return null;
             return model.TrainingTasks.LastOrDefault();
+        }
+
+        public void AddIntegrationsToScript(DonutScript dscript, ICollection<ModelIntegration> modelDataIntegrations)
+        {
+            foreach (var integration in modelDataIntegrations)
+            {
+                var ign = _dbContext.Integrations
+                    .Include(x => x.Fields)
+                    .Include(x => x.Extras)
+                    .Include(x => x.APIKey)
+                    .Include(x => x.AggregateKeys)
+                    .Include(x => x.PublicKey)
+                    .FirstOrDefault(x => x.Id == integration.IntegrationId);
+                dscript.AddIntegrations(ign);
+            }
         }
     }
 }

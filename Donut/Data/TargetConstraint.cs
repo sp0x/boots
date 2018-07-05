@@ -4,9 +4,10 @@ namespace Donut.Data
 {
     public class TargetConstraint
     {
+        public long Id { get; set; }
         public TargetConstraintType Type { get; set; }
         public string Key { get; set; }
-        public BsonDocument After { get; set; }
-        public BsonDocument Before { get; set; }
+        public virtual TimeConstraint After { get; set; }
+        public virtual TimeConstraint Before { get; set; }
     }
 }

@@ -7,6 +7,11 @@
     {
         public string Name { get; set; }
 
+        public ScriptTypeInfo(string name)
+        {
+            this.Name = name;
+        }
+
         public string GetClassName()
         {
             var clearedName = Name.Replace('-', '_').Replace('.', '_').Replace(' ', '_').Replace(';', '_');

@@ -1,7 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using Donut.Data;
 using Donut.Integration;
+using Donut.Lex.Data;
 using Netlyt.Interfaces;
 
 namespace Donut
@@ -11,6 +14,38 @@ namespace Donut
     /// </summary>
     public abstract class DonutGeneratorFactory
     {
+        private Type _emitterType;
+
+        public static IDonutBuilder Create<TData>(DonutScript script,
+            IIntegration integration, IServiceProvider serviceProvider)
+        where TData : class, IIntegratedDocument
+        {
+            if (string.IsNullOrEmpty(script.AssemblyPath)) return null;
+            if (!File.Exists(script.AssemblyPath))
+            {
+                throw new Exception("Donut assembly not found!");
+            }
+            var asm = Assembly.LoadFrom(script.AssemblyPath);
+            var donutTypes = asm.GetTypes();
+            var donutType = donutTypes.FirstOrDefault(x => x.IsInstanceOfType(typeof(IDonutfile)));
+            var donutContextType = donutTypes.FirstOrDefault(x => x.IsInstanceOfType(typeof(IDonutContext)));
+            var featureEmitterType = donutTypes.FirstOrDefault(x => x.IsInstanceOfType(typeof(IDonutFeatureEmitter)));
+            var cacher = serviceProvider.GetService(typeof(IRedisCacher)) as IRedisCacher;
+            var builder = Create<TData>(donutType, donutContextType, integration, cacher, serviceProvider);
+            builder.SetEmitterType(featureEmitterType);
+            return builder;
+        }
+
+        void SetEmitterType(Type featureEmitterType)
+        {
+            _emitterType = featureEmitterType;
+        }
+
+        Type GetEmitterType()
+        {
+            return _emitterType;
+        }
+
         public static IDonutBuilder Create<TData>(Type donutType,
             Type donutContextType,
             IIntegration integration, IRedisCacher cacher, IServiceProvider serviceProvider)
@@ -41,8 +76,10 @@ namespace Donut
         private Data.DataIntegration _integration;
         private Type _tContext;
         private IServiceProvider _serviceProvider;
+        public Type DonutType => typeof(TDonut);
+        public Type DonutContextType => typeof(TContext);
 
-        public DonutBuilder(Data.DataIntegration integration, IRedisCacher cacher, IServiceProvider serviceProvider)
+        public DonutBuilder(DataIntegration integration, IRedisCacher cacher, IServiceProvider serviceProvider)
         {
             _tContext = typeof(TContext);
             _serviceProvider = serviceProvider;

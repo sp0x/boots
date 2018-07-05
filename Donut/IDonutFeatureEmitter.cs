@@ -3,7 +3,11 @@ using Netlyt.Interfaces;
 
 namespace Donut
 {
-    public interface IDonutFeatureEmitter<TData>
+    public interface IDonutFeatureEmitter
+    {
+
+    }
+    public interface IDonutFeatureEmitter<TData>: IDonutFeatureEmitter
         where TData : class, IIntegratedDocument
     {
         IEnumerable<KeyValuePair<string, object>> GetFeatures(TData intDoc);

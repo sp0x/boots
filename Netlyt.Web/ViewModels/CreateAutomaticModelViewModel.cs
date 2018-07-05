@@ -6,5 +6,6 @@ namespace Netlyt.Web.ViewModels
         public string Name { get; set; }
         public ShortFieldDefinitionViewModel Target { get; set; }
         public string UserEmail { get; set; }
+        public bool GenerateFeatures { get; set; }
     }
 }

@@ -21,6 +21,7 @@ namespace Donut
         public DonutScriptInfo(IDonutScript dscript)
         {
             this.DonutScriptContent = dscript.ToString();
+            this.AssemblyPath = dscript.AssemblyPath;
         }
         
         public IDonutScript GetScript()

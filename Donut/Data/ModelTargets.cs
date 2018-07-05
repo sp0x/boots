@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using Donut.Models;
@@ -9,6 +10,9 @@ namespace Donut.Data
 {
     public class ModelTargets
     {
+        public long Id { get; set; }
+        [ForeignKey("Model")]
+        public long ModelId { get; set; }
         public virtual Model Model { get; set; }
         public virtual ICollection<FieldDefinition> Columns { get; set; }
         public virtual ICollection<TargetConstraint> Constraints { get; set; }

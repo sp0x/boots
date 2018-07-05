@@ -14,7 +14,7 @@ namespace Donut
         OrderByExpression StartingOrderBy { get; set; }
         ModelTargets Targets { get; set; }
         ScriptTypeInfo Type { get; set; }
-
+        string AssemblyPath { get; set; }
         void AddIntegrations(params Data.DataIntegration[] sourceIntegrations);
         DatasetMember GetDatasetMember(string dsName);
         IEnumerable<DatasetMember> GetDatasetMembers();

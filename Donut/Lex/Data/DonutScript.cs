@@ -26,6 +26,7 @@ namespace Donut.Lex.Data
         public OrderByExpression StartingOrderBy { get; set; }
         public HashSet<Donut.Data.DataIntegration> Integrations { get; set; }
         public ModelTargets Targets { get; set; }
+        public string AssemblyPath { get; set; }
 
         public void AddIntegrations(params Donut.Data.DataIntegration[] sourceIntegrations)
         {
@@ -68,6 +69,17 @@ namespace Donut.Lex.Data
 
         public class Factory
         {
+
+            public static DonutScript Create(string donutName, ModelTargets targets, DataIntegration integration)
+            {
+                var script = new DonutScript() { Type = new ScriptTypeInfo(donutName), Targets = targets };
+                ValidateIntegrations(integration);
+                script.AddIntegrations(integration);
+                script.Targets = targets;
+                ValidateIntegrations(integration);
+                return script;
+            }
+
             /// <summary>
             /// 
             /// </summary>
@@ -76,18 +88,12 @@ namespace Donut.Lex.Data
             /// <param name="integration"></param>
             /// <param name="featureBodies"></param>
             /// <returns></returns>
-            public static DonutScript CreateWithFeatures(string donutName, ModelTargets targets, Donut.Data.DataIntegration integration, params string[] featureBodies)
+            public static DonutScript CreateWithFeatures(string donutName, ModelTargets targets, DataIntegration integration, params string[] featureBodies)
             {
-                var ds = new DonutScript();
+                var script = Create(donutName, targets, integration);
                 ValidateIntegrations(integration);
-                ds.Type = new ScriptTypeInfo()
-                {
-                    Name = donutName
-                };
                 var tokenizer = new FeatureToolsTokenizer(integration);
                 int i = 0;
-                ds.AddIntegrations(integration);
-                ds.Targets = targets;
                 foreach (var fstring in featureBodies)
                 {
                     if (string.IsNullOrEmpty(fstring)) continue;
@@ -101,9 +107,8 @@ namespace Donut.Lex.Data
                         {
                             featureName = targets.Columns.First().Name;
                         }
-
                         var expFeature = new AssignmentExpression(new NameExpression(featureName), expFeatureBody);
-                        ds.Features.Add(expFeature);
+                        script.Features.Add(expFeature);
                     }
                     catch (Exception ex)
                     {
@@ -111,7 +116,7 @@ namespace Donut.Lex.Data
                     }
                     i++;
                 }
-                return ds;
+                return script;
             }
 
             private static void ValidateIntegrations(params Donut.Data.DataIntegration[] integrations)

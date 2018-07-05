@@ -11,7 +11,6 @@ using Donut.IntegrationSource;
 using Donut.Lex.Data;
 using Donut.Orion;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Service.Data;
@@ -20,15 +19,6 @@ using Model = Donut.Models.Model;
 
 namespace Netlyt.Service.Donut
 {
-    public static class Extensions
-    {
-        public static DonutOrionHandler GetOrionHandler(this IServiceProvider services)
-        {
-            var svc = services.GetService<DonutOrionHandler>();
-            if (svc == null) throw new Exception("Orion handler service not registered!");
-            return svc;
-        }
-    }
     public class DonutOrionHandler : IDisposable
     {
         private IOrionContext _orion;
@@ -40,6 +30,8 @@ namespace Netlyt.Service.Donut
         private IDatabaseConfiguration _dbConfig;
         private IRedisCacher _cacher;
         private IEmailSender _emailService;
+        private ModelService _modelService;
+        private DonutService _donutService;
 
         #region Events
 
@@ -65,6 +57,8 @@ namespace Netlyt.Service.Donut
             _compiler = compilerService;
             _serviceProvider = serviceProvider;
             _apiService = apiService;
+            _modelService = serviceProvider.GetService(typeof(ModelService)) as ModelService;
+            _donutService = serviceProvider.GetService(typeof(DonutService)) as DonutService;
             _integrationService = integrationService;
             _cacher = redisCacher;
             _dbConfig = dbc;
@@ -141,29 +135,17 @@ namespace Netlyt.Service.Donut
                 var featureBodies = features.Select(x => x.ToString()).ToArray();
                 string donutName = $"{model.ModelName}Donut";
                 DonutScript dscript = DonutScript.Factory.CreateWithFeatures(donutName, model.Targets, sourceIntegration, featureBodies);
-                dscript.Targets = model.Targets;
-                foreach (var integration in model.DataIntegrations)
-                {
-                    var ign = _db.Integrations
-                        .Include(x => x.Fields)
-                        .Include(x => x.Extras)
-                        .Include(x => x.APIKey)
-                        .Include(x=>x.AggregateKeys)
-                        .Include(x => x.PublicKey)
-                        .FirstOrDefault(x => x.Id == integration.IntegrationId);
-                    dscript.AddIntegrations(ign);
-                }
+                _modelService.AddIntegrationsToScript(dscript, model.DataIntegrations);
+                
                 Type donutType, donutContextType, donutFEmitterType;
                 _compiler.SetModel(model);
                 var assembly = _compiler.Compile(dscript, model.ModelName, out donutType, out donutContextType,
                     out donutFEmitterType);
-                model.DonutScript = new DonutScriptInfo(dscript);
-                model.DonutScript.AssemblyPath = assembly.Location;
-                model.DonutScript.Model = model;
+                model.SetScript(dscript);
                 _db.SaveChanges();
                 ModelFeaturesGenerated?.Invoke(this, model);
                 //We got the model, start training
-                var trainingResult = await TrainGeneratedFeatures(model, dscript, assembly, donutType, donutContextType,
+                var trainingResult = await TrainGeneratedFeatures(model, dscript, donutType, donutContextType,
                     donutFEmitterType);
             }
             catch (Exception ex)
@@ -174,13 +156,12 @@ namespace Netlyt.Service.Donut
         }
 
         private async Task<JToken> TrainGeneratedFeatures(Model model,
-            DonutScript ds,
-            Assembly assembly,
+            DonutScript script,
             Type donutType,
             Type donutContextType,
             Type donutFEmitterType)
         {
-            var sourceIntegration = ds.Integrations.FirstOrDefault();
+            var sourceIntegration = script.Integrations.FirstOrDefault();
             sourceIntegration = _db.Integrations
                 .Include(x => x.Fields)
                 .Include(x => x.Extras)
@@ -188,25 +169,8 @@ namespace Netlyt.Service.Donut
                 .Include(x => x.APIKey)
                 .Include(x=>x.AggregateKeys)
                 .FirstOrDefault(x => x.Id == sourceIntegration.Id);
-            var appAuth = sourceIntegration.APIKey;
-            if (appAuth == null) appAuth = sourceIntegration.PublicKey;
-
-            var collectioName = sourceIntegration.Collection;
-            IInputSource source = sourceIntegration.GetCollectionSource();
-            //source.ProgressInterval = 0.05;
-            var harvester = new Harvester<IntegratedDocument>(10);
-            //Create a donut and a donutRunner
-            var donutMachine = DonutGeneratorFactory.Create<IntegratedDocument>(donutType, donutContextType, sourceIntegration, _cacher, _serviceProvider);
-            harvester.AddIntegration(sourceIntegration, source);//source, appAuth, "SomeIntegrationName3");
-            IDonutfile donut = donutMachine.Generate();
-            donut.SetupCacheInterval(source.Size);
-            donut.ReplayInputOnFeatures = false;
-            //donut.SkipFeatureExtraction = true;
-            IDonutRunner<IntegratedDocument> donutRunner = DonutRunnerFactory.CreateByType<IntegratedDocument, IntegratedDocument>(donutType, donutContextType,
-                harvester, _dbConfig, sourceIntegration.FeaturesCollection);
-            var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutFEmitterType);
-
-            var result = await donutRunner.Run(donut, featureGenerator);
+            var result = await _donutService.Run(script, sourceIntegration, _serviceProvider);
+            
 
             var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration);
             var m_id = await _orion.Query(query);

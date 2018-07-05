@@ -27,7 +27,6 @@ namespace Netlyt.Service
             {
                 throw new CompilationFailed(compiler.GetError(emitResult.Result));
             }
-
             Assembly asm = emitResult.GetAssembly(); 
             var scriptName = script.Type.GetClassName();
             var scriptContextName = script.Type.GetContextName();
@@ -36,6 +35,7 @@ namespace Netlyt.Service
                 donutType = asm.GetType($"{assemblyName}.{scriptName}");
                 donutContext = asm.GetType($"{assemblyName}.{scriptContextName}");
                 featureGenerator = asm.GetType($"{assemblyName}.FeatureGenerator");
+                script.AssemblyPath = asm.Location;
             }
             else
             {

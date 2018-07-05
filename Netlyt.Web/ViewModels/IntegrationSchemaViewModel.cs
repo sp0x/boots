@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using Netlyt.Web.ViewModels;
 
-namespace Netlyt.Web.Controllers
+namespace Netlyt.Web.ViewModels
 {
     public class IntegrationSchemaViewModel
     {

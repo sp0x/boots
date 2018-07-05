@@ -82,6 +82,63 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("Integrations");
                 });
 
+            modelBuilder.Entity("Donut.Data.ModelTargets", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<long>("ModelId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModelId")
+                        .IsUnique();
+
+                    b.ToTable("ModelTargets");
+                });
+
+            modelBuilder.Entity("Donut.Data.TargetConstraint", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<long?>("AfterId");
+
+                    b.Property<long?>("BeforeId");
+
+                    b.Property<string>("Key");
+
+                    b.Property<long?>("ModelTargetsId");
+
+                    b.Property<int>("Type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AfterId");
+
+                    b.HasIndex("BeforeId");
+
+                    b.HasIndex("ModelTargetsId");
+
+                    b.ToTable("TargetConstraint");
+                });
+
+            modelBuilder.Entity("Donut.Data.TimeConstraint", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<int>("Days");
+
+                    b.Property<int>("Hours");
+
+                    b.Property<int>("Seconds");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TimeConstraint");
+                });
+
             modelBuilder.Entity("Donut.DonutFunction", b =>
                 {
                     b.Property<long>("Id")
@@ -158,9 +215,9 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("ModelName");
 
-                    b.Property<string>("TargetAttribute");
-
                     b.Property<string>("TrainingParams");
+
+                    b.Property<bool>("UseFeatures");
 
                     b.Property<string>("UserId");
 
@@ -275,6 +332,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<long>("IntegrationId");
 
+                    b.Property<long?>("ModelTargetsId");
+
                     b.Property<string>("Name");
 
                     b.Property<string>("Type");
@@ -284,6 +343,8 @@ namespace Netlyt.Service.Migrations
                     b.HasIndex("ExtrasId");
 
                     b.HasIndex("IntegrationId");
+
+                    b.HasIndex("ModelTargetsId");
 
                     b.ToTable("Fields");
                 });
@@ -639,6 +700,29 @@ namespace Netlyt.Service.Migrations
                         .HasForeignKey("PublicKeyId");
                 });
 
+            modelBuilder.Entity("Donut.Data.ModelTargets", b =>
+                {
+                    b.HasOne("Donut.Models.Model", "Model")
+                        .WithOne("Targets")
+                        .HasForeignKey("Donut.Data.ModelTargets", "ModelId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Donut.Data.TargetConstraint", b =>
+                {
+                    b.HasOne("Donut.Data.TimeConstraint", "After")
+                        .WithMany()
+                        .HasForeignKey("AfterId");
+
+                    b.HasOne("Donut.Data.TimeConstraint", "Before")
+                        .WithMany()
+                        .HasForeignKey("BeforeId");
+
+                    b.HasOne("Donut.Data.ModelTargets")
+                        .WithMany("Constraints")
+                        .HasForeignKey("ModelTargetsId");
+                });
+
             modelBuilder.Entity("Donut.DonutScriptInfo", b =>
                 {
                     b.HasOne("Donut.Models.Model", "Model")
@@ -725,6 +809,10 @@ namespace Netlyt.Service.Migrations
                         .WithMany("Fields")
                         .HasForeignKey("IntegrationId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Donut.Data.ModelTargets")
+                        .WithMany("Columns")
+                        .HasForeignKey("ModelTargetsId");
                 });
 
             modelBuilder.Entity("Donut.Source.FieldExtra", b =>

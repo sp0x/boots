@@ -224,7 +224,7 @@ namespace Netlyt.Web.Controllers
                 modelData.Name,
                 new List<DataIntegration>(new[] { integration }),
                 "",
-                true,
+                modelData.GenerateFeatures,
                 relations,
                 targets);
             return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
@@ -315,12 +315,11 @@ namespace Netlyt.Web.Controllers
             return Accepted(m_id);
         }
 
-        [HttpGet("/model/{id}/featureGenerationStatus")]
-        public IActionResult GetFeatureGenerationStatus(long id)
+        [HttpGet("/model/{modelId}/modelPrepStatus")]
+        public IActionResult GetModelPreparationStatus(long modelId)
         {
-            var generationTask = _modelService.GetFeatureGenerationTask(id);
-            if (generationTask == null) return NotFound();
-            return Json(new { status = generationTask.Status.ToString().ToLower() });
+            var status = _modelService.GetModelPrepStatus(modelId);
+            return Json(new { status = status.ToString().ToLower() });
         }
 
         [HttpGet("/model/{id}/trainingStatus")]
