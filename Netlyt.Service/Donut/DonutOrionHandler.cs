@@ -145,8 +145,7 @@ namespace Netlyt.Service.Donut
                 _db.SaveChanges();
                 ModelFeaturesGenerated?.Invoke(this, model);
                 //We got the model, start training
-                var trainingResult = await TrainGeneratedFeatures(model, dscript, donutType, donutContextType,
-                    donutFEmitterType);
+                var trainingResult = await ExtractAndTrainFeatures(model, dscript);
             }
             catch (Exception ex)
             {
@@ -155,11 +154,8 @@ namespace Netlyt.Service.Donut
             }
         }
 
-        private async Task<JToken> TrainGeneratedFeatures(Model model,
-            DonutScript script,
-            Type donutType,
-            Type donutContextType,
-            Type donutFEmitterType)
+        private async Task<JToken> ExtractAndTrainFeatures(Model model,
+            DonutScript script)
         {
             var sourceIntegration = script.Integrations.FirstOrDefault();
             sourceIntegration = _db.Integrations
@@ -169,12 +165,10 @@ namespace Netlyt.Service.Donut
                 .Include(x => x.APIKey)
                 .Include(x=>x.AggregateKeys)
                 .FirstOrDefault(x => x.Id == sourceIntegration.Id);
-            var result = await _donutService.Run(script, sourceIntegration, _serviceProvider);
-            
-
-            var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration);
-            var m_id = await _orion.Query(query);
-            return m_id;
+            //Run the donut to extract features
+            var result = await _donutService.RunExtraction(script, sourceIntegration, _serviceProvider);
+            var t_id = await _modelService.TrainModel(model, sourceIntegration);
+            return t_id;
         }
 
 

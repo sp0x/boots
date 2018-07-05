@@ -15,6 +15,7 @@ using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models;
+using Newtonsoft.Json.Linq;
 using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service
@@ -193,6 +194,13 @@ namespace Netlyt.Service
                     .FirstOrDefault(x => x.Id == integration.IntegrationId);
                 dscript.AddIntegrations(ign);
             }
+        }
+
+        public async Task<JToken> TrainModel(Model model, DataIntegration sourceIntegration)
+        {
+            var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration);
+            var m_id = await _orion.Query(query);
+            return m_id;
         }
     }
 }

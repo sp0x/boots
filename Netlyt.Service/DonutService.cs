@@ -14,7 +14,7 @@ namespace Netlyt.Service
 {
     public class DonutService
     {
-        public async Task<IHarvesterResult> Run(DonutScript script, DataIntegration integration, IServiceProvider serviceProvider)
+        public async Task<IHarvesterResult> RunExtraction(DonutScript script, DataIntegration integration, IServiceProvider serviceProvider)
         {
             var dbConfig = serviceProvider.GetService(typeof(IDatabaseConfiguration)) as IDatabaseConfiguration;
             var harvester = new Harvester<IntegratedDocument>(10);

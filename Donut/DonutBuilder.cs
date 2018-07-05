@@ -76,6 +76,7 @@ namespace Donut
         private Data.DataIntegration _integration;
         private Type _tContext;
         private IServiceProvider _serviceProvider;
+        private Type _featureEmitterType;
         public Type DonutType => typeof(TDonut);
         public Type DonutContextType => typeof(TContext);
 
@@ -105,6 +106,16 @@ namespace Donut
             var context = Activator.CreateInstance(_tContext, new object[] { _cacher, _integration, _serviceProvider });
             tobj.Context = context as TContext;
             return tobj;
+        }
+
+        public void SetEmitterType(Type featureEmitterType)
+        {
+            _featureEmitterType = featureEmitterType;
+        }
+
+        public Type GetEmitterType()
+        {
+            return _featureEmitterType;
         }
 
         public void WithContext<T>() where T : TContext

@@ -227,6 +227,11 @@ namespace Netlyt.Web.Controllers
                 modelData.GenerateFeatures,
                 relations,
                 targets);
+            //If we don`t use features, go straight to training
+            if (!newModel.UseFeatures)
+            {
+                var t_id = await _modelService.TrainModel(newModel, newModel.GetRootIntegration());
+            }
             return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
         }
 

@@ -17,6 +17,7 @@ namespace Donut.Source
         /// </summary>
         [BsonSerializer(typeof(TypeSerializer))]
         public string Type { get; set; }
+        [ForeignKey("Extras")]
         public long? ExtrasId { get; set; }
         public virtual FieldExtras Extras { get; set; }
 

@@ -68,6 +68,7 @@ namespace Donut.Data
             this.PublicKey = ApiAuth.Generate();
         }
 
+
         public DataIntegration(ICollection<FieldDefinition> fields, ICollection<ModelIntegration> models, 
             ICollection<IntegrationExtra> extras,
             ICollection<AggregateKey> aggregatekeys)
@@ -87,6 +88,18 @@ namespace Donut.Data
             {
                 Collection = Guid.NewGuid().ToString();
                 FeaturesCollection = $"{Collection}_features";
+            }
+        }
+
+        public string GetModelSourceCollection(Model mod)
+        {
+            if (mod.UseFeatures)
+            {
+                return FeaturesCollection;
+            }
+            else
+            {
+                return Collection;
             }
         }
 
