@@ -13,8 +13,12 @@ namespace Donut.Models
         public long ModelId { get; set; }
         public virtual Donut.Models.Model Model { get; set; }
         public DateTime TrainedTs { get; set; }
+        public string TargetName { get; set; }
         public double Accuracy { get; set; }
+        [Column(TypeName = "text")]
         public string FeatureImportance { get; set; }
+        [Column(TypeName = "text")]
+        public string AdvancedReport { get; set; }
         [Column(TypeName = "VARCHAR")]
         [StringLength(255)]
         public string ReportUrl { get; set; }

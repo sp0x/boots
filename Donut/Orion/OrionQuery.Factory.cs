@@ -154,7 +154,6 @@ namespace Donut.Orion
                     fields.Add(jsfld);
                 }
                 dataOptions["fields"] = fields;
-
                 parameters["models"] = models;
                 parameters["options"] = dataOptions;
                 parameters["model_id"] = model.Id;

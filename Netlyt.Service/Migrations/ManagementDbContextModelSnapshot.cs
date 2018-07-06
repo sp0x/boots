@@ -263,13 +263,19 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<double>("Accuracy");
 
-                    b.Property<string>("FeatureImportance");
+                    b.Property<string>("AdvancedReport")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FeatureImportance")
+                        .HasColumnType("text");
 
                     b.Property<long>("ModelId");
 
                     b.Property<string>("ReportUrl")
                         .HasColumnType("VARCHAR")
                         .HasMaxLength(255);
+
+                    b.Property<string>("TargetName");
 
                     b.Property<string>("TestResultsUrl")
                         .HasColumnType("VARCHAR")
