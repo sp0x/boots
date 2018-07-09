@@ -101,7 +101,7 @@ namespace Netlyt.Web.Controllers
             var mapped = _mapper.Map<ModelViewModel>(item);
             mapped.ApiKey = fIntegration.APIKey.AppId;
             mapped.ApiSecret = fIntegration.APIKey.AppSecret;
-            mapped.Endpoint = $"http://api.netlyt.com/model/{item.Id}/infer";
+            mapped.Endpoint = $"http://inference.netlyt.com/{item.Id}";
             if (item.Performance != null)
             {
                 mapped.Performance.IsRegression = true;

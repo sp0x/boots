@@ -1,4 +1,5 @@
 ﻿using Donut;
+using Donut.Data;
 using Donut.Models;
 using Donut.Source;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -24,6 +25,7 @@ namespace Netlyt.Service.Data
         public DbSet<ModelTrainingPerformance> ModelTrainingPerformance { get; set; }
         public DbSet<TrainingTask> TrainingTasks { get; set; }
         public DbSet<AggregateKey> AggregateKeys { get; set; }
+        public DbSet<ModelTargets> ModelTargets { get; set; }
 
         public ManagementDbContext(DbContextOptions<ManagementDbContext> options)
             : base(options)

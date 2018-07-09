@@ -208,7 +208,7 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpPost("/integration/schema")]
-        public async Task<IActionResult> GetUploadSchema()
+        public async Task<IActionResult> UploadAndGetSchema()
         {
             IIntegration newIntegration = null;
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
