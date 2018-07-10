@@ -151,6 +151,9 @@ namespace Donut.Orion
                 {
                     var jsfld = new JObject();
                     jsfld["name"] = field.Name;
+                    jsfld["is_key"] = rootIntegration.DataIndexColumn != null &&
+                                      !string.IsNullOrEmpty(rootIntegration.DataIndexColumn) &&
+                                      field.Name == rootIntegration.DataIndexColumn;
                     fields.Add(jsfld);
                 }
                 dataOptions["fields"] = fields;
