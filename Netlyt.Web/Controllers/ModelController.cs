@@ -219,6 +219,11 @@ namespace Netlyt.Web.Controllers
                 return NotFound("Integration not found.");
             }
             var modelName = modelData.Name.Replace(".", "_");
+            if (modelData.IdColumn != null && !string.IsNullOrEmpty(modelData.IdColumn.Name))
+            {
+                integration.DataIndexColumn = modelData.IdColumn.Name;
+                _db.SaveChanges();
+            }
             var targets = new ModelTargets().AddTarget(integration.GetField(modelData.Target.Name));
             var newModel = await _modelService.CreateModel(user,
                 modelData.Name,
