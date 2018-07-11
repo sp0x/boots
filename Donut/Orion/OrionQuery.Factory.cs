@@ -154,6 +154,14 @@ namespace Donut.Orion
                     jsfld["is_key"] = rootIntegration.DataIndexColumn != null &&
                                       !string.IsNullOrEmpty(rootIntegration.DataIndexColumn) &&
                                       field.Name == rootIntegration.DataIndexColumn;
+                    jsfld["type"] = "float";
+                    if (field.Value.IsDateTime)
+                    {
+                        jsfld["type"] = "datetime";
+                    }else if (field.Value.IsString)
+                    {
+                        jsfld["type"] = "str";
+                    }
                     fields.Add(jsfld);
                 }
                 dataOptions["fields"] = fields;
