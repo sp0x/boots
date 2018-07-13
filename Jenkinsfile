@@ -34,7 +34,7 @@ node {
                 //docker.withRegistry("https://registry.netlyt.com", 'offsite-docker-registry'){
                 //     newImage.push("latest")
                 //}
-                docker.withRegistry("344965022394.dkr.ecr.us-east-2.amazonaws.com",
+                docker.withRegistry("https://344965022394.dkr.ecr.us-east-2.amazonaws.com",
                      "ecr:us-east-2:aws_ecr") {
                     newImage.push()
                 }
