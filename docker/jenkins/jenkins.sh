@@ -9,9 +9,9 @@ then
 else
 	if [ "$LOG" == "file" ]
 	then
-		sudo dockerd --insecure-registry registry.netlyt.com $DOCKER_DAEMON_ARGS &>/var/log/docker.log &
+		sudo dockerd --insecure-registry registry.netlyt.com $DOCKER_DAEMON_ARGS &>/tmp/docker.log &
 	else
-		sudo dockerd --insecure-registry registry.netlyt.com $DOCKER_DAEMON_ARGS &>/var/log/docker.log &
+		sudo dockerd --insecure-registry registry.netlyt.com $DOCKER_DAEMON_ARGS &>/tmp/docker.log &
 	fi
 	(( timeout = 60 + SECONDS ))
 	until docker info >/dev/null 2>&1

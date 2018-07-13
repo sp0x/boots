@@ -1,7 +1,7 @@
 FROM microsoft/aspnetcore:2.0
 ARG source
 WORKDIR /app
-COPY published/netlyt .
+COPY published/ .
 
 RUN LIBUV_VERSION=1.11.0 \
 	&& apt-get update \

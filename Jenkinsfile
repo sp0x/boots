@@ -27,10 +27,16 @@ node {
        /* This builds the docker image*/ 
         try {
             dir("Netlyt.Web"){
-                newImage = docker.build("netlyt/netlyt")                
-                sh ' echo "Tests PASSED"' /* Volkswagen style for now*/     
-                docker.withRegistry("https://registry.netlyt.com", 'offsite-docker-registry'){
-                     newImage.push("latest")
+                newImage = docker.build("netlyt")                
+                sh ' echo "Tests PASSED"' /* Volkswagen style for now*/
+
+                //Our default docker registry
+                //docker.withRegistry("https://registry.netlyt.com", 'offsite-docker-registry'){
+                //     newImage.push("latest")
+                //}
+                docker.withRegistry("344965022394.dkr.ecr.us-east-2.amazonaws.com",
+                     "ecr:us-east-2:aws_ecr") {
+                    newImage.push()
                 }
             } 
         } catch (Exception e) {

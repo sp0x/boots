@@ -26,7 +26,7 @@ services:
       context: ./docker/jenkins
       dockerfile: Dockerfile
       args:
-        JENKINS_VERSION: 2.91
+        JENKINS_VERSION: 2.131
     container_name: jenkins
     restart: always  
     ports:
