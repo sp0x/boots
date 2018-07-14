@@ -25,19 +25,16 @@ node {
     } 
     stage('Build image') {
        /* This builds the docker image*/ 
-        try {
-            dir("Netlyt.Web"){
-                newImage = docker.build("netlyt")                
-                sh ' echo "Tests PASSED"' /* Volkswagen style for now*/
-
-                //Our default docker registry
-                //docker.withRegistry("https://registry.netlyt.com", 'offsite-docker-registry'){
-                //     newImage.push("latest")
-                //}
-                docker.withRegistry("https://344965022394.dkr.ecr.us-east-2.amazonaws.com", "ecr:us-east-2:aws_ecr") {
-                    newImage.push()
-                }
-            } 
+        try { 
+            newImage = docker.build("netlyt")                
+            sh ' echo "Tests PASSED"' /* Volkswagen style for now*/
+            //Our default docker registry
+            //docker.withRegistry("https://registry.netlyt.com", 'offsite-docker-registry'){
+            //     newImage.push("latest")
+            //}
+            docker.withRegistry("https://344965022394.dkr.ecr.us-east-2.amazonaws.com", "ecr:us-east-2:aws_ecr") {
+                newImage.push()
+            }
         } catch (Exception e) {
             slackSend baseUrl: 'https://netlyt.slack.com/services/hooks/jenkins-ci/', 
             channel: 'dev', color: 'bad', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} docker image failed: ${e.message}", 
