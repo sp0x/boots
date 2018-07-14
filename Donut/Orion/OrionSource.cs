@@ -38,7 +38,7 @@ namespace Donut.Orion
             string frame = e.Socket.ReceiveFrameString();
             //var inpuMessage = e.Socket.ReceiveMultipartMessage(); 
             //Debug.WriteLine("Received frame: " + frame);
-            OnMessage?.Invoke(this, frame); 
+            OnMessage?.Invoke(this, frame);
         }
 
         /// <summary>
@@ -53,7 +53,8 @@ namespace Donut.Orion
 
         public void Connect(string destination)
         {
-            Socket.Connect(destination); 
+            Console.WriteLine($"Connecting to Orion Node: {destination}");
+            Socket.Connect(destination);
         }
 
         /// <summary>
@@ -65,7 +66,7 @@ namespace Donut.Orion
         {
             Connect($"tcp://{destination}:{port}");
         }
-        
-        
+
+
     }
 }

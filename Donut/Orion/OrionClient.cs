@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using Netlyt.Interfaces;
@@ -55,7 +56,21 @@ namespace Donut.Orion
         {
             await Task.Run(() =>
             {
-                Connect(destinationIp, inputPort, outputPort);
+                while (true)
+                {
+                    try
+                    {
+                        Connect(destinationIp, inputPort, outputPort);
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(
+                            $"Could not connect to orion node at {destinationIp}:{inputPort}. Trying again in 5s. Err: " +
+                            ex.Message);
+                        Thread.Sleep(5000);
+                    }
+                }
             });
         }
 
