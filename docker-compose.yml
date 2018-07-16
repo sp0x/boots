@@ -7,15 +7,25 @@ volumes:
   pgdata:
 
 services:
+  balancer:
+    container_name: balancer
+    build:
+      context: ./haproxy
+    ports:
+      - "10.10.1.5:80:80"
+
   netlyt:
     image: netlyt
+    hostname: api.netlyt.com
     build:
-      context: ./Netlyt
+      context: .
       dockerfile: Dockerfile
     depends_on:
       - redis
       - mongo.netlyt.com 
       - postgres
+      - orion
+      - balancer
     ports:
       - "5000:5000"
       - "81:80"
@@ -111,4 +121,5 @@ services:
       - "3000:3000"
     env_file:
       - orion.env
+    
  
