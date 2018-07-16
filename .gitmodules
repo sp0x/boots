@@ -18,3 +18,7 @@
 	path = "Third party clients/php"
 	url = https://github.com/sp0x/PeeralyticsPhp.git
 	branch = master
+[submodule "netlyt_haproxy"]
+	path = "haproxy"
+	url = git@bitbucket.org:peeralytics/haproxy.git
+	branch = master
