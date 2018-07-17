@@ -4,6 +4,8 @@ using Donut.Models;
 using Donut.Source;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using DataIntegration = Donut.Data.DataIntegration;
@@ -26,12 +28,26 @@ namespace Netlyt.Service.Data
         public DbSet<TrainingTask> TrainingTasks { get; set; }
         public DbSet<AggregateKey> AggregateKeys { get; set; }
         public DbSet<ModelTargets> ModelTargets { get; set; }
+        public static readonly LoggerFactory Logger
+            = new LoggerFactory(new[]
+            {
+                new ConsoleLoggerProvider((category, level)
+                    => category == DbLoggerCategory.Database.Command.Name
+                       && (level == LogLevel.Critical
+                           || level == LogLevel.Error
+                           || level == LogLevel.Warning), true)
+            });
 
         public ManagementDbContext(DbContextOptions<ManagementDbContext> options)
             : base(options)
         {
-            
             //Console.WriteLine("Initialized context with options: " + options.ToString());
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseLoggerFactory(Logger);
+            base.OnConfiguring(optionsBuilder);
         }
 
         protected override void OnModelCreating(ModelBuilder builder)

@@ -27,10 +27,17 @@ namespace Netlyt.Web
     {
         public IConfiguration Configuration { get; private set; }
         private IOrionContext OrionContext { get; set; }
+        public IHostingEnvironment HostingEnvironment { get; }
 
-        public Startup(IConfiguration configuration)
+        public Startup(IHostingEnvironment env)
         {
-            Configuration = configuration;
+            HostingEnvironment = env;
+            var cfgBuilder = new ConfigurationBuilder()
+                .SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile($"appsettings.Development.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables();
+            Configuration = cfgBuilder.Build();
             DBConfig.GetInstance(Configuration);
             //            var dbConfig = DBConfig.GetGeneralDatabase();
             //            var mongoList = new MongoList(dbConfig, "1145146c-bff3-495f-ac1c-40afce4536fd");
