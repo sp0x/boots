@@ -25,5 +25,9 @@ ENV MONGO_HOST=mongo.netlyt.com
 ENV MONGO_DB=netvoid
 ENV MONGO_PORT=27017
 
+ENV PGSQL_HOST=postgres.netlyt.com
+ENV PGSQL_DB=netlyt
+ENV PGSQL_PASS=gpiowuert0g9
+
 CMD ["Netlyt.Web.dll"]
 ENTRYPOINT [ "dotnet" ]

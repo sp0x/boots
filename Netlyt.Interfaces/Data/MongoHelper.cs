@@ -48,7 +48,10 @@ namespace Netlyt.Interfaces.Data
         public static IMongoDatabase GetDatabase(IDatabaseConfiguration dbc)
         {
             var murlBuilder = new MongoUrlBuilder(dbc.GetUrl());
-            murlBuilder.AuthenticationSource = "admin";
+            if (!string.IsNullOrEmpty(murlBuilder.Username) && !string.IsNullOrEmpty(murlBuilder.Password))
+            {
+                murlBuilder.AuthenticationSource = "admin";
+            }
             var murl = murlBuilder.ToMongoUrl();
             var connection = new MongoClient(murl);
             var db = connection.GetDatabase(murl.DatabaseName);

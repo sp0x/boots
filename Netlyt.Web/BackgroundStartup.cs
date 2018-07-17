@@ -26,7 +26,7 @@ namespace Netlyt.Web
         public void ConfigureBackgroundServices()
         {
             var services = new ServiceCollection();
-            var postgresConnectionString = Configuration.GetConnectionString("PostgreSQLConnection");
+            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
             services.AddDbContext<ManagementDbContext>(options =>
                 {
                     options.UseLazyLoadingProxies();

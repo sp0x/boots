@@ -20,6 +20,9 @@
       "launchBrowser": true,
       "environmentVariables": {
         "MONGO_HOST": "mongo.netlyt.com",
+        "PGSQL_HOST": "loc.postgres.netlyt.com",
+        "PGSQL_PASS": "gpiowuert0g9",
+        "PGSQL_DB": "netlyt",
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "applicationUrl": "http://localhost:33838/"
