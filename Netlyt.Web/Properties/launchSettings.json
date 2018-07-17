@@ -19,10 +19,13 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "MONGO_HOST": "mongo.netlyt.com",
+        "MONGO_PASS": "gsoeghjoijasg43o0jw90e8bjsdfog",
+        "MONGO_HOST": "loc.mongo.netlyt.com",
         "PGSQL_HOST": "loc.postgres.netlyt.com",
+        "MONGO_PORT": "27017",
         "PGSQL_PASS": "gpiowuert0g9",
         "PGSQL_DB": "netlyt",
+        "MONGO_USER": "netlyt",
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "applicationUrl": "http://localhost:33838/"
