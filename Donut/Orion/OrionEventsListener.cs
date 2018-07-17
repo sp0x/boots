@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace Donut.Orion
@@ -35,13 +37,25 @@ namespace Donut.Orion
         /// 
         /// </summary>
         /// <param name="destinationIp"></param>
-        /// <param name="inputPort"></param>
-        /// <param name="outputPort"></param>
+        /// <param name="port"></param>
         public async void ConnectAsync(string destinationIp, int port)
         {
             await Task.Run(() =>
             {
-                Connect(destinationIp, port);
+                while (true)
+                {
+                    try
+                    {
+                        Connect(destinationIp, port);
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Could not connect to orion context at: {destinationIp}{port}");
+                        Thread.Sleep(5000);
+                    }
+                }
+               
             });
         }
     }
