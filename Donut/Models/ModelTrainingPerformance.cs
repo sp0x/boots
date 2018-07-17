@@ -18,6 +18,14 @@ namespace Donut.Models
         [Column(TypeName = "text")]
         public string FeatureImportance { get; set; }
         [Column(TypeName = "text")]
+        public string WeeklyUsage { get; set; }
+        [Column(TypeName = "text")]
+        public string MonthlyUsage { get; set; }
+        public DateTime LastRequestTs { get; set; }
+        [Column(TypeName = "VARCHAR")]
+        [StringLength(255)]
+        public string LastRequestIp { get; set; }
+        [Column(TypeName = "text")]
         public string AdvancedReport { get; set; }
         [Column(TypeName = "VARCHAR")]
         [StringLength(255)]

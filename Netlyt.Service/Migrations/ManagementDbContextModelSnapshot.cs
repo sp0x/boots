@@ -16,7 +16,7 @@ namespace Netlyt.Service.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
-                .HasAnnotation("ProductVersion", "2.1.0-rc1-32029")
+                .HasAnnotation("ProductVersion", "2.1.1-rtm-30846")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("Donut.AggregateKey", b =>
@@ -269,7 +269,16 @@ namespace Netlyt.Service.Migrations
                     b.Property<string>("FeatureImportance")
                         .HasColumnType("text");
 
+                    b.Property<string>("LastRequestIp")
+                        .HasColumnType("VARCHAR")
+                        .HasMaxLength(255);
+
+                    b.Property<DateTime>("LastRequestTs");
+
                     b.Property<long>("ModelId");
+
+                    b.Property<string>("MonthlyUsage")
+                        .HasColumnType("text");
 
                     b.Property<string>("ReportUrl")
                         .HasColumnType("VARCHAR")
@@ -282,6 +291,9 @@ namespace Netlyt.Service.Migrations
                         .HasMaxLength(255);
 
                     b.Property<DateTime>("TrainedTs");
+
+                    b.Property<string>("WeeklyUsage")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
