@@ -196,6 +196,7 @@ namespace Netlyt.Web.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("/model/createAuto")]
+        //[AllowAnonymous]
         [RequestSizeLimit(100_000_000)]
         public async Task<IActionResult> CreateAuto([FromBody]CreateAutomaticModelViewModel modelData)
         {
