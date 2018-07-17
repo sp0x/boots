@@ -24,7 +24,7 @@ namespace Donut.Models
         public DateTime LastRequestTs { get; set; }
         [Column(TypeName = "VARCHAR")]
         [StringLength(255)]
-        public string LastRequestIp { get; set; }
+        public string LastRequestIP { get; set; }
         [Column(TypeName = "text")]
         public string AdvancedReport { get; set; }
         [Column(TypeName = "VARCHAR")]

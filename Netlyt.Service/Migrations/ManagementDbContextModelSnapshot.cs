@@ -269,7 +269,7 @@ namespace Netlyt.Service.Migrations
                     b.Property<string>("FeatureImportance")
                         .HasColumnType("text");
 
-                    b.Property<string>("LastRequestIp")
+                    b.Property<string>("LastRequestIP")
                         .HasColumnType("VARCHAR")
                         .HasMaxLength(255);
 
