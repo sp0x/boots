@@ -15,6 +15,7 @@ using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service; 
 using Netlyt.Service.Models.Account;
+using Netlyt.Web.Extensions;
 using Netlyt.Web.Models.AccountViewModels;
 using Netlyt.Web.Services;
 using Netlyt.Web.ViewModels;

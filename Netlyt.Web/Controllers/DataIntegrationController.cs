@@ -1,4 +1,6 @@
-﻿using System.IO; 
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Orion;
@@ -35,6 +37,7 @@ namespace Netlyt.Web.Controllers
         private RemoteDataSource<IntegratedDocument> _documentStore; 
         private ApiService _apiService;
         private IIntegrationService _integrationService;
+        private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
 
         public DataIntegrationController(UserManager<User> userManager,
             IUserStore<User> userStore,
@@ -48,6 +51,7 @@ namespace Netlyt.Web.Controllers
             _apiService = apiService; 
             _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
             _integrationService = integrationService;
+            _actionDescriptorCollectionProvider = actionDescriptorCollectionProvider;
         }
 
 
@@ -59,7 +63,7 @@ namespace Netlyt.Web.Controllers
             {
                 success = true
             });
-        } 
+        }
 
         /// <summary>   (An Action that handles HTTP POST requests) Posts entity data record(s). </summary>
         ///

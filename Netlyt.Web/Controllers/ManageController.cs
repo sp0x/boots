@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
+using Netlyt.Web.Extensions;
 using Netlyt.Web.Models.ManageViewModels;
 using Netlyt.Web.Services;
 
@@ -46,26 +47,26 @@ namespace Netlyt.Web.Controllers
         [TempData]
         public string StatusMessage { get; set; }
 
-        [HttpGet]
-        public async Task<IActionResult> Index()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-            }
-
-            var model = new IndexViewModel
-            {
-                Username = user.UserName,
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
-                IsEmailConfirmed = user.EmailConfirmed,
-                StatusMessage = StatusMessage
-            };
-
-            return View(model);
-        }
+//        [HttpGet]
+//        public async Task<IActionResult> Index()
+//        {
+//            var user = await _userManager.GetUserAsync(User);
+//            if (user == null)
+//            {
+//                throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+//            }
+//
+//            var model = new IndexViewModel
+//            {
+//                Username = user.UserName,
+//                Email = user.Email,
+//                PhoneNumber = user.PhoneNumber,
+//                IsEmailConfirmed = user.EmailConfirmed,
+//                StatusMessage = StatusMessage
+//            };
+//
+//            return View(model);
+//        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
