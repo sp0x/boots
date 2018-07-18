@@ -82,17 +82,20 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("Integrations");
                 });
 
-            modelBuilder.Entity("Donut.Data.ModelTargets", b =>
+            modelBuilder.Entity("Donut.Data.ModelTarget", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
+
+                    b.Property<long?>("ColumnId");
 
                     b.Property<long>("ModelId");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ModelId")
-                        .IsUnique();
+                    b.HasIndex("ColumnId");
+
+                    b.HasIndex("ModelId");
 
                     b.ToTable("ModelTargets");
                 });
@@ -108,7 +111,7 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Key");
 
-                    b.Property<long?>("ModelTargetsId");
+                    b.Property<long?>("ModelTargetId");
 
                     b.Property<int>("Type");
 
@@ -118,7 +121,7 @@ namespace Netlyt.Service.Migrations
 
                     b.HasIndex("BeforeId");
 
-                    b.HasIndex("ModelTargetsId");
+                    b.HasIndex("ModelTargetId");
 
                     b.ToTable("TargetConstraint");
                 });
@@ -350,8 +353,6 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<long>("IntegrationId");
 
-                    b.Property<long?>("ModelTargetsId");
-
                     b.Property<string>("Name");
 
                     b.Property<string>("Type");
@@ -361,8 +362,6 @@ namespace Netlyt.Service.Migrations
                     b.HasIndex("ExtrasId");
 
                     b.HasIndex("IntegrationId");
-
-                    b.HasIndex("ModelTargetsId");
 
                     b.ToTable("Fields");
                 });
@@ -718,11 +717,15 @@ namespace Netlyt.Service.Migrations
                         .HasForeignKey("PublicKeyId");
                 });
 
-            modelBuilder.Entity("Donut.Data.ModelTargets", b =>
+            modelBuilder.Entity("Donut.Data.ModelTarget", b =>
                 {
+                    b.HasOne("Donut.Source.FieldDefinition", "Column")
+                        .WithMany()
+                        .HasForeignKey("ColumnId");
+
                     b.HasOne("Donut.Models.Model", "Model")
-                        .WithOne("Targets")
-                        .HasForeignKey("Donut.Data.ModelTargets", "ModelId")
+                        .WithMany("Targets")
+                        .HasForeignKey("ModelId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
@@ -736,9 +739,9 @@ namespace Netlyt.Service.Migrations
                         .WithMany()
                         .HasForeignKey("BeforeId");
 
-                    b.HasOne("Donut.Data.ModelTargets")
+                    b.HasOne("Donut.Data.ModelTarget")
                         .WithMany("Constraints")
-                        .HasForeignKey("ModelTargetsId");
+                        .HasForeignKey("ModelTargetId");
                 });
 
             modelBuilder.Entity("Donut.DonutScriptInfo", b =>
@@ -827,10 +830,6 @@ namespace Netlyt.Service.Migrations
                         .WithMany("Fields")
                         .HasForeignKey("IntegrationId")
                         .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("Donut.Data.ModelTargets")
-                        .WithMany("Columns")
-                        .HasForeignKey("ModelTargetsId");
                 });
 
             modelBuilder.Entity("Donut.Source.FieldExtra", b =>

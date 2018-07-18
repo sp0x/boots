@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
 using Donut.Lex.Generation;
@@ -63,7 +64,7 @@ namespace Donut.Lex.Generators
                 var member = (fExpression as NameExpression).Member?.ToString();
                 //In some cases we might just use the field
                 if (string.IsNullOrEmpty(member)) member = fExpression.ToString();
-                if (Script.Targets.Has(member))
+                if (Script.Targets.Any(x=>x.Column.Name==member))
                 {
                     fName = member;
                 }

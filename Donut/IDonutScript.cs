@@ -12,7 +12,7 @@ namespace Donut
         IList<MatchCondition> Filters { get; set; }
         HashSet<Data.DataIntegration> Integrations { get; set; }
         OrderByExpression StartingOrderBy { get; set; }
-        ModelTargets Targets { get; set; }
+        IEnumerable<ModelTarget> Targets { get; set; }
         ScriptTypeInfo Type { get; set; }
         string AssemblyPath { get; set; }
         void AddIntegrations(params Data.DataIntegration[] sourceIntegrations);

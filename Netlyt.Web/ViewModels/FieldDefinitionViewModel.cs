@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Netlyt.Web.ViewModels
 {
     public class FieldDefinitionViewModel

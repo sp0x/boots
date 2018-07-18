@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Donut.Data;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
 using Donut.Parsing.Tokens;
@@ -70,7 +71,8 @@ namespace Donut.Lex.Parsing
                 else if (expressionType == typeof(TargetExpression))
                 {
                     var targetField = new FieldDefinition((expression as TargetExpression).Attribute, typeof(Int32));
-                    newScript.Targets = new Donut.Data.ModelTargets().AddTarget(targetField);
+                    newScript.Targets = new List<ModelTarget>();
+                    ((List < ModelTarget > )newScript.Targets).Add(new ModelTarget(targetField));
                 }
                 else
                 {

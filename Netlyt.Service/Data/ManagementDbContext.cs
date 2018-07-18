@@ -27,7 +27,7 @@ namespace Netlyt.Service.Data
         public DbSet<ModelTrainingPerformance> ModelTrainingPerformance { get; set; }
         public DbSet<TrainingTask> TrainingTasks { get; set; }
         public DbSet<AggregateKey> AggregateKeys { get; set; }
-        public DbSet<ModelTargets> ModelTargets { get; set; }
+        public DbSet<ModelTarget> ModelTargets { get; set; }
         public static readonly LoggerFactory Logger
             = new LoggerFactory(new[]
             {

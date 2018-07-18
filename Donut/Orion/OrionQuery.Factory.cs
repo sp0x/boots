@@ -29,7 +29,7 @@ namespace Donut.Orion
             public static OrionQuery CreateFeatureDefinitionGenerationQuery(Model model,
                 IEnumerable<FeatureGenerationCollectionOptions> collections,
                 IEnumerable<FeatureGenerationRelation> relations,
-                ModelTargets targetAttribute)
+                params ModelTarget[] targetAttribute)
             {
                 var qr = new global::Donut.Orion.OrionQuery(global::Donut.Orion.OrionOp.GenerateFeatures);
                 var parameters = new JObject();
@@ -137,7 +137,8 @@ namespace Donut.Orion
                 var autoModel = new JObject();
                 var scoring = GetDefaultScoring();
                 parameters["client"] = model.User.UserName;
-                parameters["targets"] = CreateTargetsDef(model.Targets) as JObject;
+                //Todo update..
+                parameters["targets"] = CreateTargetsDef(model.Targets);
                 models["auto"] = autoModel; // GridSearchCV - param_grid
                 var sourceCol = ign.GetModelSourceCollection(model);
                 dataOptions["db"] = sourceCol;
@@ -176,41 +177,43 @@ namespace Donut.Orion
             /// <summary>
             /// Model target constraints to json
             /// </summary>
-            /// <param name="modelTargets"></param>
+            /// <param name="target"></param>
             /// <returns></returns>
-            private static JObject CreateTargetsDef(ModelTargets modelTargets)
+            private static JArray CreateTargetsDef(IEnumerable<ModelTarget> targets)
             {
                 var output = new JObject();
-                var arrColumns = new JArray();
+                var arrTargets = new JArray();
                 var arrConstraints = new JArray();
-                foreach (var col in modelTargets.Columns)
+                foreach (var target in targets)
                 {
-                    arrColumns.Add(col.Name);
-                }
-                foreach (var constraint in modelTargets.Constraints)
-                {
-                    var jsConstraint = new JObject();
-                    jsConstraint["type"] = constraint.Type.ToString().ToLower();
-                    jsConstraint["key"] = constraint.Key;
-                    if (constraint.After != null)
+                    var jsTgt = new JObject();
+                    jsTgt["column"] = target.Column.Name;
+                    foreach (var constraint in target.Constraints)
                     {
-                        jsConstraint["after"] = new JObject();
-                        jsConstraint["after"]["hours"] = constraint.After.Hours;
-                        jsConstraint["after"]["hours"] = constraint.After.Seconds;
-                        jsConstraint["after"]["hours"] = constraint.After.Days;
+                        var jsConstraint = new JObject();
+                        jsConstraint["type"] = constraint.Type.ToString().ToLower();
+                        jsConstraint["key"] = constraint.Key;
+                        if (constraint.After != null)
+                        {
+                            jsConstraint["after"] = new JObject();
+                            jsConstraint["after"]["hours"] = constraint.After.Hours;
+                            jsConstraint["after"]["hours"] = constraint.After.Seconds;
+                            jsConstraint["after"]["hours"] = constraint.After.Days;
+                        }
+                        if (constraint.Before != null)
+                        {
+                            jsConstraint["before"] = new JObject();
+                            jsConstraint["before"]["hours"] = constraint.Before.Hours;
+                            jsConstraint["before"]["hours"] = constraint.Before.Seconds;
+                            jsConstraint["before"]["hours"] = constraint.Before.Days;
+                        }
+                        arrConstraints.Add(jsConstraint);
                     }
-                    if (constraint.Before != null)
-                    {
-                        jsConstraint["before"] = new JObject();
-                        jsConstraint["before"]["hours"] = constraint.Before.Hours;
-                        jsConstraint["before"]["hours"] = constraint.Before.Seconds;
-                        jsConstraint["before"]["hours"] = constraint.Before.Days;
-                    }
-                    arrConstraints.Add(jsConstraint);
+                    jsTgt["constraints"] = arrConstraints;
+                    arrTargets.Add(jsTgt);
                 }
-                output["columns"] = arrColumns;
-                output["constraints"] = arrConstraints;
-                return output;
+
+                return arrTargets;
             }
 
             public static OrionQuery CreatePredictionQuery(Model model, DataIntegration getRootIntegration)

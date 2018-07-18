@@ -196,15 +196,21 @@ namespace Netlyt.Web.Controllers
         [HttpGet("{id}/schema")]
         public IActionResult GetSchema(long id)
         {
-            var item = _integrationService.GetById(id)
+            var ign = _integrationService.GetById(id)
                 .Include(x=>x.Fields)
+                .Include(x=>x.Models)
+                .ThenInclude(x=>x.Model)
+                .ThenInclude(x=>x.Targets)
                 .FirstOrDefault();
-            if (item == null)
+            if (ign == null)
             {
                 return new NotFoundResult();
             }
-            var fields = item.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
-            return Ok(fields);
+            var fields = ign.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
+            var schema = new IntegrationSchemaViewModel(ign.Id, fields);
+            schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
+                .Select(x => _mapper.Map<ModelTargetViewModel>(x));
+            return Json(schema);
         }
 
         [HttpPost("/integration/schema")]

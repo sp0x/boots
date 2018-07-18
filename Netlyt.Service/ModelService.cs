@@ -76,12 +76,12 @@ namespace Netlyt.Service
             string callbackUrl,
             bool generateFeatures,
             IEnumerable<FeatureGenerationRelation> relations, 
-            ModelTargets targets
+            ModelTarget target
             )
         {
             var newModel = new Model() { UseFeatures = generateFeatures, ModelName = name, Callback = callbackUrl };
             newModel.UserId = user.Id;
-            newModel.Targets = targets;
+            newModel.Targets = new List<ModelTarget>(new ModelTarget[]{ target });
 
             if (integrations != null)
             {
@@ -99,7 +99,7 @@ namespace Netlyt.Service
             }
             if (generateFeatures)
             {
-                await GenerateFeatures(newModel, relations, targets);
+                await GenerateFeatures(newModel, relations, target);
                 //newModel.FeatureGenerationTasks.Add(newTask);
                 //_context.FeatureGenerationTasks.Add(newTask);
                 //_context.SaveChanges();
@@ -119,10 +119,10 @@ namespace Netlyt.Service
             return script;
         }
 
-        public async Task GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, ModelTargets targets)
+        public async Task GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, ModelTarget target)
         {
-            var collections = newModel.GetFeatureGenerationCollections(targets);
-            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(newModel, collections, relations, targets);
+            var collections = newModel.GetFeatureGenerationCollections(target);
+            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(newModel, collections, relations, target);
             var result = await _orion.Query(query);
 //            var newTask = new FeatureGenerationTask();
 //            newTask.OrionTaskId = result["task_id"].ToString();

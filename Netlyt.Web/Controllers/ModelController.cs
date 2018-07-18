@@ -147,7 +147,7 @@ namespace Netlyt.Web.Controllers
             var user = await _userService.GetCurrentUser();
             var integration = _userService.GetUserIntegration(user, item.DataSource);
             var relations = item.Relations?.Select(x => new FeatureGenerationRelation(x[0], x[1]));
-            var targets = new ModelTargets().AddTarget(integration.GetField(item.TargetAttribute));
+            var targets = new ModelTarget(integration.GetField(item.TargetAttribute));
             //This really needs a builder..
             var newModel = await _modelService.CreateModel(user,
                 item.Name,
@@ -217,7 +217,7 @@ namespace Netlyt.Web.Controllers
                 integration.DataIndexColumn = modelData.IdColumn.Name;
                 _db.SaveChanges();
             }
-            var targets = new ModelTargets().AddTarget(integration.GetField(modelData.Target.Name));
+            var targets = new ModelTarget(integration.GetField(modelData.Target.Name));
             var newModel = await _modelService.CreateModel(user,
                 modelData.Name,
                 new List<DataIntegration>(new[] { integration }),
@@ -283,7 +283,7 @@ namespace Netlyt.Web.Controllers
             {
                 System.IO.File.Delete(targetFilePath);
                 var relations = new List<FeatureGenerationRelation>();
-                var targets = new ModelTargets().AddTarget(newIntegration.GetField(modelParams.Target));
+                var targets = new ModelTarget(newIntegration.GetField(modelParams.Target));
                 var newModel = await _modelService.CreateModel(user,
                     modelParams.Name,
                     new List<IIntegration>(new[] { newIntegration }),

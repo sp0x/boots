@@ -25,7 +25,7 @@ namespace Donut.Lex.Data
         public List<AssignmentExpression> Features { get; set; }
         public OrderByExpression StartingOrderBy { get; set; }
         public HashSet<Donut.Data.DataIntegration> Integrations { get; set; }
-        public ModelTargets Targets { get; set; }
+        public IEnumerable<ModelTarget> Targets { get; set; }
         public string AssemblyPath { get; set; }
 
         public void AddIntegrations(params Donut.Data.DataIntegration[] sourceIntegrations)
@@ -62,7 +62,7 @@ namespace Donut.Lex.Data
 
             if (Targets!=null)
             {
-                output += "target " + Targets.ToDonutScript() + "\n";
+                output += "target " + string.Join(", ", Targets.Select(z=> z.ToDonutScript())) + "\n";
             }
             return output;
         }
@@ -70,7 +70,7 @@ namespace Donut.Lex.Data
         public class Factory
         {
 
-            public static DonutScript Create(string donutName, ModelTargets targets, DataIntegration integration)
+            public static DonutScript Create(string donutName, IEnumerable<ModelTarget> targets, DataIntegration integration)
             {
                 var script = new DonutScript() { Type = new ScriptTypeInfo(donutName), Targets = targets };
                 ValidateIntegrations(integration);
@@ -88,7 +88,7 @@ namespace Donut.Lex.Data
             /// <param name="integration"></param>
             /// <param name="featureBodies"></param>
             /// <returns></returns>
-            public static DonutScript CreateWithFeatures(string donutName, ModelTargets targets, DataIntegration integration, params string[] featureBodies)
+            public static DonutScript CreateWithFeatures(string donutName, IEnumerable<ModelTarget> targets, DataIntegration integration, params string[] featureBodies)
             {
                 var script = Create(donutName, targets, integration);
                 ValidateIntegrations(integration);
@@ -103,9 +103,9 @@ namespace Donut.Lex.Data
                         var parser = new DonutSyntaxReader(tokenizer.Tokenize(fstring));
                         IExpression expFeatureBody = parser.ReadExpression();
                         if (expFeatureBody == null) continue;
-                        if (targets!=null && targets.Has(expFeatureBody.ToString()))
+                        if (targets!=null && targets.Any(x=>x.Column.Name==expFeatureBody.ToString()))
                         {
-                            featureName = targets.Columns.First().Name;
+                            featureName = targets.First().Column.Name;
                         }
                         var expFeature = new AssignmentExpression(new NameExpression(featureName), expFeatureBody);
                         script.Features.Add(expFeature);

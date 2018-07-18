@@ -10,7 +10,7 @@ namespace Netlyt.Service.Models
 {
     public static class Extensions
     {
-        public static IEnumerable<FeatureGenerationCollectionOptions> GetFeatureGenerationCollections(this Model model, ModelTargets targetAttributes)
+        public static IEnumerable<FeatureGenerationCollectionOptions> GetFeatureGenerationCollections(this Model model, ModelTarget targetAttributes)
         {
             var timestampservice = new TimestampService(null);
             foreach (var integration in model.DataIntegrations)

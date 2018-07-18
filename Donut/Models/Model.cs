@@ -20,7 +20,7 @@ namespace Donut.Models
         public virtual ICollection<ModelRule> Rules { get; set; }
         public virtual ICollection<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
         public virtual ICollection<TrainingTask> TrainingTasks { get; set; }
-        public virtual ModelTargets Targets { get; set; }
+        public virtual ICollection<ModelTarget> Targets { get; set; }
         [ForeignKey("DonutScript")]
         public long? DonutScriptId { get; set; }
         public virtual DonutScriptInfo DonutScript {get; set;}
@@ -45,6 +45,7 @@ namespace Donut.Models
             DataIntegrations = new HashSet<ModelIntegration>();
             FeatureGenerationTasks = new List<FeatureGenerationTask>();
             TrainingTasks = new List<TrainingTask>();
+            Targets = new List<ModelTarget>();
         }
 
         /// <summary>
