@@ -115,19 +115,11 @@ namespace Netlyt.Web.Controllers
         [AllowAnonymous]
         public IActionResult GetAsset(string path)
         {
-            var expPath = _configuration["experiments_path"];
-            var osNameAndVersion = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
-            var isWindows = osNameAndVersion.Contains("Windows");
-            if (isWindows)
-            {
-                path = path.Replace("/", "\\");
-                expPath = expPath.Replace("/", "\\");
-            }
-            var cwd = Environment.CurrentDirectory;
-            var fullExpPath = Path.Combine(cwd, expPath);
-            Trace.WriteLine(fullExpPath);
-            Console.WriteLine(fullExpPath);
-            var assetPath = fullExpPath + path;
+            var isAbsolute = false;
+            var expPath = OrionSink.GetExperimentsPath(_configuration, out isAbsolute, ref path);
+            Trace.WriteLine(expPath);
+            Console.WriteLine(expPath);
+            var assetPath = System.IO.Path.Combine(expPath, path);
             if (!System.IO.File.Exists(assetPath))
             {
                 return NotFound();

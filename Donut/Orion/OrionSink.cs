@@ -1,4 +1,7 @@
-﻿using NetMQ;
+﻿using System;
+using System.IO;
+using Microsoft.Extensions.Configuration;
+using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json.Linq;
 
@@ -72,6 +75,33 @@ namespace Donut.Orion
                 var x = 1;
                 x++;
             }
+        }
+
+        public static string GetExperimentsPath(IConfiguration configuration, out bool isAbs, ref string assetPath)
+        {
+            isAbs = false;
+            var cfg = configuration["experiments_path"];
+            if (cfg.Contains("experiments_path_abs"))
+            {
+                isAbs = configuration["experiments_path_abs"].ToString().ToLower() == "true";
+            }
+            var envExperiments = Environment.GetEnvironmentVariable("EXP_DIR");
+            if (!string.IsNullOrEmpty(envExperiments))
+            {
+                cfg = envExperiments;
+                isAbs = true;
+            }
+            var osNameAndVersion = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+            var isWindows = osNameAndVersion.Contains("Windows");
+            if (isWindows)
+            {
+                assetPath = assetPath.Replace("/", "\\");
+                cfg = cfg.Replace("/", "\\");
+            }
+
+            var cwd = Environment.CurrentDirectory;
+            var fullExpPath = !isAbs ? System.IO.Path.Combine(cwd, cfg) : cfg;
+            return fullExpPath;
         }
     }
 }
