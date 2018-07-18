@@ -220,5 +220,10 @@ namespace Netlyt.Service
             user.Email = newEmail;
             _context.SaveChanges();
         }
+
+        public User GetUsername(string modelEmail)
+        {
+            return _context.Users.FirstOrDefault(x => x.Email == modelEmail);
+        }
     }
 }

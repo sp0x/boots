@@ -18,11 +18,12 @@ namespace Netlyt.Service.Models.Account
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
         public string Password { get; set; }
-        [Required]
+        
         public string FirstName { get; set; }
-        [Required]
+        
         public string LastName { get; set; }
         [Required]
+        public string Token { get; set; }
         public string Org { get; set; }
         
     }

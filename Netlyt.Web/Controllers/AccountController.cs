@@ -87,13 +87,24 @@ namespace Netlyt.Web.Controllers
             {
                 // This doesn't count login failures towards account lockout
                 // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var result = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, true, lockoutOnFailure: false);
+                var emailuser = _userService.GetUsername(model.Email);
+                if (emailuser == null)
+                {
+                    var resp = Json(new { success = false, message = "Invalid login attempt." });
+                    resp.StatusCode = 400;
+                    return resp;
+                }
+                var result = await _signInManager.PasswordSignInAsync(emailuser.UserName, model.Password, true, lockoutOnFailure: false);
                 
                 if (result.Succeeded)
                 { 
                     _logger.LogInformation("User logged in."); 
                     _userService.InitializeUserSession(HttpContext.User);
-                    return Json(new {success = true}); 
+                    return Json(new
+                    {
+                        success = true,
+                        token = emailuser.Id
+                    }); 
                 }
                 if (result.RequiresTwoFactor)
                 {
@@ -107,7 +118,9 @@ namespace Netlyt.Web.Controllers
                 else
                 {
                     ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    return Json(new {success = false, message = "Invalid login attempt."}); 
+                    var resp = Json(new { success = false, message = "Invalid login attempt." });
+                    resp.StatusCode = 400;
+                    return resp;
                 }
             }
             return BadRequest();
@@ -258,6 +271,9 @@ namespace Netlyt.Web.Controllers
 
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     _logger.LogInformation("User created a new account with password.");
+                    var response = Json(new {success= true});
+                    response.StatusCode = 200;
+                    return response;
                     //return RedirectToLocal(returnUrl);
                 }
                 else
