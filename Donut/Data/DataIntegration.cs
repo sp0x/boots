@@ -216,7 +216,7 @@ namespace Donut.Data
         /// Gets the collection of the integration as a source.
         /// </summary>
         /// <returns></returns>
-        public IInputSource GetCollectionSource()
+        public IInputSource GetCollectionAsSource()
         {
             var inputFormatter = new BsonFormatter<ExpandoObject>();
             var mongoSource = MongoSource.CreateFromCollection(Collection, inputFormatter);

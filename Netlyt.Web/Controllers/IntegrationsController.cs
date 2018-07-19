@@ -40,6 +40,9 @@ namespace Netlyt.Web.Controllers
         private FormOptions _defaultFormOptions;
         private UserService _userService;
         private IMapper _mapper;
+
+        private IOrionContext _orionContext;
+
         // GET: /<controller>/
         public IntegrationsController(UserManager<User> userManager,
             IUserStore<User> userStore,
@@ -50,7 +53,8 @@ namespace Netlyt.Web.Controllers
             UserService userService,
             IIntegrationService integrationService,
             IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
-            IMapper mapper)
+            IMapper mapper,
+            IOrionContext orionContext)
         {
             _apiService = apiService;
             _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
@@ -58,6 +62,7 @@ namespace Netlyt.Web.Controllers
             _userService = userService;
             _integrationService = integrationService;
             _mapper = mapper;
+            _orionContext = orionContext;
         }
 
         [HttpGet("/integrations/me")]
@@ -194,7 +199,7 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpGet("{id}/schema")]
-        public IActionResult GetSchema(long id)
+        public async Task<IActionResult> GetSchema(long id)
         {
             var ign = _integrationService.GetById(id)
                 .Include(x=>x.Fields)
@@ -206,8 +211,11 @@ namespace Netlyt.Web.Controllers
             {
                 return new NotFoundResult();
             }
+            var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign);
+            var description = await _orionContext.Query(descQuery);
             var fields = ign.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
             var schema = new IntegrationSchemaViewModel(ign.Id, fields);
+            schema.AddDataDescription(description);
             schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
                 .Select(x => _mapper.Map<ModelTargetViewModel>(x));
             return Json(schema);

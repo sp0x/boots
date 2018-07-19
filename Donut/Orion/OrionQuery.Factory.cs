@@ -266,6 +266,17 @@ namespace Donut.Orion
                 qr["msg"] = fileParams;
                 return qr;
             }
+
+            public static OrionQuery CreateDataDescriptionQuery(DataIntegration ign)
+            {
+                var qr = new OrionQuery(OrionOp.AnalyzeFile);
+                var data = new JObject();
+                data["src"] = ign.Collection;
+                data["src_type"] = "collection";
+                data["formatting"] = new JObject();
+                qr["params"] = data;
+                return qr;
+            }
         }
     }
 }

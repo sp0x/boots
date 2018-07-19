@@ -18,7 +18,7 @@ namespace Netlyt.Service
         {
             var dbConfig = serviceProvider.GetService(typeof(IDatabaseConfiguration)) as IDatabaseConfiguration;
             var harvester = new Harvester<IntegratedDocument>(10);
-            IInputSource source = integration.GetCollectionSource();
+            IInputSource source = integration.GetCollectionAsSource();
 
             //Create a donut and a donutRunner
             var donutMachine = DonutGeneratorFactory.Create<IntegratedDocument>(script, integration, serviceProvider);
