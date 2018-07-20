@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Donut;
+using Donut.Data;
 using Donut.Models;
 using Donut.Source;
 using MongoDB.Bson;
@@ -15,6 +16,10 @@ namespace Netlyt.Web
         public DomainMapProfile()
         {
             CreateMap<ModelTrainingPerformance, ModelTrainingPerformanceViewModel>();
+            CreateMap<FieldDefinition, FieldDefinitionViewModel>();
+            CreateMap<DonutScriptInfo, DonutScriptViewModel>();
+            CreateMap<ModelTarget, ModelTargetViewModel>()
+                .ForMember(x=>x.Column, opt=> opt.MapFrom(src=>src.Column));
             CreateMap<Model, ModelViewModel>()
                 .ForMember(x => x.Performance, opt => opt.MapFrom(src => src.Performance));
             CreateMap<ApiAuth, ApiAuthViewModel>()

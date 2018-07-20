@@ -5,6 +5,7 @@ using Donut.Data;
 using Donut.Encoding;
 using Donut.Integration;
 using Donut.Models;
+using Donut.Source;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Netlyt.Interfaces;
@@ -29,6 +30,7 @@ namespace Donut.Orion
             public static OrionQuery CreateFeatureDefinitionGenerationQuery(Model model,
                 IEnumerable<FeatureGenerationCollectionOptions> collections,
                 IEnumerable<FeatureGenerationRelation> relations,
+                IEnumerable<FieldDefinition> selectedFields,
                 params ModelTarget[] targetAttribute)
             {
                 var qr = new global::Donut.Orion.OrionQuery(global::Donut.Orion.OrionOp.GenerateFeatures);
@@ -40,6 +42,8 @@ namespace Donut.Orion
                 parameters["export_features"] = true;
                 var collectionsArray = new JArray();
                 var internalEntities = new JArray();
+                Func<FieldDefinition, bool> fieldFilter = (field) =>
+                    selectedFields == null || selectedFields.Any(x => x.Id == field.Id);
                 foreach (var cl in collections)
                 {
                     if (string.IsNullOrEmpty(cl.TimestampField))
@@ -55,9 +59,10 @@ namespace Donut.Orion
                     collection["index"] = cl.IndexBy;
                     collection["timestamp"] = cl.TimestampField;
                     collection["internal_entity_keys"] = null;
-                    var binFields =
-                        cl.Integration.Fields.Where(x => x.DataEncoding == FieldDataEncoding.BinaryIntId);
-                    collection["fields"] = GetFieldsOptions(cl.Integration);
+                    //var binFields =
+                    //    cl.Integration.Fields.Where(x => x.DataEncoding == FieldDataEncoding.BinaryIntId);
+                    collection["fields"] = GetFieldsOptions(cl.Integration, fieldFilter);
+
                     if (cl.InternalEntity != null)
                     {
                         var intEntity = new JObject();
@@ -80,10 +85,7 @@ namespace Donut.Orion
                         relationsArray.Add(new JArray(new object[] { relation.Attribute1, relation.Attribute2 }));
                     }
                 }
-                //Targets
                 var targetsObj = new JObject();
-
-
                 parameters["relations"] = relationsArray;
                 parameters["targets"] = targetsObj;
                 parameters["internal_entities"] = internalEntities;
@@ -91,10 +93,11 @@ namespace Donut.Orion
                 return qr;
             }
 
-            private static JArray GetFieldsOptions(IIntegration cl)
+            private static JArray GetFieldsOptions(IIntegration cl, Func<FieldDefinition, bool> fieldFilter = null)
             {
                 var fields = new JArray();
-                foreach (var fld in cl.Fields)
+                if (fieldFilter == null) fieldFilter = (x) => true;
+                foreach (var fld in cl.Fields.Where(fieldFilter))
                 {
                     var isEncoded = fld.DataEncoding != FieldDataEncoding.None;
                     if (!isEncoded)

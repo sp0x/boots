@@ -227,6 +227,16 @@ namespace Donut.Data
         {
             return Fields.FirstOrDefault(x => x.Name == fieldName);
         }
+
+        public FieldDefinition GetField(long id)
+        {
+            return Fields.FirstOrDefault(x => x.Id == id);
+        }
+
+        public IEnumerable<FieldDefinition> GetFields(IEnumerable<string> names)
+        {
+            return this.Fields.Where(x => names.Contains(x.Name));
+        }
     }
 
     public class FieldDefinitionComparer : IEqualityComparer<IFieldDefinition>

@@ -31,5 +31,10 @@ namespace Donut
             IDonutScript dscript = parser.ParseDonutScript();
             return dscript;
         }
+
+        public override string ToString()
+        {
+            return DonutScriptContent;
+        }
     }
 }

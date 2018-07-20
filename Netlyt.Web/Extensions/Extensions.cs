@@ -1,0 +1,45 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Donut.Data;
+using Donut.Source;
+using Netlyt.Web.ViewModels;
+
+namespace Netlyt.Web.Extensions
+{
+    public static class Extensions
+    {
+
+        public static IEnumerable<ModelTarget> ToModelTargets(this IEnumerable<TargetSelectionViewModel> viewmodels, DataIntegration integration)
+        {
+            foreach (var vm in viewmodels)
+            {
+                var modelTarget = new ModelTarget(integration.GetField(vm.FieldId));
+                if (vm.TimeShift != null)
+                {
+                    var constraint = vm.TimeShift.TimeToTargetConstraint(integration.DataTimestampColumn);
+                    if (constraint != null)
+                    {
+                        modelTarget.Constraints.Add(constraint);
+                    }
+                }
+                yield return modelTarget;
+            }
+        }
+
+        public static TargetConstraint TimeToTargetConstraint(this TimeConstraintViewModel timeshift, string timestampColumn)
+        {
+            if (string.IsNullOrEmpty(timestampColumn)) return null;
+            var constraint = new TargetConstraint();
+            constraint.Type = TargetConstraintType.Time;
+            constraint.Key = timestampColumn;
+            constraint.After = new TimeConstraint();
+            constraint.After.Years = timeshift.Year;
+            constraint.After.Months = timeshift.Month;
+            constraint.After.Days = timeshift.Day;
+            constraint.After.Hours = timeshift.Hour;
+            return constraint;
+        }
+    }
+}

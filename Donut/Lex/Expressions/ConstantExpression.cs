@@ -13,7 +13,17 @@
     public class StringExpression
         : Expression
     {
-        public string Value { get; set; } 
+        public string Value { get; set; }
+
+        public StringExpression()
+        {
+
+        }
+
+        public StringExpression(string s)
+        {
+            Value = s;
+        }
         public override string ToString()
         {
             return Value;

@@ -5,6 +5,7 @@ using Donut.Data;
 using Donut.Lex.Expressions;
 using Donut.Lex.Parsing;
 using Donut.Parsing.Tokenizers;
+using Donut.Source;
 using Netlyt.Interfaces;
 
 namespace Donut.Lex.Data
@@ -70,12 +71,14 @@ namespace Donut.Lex.Data
         public class Factory
         {
 
-            public static DonutScript Create(string donutName, IEnumerable<ModelTarget> targets, DataIntegration integration)
+            public static DonutScript Create(
+                string donutName,
+                IEnumerable<ModelTarget> targets,
+                DataIntegration integration)
             {
                 var script = new DonutScript() { Type = new ScriptTypeInfo(donutName), Targets = targets };
                 ValidateIntegrations(integration);
                 script.AddIntegrations(integration);
-                script.Targets = targets;
                 ValidateIntegrations(integration);
                 return script;
             }

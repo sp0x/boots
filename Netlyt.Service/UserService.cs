@@ -207,6 +207,22 @@ namespace Netlyt.Service
             return integration;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public DataIntegration GetUserIntegration(User user, long id)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+            var integration = _context.Integrations.FirstOrDefault(x => x.APIKey != null
+                                                                        && (user.ApiKeys.Any(y => y.ApiId == x.APIKey.Id)
+                                                                            || user.ApiKeys.Any(y => y.ApiId == x.PublicKeyId))
+                                                                        && x.Id == id);
+            return integration;
+        }
+
 
         public User GetByApiKey(ApiAuth appAuth)
         {

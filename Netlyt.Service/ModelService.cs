@@ -7,8 +7,12 @@ using Donut;
 using Donut.Data;
 using Donut.Integration;
 using Donut.Lex.Data;
+using Donut.Lex.Expressions;
+using Donut.Lex.Parsing;
 using Donut.Models;
 using Donut.Orion;
+using Donut.Parsing.Tokenizers;
+using Donut.Source;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
@@ -68,6 +72,8 @@ namespace Netlyt.Service
         /// <param name="callbackUrl"></param>
         /// <param name="generateFeatures">If feature generation should be ran. This is only done if there are any existing integrations for this model.</param>
         /// <param name="relations"></param>
+        /// <param name="selectedFields"></param>
+        /// <param name="targets"></param>
         /// <returns></returns>
         public async Task<Model> CreateModel(
             User user, 
@@ -75,13 +81,14 @@ namespace Netlyt.Service
             IEnumerable<IIntegration> integrations, 
             string callbackUrl,
             bool generateFeatures,
-            IEnumerable<FeatureGenerationRelation> relations, 
-            ModelTarget target
+            IEnumerable<FeatureGenerationRelation> relations,
+            IEnumerable<FieldDefinition> selectedFields,
+            params ModelTarget[] targets
             )
         {
             var newModel = new Model() { UseFeatures = generateFeatures, ModelName = name, Callback = callbackUrl };
             newModel.UserId = user.Id;
-            newModel.Targets = new List<ModelTarget>(new ModelTarget[]{ target });
+            newModel.Targets = new List<ModelTarget>(targets);
 
             if (integrations != null)
             {
@@ -99,30 +106,61 @@ namespace Netlyt.Service
             }
             if (generateFeatures)
             {
-                await GenerateFeatures(newModel, relations, target);
-                //newModel.FeatureGenerationTasks.Add(newTask);
-                //_context.FeatureGenerationTasks.Add(newTask);
-                //_context.SaveChanges();
+                await GenerateFeatures(newModel, relations, selectedFields, targets);
             }
             else
             {
-                newModel.SetScript(GenerateDonutScriptForModel(newModel));
+                var script = GenerateDonutScriptForModel(newModel, selectedFields);
+                newModel.SetScript(script);
+            }
+            try
+            {
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                throw new Exception("Could not create a new model!");
             }
             return newModel;
         }
 
-        private DonutScript GenerateDonutScriptForModel(Model model)
+        private DonutScript GenerateDonutScriptForModel(Model model, IEnumerable<FieldDefinition> selectedFields = null)
         {
             var donutName = $"{model.ModelName}Donut";
             var rootIntegration = model.GetRootIntegration();
             var script = DonutScript.Factory.Create(donutName, model.Targets, rootIntegration);
+            if (selectedFields != null)
+            {
+                foreach (var fld in selectedFields)
+                {
+                    var feature = IdentityFeature("f_" + fld.Name, fld);
+                    script.Features.Add(feature as AssignmentExpression);
+                }
+            }
             return script;
         }
 
-        public async Task GenerateFeatures(Model newModel, IEnumerable<FeatureGenerationRelation> relations, ModelTarget target)
+        public IExpression IdentityFeature(string name, FieldDefinition fld)
         {
-            var collections = newModel.GetFeatureGenerationCollections(target);
-            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(newModel, collections, relations, target);
+            //TODO: make this work with multiple integrations
+            //var tokenizer = new FeatureToolsTokenizer(fld.Integration);
+            //var parser = new DonutSyntaxReader(tokenizer.Tokenize(fld.Name));
+            //IExpression expFeatureBody = parser.ReadExpression();
+            var featureName = new NameExpression(name);
+            var columnName = new NameExpression(fld.Name);
+            var expr = new AssignmentExpression(featureName, columnName);
+            return expr;
+        }
+
+        public async Task GenerateFeatures(Model newModel,
+            IEnumerable<FeatureGenerationRelation> relations,
+            IEnumerable<FieldDefinition> fields,
+            params ModelTarget[] targets)
+        {
+            var integrations = newModel.DataIntegrations.Select(x => x.Integration);
+            var collections = integrations.GetFeatureGenerationCollections(targets);
+            var query = OrionQuery.Factory.CreateFeatureDefinitionGenerationQuery(newModel, collections, relations, fields, targets);
             var result = await _orion.Query(query);
 //            var newTask = new FeatureGenerationTask();
 //            newTask.OrionTaskId = result["task_id"].ToString();

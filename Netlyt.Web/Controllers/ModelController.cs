@@ -19,6 +19,7 @@ using Microsoft.Extensions.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
+using Netlyt.Web.Extensions;
 using Netlyt.Web.Helpers;
 using Netlyt.Web.ViewModels;
 using Newtonsoft.Json;
@@ -60,8 +61,8 @@ namespace Netlyt.Web.Controllers
             _db = db;
         }
 
-        [HttpGet("/model/mymodels")]
-        public async Task<IEnumerable<ModelViewModel>> GetAll([FromQuery] int page)
+        [HttpGet("/model/mymodels/{type}")]
+        public async Task<IEnumerable<ModelViewModel>> GetAll([FromQuery] int page, string type)
         {
             var userModels = await _userService.GetMyModels(page);
             var viewModels = userModels.Select(m => _mapper.Map<ModelViewModel>(m));
@@ -132,32 +133,8 @@ namespace Netlyt.Web.Controllers
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        [HttpPost("/model")]
-        public async Task<IActionResult> Create([FromBody] ModelCreationViewModel item)
-        {
-            if (item == null)
-            {
-                return BadRequest();
-            }
-            var user = await _userService.GetCurrentUser();
-            var integration = _userService.GetUserIntegration(user, item.DataSource);
-            var relations = item.Relations?.Select(x => new FeatureGenerationRelation(x[0], x[1]));
-            var targets = new ModelTarget(integration.GetField(item.TargetAttribute));
-            //This really needs a builder..
-            var newModel = await _modelService.CreateModel(user,
-                item.Name,
-                new List<DataIntegration>(new[] { integration }),
-                item.Callback,
-                item.GenerateFeatures,
-                relations,
-                targets);
-            return CreatedAtRoute("GetById", new { id = newModel.Id }, item);
-        }
+
+
         [AllowAnonymous]
         [HttpPost("/model/createUser")]
         public async Task<IActionResult> CreateUser()
@@ -184,6 +161,62 @@ namespace Netlyt.Web.Controllers
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        [HttpPost("/model")]
+        public async Task<IActionResult> Create([FromBody] ModelCreationViewModel item)
+        {
+            if (item == null) return BadRequest();
+            var user = await _userService.GetCurrentUser();
+            var integration = _userService.GetUserIntegration(user, item.DataSource);
+            var relations = item.Relations?.Select(x => new FeatureGenerationRelation(x[0], x[1]));
+            var targets = new ModelTarget(integration.GetField(item.TargetAttribute));
+            //This really needs a builder..
+            var newModel = await _modelService.CreateModel(user,
+                item.Name,
+                new List<DataIntegration>(new[] { integration }),
+                item.Callback,
+                item.GenerateFeatures,
+                relations,
+                null,
+                targets);
+            return CreatedAtRoute("GetById", new { id = newModel.Id }, item);
+        }
+
+        /// <summary>
+        /// TODO: Clean these create methods once we dont have to support multiple UIs..
+        /// </summary>
+        /// <param name="props"></param>
+        /// <returns></returns>
+        [HttpPost("/model/createEmpty")]
+        public async Task<IActionResult> CreateEmpty([FromBody] CreateEmptyModelViewModel props)
+        {
+            if (props == null) return BadRequest();
+            if (string.IsNullOrEmpty(props.ModelName)) return BadRequest("Model name is required.");
+            if (props.Targets == null) return BadRequest("Model targets are required.");
+            var user = await _userService.GetCurrentUser();
+            var integration = _userService.GetUserIntegration(user, props.IntegrationId);
+            var modelName = props.ModelName.Replace(".", "_");
+            if (props.IdColumn != null && !string.IsNullOrEmpty(props.IdColumn.Name))
+            {
+                integration.DataIndexColumn = props.IdColumn.Name;
+                _db.SaveChanges();
+            }
+            var targets = props.Targets.ToModelTargets(integration);//new ModelTarget(integration.GetField(modelData.Target.Name));
+            var newModel = await _modelService.CreateModel(user,
+                modelName,
+                new List<DataIntegration>(new[] { integration }),
+                props.CallbackUrl,
+                props.GenerateFeatures,
+                null,
+                integration.GetFields(props.FeatureCols),
+                targets.ToArray());
+            return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
+        }
+
+        /// <summary>
         /// Automatically creates a new model with generated features and model parameters
         /// </summary>
         /// <returns></returns>
@@ -197,7 +230,6 @@ namespace Netlyt.Web.Controllers
             {
                 _userService.SetUserEmail(user, modelData.UserEmail);
             }
-            var relations = new List<FeatureGenerationRelation>();
             if (modelData.Target == null || string.IsNullOrEmpty(modelData.Target.Name))
             {
                 return BadRequest("Target is required.");
@@ -219,11 +251,12 @@ namespace Netlyt.Web.Controllers
             }
             var targets = new ModelTarget(integration.GetField(modelData.Target.Name));
             var newModel = await _modelService.CreateModel(user,
-                modelData.Name,
+                modelName,
                 new List<DataIntegration>(new[] { integration }),
                 "",
                 modelData.GenerateFeatures,
-                relations,
+                null,
+                null,
                 targets);
             //If we don`t use features, go straight to training
             if (!newModel.UseFeatures)
@@ -282,14 +315,14 @@ namespace Netlyt.Web.Controllers
             if (result != null)
             {
                 System.IO.File.Delete(targetFilePath);
-                var relations = new List<FeatureGenerationRelation>();
                 var targets = new ModelTarget(newIntegration.GetField(modelParams.Target));
                 var newModel = await _modelService.CreateModel(user,
                     modelParams.Name,
                     new List<IIntegration>(new[] { newIntegration }),
                     "",
                     true,
-                    relations,
+                    null,
+                    null,
                     targets);
                 return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
             }
