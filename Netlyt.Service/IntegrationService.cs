@@ -128,6 +128,7 @@ namespace Netlyt.Service
         public void Remove(DataIntegration importTaskIntegration)
         {
             _context.Integrations.Remove(importTaskIntegration);
+            importTaskIntegration.AggregateKeys.Clear();
             _context.SaveChanges();
             if (!string.IsNullOrEmpty(importTaskIntegration.Collection))
             {

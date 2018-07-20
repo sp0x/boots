@@ -25,13 +25,13 @@ namespace Donut.Orion
             /// <param name="model"></param>
             /// <param name="collections"></param>
             /// <param name="relations"></param>
-            /// <param name="targetAttribute">A collection's attribute to target. Example `Users.someField` </param>
+            /// <param name="targetAttributes">A collection's attribute to target. Example `Users.someField` </param>
             /// <returns></returns>
             public static OrionQuery CreateFeatureDefinitionGenerationQuery(Model model,
                 IEnumerable<FeatureGenerationCollectionOptions> collections,
                 IEnumerable<FeatureGenerationRelation> relations,
                 IEnumerable<FieldDefinition> selectedFields,
-                params ModelTarget[] targetAttribute)
+                params ModelTarget[] targetAttributes)
             {
                 var qr = new global::Donut.Orion.OrionQuery(global::Donut.Orion.OrionOp.GenerateFeatures);
                 var parameters = new JObject();
@@ -84,10 +84,9 @@ namespace Donut.Orion
                     {
                         relationsArray.Add(new JArray(new object[] { relation.Attribute1, relation.Attribute2 }));
                     }
-                }
-                var targetsObj = new JObject();
+                } 
                 parameters["relations"] = relationsArray;
-                parameters["targets"] = targetsObj;
+                parameters["targets"] = CreateTargetsDef(targetAttributes);
                 parameters["internal_entities"] = internalEntities;
                 qr["params"] = parameters;
                 return qr;
@@ -184,13 +183,12 @@ namespace Donut.Orion
             /// <returns></returns>
             private static JArray CreateTargetsDef(IEnumerable<ModelTarget> targets)
             {
-                var output = new JObject();
                 var arrTargets = new JArray();
-                var arrConstraints = new JArray();
                 foreach (var target in targets)
                 {
-                    var jsTgt = new JObject();
-                    jsTgt["column"] = target.Column.Name;
+                    var jsTarget = new JObject();
+                    var arrConstraints = new JArray();
+                    jsTarget["column"] = target.Column.Name;
                     foreach (var constraint in target.Constraints)
                     {
                         var jsConstraint = new JObject();
@@ -212,10 +210,9 @@ namespace Donut.Orion
                         }
                         arrConstraints.Add(jsConstraint);
                     }
-                    jsTgt["constraints"] = arrConstraints;
-                    arrTargets.Add(jsTgt);
+                    jsTarget["constraints"] = arrConstraints;
+                    arrTargets.Add(jsTarget);
                 }
-
                 return arrTargets;
             }
 

@@ -85,15 +85,38 @@ namespace Netlyt.Web.Controllers
             return Json(param);
         }
 
+        [HttpGet("/model/{id}/performance", Name = "GetModelPerformance")]
+        [AllowAnonymous]
+        public IActionResult GetPerformance(long id)
+        {
+            var item = _modelService.GetById(id);
+            if (item == null) return NotFound();
+
+            var fmi = item.DataIntegrations.FirstOrDefault();
+            var fIntegration = _db.Integrations
+                .Include(x => x.APIKey)
+                .FirstOrDefault(x => x.Id == fmi.IntegrationId);
+
+            var mapped = _mapper.Map<ModelViewModel>(item);
+            mapped.ApiKey = fIntegration.APIKey.AppId;
+            mapped.ApiSecret = fIntegration.APIKey.AppSecret;
+            mapped.Endpoint = $"http://inference.netlyt.com/";
+            if (item.Performance != null)
+            {
+                mapped.Performance.IsRegression = true;
+                mapped.Performance.ReportUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.ReportUrl}";
+                mapped.Performance.TestResultsUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.TestResultsUrl}";
+            }
+            return Json(mapped.Performance);
+        }
+
         [HttpGet("/model/{id}", Name = "GetById")]
         [AllowAnonymous]
         public IActionResult GetById(long id)
         {
             var item = _modelService.GetById(id);
-            if (item == null)
-            {
-                return NotFound();
-            }
+            if (item == null) return NotFound();
+            
             var fmi = item.DataIntegrations.FirstOrDefault();
             var fIntegration = _db.Integrations
                 .Include(x=>x.APIKey)
@@ -364,6 +387,21 @@ namespace Netlyt.Web.Controllers
             var trainingTask = _modelService.GetTrainingStatus(id);
             if (trainingTask == null) return NotFound();
             return Json(new {status = trainingTask.Status.ToString().ToLower()});
+        }
+
+        [HttpGet("/model/{id}/status")]
+        public IActionResult GetStatus(long id)
+        {
+            var trainingTask = _modelService.GetTrainingStatus(id);
+            if (trainingTask != null)
+            {
+                return Json(new { status = trainingTask.Status.ToString().ToLower() });
+            }
+            else
+            {
+                var status = _modelService.GetModelPrepStatus(id);
+                return Json(new { status = status.ToString().ToLower() });
+            }
         }
 
         [HttpPut("/model/{id}")]
