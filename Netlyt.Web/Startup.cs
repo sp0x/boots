@@ -16,6 +16,7 @@ using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
+using Netlyt.Web.Extensions;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
 using Netlyt.Web.Services;
@@ -142,7 +143,8 @@ namespace Netlyt.Web
             services.AddTransient<OrganizationService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
             SetupAuthentication(services);
-            services.AddAutoMapper();
+            //services.AddAutoMapper(mc => { mc.AddProfiles(GetType().Assembly); });
+            services.AddDomainAutomapper();
             services.AddMvc();
             ConfigureBackgroundServices();
             //Enable for 100% auth coverage by default

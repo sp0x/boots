@@ -28,7 +28,6 @@ namespace Netlyt.Web.ViewModels
                 if (fld == null) continue;
                 fld.DType = fieldPair.Value.ToString();
             }
-
             foreach (JProperty descPair in descs)
             {
                 var fname = descPair.Name;

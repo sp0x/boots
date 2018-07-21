@@ -25,6 +25,8 @@ namespace Donut.Source
         [ForeignKey("Integration")]
         public long IntegrationId { get; set; }
         public Data.DataIntegration Integration { get; set; }
+        public string TargetType { get; set; }
+
         public FieldDefinition()
         {
         }

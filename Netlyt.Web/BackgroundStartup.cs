@@ -15,6 +15,7 @@ using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
+using Netlyt.Web.Extensions;
 using Netlyt.Web.Services;
 
 namespace Netlyt.Web
@@ -70,7 +71,7 @@ namespace Netlyt.Web
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
-            services.AddAutoMapper();
+            services.AddDomainAutomapper();
 
             services.AddSingleton<DonutOrionHandler>();
 

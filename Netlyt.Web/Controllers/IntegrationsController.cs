@@ -211,13 +211,17 @@ namespace Netlyt.Web.Controllers
             {
                 return new NotFoundResult();
             }
-            var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign);
-            var description = await _orionContext.Query(descQuery);
             var fields = ign.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
             var schema = new IntegrationSchemaViewModel(ign.Id, fields);
-            schema.AddDataDescription(description);
             schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
                 .Select(x => _mapper.Map<ModelTargetViewModel>(x));
+            var targets = schema.Targets
+                .Select(x =>new ModelTarget(ign.GetField(x.Id)));
+            var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign, targets);
+            var description = await _orionContext.Query(descQuery);
+            _integrationService.SetTargetTypes(ign, description);
+            schema.AddDataDescription(description);
+           
             return Json(schema);
         }
 

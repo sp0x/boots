@@ -15,6 +15,7 @@ using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Exceptions;
+using Newtonsoft.Json.Linq;
 using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service
@@ -137,6 +138,23 @@ namespace Netlyt.Service
                 collection = null;
             }
         }
+
+        public void SetTargetTypes(DataIntegration ign, JToken description)
+        {
+            var summary = description["file_summary"];
+            var descs = summary["desc"];
+            var fields = ign.Fields.ToList();
+            foreach (JProperty descPair in descs)
+            {
+                var fname = descPair.Name;;
+                var fld = fields.FirstOrDefault(x => x.Name == fname);
+                if (fld == null) continue;
+                var target_type = descPair.Value["target_type"];
+                fld.TargetType = target_type.ToString();
+            }
+            ign.Fields = fields;
+        }
+
         /// <summary>
         /// 
         /// </summary>

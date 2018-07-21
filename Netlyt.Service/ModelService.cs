@@ -113,6 +113,10 @@ namespace Netlyt.Service
                 var script = GenerateDonutScriptForModel(newModel, selectedFields);
                 newModel.SetScript(script);
             }
+
+            var targetParsingQuery = OrionQuery.Factory.CreateTargetParsingQuery(newModel);
+            var targetsInfo = await _orion.Query(targetParsingQuery);
+            ParseTargetTasksTypes(newModel, targetsInfo);
             try
             {
                 _context.SaveChanges();
@@ -123,6 +127,21 @@ namespace Netlyt.Service
                 throw new Exception("Could not create a new model!");
             }
             return newModel;
+        }
+
+        private void ParseTargetTasksTypes(Model newModel, JToken targetsInfo)
+        {
+            var targets = newModel.Targets;
+            foreach (JProperty targetNfo in targetsInfo)
+            {
+                var name = targetNfo.Name;
+                if (name == "seq") continue;
+                var type = targetNfo.Value.ToString();
+                var matchingTarget = targets.FirstOrDefault(x => x.Column.Name == name);
+                if (matchingTarget == null) continue;
+                matchingTarget.IsRegression = type == "regression";
+            }
+            newModel.Targets = targets;
         }
 
         private DonutScript GenerateDonutScriptForModel(Model model, IEnumerable<FieldDefinition> selectedFields = null)
@@ -185,18 +204,22 @@ namespace Netlyt.Service
 
         public FeatureGenerationTask GetFeatureGenerationTask(long id)
         {
-            var model = _context.Models.Include(x => x.FeatureGenerationTasks)
+            var model = _context.Models
+                .Include(x => x.FeatureGenerationTasks)
                 .FirstOrDefault(x=>x.Id == id);
             if (model == null) return null;
             return model.FeatureGenerationTasks.LastOrDefault();
         }
 
-        public ModelPrepStatus GetModelPrepStatus(long id)
+        public ModelPrepStatus GetModelStatus(Model model)
         {
-            var model = _context.Models
-                .Include(x => x.FeatureGenerationTasks)
-                .FirstOrDefault(x => x.Id == id);
             if (model == null) return ModelPrepStatus.Invalid;
+            var buildingTasks = model.TrainingTasks.FirstOrDefault(x => x.Status == TrainingTaskStatus.InProgress 
+                                                                        || x.Status == TrainingTaskStatus.Starting);
+            if (buildingTasks != null)
+            {
+                return ModelPrepStatus.Building;
+            }
             if (!model.UseFeatures) return ModelPrepStatus.Done;
             else
             {
@@ -209,11 +232,12 @@ namespace Netlyt.Service
                         : ModelPrepStatus.GeneratingFeatures;
                 }
             }
-        }
+        } 
 
         public TrainingTask GetTrainingStatus(long id)
         {
-            var model = _context.Models.Include(x => x.TrainingTasks)
+            var model = _context.Models
+                .Include(x => x.TrainingTasks)
                 .FirstOrDefault(x => x.Id == id);
             if (model == null) return null;
             return model.TrainingTasks.LastOrDefault();
@@ -236,9 +260,49 @@ namespace Netlyt.Service
 
         public async Task<JToken> TrainModel(Model model, DataIntegration sourceIntegration)
         {
-            var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration);
-            var m_id = await _orion.Query(query);
-            return m_id;
+            var modelStatus = GetModelStatus(model);
+            if (modelStatus == ModelPrepStatus.Building)
+            {
+                return new JArray(model.TrainingTasks.Where(x => x.Status == TrainingTaskStatus.InProgress ||
+                                                      x.Status == TrainingTaskStatus.Starting)
+                    .Select(x=>x.Id).ToArray());
+            }
+
+            var trainingTasks = new List<TrainingTask>();
+            foreach (var target in model.Targets)
+            {
+                var task = CreateTrainingTask(target);
+                trainingTasks.Add(task);
+            }
+            _dbContext.SaveChanges();
+            var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration, trainingTasks);
+            var trainingResponse = await _orion.Query(query);
+            var trainingTaskIds = trainingResponse["tids"];
+            foreach (var tt in trainingTasks)
+            {
+                var tid = trainingTaskIds.Cast<JProperty>().FirstOrDefault(x => x.Name == tt.Target.Column.Name);
+                if (tid != null) tt.TrainingTargetId = (int)tid;
+            }
+            _dbContext.SaveChanges();
+            return trainingResponse["ids"];
+        }
+
+        private TrainingTask CreateTrainingTask(ModelTarget target)
+        {
+            var tt = new TrainingTask();
+            tt.Model = target.Model;
+            tt.ModelId = target.ModelId;
+            tt.Status = TrainingTaskStatus.Starting;
+            tt.Target = target;
+            tt.Scoring = target.Scoring;
+            target.Model.TrainingTasks.Add(tt);
+            return tt;
+        }
+
+        public bool IsBuilding(Model src)
+        {
+            return src.TrainingTasks.Any(x => x.Status == TrainingTaskStatus.InProgress ||
+                                              x.Status == TrainingTaskStatus.Starting);
         }
     }
 }

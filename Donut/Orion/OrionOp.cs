@@ -9,7 +9,8 @@
         GetModelList = 105,
         GenerateFeatures = 107,
         AnalyzeFile = 108,
-        GenerateProject = 109
+        GenerateProject = 109,
+        ParseTargets = 110
     }
      
 }

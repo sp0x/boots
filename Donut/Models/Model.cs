@@ -25,12 +25,9 @@ namespace Donut.Models
         public long? DonutScriptId { get; set; }
         public virtual DonutScriptInfo DonutScript {get; set;}
         public bool UseFeatures { get; set; }
+        //public string Scoring { get; set; } = "r2";
 
         public string ModelName { get; set; }
-        /// <summary>
-        /// 
-        /// </summary>
-        public string ClassifierType { get; set; }
         /// <summary>
         /// A pickled scikit model's name
         /// </summary>
@@ -63,6 +60,11 @@ namespace Donut.Models
             return DataIntegrations.FirstOrDefault()?.Integration;
         }
 
-        
+        public string GetFeaturesCollection()
+        {
+            var integration = GetRootIntegration();
+            var rootCollection = integration.GetModelSourceCollection(this);
+            return rootCollection;
+        }
     }
 }

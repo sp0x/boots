@@ -89,7 +89,13 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<long?>("ColumnId");
 
+                    b.Property<bool>("IsRegression");
+
                     b.Property<long>("ModelId");
+
+                    b.Property<string>("Scoring");
+
+                    b.Property<string>("Type");
 
                     b.HasKey("Id");
 
@@ -135,7 +141,11 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<int>("Hours");
 
+                    b.Property<long>("Months");
+
                     b.Property<int>("Seconds");
+
+                    b.Property<long>("Years");
 
                     b.HasKey("Id");
 
@@ -207,8 +217,6 @@ namespace Netlyt.Service.Migrations
                         .ValueGeneratedOnAdd();
 
                     b.Property<string>("Callback");
-
-                    b.Property<string>("ClassifierType");
 
                     b.Property<string>("CurrentModel");
 
@@ -333,11 +341,19 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<long>("ModelId");
 
+                    b.Property<string>("Scoring");
+
                     b.Property<int>("Status");
+
+                    b.Property<long?>("TargetId");
+
+                    b.Property<int>("TrainingTargetId");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ModelId");
+
+                    b.HasIndex("TargetId");
 
                     b.ToTable("TrainingTasks");
                 });
@@ -354,6 +370,8 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("IntegrationId");
 
                     b.Property<string>("Name");
+
+                    b.Property<string>("TargetType");
 
                     b.Property<string>("Type");
 
@@ -818,6 +836,10 @@ namespace Netlyt.Service.Migrations
                         .WithMany("TrainingTasks")
                         .HasForeignKey("ModelId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Donut.Data.ModelTarget", "Target")
+                        .WithMany()
+                        .HasForeignKey("TargetId");
                 });
 
             modelBuilder.Entity("Donut.Source.FieldDefinition", b =>

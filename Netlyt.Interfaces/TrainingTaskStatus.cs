@@ -6,6 +6,7 @@ namespace Netlyt.Interfaces
     {
         InProgress,
         Done,
-        Crashed
+        Crashed,
+        Starting
     }
 }

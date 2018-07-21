@@ -2,15 +2,24 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Donut.Data;
 using Donut.Source;
+using Microsoft.Extensions.DependencyInjection;
+using Netlyt.Service;
 using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web.Extensions
 {
     public static class Extensions
     {
-
+        public static void AddDomainAutomapper(this IServiceCollection sp)
+        {
+            sp.AddTransient(p => new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile(new DomainMapProfile(p.GetService<ModelService>()));
+            }).CreateMapper());
+        }
         public static IEnumerable<ModelTarget> ToModelTargets(this IEnumerable<TargetSelectionViewModel> viewmodels, DataIntegration integration)
         {
             foreach (var vm in viewmodels)

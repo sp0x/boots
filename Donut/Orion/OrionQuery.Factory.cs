@@ -129,7 +129,17 @@ namespace Donut.Orion
                 return "r2";
             }
 
-            public static OrionQuery CreateTrainQuery(Model model, Data.DataIntegration ign)
+            /// <summary>
+            /// TODO: Simplify
+            /// </summary>
+            /// <param name="model"></param>
+            /// <param name="ign"></param>
+            /// <param name="trainingTasks"></param>
+            /// <returns></returns>
+            public static OrionQuery CreateTrainQuery(
+                Model model,
+                Data.DataIntegration ign,
+                IEnumerable<TrainingTask> trainingTasks)
             {
                 var rootIntegration = ign;
                 var qr = new OrionQuery(OrionOp.Train);
@@ -141,13 +151,14 @@ namespace Donut.Orion
                 parameters["client"] = model.User.UserName;
                 //Todo update..
                 parameters["targets"] = CreateTargetsDef(model.Targets);
+                parameters["tasks"] = new JArray(trainingTasks.Select(x => x.Id).ToArray());
                 models["auto"] = autoModel; // GridSearchCV - param_grid
                 var sourceCol = ign.GetModelSourceCollection(model);
                 dataOptions["db"] = sourceCol;
-                dataOptions["start"] = null; //DateTime.MinValue;
-                dataOptions["end"] = null;// DateTime.MaxValue;
-                dataOptions["scoring"] = scoring;
-                //Get fields from the mongo collection
+                dataOptions["start"] = null;
+                dataOptions["end"] = null;
+                dataOptions["scoring"] = "auto"; 
+                //Get fields from the mongo collection, these would be already generated features, so it's safe to use them
                 BsonDocument featuresDoc = MongoHelper.GetCollection(sourceCol).AsQueryable().FirstOrDefault();
                 var fields = new JArray();
                 foreach (var field in featuresDoc.Elements.Where(x=>x.Name!="_id"))
@@ -220,23 +231,7 @@ namespace Donut.Orion
             {
                 throw new NotImplementedException();
             }
-
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="url"></param>
-            /// <param name="formatting"></param>
-            /// <returns></returns>
-            public static OrionQuery CreateFileAnalyzeRequest(string url, JObject formatting)
-            {
-                var qr = new OrionQuery(OrionOp.AnalyzeFile);
-                var fileParams = new JObject();
-                fileParams["file"] = url;
-                fileParams["formatting"] = formatting;
-                qr["msg"] = fileParams;
-                return qr;
-            }
-
+            
             /// <summary>
             /// 
             /// </summary>
@@ -267,14 +262,44 @@ namespace Donut.Orion
                 return qr;
             }
 
-            public static OrionQuery CreateDataDescriptionQuery(DataIntegration ign)
+            public static OrionQuery CreateDataDescriptionQuery(DataIntegration ign, IEnumerable<ModelTarget> targets)
             {
                 var qr = new OrionQuery(OrionOp.AnalyzeFile);
                 var data = new JObject();
                 data["src"] = ign.Collection;
                 data["src_type"] = "collection";
+                data["targets"] = CreateTargetsDef(targets);
                 data["formatting"] = new JObject();
                 qr["params"] = data;
+                return qr;
+            }
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="url"></param>
+            /// <param name="formatting"></param>
+            /// <returns></returns>
+            public static OrionQuery CreateDataDescriptionQuery(string url, JObject formatting)
+            {
+                var qr = new OrionQuery(OrionOp.AnalyzeFile);
+                var fileParams = new JObject();
+                fileParams["src"] = url;
+                fileParams["src_type"] = "collection";
+                fileParams["formatting"] = formatting;
+                qr["params"] = fileParams;
+                return qr;
+            }
+
+            public static OrionQuery CreateTargetParsingQuery(Model newModel)
+            {
+                var qr = new OrionQuery(OrionOp.ParseTargets);
+                var fileParams = new JObject();
+                var collections = new JArray();
+                var rootCollection = newModel.GetFeaturesCollection();
+                collections.Add(rootCollection);
+                fileParams["targets"] = CreateTargetsDef(newModel.Targets);
+                fileParams["collections"] = collections;
+                qr["params"] = fileParams;
                 return qr;
             }
         }

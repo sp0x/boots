@@ -35,6 +35,8 @@ namespace Netlyt.Web.ViewModels
         public string ApiKey { get; set; }
         public string ApiSecret { get; set; }
         public string Endpoint { get; set; }
+        public bool IsBuilding { get; set; }
+        public string Status { get; set; }
         public ModelTrainingPerformanceViewModel Performance { get; set; }
 
     }

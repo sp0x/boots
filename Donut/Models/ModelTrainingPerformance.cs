@@ -12,6 +12,7 @@ namespace Donut.Models
         [ForeignKey("Model")]
         public long ModelId { get; set; }
         public virtual Donut.Models.Model Model { get; set; }
+        public virtual TrainingTask Task { get; set; }
         public DateTime TrainedTs { get; set; }
         public string TargetName { get; set; }
         public double Accuracy { get; set; }

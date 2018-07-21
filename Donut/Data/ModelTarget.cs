@@ -14,7 +14,10 @@ namespace Donut.Data
         [ForeignKey("Model")]
         public long ModelId { get; set; }
         public virtual Model Model { get; set; }
+        public string Type { get; set; }
         public virtual FieldDefinition Column { get; set; }
+        public string Scoring { get; set; } = "auto";
+        public bool IsRegression { get; set; }
         public virtual ICollection<TargetConstraint> Constraints { get; set; }
         
         public ModelTarget(FieldDefinition fdef = null)

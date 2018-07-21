@@ -65,6 +65,12 @@ namespace Netlyt.Web.Controllers
         public async Task<IEnumerable<ModelViewModel>> GetAll([FromQuery] int page, string type)
         {
             var userModels = await _userService.GetMyModels(page);
+            if (type == "building")
+            {
+                userModels = userModels.Where(x =>
+                    x.TrainingTasks.Any(tt => tt.Status == TrainingTaskStatus.InProgress ||
+                                              tt.Status == TrainingTaskStatus.Starting));
+            }
             var viewModels = userModels.Select(m => _mapper.Map<ModelViewModel>(m));
             return viewModels;
         }
@@ -91,13 +97,27 @@ namespace Netlyt.Web.Controllers
         {
             var item = _modelService.GetById(id);
             if (item == null) return NotFound();
+            var status = _modelService.GetModelStatus(item);
+            if (status != Donut.Models.ModelPrepStatus.Done)
+            {
+                var resp = Json(new {message = "Try again later.", status = status.ToString().ToLower()});
+                resp.StatusCode = 204;
+                return resp;
+            }
 
             var fmi = item.DataIntegrations.FirstOrDefault();
             var fIntegration = _db.Integrations
                 .Include(x => x.APIKey)
                 .FirstOrDefault(x => x.Id == fmi.IntegrationId);
+            var lastCompletedTask =
+                _db.TrainingTasks
+                    .Include(x=>x.Target)
+                    .LastOrDefault(x => x.Status == TrainingTaskStatus.Done && x.ModelId == item.Id);
 
             var mapped = _mapper.Map<ModelViewModel>(item);
+            mapped.Performance.TaskType = (lastCompletedTask != null && lastCompletedTask.Target != null) ? 
+                (lastCompletedTask.Target.IsRegression ? "Regression" : "Classification") :
+                "None";
             mapped.ApiKey = fIntegration.APIKey.AppId;
             mapped.ApiSecret = fIntegration.APIKey.AppSecret;
             mapped.Endpoint = $"http://inference.netlyt.com/";
@@ -289,6 +309,16 @@ namespace Netlyt.Web.Controllers
             return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
         }
 
+        [HttpPost("/model/{id}/build")]
+        public async Task<IActionResult> Build(long id)
+        {
+
+            var model = _modelService.GetById(id);
+            if (model == null) return NotFound();
+            var trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration());
+            return Json(new {taskId = trainingTask});
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -377,7 +407,9 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/model/{modelId}/modelPrepStatus")]
         public IActionResult GetModelPreparationStatus(long modelId)
         {
-            var status = _modelService.GetModelPrepStatus(modelId);
+            var model = _modelService.GetById(modelId);
+            if (model == null) return NotFound();
+            var status = _modelService.GetModelStatus(model);
             return Json(new { status = status.ToString().ToLower() });
         }
 
@@ -392,16 +424,10 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/model/{id}/status")]
         public IActionResult GetStatus(long id)
         {
-            var trainingTask = _modelService.GetTrainingStatus(id);
-            if (trainingTask != null)
-            {
-                return Json(new { status = trainingTask.Status.ToString().ToLower() });
-            }
-            else
-            {
-                var status = _modelService.GetModelPrepStatus(id);
-                return Json(new { status = status.ToString().ToLower() });
-            }
+            var model = _modelService.GetById(id);
+            if (model == null) return NotFound();
+            var status = _modelService.GetModelStatus(model);
+            return Json(new { status = status.ToString().ToLower() });
         }
 
         [HttpPut("/model/{id}")]
@@ -435,14 +461,9 @@ namespace Netlyt.Web.Controllers
         public async Task<IActionResult> Train(long id)
         {
             var model = _modelService.GetById(id);
+            if (model == null) return NotFound();
             //var json = await Request.GetRawBodyString();
-            var trainRequest = OrionQuery.Factory.CreateTrainQuery(model, model.GetRootIntegration());
-            //kick off background async task to train
-            // return 202 with wait at endpoint
-            //async task
-            // do training
-            // set current model to the id of whatever came back
-            var m_id = await _orionContext.Query(trainRequest);
+            var m_id = await _modelService.TrainModel(model, model.GetRootIntegration());
             return Accepted(m_id);
         }
 

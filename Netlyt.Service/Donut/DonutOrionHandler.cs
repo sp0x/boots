@@ -72,17 +72,25 @@ namespace Netlyt.Service.Donut
             {
                 var trResult = trainingCompleteNotification["params"];
                 if (trResult == null) return;
-                var taskId = trResult["task_id"].ToString();
                 var modelId = long.Parse(trResult["model_id"].ToString());
+                var taskIds = trResult["tasks"].Select(x => long.Parse(x.ToString()));
                 Model model = _db.Models
                     .Include(x => x.DataIntegrations)
+                    .Include(x=>x.TrainingTasks)
                     .Include(x => x.User)
                     .FirstOrDefault(x => x.Id == modelId);
+
                 if (model.User == null)
                 {
                     model.User = _db.Users.FirstOrDefault(x => x.Id == model.UserId);
                 }
                 if (model.User == null) return;
+                var completedTasks = model.TrainingTasks.Where(x => taskIds.Any(y=> y == x.Id));
+                foreach (var task in completedTasks)
+                {
+                    task.Status = TrainingTaskStatus.Done;
+                }
+                _db.SaveChanges();
                 //Notify user that training is complete
                 var endpoint = "http://dev.netlyt.com/oneclick/" + model.Id;
                 var mailMessage = $"Model training for {model.ModelName} is now complete." +
