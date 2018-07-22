@@ -79,6 +79,18 @@ namespace Netlyt.Web.Controllers
             }
             return BadRequest();
         }
+
+        [HttpGet("/me/keys")]
+        public async Task<IActionResult> GetKeys()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            }
+            return Json(user.ApiKeys.Select(x=> _mapper.Map<AuthKeyViewModel>(x.Api)));
+        }
+
         [HttpPost("/user/login")] 
         [AllowAnonymous] 
         public async Task<IActionResult> Login([FromBody]LoginViewModel model, string returnUrl = null)

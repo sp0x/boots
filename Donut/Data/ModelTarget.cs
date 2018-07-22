@@ -33,9 +33,9 @@ namespace Donut.Data
         {
             var columnsSb = new StringBuilder();
             var constraints = new StringBuilder();
-            columnsSb.Append("targets(");
-            columnsSb.Append(Column.Name);
-            columnsSb.Append(")");
+            columnsSb.Append("");
+            columnsSb.Append(Column.Name); //Todo add compatability for more complex scripts
+            columnsSb.Append("");
             return columnsSb.ToString() + constraints.ToString();
         }
 

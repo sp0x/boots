@@ -1,21 +1,26 @@
-﻿namespace Donut.Lex.Expressions
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Donut.Lex.Expressions
 {
     public class TargetExpression : Expression
     {
-        public string Attribute { get; set; }
+        public IEnumerable<string> Attributes { get; set; }
 
         public TargetExpression()
         {
 
         }
-        public TargetExpression(string name)
+        public TargetExpression(params string[] names)
         {
-            Attribute = name;
+            Attributes = names;
         }
 
         public override string ToString()
         {
-            return $"target {Attribute}";
+            var targetNames = string.Join(", ", Attributes.ToArray());
+            return $"target {targetNames}";
         }
     }
 }

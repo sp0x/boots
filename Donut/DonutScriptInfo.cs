@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
 using Donut.Lex.Parsing;
 using Donut.Parsing.Tokenizers;
 using Model = Donut.Models.Model;
@@ -26,10 +27,19 @@ namespace Donut
         
         public IDonutScript GetScript()
         {
-            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
-            var parser = new DonutSyntaxReader(tokenizer.Tokenize(DonutScriptContent));
-            IDonutScript dscript = parser.ParseDonutScript();
-            return dscript;
+            try
+            {
+                var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+                var parser = new DonutSyntaxReader(tokenizer.Tokenize(DonutScriptContent));
+                IDonutScript dscript = parser.ParseDonutScript(Model.GetRootIntegration());
+                return dscript;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+            
         }
 
         public override string ToString()

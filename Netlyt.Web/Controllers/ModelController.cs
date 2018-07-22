@@ -295,10 +295,17 @@ namespace Netlyt.Web.Controllers
             return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
         }
 
+        [HttpPost("/model/{id}/updateScript")]
+        public async Task<IActionResult> UpdateScript([FromBody] DonutScriptUpdateViewModel data, long id)
+        {
+            var model = _modelService.GetById(id);
+            if (model == null) return NotFound();
+            return Json(new {});
+        }
+
         [HttpPost("/model/{id}/build")]
         public async Task<IActionResult> Build(long id)
         {
-
             var model = _modelService.GetById(id);
             if (model == null) return NotFound();
             var trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration());

@@ -141,6 +141,7 @@ namespace Netlyt.Web
             services.AddTransient<TimestampService>();
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
+            services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
             SetupAuthentication(services);
             //services.AddAutoMapper(mc => { mc.AddProfiles(GetType().Assembly); });

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Donut.Data;
+using Donut.Integration;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
 using Donut.Parsing.Tokens;
@@ -50,7 +51,7 @@ namespace Donut.Lex.Parsing
         /// 
         /// </summary>
         /// <returns></returns>
-        public DonutScript ParseDonutScript()
+        public DonutScript ParseDonutScript(IIntegration ign)
         {
             _sourceIntegrations.Clear();
             DonutScript newScript  = new DonutScript();
@@ -70,9 +71,13 @@ namespace Donut.Lex.Parsing
                 }
                 else if (expressionType == typeof(TargetExpression))
                 {
-                    var targetField = new FieldDefinition((expression as TargetExpression).Attribute, typeof(Int32));
+                    var targetExpr = expression as TargetExpression;
+                    var targetFields = targetExpr.Attributes.Select(a => ign.Fields.FirstOrDefault(f=> f.Name==a));
                     newScript.Targets = new List<ModelTarget>();
-                    ((List < ModelTarget > )newScript.Targets).Add(new ModelTarget(targetField));
+                    foreach (var targetField in targetFields)
+                    {
+                        ((List<ModelTarget>)newScript.Targets).Add(new ModelTarget(targetField));
+                    }
                 }
                 else
                 {

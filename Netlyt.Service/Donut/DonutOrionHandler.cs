@@ -32,7 +32,7 @@ namespace Netlyt.Service.Donut
         private IRedisCacher _cacher;
         private IEmailSender _emailService;
         private ModelService _modelService;
-        private DonutService _donutService;
+        private IDonutService _donutService;
 
         #region Events
 
@@ -59,7 +59,7 @@ namespace Netlyt.Service.Donut
             _serviceProvider = serviceProvider;
             _apiService = apiService;
             _modelService = serviceProvider.GetService(typeof(ModelService)) as ModelService;
-            _donutService = serviceProvider.GetService(typeof(DonutService)) as DonutService;
+            _donutService = serviceProvider.GetService(typeof(IDonutService)) as IDonutService;
             _integrationService = integrationService;
             _cacher = redisCacher;
             _dbConfig = dbc;

@@ -6,14 +6,22 @@ using Donut;
 using Donut.Data;
 using Donut.FeatureGeneration;
 using Donut.Lex.Data;
+using Donut.Orion;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Service.Data;
 
 namespace Netlyt.Service
 {
-    public class DonutService
+
+    public class DonutService : IDonutService
     {
+        private IOrionContext _orion;
+
+        public DonutService(IOrionContext orion)
+        {
+            _orion = orion;
+        }
         public async Task<IHarvesterResult> RunExtraction(DonutScript script, DataIntegration integration, IServiceProvider serviceProvider)
         {
             var dbConfig = serviceProvider.GetService(typeof(IDatabaseConfiguration)) as IDatabaseConfiguration;
@@ -34,6 +42,19 @@ namespace Netlyt.Service
             var featureGenerator = FeatureGeneratorFactory<IntegratedDocument>.Create(donut, donutMachine.GetEmitterType());
             var result = await donutRunner.Run(donut, featureGenerator);
             return result;
+        }
+
+        public async Task<string> ToPythonModule(DonutScriptInfo donut)
+        {
+            var output = "";
+            var ds = donut.GetScript();
+            var query = OrionQuery.Factory.CreateScriptGenerationQuery(donut.Model, ds);
+            query["params"]["name"] = $"{ds.Type.Name}";
+            query["params"]["client"] = donut.Model.User.UserName;
+            query["params"]["grouping"] = donut.Model.Grouping;
+            var res = await _orion.Query(query);
+            output = res["code"].ToString();
+            return output;
         }
     }
 }

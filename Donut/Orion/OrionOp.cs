@@ -10,7 +10,8 @@
         GenerateFeatures = 107,
         AnalyzeFile = 108,
         GenerateProject = 109,
-        ParseTargets = 110
+        ParseTargets = 110,
+        CreateScript = 111
     }
      
 }

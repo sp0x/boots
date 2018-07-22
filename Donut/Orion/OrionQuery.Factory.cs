@@ -4,6 +4,7 @@ using System.Linq;
 using Donut.Data;
 using Donut.Encoding;
 using Donut.Integration;
+using Donut.Lex.Expressions;
 using Donut.Models;
 using Donut.Source;
 using MongoDB.Bson;
@@ -150,7 +151,7 @@ namespace Donut.Orion
                 var scoring = GetDefaultScoring();
                 parameters["client"] = model.User.UserName;
                 //Todo update..
-                parameters["targets"] = CreateTargetsDef(model.Targets);
+                parameters["targets"] = CreateTargetsDef(model.Targets.ToArray());
                 parameters["tasks"] = new JArray(trainingTasks.Select(x => x.Id).ToArray());
                 models["auto"] = autoModel; // GridSearchCV - param_grid
                 var sourceCol = ign.GetModelSourceCollection(model);
@@ -192,7 +193,7 @@ namespace Donut.Orion
             /// </summary>
             /// <param name="target"></param>
             /// <returns></returns>
-            private static JArray CreateTargetsDef(IEnumerable<ModelTarget> targets)
+            private static JArray CreateTargetsDef(params ModelTarget[] targets)
             {
                 var arrTargets = new JArray();
                 foreach (var target in targets)
@@ -200,6 +201,8 @@ namespace Donut.Orion
                     var jsTarget = new JObject();
                     var arrConstraints = new JArray();
                     jsTarget["column"] = target.Column.Name;
+                    jsTarget["scoring"] = target.Scoring;
+                    jsTarget["task_type"] = target.IsRegression ? "regression" : "classification";
                     foreach (var constraint in target.Constraints)
                     {
                         var jsConstraint = new JObject();
@@ -268,7 +271,7 @@ namespace Donut.Orion
                 var data = new JObject();
                 data["src"] = ign.Collection;
                 data["src_type"] = "collection";
-                data["targets"] = CreateTargetsDef(targets);
+                data["targets"] = CreateTargetsDef(targets.ToArray());
                 data["formatting"] = new JObject();
                 qr["params"] = data;
                 return qr;
@@ -297,10 +300,52 @@ namespace Donut.Orion
                 var collections = new JArray();
                 var rootCollection = newModel.GetFeaturesCollection();
                 collections.Add(rootCollection);
-                fileParams["targets"] = CreateTargetsDef(newModel.Targets);
+                fileParams["targets"] = CreateTargetsDef(newModel.Targets.ToArray());
                 fileParams["collections"] = collections;
                 qr["params"] = fileParams;
                 return qr;
+            }
+
+            public static OrionQuery CreateScriptGenerationQuery(Model model, IDonutScript ds)
+            {
+                var qr = new OrionQuery(OrionOp.CreateScript);
+                var p = new JObject();
+                var features = new JArray();
+                foreach (var feature in ds.Features)
+                {
+                    JToken ftrObj = FeatureToJson(feature);
+                    features.Add(ftrObj);
+                }
+                var targets = CreateTargetsDef(ds.Targets.ToArray());
+                p["features"] = features;
+                p["targets"] = targets;
+                p["model_id"] = model.Id;
+                qr["params"] = p;
+                return qr;
+            }
+
+            private static JToken FeatureToJson(AssignmentExpression feature)
+            {
+                var output = new JObject(); 
+                var ftrName = feature.Member.ToString();
+                var ftrExpression = feature.Value.ToString();
+                var featureType = "direct";
+                if (feature.Value.GetType() != typeof(NameExpression))
+                {
+                    throw new NotImplementedException();
+                }
+                output["title"] = ftrName;
+                output["type"] = featureType;
+                //Function name
+                if (featureType == "direct")
+                {
+                    output["key"] = ftrExpression;
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+                return output;
             }
         }
     }

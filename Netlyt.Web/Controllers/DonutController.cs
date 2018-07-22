@@ -25,19 +25,22 @@ namespace Netlyt.Web.Controllers
         private IMapper _mapper;
         private IOrionContext _orionContext;
         private ModelService _modelService;
+        private IDonutService _donutService;
 
         public DonutController(IMapper mapper,
             IOrionContext behaviourCtx,
-            ModelService modelService)
+            ModelService modelService,
+            IDonutService donutService)
         {
             _mapper = mapper;
             //_modelContext = typeof(Model).GetDataSource<Model>(); 
             _orionContext = behaviourCtx;
             _modelService = modelService;
+            _donutService = donutService;
         }
 
         [HttpGet("/donut/{id}", Name = "GetDonutById")]
-        public IActionResult GetById(long id)
+        public async Task<IActionResult> GetById(long id)
         {
             var item = _modelService.GetById(id);
             if (item == null) return NotFound();
@@ -46,9 +49,11 @@ namespace Netlyt.Web.Controllers
             {
                 return NotFound();
             }
+            var pythonCode = await _donutService.ToPythonModule(donut);
             return Json(new
             {
-                code= donut.ToString(),
+                code= pythonCode,
+                donutScript = donut.ToString(),
                 donut= _mapper.Map<DonutScriptViewModel>(donut)
             });
         }

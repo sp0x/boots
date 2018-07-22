@@ -20,6 +20,9 @@ namespace Netlyt.Web
     {
         public DomainMapProfile(ModelService modelService)
         {
+            CreateMap<ApiAuth, AuthKeyViewModel>()
+                .ForMember(x=>x.Secret, opt=>opt.MapFrom(src=>src.AppSecret))
+                .ForMember(x=>x.Key, opt=>opt.MapFrom(src=>src.AppId));
             CreateMap<ModelTrainingPerformance, ModelTrainingPerformanceViewModel>()
                 .ForMember(x => x.FeatureImportance, opt => opt.ResolveUsing(src =>
                 {

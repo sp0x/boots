@@ -224,6 +224,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<long?>("DonutScriptId");
 
+                    b.Property<string>("Grouping");
+
                     b.Property<string>("HyperParams");
 
                     b.Property<string>("ModelName");

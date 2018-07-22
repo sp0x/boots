@@ -9,4 +9,10 @@ namespace Netlyt.Web.ViewModels
         public string UserEmail { get; set; }
         public bool GenerateFeatures { get; set; }
     }
+
+    public class DonutScriptUpdateViewModel
+    {
+        public string Donut { get; set; }
+        public string Python { get; set; }
+    }
 }
