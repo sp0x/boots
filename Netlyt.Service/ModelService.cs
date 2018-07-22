@@ -89,6 +89,7 @@ namespace Netlyt.Service
             var newModel = new Model() { UseFeatures = generateFeatures, ModelName = name, Callback = callbackUrl };
             newModel.UserId = user.Id;
             newModel.Targets = new List<ModelTarget>(targets);
+            newModel.CreatedOn = DateTime.UtcNow;
 
             if (integrations != null)
             {
@@ -220,6 +221,7 @@ namespace Netlyt.Service
             {
                 return ModelPrepStatus.Building;
             }
+            if (model.TrainingTasks == null || model.TrainingTasks.Count == 0) return ModelPrepStatus.Incomplete;
             if (!model.UseFeatures) return ModelPrepStatus.Done;
             else
             {
@@ -290,6 +292,7 @@ namespace Netlyt.Service
         private TrainingTask CreateTrainingTask(ModelTarget target)
         {
             var tt = new TrainingTask();
+            tt.CreatedOn = DateTime.UtcNow;
             tt.Model = target.Model;
             tt.ModelId = target.ModelId;
             tt.Status = TrainingTaskStatus.Starting;
@@ -303,6 +306,23 @@ namespace Netlyt.Service
         {
             return src.TrainingTasks.Any(x => x.Status == TrainingTaskStatus.InProgress ||
                                               x.Status == TrainingTaskStatus.Starting);
+        }
+
+        public string GetTrainedEndpoint(TrainingTask srcTargetTask)
+        {
+            return $"http://predict.netlyt.com/";
+        }
+
+        public string GetTaskAssetUrl(TrainingTask task, string asset)
+        {
+//            mapped.Endpoint = $"http://inference.netlyt.com/";
+//            if (item.Performance != null)
+//            {
+//                mapped.Performance.IsRegression = true;
+//                mapped.Performance.ReportUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.ReportUrl}";
+//                mapped.Performance.TestResultsUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.TestResultsUrl}";
+//            }
+            return $"http://api.netlyt.com/asset/{task.Id}/{asset}";
         }
     }
 }

@@ -9,6 +9,7 @@ using Donut.Data.Format;
 using Donut.FeatureGeneration;
 using Donut.IntegrationSource;
 using Donut.Lex.Data;
+using Donut.Models;
 using Donut.Orion;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
@@ -70,10 +71,11 @@ namespace Netlyt.Service.Donut
         {
             try
             {
-                var trResult = trainingCompleteNotification["params"];
-                if (trResult == null) return;
-                var modelId = long.Parse(trResult["model_id"].ToString());
-                var taskIds = trResult["tasks"].Select(x => long.Parse(x.ToString()));
+                var trainingResult = trainingCompleteNotification["result"];
+                var trainingParams = trainingCompleteNotification["params"];
+                if (trainingParams == null) return;
+                var modelId = long.Parse(trainingParams["model_id"].ToString());
+                var taskIds = trainingParams["tasks"].Select(x => long.Parse(x.ToString()));
                 Model model = _db.Models
                     .Include(x => x.DataIntegrations)
                     .Include(x=>x.TrainingTasks)
@@ -89,7 +91,10 @@ namespace Netlyt.Service.Donut
                 foreach (var task in completedTasks)
                 {
                     task.Status = TrainingTaskStatus.Done;
+                    task.UpdatedOn = DateTime.UtcNow;
                 }
+
+                ParseTrainingResult(trainingResult, model);
                 _db.SaveChanges();
                 //Notify user that training is complete
                 var endpoint = "http://dev.netlyt.com/oneclick/" + model.Id;
@@ -100,6 +105,33 @@ namespace Netlyt.Service.Donut
             catch (Exception ex)
             {
                 Trace.WriteLine(ex.Message);
+            }
+        }
+
+        private void ParseTrainingResult(JToken results, Model model)
+        {
+            //We go over the target performances  and set the task results.
+            foreach (JProperty resultProp in results)
+            {
+                var targetName = resultProp.Name;
+                var result = resultProp.Value[0];
+                string modelTypeInfo = result["model"].ToString();
+                string scoring = result["scoring"]?.ToString();
+                var perf = result["performance"];
+                var perfObj = new ModelTrainingPerformance();
+                perfObj.ModelId = (long)perf["ModelId"];
+                perfObj.Accuracy = (float)perf["Accuracy"];
+                perfObj.ReportUrl = perf["ReportUrl"].ToString();
+                perfObj.TestResultsUrl = perf["TestResultsUrl"].ToString();
+                perfObj.AdvancedReport = perf["AdvancedReport"].ToString();
+                perfObj.FeatureImportance = perf["FeatureImportance"].ToString();
+                var targetTask = model.TrainingTasks.FirstOrDefault(x => x.Target.Column.Name == targetName);
+                if (targetTask != null)
+                {
+                    targetTask.TypeInfo = modelTypeInfo;
+                    targetTask.Performance = perfObj;
+                    targetTask.Scoring = scoring;
+                }
             }
         }
 

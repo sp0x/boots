@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Netlyt.Web.ViewModels
 {
     public class ModelCreationViewModel
@@ -23,21 +26,30 @@ namespace Netlyt.Web.ViewModels
         public string DataSource { get; set; }
         public string CallbackUrl { get; set; }
     }
+
+    public class ModelBuildViewModel
+    {
+        public long Id { get; set; }
+        public string TaskType { get; set; }
+        public string Scoring { get; set; }
+        public string CurrentModel { get; set; }
+        public string Endpoint { get; set; }
+        public string Target { get; set; }
+        public ModelTrainingPerformanceViewModel Performance { get; set; }
+    }
     public class ModelViewModel
     {
         public long Id { get; set; }
+        public DateTime CreatedOn { get; set; }
         public string ModelName { get; set; }
-        public string ClassifierType { get; set; }
-        public string CurrentModel { get; set; }
         public string Callback { get; set; }
         public string TrainingParams { get; set; }
         public string HyperParams { get; set; }
         public string ApiKey { get; set; }
         public string ApiSecret { get; set; }
-        public string Endpoint { get; set; }
         public bool IsBuilding { get; set; }
         public string Status { get; set; }
-        public ModelTrainingPerformanceViewModel Performance { get; set; }
+        public IEnumerable<ModelBuildViewModel> BuiltTargets { get; set; }
 
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -20,6 +21,7 @@ namespace Donut.Models
         public virtual ICollection<ModelRule> Rules { get; set; }
         public virtual ICollection<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
         public virtual ICollection<TrainingTask> TrainingTasks { get; set; }
+        public DateTime CreatedOn { get; set; }
         public virtual ICollection<ModelTarget> Targets { get; set; }
         [ForeignKey("DonutScript")]
         public long? DonutScriptId { get; set; }

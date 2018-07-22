@@ -218,6 +218,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Callback");
 
+                    b.Property<DateTime>("CreatedOn");
+
                     b.Property<string>("CurrentModel");
 
                     b.Property<long?>("DonutScriptId");
@@ -297,6 +299,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("TargetName");
 
+                    b.Property<long?>("TaskId");
+
                     b.Property<string>("TestResultsUrl")
                         .HasColumnType("VARCHAR")
                         .HasMaxLength(255);
@@ -309,6 +313,9 @@ namespace Netlyt.Service.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ModelId")
+                        .IsUnique();
+
+                    b.HasIndex("TaskId")
                         .IsUnique();
 
                     b.ToTable("ModelTrainingPerformance");
@@ -339,6 +346,8 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
+                    b.Property<DateTime>("CreatedOn");
+
                     b.Property<long>("ModelId");
 
                     b.Property<string>("Scoring");
@@ -348,6 +357,10 @@ namespace Netlyt.Service.Migrations
                     b.Property<long?>("TargetId");
 
                     b.Property<int>("TrainingTargetId");
+
+                    b.Property<string>("TypeInfo");
+
+                    b.Property<DateTime>("UpdatedOn");
 
                     b.HasKey("Id");
 
@@ -821,6 +834,10 @@ namespace Netlyt.Service.Migrations
                         .WithOne("Performance")
                         .HasForeignKey("Donut.Models.ModelTrainingPerformance", "ModelId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Donut.Models.TrainingTask", "Task")
+                        .WithOne("Performance")
+                        .HasForeignKey("Donut.Models.ModelTrainingPerformance", "TaskId");
                 });
 
             modelBuilder.Entity("Donut.Models.Rule", b =>

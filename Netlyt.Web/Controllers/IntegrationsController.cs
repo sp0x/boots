@@ -206,6 +206,7 @@ namespace Netlyt.Web.Controllers
                 .Include(x=>x.Models)
                 .ThenInclude(x=>x.Model)
                 .ThenInclude(x=>x.Targets)
+                .ThenInclude(x=>x.Column)
                 .FirstOrDefault();
             if (ign == null)
             {
@@ -216,7 +217,8 @@ namespace Netlyt.Web.Controllers
             schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
                 .Select(x => _mapper.Map<ModelTargetViewModel>(x));
             var targets = schema.Targets
-                .Select(x =>new ModelTarget(ign.GetField(x.Id)));
+                .Select(x =>new ModelTarget(ign.GetField(x.Id)))
+                .Where(x=>x.Column!=null);
             var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign, targets);
             var description = await _orionContext.Query(descQuery);
             _integrationService.SetTargetTypes(ign, description);

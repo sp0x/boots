@@ -7,6 +7,7 @@ namespace Netlyt.Interfaces
         InProgress,
         Done,
         Crashed,
-        Starting
+        Starting,
+
     }
 }

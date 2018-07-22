@@ -6,6 +6,7 @@
         Invalid,
         Done,
         GeneratingFeatures,
-        Building
+        Building,
+        Incomplete
     }
 }

@@ -105,29 +105,22 @@ namespace Netlyt.Web.Controllers
                 return resp;
             }
 
+            if (status == Donut.Models.ModelPrepStatus.Incomplete)
+            {
+                var resp = Json(new { message = "Not built yet.", status = status.ToString().ToLower() });
+                resp.StatusCode = 204;
+                return resp;
+            }
+
             var fmi = item.DataIntegrations.FirstOrDefault();
             var fIntegration = _db.Integrations
                 .Include(x => x.APIKey)
-                .FirstOrDefault(x => x.Id == fmi.IntegrationId);
-            var lastCompletedTask =
-                _db.TrainingTasks
-                    .Include(x=>x.Target)
-                    .LastOrDefault(x => x.Status == TrainingTaskStatus.Done && x.ModelId == item.Id);
-
-            var mapped = _mapper.Map<ModelViewModel>(item);
-            mapped.Performance.TaskType = (lastCompletedTask != null && lastCompletedTask.Target != null) ? 
-                (lastCompletedTask.Target.IsRegression ? "Regression" : "Classification") :
-                "None";
+                .FirstOrDefault(x => x.Id == fmi.IntegrationId); 
+            var mapped = _mapper.Map<ModelViewModel>(item); 
+            
             mapped.ApiKey = fIntegration.APIKey.AppId;
             mapped.ApiSecret = fIntegration.APIKey.AppSecret;
-            mapped.Endpoint = $"http://inference.netlyt.com/";
-            if (item.Performance != null)
-            {
-                mapped.Performance.IsRegression = true;
-                mapped.Performance.ReportUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.ReportUrl}";
-                mapped.Performance.TestResultsUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.TestResultsUrl}";
-            }
-            return Json(mapped.Performance);
+            return Json(mapped);
         }
 
         [HttpGet("/model/{id}", Name = "GetById")]
@@ -145,13 +138,6 @@ namespace Netlyt.Web.Controllers
             var mapped = _mapper.Map<ModelViewModel>(item);
             mapped.ApiKey = fIntegration.APIKey.AppId;
             mapped.ApiSecret = fIntegration.APIKey.AppSecret;
-            mapped.Endpoint = $"http://inference.netlyt.com/";
-            if (item.Performance != null)
-            {
-                mapped.Performance.IsRegression = true;
-                mapped.Performance.ReportUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.ReportUrl}";
-                mapped.Performance.TestResultsUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.TestResultsUrl}";
-            }
             return new ObjectResult(mapped);
         }
 
