@@ -343,6 +343,25 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("Rules");
                 });
 
+            modelBuilder.Entity("Donut.Models.TrainingScript", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("DonutScript");
+
+                    b.Property<string>("PythonScript");
+
+                    b.Property<long>("TrainingTaskId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TrainingTaskId")
+                        .IsUnique();
+
+                    b.ToTable("TrainingScript");
+                });
+
             modelBuilder.Entity("Donut.Models.TrainingTask", b =>
                 {
                     b.Property<long>("Id")
@@ -847,6 +866,14 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Interfaces.Models.User", "Owner")
                         .WithMany()
                         .HasForeignKey("OwnerId");
+                });
+
+            modelBuilder.Entity("Donut.Models.TrainingScript", b =>
+                {
+                    b.HasOne("Donut.Models.TrainingTask", "TrainingTask")
+                        .WithOne("Script")
+                        .HasForeignKey("Donut.Models.TrainingScript", "TrainingTaskId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Donut.Models.TrainingTask", b =>

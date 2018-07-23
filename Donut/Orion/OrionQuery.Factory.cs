@@ -123,12 +123,7 @@ namespace Donut.Orion
                 }
 
                 return fields;
-            }
-
-            public static string GetDefaultScoring()
-            {
-                return "r2";
-            }
+            } 
 
             /// <summary>
             /// TODO: Simplify
@@ -139,7 +134,7 @@ namespace Donut.Orion
             /// <returns></returns>
             public static OrionQuery CreateTrainQuery(
                 Model model,
-                Data.DataIntegration ign,
+                DataIntegration ign,
                 IEnumerable<TrainingTask> trainingTasks)
             {
                 var rootIntegration = ign;
@@ -148,17 +143,19 @@ namespace Donut.Orion
                 var models = new JObject();
                 var dataOptions = new JObject();
                 var autoModel = new JObject();
-                var scoring = GetDefaultScoring();
+                trainingTasks = trainingTasks.ToList();
                 parameters["client"] = model.User.UserName;
+                parameters["experiment_name"] = $"Model{model.Id}";
                 //Todo update..
                 parameters["targets"] = CreateTargetsDef(model.Targets.ToArray());
                 parameters["tasks"] = new JArray(trainingTasks.Select(x => x.Id).ToArray());
+                parameters["script"] = CreateTrainingScriptFromTasks(trainingTasks);
                 models["auto"] = autoModel; // GridSearchCV - param_grid
                 var sourceCol = ign.GetModelSourceCollection(model);
                 dataOptions["db"] = sourceCol;
                 dataOptions["start"] = null;
                 dataOptions["end"] = null;
-                dataOptions["scoring"] = "auto"; 
+                dataOptions["scoring"] = "auto";
                 //Get fields from the mongo collection, these would be already generated features, so it's safe to use them
                 BsonDocument featuresDoc = MongoHelper.GetCollection(sourceCol).AsQueryable().FirstOrDefault();
                 var fields = new JArray();
@@ -186,6 +183,13 @@ namespace Donut.Orion
 
                 qr["params"] = parameters;
                 return qr;
+            }
+
+            private static JToken CreateTrainingScriptFromTasks(IEnumerable<TrainingTask> trainingTasks)
+            {
+                var output = new JObject();
+                output["code"] = trainingTasks.Select(x => x.Script).FirstOrDefault()?.PythonScript.ToString();
+                return output;
             }
 
             /// <summary>

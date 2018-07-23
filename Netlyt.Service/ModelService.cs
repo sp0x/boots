@@ -260,7 +260,7 @@ namespace Netlyt.Service
             }
         }
 
-        public async Task<JToken> TrainModel(Model model, DataIntegration sourceIntegration)
+        public async Task<JToken> TrainModel(Model model, DataIntegration sourceIntegration, TrainingScript trainingScript = null)
         {
             var modelStatus = GetModelStatus(model);
             if (modelStatus == ModelPrepStatus.Building)
@@ -270,20 +270,24 @@ namespace Netlyt.Service
                     .Select(x=>x.Id).ToArray());
             }
 
-            var trainingTasks = new List<TrainingTask>();
+            var newTrainingTasks = new List<TrainingTask>();
             foreach (var target in model.Targets)
             {
                 var task = CreateTrainingTask(target);
-                trainingTasks.Add(task);
+                task.Script = trainingScript;
+                newTrainingTasks.Add(task);
             }
             _dbContext.SaveChanges();
-            var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration, trainingTasks);
+            var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration, newTrainingTasks);
             var trainingResponse = await _orion.Query(query);
             var trainingTaskIds = trainingResponse["tids"];
-            foreach (var tt in trainingTasks)
+            foreach (var tt in newTrainingTasks)
             {
                 var tid = trainingTaskIds.Cast<JProperty>().FirstOrDefault(x => x.Name == tt.Target.Column.Name);
-                if (tid != null) tt.TrainingTargetId = (int)tid;
+                if (tid != null)
+                {
+                    tt.TrainingTargetId = (int)tid;
+                }
             }
             _dbContext.SaveChanges();
             return trainingResponse["ids"];
@@ -324,5 +328,6 @@ namespace Netlyt.Service
 //            }
             return $"http://api.netlyt.com/asset/{task.Id}/{asset}";
         }
+
     }
 }

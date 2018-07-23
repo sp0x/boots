@@ -4,11 +4,13 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using Donut;
 using Donut.Data;
 using Donut.Integration;
+using Donut.Models;
 using Donut.Orion;
 using Newtonsoft.Json.Linq;
 using Netlyt.Service;
@@ -19,6 +21,7 @@ using Microsoft.Extensions.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
+using Netlyt.Service.Models;
 using Netlyt.Web.Extensions;
 using Netlyt.Web.Helpers;
 using Netlyt.Web.ViewModels;
@@ -295,12 +298,27 @@ namespace Netlyt.Web.Controllers
             return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
         }
 
-        [HttpPost("/model/{id}/updateScript")]
-        public async Task<IActionResult> UpdateScript([FromBody] DonutScriptUpdateViewModel data, long id)
+        /// <summary>
+        /// Save the scripts and run the model..
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpPost("/model/{id}/executeScript")]
+        public async Task<IActionResult> ExecuteScript([FromBody] ScriptViewModel data, long id)
         {
             var model = _modelService.GetById(id);
             if (model == null) return NotFound();
-            return Json(new {});
+            JToken trainingTask = null;
+            if (data?.Data!=null && data.Data.UseScript)
+            {
+                trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration(), new TrainingScript(data.Data.Script, data.Data.Code));
+            }
+            else
+            {
+                trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration());
+            }
+            return Json(trainingTask);
         }
 
         [HttpPost("/model/{id}/build")]
