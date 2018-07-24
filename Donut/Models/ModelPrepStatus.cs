@@ -7,6 +7,7 @@
         Done,
         GeneratingFeatures,
         Building,
-        Incomplete
+        Incomplete,
+        RunningScript,
     }
 }

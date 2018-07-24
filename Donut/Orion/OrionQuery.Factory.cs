@@ -85,7 +85,7 @@ namespace Donut.Orion
                     {
                         relationsArray.Add(new JArray(new object[] { relation.Attribute1, relation.Attribute2 }));
                     }
-                } 
+                }
                 parameters["relations"] = relationsArray;
                 parameters["targets"] = CreateTargetsDef(targetAttributes);
                 parameters["internal_entities"] = internalEntities;
@@ -123,7 +123,7 @@ namespace Donut.Orion
                 }
 
                 return fields;
-            } 
+            }
 
             /// <summary>
             /// TODO: Simplify
@@ -144,6 +144,7 @@ namespace Donut.Orion
                 var dataOptions = new JObject();
                 var autoModel = new JObject();
                 trainingTasks = trainingTasks.ToList();
+                var flags = GetModelDataFlags(model, null);
                 parameters["client"] = model.User.UserName;
                 parameters["experiment_name"] = $"Model{model.Id}";
                 //Todo update..
@@ -156,26 +157,10 @@ namespace Donut.Orion
                 dataOptions["start"] = null;
                 dataOptions["end"] = null;
                 dataOptions["scoring"] = "auto";
+                dataOptions["collection"] = flags["collection"];
                 //Get fields from the mongo collection, these would be already generated features, so it's safe to use them
                 BsonDocument featuresDoc = MongoHelper.GetCollection(sourceCol).AsQueryable().FirstOrDefault();
-                var fields = new JArray();
-                foreach (var field in featuresDoc.Elements.Where(x=>x.Name!="_id"))
-                {
-                    var jsfld = new JObject();
-                    jsfld["name"] = field.Name;
-                    jsfld["is_key"] = rootIntegration.DataIndexColumn != null &&
-                                      !string.IsNullOrEmpty(rootIntegration.DataIndexColumn) &&
-                                      field.Name == rootIntegration.DataIndexColumn;
-                    jsfld["type"] = "float";
-                    if (field.Value.IsDateTime)
-                    {
-                        jsfld["type"] = "datetime";
-                    }else if (field.Value.IsString)
-                    {
-                        jsfld["type"] = "str";
-                    }
-                    fields.Add(jsfld);
-                }
+                var fields = GetFieldsList(featuresDoc, rootIntegration);
                 dataOptions["fields"] = fields;
                 parameters["models"] = models;
                 parameters["options"] = dataOptions;
@@ -183,6 +168,48 @@ namespace Donut.Orion
 
                 qr["params"] = parameters;
                 return qr;
+            }
+
+            private static JArray GetFieldsList(IEnumerable<BsonElement> featureFields, DataIntegration rootIntegration)
+            {
+                var output = new JArray();
+                foreach (var field in featureFields)
+                {
+                    var jsfld = new JObject();
+                    jsfld["name"] = field.Name;
+                    jsfld["is_key"] = rootIntegration.DataIndexColumn != null &&
+                                      !string.IsNullOrEmpty(rootIntegration.DataIndexColumn) &&
+                                      field.Name == rootIntegration.DataIndexColumn;
+                    jsfld["type"] = "float";
+                    
+                    if (field.Value.IsDateTime)
+                    {
+                        jsfld["type"] = "datetime";
+                    }
+                    else if (field.Value.IsString)
+                    {
+                        jsfld["type"] = "str";
+                    }
+                    output.Add(jsfld);
+                }
+                return output;
+            }
+
+            private static JToken GetModelDataFlags(Model model, IEnumerable<BsonElement> fields)
+            {
+                var output = new JObject();
+                var rootIgn = model.GetRootIntegration();
+                output["collection"] = new JObject();
+                output["collection"]["timestamp"] = rootIgn.DataTimestampColumn;
+                output["collection"]["index"] = rootIgn.DataIndexColumn;
+                output["collection"]["key"] = model.GetFeaturesCollection();
+                output["fields"] = new JArray();
+                if (fields != null)
+                {
+                    var jsFields = GetFieldsList(fields, rootIgn);
+                    output["fields"] = jsFields;
+                }
+                return output;
             }
 
             private static JToken CreateTrainingScriptFromTasks(IEnumerable<TrainingTask> trainingTasks)
@@ -238,7 +265,7 @@ namespace Donut.Orion
             {
                 throw new NotImplementedException();
             }
-            
+
             /// <summary>
             /// 
             /// </summary>
@@ -315,22 +342,31 @@ namespace Donut.Orion
                 var qr = new OrionQuery(OrionOp.CreateScript);
                 var p = new JObject();
                 var features = new JArray();
+                var ign = model.GetRootIntegration();
+                var sourceCol = ign.GetModelSourceCollection(model);
                 foreach (var feature in ds.Features)
                 {
                     JToken ftrObj = FeatureToJson(feature);
                     features.Add(ftrObj);
                 }
+                BsonDocument featuresDoc = MongoHelper.GetCollection(sourceCol).AsQueryable().FirstOrDefault();
+                var featuresCols = featuresDoc.Elements.Where(x => x.Name != "_id");
+                JToken dataFlags = GetModelDataFlags(model, featuresCols);
+
                 var targets = CreateTargetsDef(ds.Targets.ToArray());
                 p["features"] = features;
                 p["targets"] = targets;
                 p["model_id"] = model.Id;
+                p["data_flags"] = dataFlags;
                 qr["params"] = p;
                 return qr;
             }
 
+
+
             private static JToken FeatureToJson(AssignmentExpression feature)
             {
-                var output = new JObject(); 
+                var output = new JObject();
                 var ftrName = feature.Member.ToString();
                 var ftrExpression = feature.Value.ToString();
                 var featureType = "direct";
