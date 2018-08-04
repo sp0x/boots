@@ -235,34 +235,45 @@ namespace Netlyt.Web.Controllers
             {
                 return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
             }
-            NewIntegrationViewModel integrationParams = new NewIntegrationViewModel();
-            string targetFilePath = Path.GetTempFileName();
-            string fileContentType = null;
-            DataImportResult result = null;
-            using (var targetStream = System.IO.File.Create(targetFilePath))
+
+            try
             {
-                var form = await Request.StreamFile(targetStream);
-                fileContentType = form.GetValue("mime-type").ToString();
-                var filename = form.GetValue("filename")
-                    .ToString().Trim('\"').Replace('.', '_').Replace('-', '_');
-                targetStream.Position = 0;
-                try
+                NewIntegrationViewModel integrationParams = new NewIntegrationViewModel();
+                string targetFilePath = Path.GetTempFileName();
+                string fileContentType = null;
+                DataImportResult result = null;
+                using (var targetStream = System.IO.File.Create(targetFilePath))
                 {
-                    result = await _integrationService.CreateOrAppendToIntegration(targetStream, fileContentType,
-                        filename);
-                    newIntegration = result?.Integration;
+                    var form = await Request.StreamFile(targetStream);
+                    fileContentType = form.GetValue("mime-type").ToString();
+                    var filename = form.GetValue("filename")
+                        .ToString().Trim('\"').Replace('.', '_').Replace('-', '_');
+                    targetStream.Position = 0;
+                    try
+                    {
+                        result = await _integrationService.CreateOrAppendToIntegration(targetStream, fileContentType,
+                            filename);
+                        newIntegration = result?.Integration;
+                    }
+                    catch (Exception ex)
+                    {
+                        return BadRequest(ex.Message);
+                    }
                 }
-                catch (Exception ex)
+                if (result != null)
                 {
-                    return BadRequest(ex.Message);
+                    System.IO.File.Delete(targetFilePath);
+                    var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
+                    return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
                 }
             }
-            if (result != null)
+            catch (Exception ex)
             {
-                System.IO.File.Delete(targetFilePath);
-                var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
-                return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
+                var resp = Json(new {success=false, message=ex.Message});
+                resp.StatusCode = 500;
+                return resp;
             }
+            
             return null;
         }
     }

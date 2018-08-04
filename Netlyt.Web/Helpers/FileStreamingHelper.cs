@@ -50,13 +50,10 @@ namespace Netlyt.Web.Helpers
                     if (MultipartRequestHelper.HasFileContentDisposition(contentDisposition))
                     {
                         mimeType = section.ContentType;
-                        if (mimeType == "application/octet-stream")
-                        {
-                            mimeType = MimeResolver.Resolve(contentDisposition);
-                        }
+                        mimeType = MimeResolver.Resolve(contentDisposition);
                         if (!IntegrationService.MimeIsAllowed(mimeType))
                         {
-                            throw new ForbiddenException("Mime type is forbidden!");
+                            throw new ForbiddenException($"Mime `{mimeType}` type is forbidden!");
                         }
                         var filename = contentDisposition.FileName;
                         formAccumulator.Append("filename", filename.ToString());

@@ -516,6 +516,7 @@ namespace Netlyt.Service
             if (string.IsNullOrEmpty(fileContentType)) return false;
             if (fileContentType.EndsWith("ms-excel")) return true;
             if (fileContentType == "application/json") return true;
+            if (fileContentType == "text/csv") return true;
             return false;
         }
 
