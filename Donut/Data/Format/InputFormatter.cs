@@ -44,7 +44,7 @@ namespace Donut.Data.Format
 
         protected string FormatFieldName(string fldName)
         {
-            return fldName.Replace(".", "_").Replace("-", "_");
+            return Cleanup.CleanupFieldName(fldName);
         }
     }
 }

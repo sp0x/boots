@@ -318,7 +318,7 @@ namespace Netlyt.Web.Controllers
             {
                 trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration());
             }
-            return Json(trainingTask);
+            return Json(new { models_tasks = trainingTask, success= true });
         }
 
         [HttpPost("/model/{id}/build")]

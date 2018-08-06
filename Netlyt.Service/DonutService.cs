@@ -47,7 +47,7 @@ namespace Netlyt.Service
         public async Task<string> ToPythonModule(DonutScriptInfo donut)
         {
             var output = "";
-            var ds = donut.GetScript();
+            IDonutScript ds = donut.GetScript();
             var query = OrionQuery.Factory.CreateScriptGenerationQuery(donut.Model, ds);
             query["params"]["name"] = $"{ds.Type.Name}";
             query["params"]["client"] = donut.Model.User.UserName;

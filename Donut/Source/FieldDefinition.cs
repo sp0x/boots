@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using Donut.Data;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.Serializers;
 using Netlyt.Interfaces;
@@ -39,7 +40,7 @@ namespace Donut.Source
 
         private string CleanupName(string fName)
         {
-            return fName.Replace("-", "_").Replace(".", "_");
+            return Cleanup.CleanupFieldName(fName);
         }
 
         public FieldDefinition(string fName, string fType)
