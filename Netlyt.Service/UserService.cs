@@ -158,10 +158,10 @@ namespace Netlyt.Service
             return userObj;
         }
 
-        public async Task<IEnumerable<Model>> GetMyModels(int page)
+        public async Task<IEnumerable<Model>> GetMyModels(int page, int pageSize = 25)
         {
             var myuser = await this.GetCurrentUser();
-            return _modelService.GetAllForUser(myuser, page);
+            return _modelService.GetAllForUser(myuser, page, pageSize);
         }
 
         public async Task DeleteModel(long id)

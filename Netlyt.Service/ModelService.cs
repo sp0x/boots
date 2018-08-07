@@ -45,9 +45,8 @@ namespace Netlyt.Service
             _dbContext = dbContext;
         }
 
-        public IEnumerable<Model> GetAllForUser(User user, int page)
+        public IEnumerable<Model> GetAllForUser(User user, int page, int pageSize = 25)
         {
-            int pageSize = 25;
             return _context.Models
                 .Where(x => x.User == user)
                 .Skip(page * pageSize)
@@ -154,6 +153,12 @@ namespace Netlyt.Service
             {
                 foreach (var fld in selectedFields)
                 {
+                    var isTargetFeature = model.Targets.Any(t => fld.Name == t.Column.Name);
+                    //We don`t use columns that are marked as targets for features
+                    if (isTargetFeature)
+                    {
+                        continue;
+                    }
                     var feature = IdentityFeature("f_" + fld.Name, fld);
                     script.Features.Add(feature as AssignmentExpression);
                 }
@@ -193,6 +198,8 @@ namespace Netlyt.Service
             var targetModel = _context.Models.FirstOrDefault(x => x.User == cruser && x.Id == id);
             if (targetModel != null)
             {
+                targetModel.Targets.Clear();
+                targetModel.DonutScript = null;
                 _context.Models.Remove(targetModel);
                 _context.SaveChanges();
             }

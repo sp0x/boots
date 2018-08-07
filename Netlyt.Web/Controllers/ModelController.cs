@@ -67,7 +67,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/model/mymodels/{type}")]
         public async Task<IEnumerable<ModelViewModel>> GetAll([FromQuery] int page, string type)
         {
-            var userModels = await _userService.GetMyModels(page);
+            var userModels = await _userService.GetMyModels(page, 200);
             if (type == "building")
             {
                 userModels = userModels.Where(x =>
