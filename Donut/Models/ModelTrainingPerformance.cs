@@ -20,6 +20,8 @@ namespace Donut.Models
         public double Accuracy { get; set; }
         [Column(TypeName = "text")]
         public string FeatureImportance { get; set; }
+        public string TaskType { get; set; }
+        public string Scoring { get; set; }
         [Column(TypeName = "text")]
         public string WeeklyUsage { get; set; }
         [Column(TypeName = "text")]

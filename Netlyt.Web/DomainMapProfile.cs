@@ -50,7 +50,8 @@ namespace Netlyt.Web
                     foreach (TrainingTask srcTargetTask in sourceTargets)
                     {
                         var vm = new ModelBuildViewModel();
-                        vm.TaskType = srcTargetTask.Target.IsRegression ? "Regression" : "Classification";
+                        var srcPerformance = srcTargetTask.Performance;
+                        vm.TaskType = srcPerformance.TaskType;
                         vm.Id = srcTargetTask.Id;
                         vm.Endpoint = modelService.GetTrainedEndpoint(srcTargetTask);
                         vm.Target = srcTargetTask.Target.Column.Name;
@@ -67,7 +68,7 @@ namespace Netlyt.Web
                         vm.Performance.WeeklyUsage = srcTargetTask.Performance.WeeklyUsage;
                         vm.Performance.TargetName = srcTargetTask.Target.Column.Name;
                         vm.Performance.TaskType = vm.TaskType;
-                        vm.Scoring = srcTargetTask.Scoring;
+                        vm.Scoring = srcPerformance.Scoring;
                         output.Add(vm);
                     }
                     return output;

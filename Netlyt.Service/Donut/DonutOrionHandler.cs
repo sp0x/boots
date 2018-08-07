@@ -122,6 +122,8 @@ namespace Netlyt.Service.Donut
                 perfObj.ModelId = (long)perf["ModelId"];
                 perfObj.Accuracy = (float)perf["Accuracy"];
                 perfObj.ReportUrl = perf["ReportUrl"].ToString();
+                perfObj.TaskType = perf["TaskType"].ToString();
+                perfObj.Scoring = perf["Scoring"].ToString();
                 perfObj.TestResultsUrl = perf["TestResultsUrl"].ToString();
                 perfObj.AdvancedReport = perf["AdvancedReport"].ToString();
                 perfObj.FeatureImportance = perf["FeatureImportance"].ToString();

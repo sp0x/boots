@@ -299,9 +299,13 @@ namespace Netlyt.Service.Migrations
                         .HasColumnType("VARCHAR")
                         .HasMaxLength(255);
 
+                    b.Property<string>("Scoring");
+
                     b.Property<string>("TargetName");
 
                     b.Property<long?>("TaskId");
+
+                    b.Property<string>("TaskType");
 
                     b.Property<string>("TestResultsUrl")
                         .HasColumnType("VARCHAR")

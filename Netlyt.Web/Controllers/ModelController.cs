@@ -312,7 +312,8 @@ namespace Netlyt.Web.Controllers
             JToken trainingTask = null;
             if (data?.Data!=null && data.Data.UseScript)
             {
-                trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration(), new TrainingScript(data.Data.Script, data.Data.Code));
+                trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration(), 
+                    new TrainingScript(data.Data.Script, data.Data.Code));
             }
             else
             {
