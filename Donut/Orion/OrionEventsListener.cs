@@ -12,14 +12,25 @@ namespace Donut.Orion
         public event OrionEventHandler NewMessage;
         public OrionEventsListener()
         {
-            _reader = new OrionSource();
+            _reader = new OrionSource("Ev");
             _reader.OnMessage += ReaderOnMessage;
+            _reader.Run();
         }
 
         private void ReaderOnMessage(object sender, string messageContent)
         {
-            JObject message = JObject.Parse(messageContent);
-            NewMessage?.Invoke(message);
+            try
+            {
+                JObject message = JObject.Parse(messageContent);
+                Task.Run(() =>
+                {
+                    NewMessage?.Invoke(message);
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while handling socket event: " + ex.Message);
+            }
         }
 
         /// <summary>

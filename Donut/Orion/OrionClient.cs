@@ -30,9 +30,9 @@ namespace Donut.Orion
         {
             _requests = new Dictionary<int, TaskCompletionSource<JToken>>();
             _writer = new OrionSink();
-            _reader = new OrionSource();
-            _reader.OnMessage += ReaderOnMessage; 
-            
+            _reader = new OrionSource("Cl");
+            _reader.OnMessage += ReaderOnMessage;
+            _reader.Run();
         }
         /// <summary>
         /// 

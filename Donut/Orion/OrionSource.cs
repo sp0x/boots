@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using NetMQ;
 using NetMQ.Sockets;
 
@@ -14,18 +16,33 @@ namespace Donut.Orion
         /// </summary>
         public PullSocket Socket { get; private set; }
         private NetMQPoller _poller;
+        private NetMQTimer _pinger;
+        public string Tag { get; set; }
 
         public event EventHandler<string> OnMessage;
         /// <summary>
         /// 
         /// </summary>
-        public OrionSource()
+        public OrionSource(string tag)
         {
             Socket = new PullSocket();
-            _poller = new NetMQPoller();
-            _poller.Add(Socket);
+            this.Tag = tag;
+            _pinger = new NetMQTimer(TimeSpan.FromSeconds(2));
+            _poller = new NetMQPoller { Socket, _pinger };
             Socket.ReceiveReady += OnDataAvailable;
-            _poller.RunAsync();
+            _pinger.Elapsed += (s, a) =>
+            {
+                ///Console.WriteLine($"{Tag} Pinger - " + DateTime.Now.ToString());
+            };
+        }
+
+        public Task Run()
+        {
+            return Task.Run(() =>
+            {
+                _poller.Run();
+                _poller = _poller;
+            });
         }
 
         /// <summary>
@@ -36,8 +53,9 @@ namespace Donut.Orion
         private void OnDataAvailable(object sender, NetMQSocketEventArgs e)
         {
             string frame = e.Socket.ReceiveFrameString();
+            //e.Socket.TrySendFrame("ack");
             //var inpuMessage = e.Socket.ReceiveMultipartMessage(); 
-            //Debug.WriteLine("Received frame: " + frame);
+            Console.WriteLine("Received frame: " + frame);
             OnMessage?.Invoke(this, frame);
         }
 
@@ -48,6 +66,7 @@ namespace Donut.Orion
         public string Receive()
         {
             var frame = Socket.ReceiveFrameString();
+            Socket.TrySendFrame("ack");
             return frame;
         }
 

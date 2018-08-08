@@ -67,7 +67,7 @@ namespace Netlyt.Service.Donut
             Console.WriteLine("Initialized orion handler..");
         }
 
-        private async void _orion_TrainingComplete(JObject trainingCompleteNotification)
+        private async Task _orion_TrainingComplete(JObject trainingCompleteNotification)
         {
             try
             {
