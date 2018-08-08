@@ -117,7 +117,7 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Key");
 
-                    b.Property<long?>("ModelTargetId");
+                    b.Property<long>("ModelTargetId");
 
                     b.Property<int>("Type");
 
@@ -303,8 +303,6 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("TargetName");
 
-                    b.Property<long?>("TaskId");
-
                     b.Property<string>("TaskType");
 
                     b.Property<string>("TestResultsUrl")
@@ -319,9 +317,6 @@ namespace Netlyt.Service.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ModelId")
-                        .IsUnique();
-
-                    b.HasIndex("TaskId")
                         .IsUnique();
 
                     b.ToTable("ModelTrainingPerformance");
@@ -375,11 +370,13 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<long>("ModelId");
 
+                    b.Property<long?>("PerformanceId");
+
                     b.Property<string>("Scoring");
 
                     b.Property<int>("Status");
 
-                    b.Property<long?>("TargetId");
+                    b.Property<long>("TargetId");
 
                     b.Property<int>("TrainingTargetId");
 
@@ -390,6 +387,8 @@ namespace Netlyt.Service.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ModelId");
+
+                    b.HasIndex("PerformanceId");
 
                     b.HasIndex("TargetId");
 
@@ -795,9 +794,10 @@ namespace Netlyt.Service.Migrations
                         .WithMany()
                         .HasForeignKey("BeforeId");
 
-                    b.HasOne("Donut.Data.ModelTarget")
+                    b.HasOne("Donut.Data.ModelTarget", "ModelTarget")
                         .WithMany("Constraints")
-                        .HasForeignKey("ModelTargetId");
+                        .HasForeignKey("ModelTargetId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Donut.DonutScriptInfo", b =>
@@ -859,10 +859,6 @@ namespace Netlyt.Service.Migrations
                         .WithOne("Performance")
                         .HasForeignKey("Donut.Models.ModelTrainingPerformance", "ModelId")
                         .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("Donut.Models.TrainingTask", "Task")
-                        .WithOne("Performance")
-                        .HasForeignKey("Donut.Models.ModelTrainingPerformance", "TaskId");
                 });
 
             modelBuilder.Entity("Donut.Models.Rule", b =>
@@ -887,9 +883,14 @@ namespace Netlyt.Service.Migrations
                         .HasForeignKey("ModelId")
                         .OnDelete(DeleteBehavior.Cascade);
 
+                    b.HasOne("Donut.Models.ModelTrainingPerformance", "Performance")
+                        .WithMany()
+                        .HasForeignKey("PerformanceId");
+
                     b.HasOne("Donut.Data.ModelTarget", "Target")
                         .WithMany()
-                        .HasForeignKey("TargetId");
+                        .HasForeignKey("TargetId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Donut.Source.FieldDefinition", b =>

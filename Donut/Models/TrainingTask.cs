@@ -13,9 +13,11 @@ namespace Donut.Models
         public long ModelId { get; set; }
         public string Scoring { get; set; }
         [ForeignKey("Target")]
-        public long? TargetId { get; set; }
-        public virtual TrainingScript Script { get; set; }
+        public long TargetId { get; set; }
         public virtual ModelTarget Target { get; set; }
+        public virtual TrainingScript Script { get; set; }
+        [ForeignKey("Performance")]
+        public long? PerformanceId { get; set; }
         public virtual ModelTrainingPerformance Performance { get; set; }
         public int TrainingTargetId { get; set; }
         //public string TargetName { get; set; }

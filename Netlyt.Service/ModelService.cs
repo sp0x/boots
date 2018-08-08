@@ -195,7 +195,9 @@ namespace Netlyt.Service
 
         public void DeleteModel(User cruser, long id)
         {
-            var targetModel = _context.Models.FirstOrDefault(x => x.User == cruser && x.Id == id);
+            var targetModel = _context.Models
+                .Include(x=>x.Targets)
+                .FirstOrDefault(x => x.User == cruser && x.Id == id);
             if (targetModel != null)
             {
                 targetModel.Targets.Clear();
