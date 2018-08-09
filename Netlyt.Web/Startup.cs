@@ -29,6 +29,7 @@ namespace Netlyt.Web
         public IConfiguration Configuration { get; private set; }
         
         public IHostingEnvironment HostingEnvironment { get; }
+        public IOrionContext OrionContext { get; private set; }
 
         public Startup(IHostingEnvironment env)
         {
@@ -86,7 +87,7 @@ namespace Netlyt.Web
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { });
+            OrionContext = services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { });
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();
@@ -113,7 +114,9 @@ namespace Netlyt.Web
             //services.AddAutoMapper(mc => { mc.AddProfiles(GetType().Assembly); });
             services.AddDomainAutomapper();
             services.AddMvc();
-            ConfigureBackgroundServices(services);
+            var builtServices = services.BuildServiceProvider();
+            var orionContext = builtServices.GetService<IOrionContext>();
+            ConfigureBackgroundServices(builtServices);
             //Enable for 100% auth coverage by default
             //            services.AddMvc(options =>
             //            {
@@ -162,13 +165,14 @@ namespace Netlyt.Web
             app.UseSession();
             app.UseStaticFiles();
             var routeHelper = app.ApplicationServices.GetService<RoutingConfiguration>();
-            app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), builder => SetupApi(app, builder));
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
-            });
+            app.MapWhen(ctx => routeHelper.MatchesForRole("api", ctx), appx => SetupApi(app));
+            SetupApi(app); // We run standartly as api..
+            //app.UseMvc(routes =>
+            //{
+            //    routes.MapRoute(
+            //        name: "default",
+            //        template: "{controller=Home}/{action=Index}/{id?}");
+            //});
             InitializeDatabase(app);
         }
 
@@ -194,18 +198,18 @@ namespace Netlyt.Web
         /// <param name="app"></param>
         /// <param name="builder"></param>
         /// <returns></returns>
-        private static void SetupApi(IApplicationBuilder app, IApplicationBuilder builder)
+        private static void SetupApi(IApplicationBuilder app)
         {
             app.UseEnableRequestRewind();
             app.UseSession();
-            builder.UseMvc(routes =>
+            app.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
-            builder.UseAuthentication();
-            builder.Run(async (context) =>
+            app.UseAuthentication();
+            app.Run(async (context) =>
             {
                 if (true)//!context.User.Identity.IsAuthenticated)
                 {
@@ -220,15 +224,7 @@ namespace Netlyt.Web
                 else
                 {
                 }
-                //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
-                //it should be True
             });
-            //                builder.Run(async (context) =>
-            //                {
-            //                    //context.User = await context.Authentication.AuthenticateAsync(HmacAuthenticationDefaults.AuthenticationScheme);
-            //                    //it should be True
-            //                    await context.Response.WriteAsync(context.User.Identity.IsAuthenticated.ToString());
-            //                });
         }
     }
 }

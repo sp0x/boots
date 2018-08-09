@@ -55,7 +55,7 @@ namespace Donut.Orion
             string frame = e.Socket.ReceiveFrameString();
             //e.Socket.TrySendFrame("ack");
             //var inpuMessage = e.Socket.ReceiveMultipartMessage(); 
-            Console.WriteLine("Received frame: " + frame);
+            Console.WriteLine("[" + this.Tag + "] Received frame: " + frame);
             OnMessage?.Invoke(this, frame);
         }
 
@@ -66,7 +66,7 @@ namespace Donut.Orion
         public string Receive()
         {
             var frame = Socket.ReceiveFrameString();
-            Socket.TrySendFrame("ack");
+            //Socket.TrySendFrame("ack");
             return frame;
         }
 

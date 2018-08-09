@@ -299,7 +299,7 @@ namespace Netlyt.Web.Controllers
             }
             else
             {
-                return BadRequest();
+                return BadRequest("Invalid registration data.");
             }
              
         }

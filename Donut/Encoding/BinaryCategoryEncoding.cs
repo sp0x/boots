@@ -18,7 +18,7 @@ namespace Donut.Encoding
         private FieldExtra EmptyFieldExtra;
         public BinaryCategoryEncoding(FieldEncodingOptions options) : base(options, FieldDataEncoding.BinaryIntId)
         {
-            Limit = 8;
+            Limit = 20;
             EmptyFieldExtra= new FieldExtra
             {
                 Key = EncodeKey(9),

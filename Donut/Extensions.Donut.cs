@@ -10,16 +10,14 @@ namespace Donut
 {
     public static partial class Extensions
     {
-        public static void RegisterOrionContext(this IServiceCollection services, IConfigurationSection config, Action<IOrionContext> setup)
+        public static IOrionContext RegisterOrionContext(this IServiceCollection services, IConfigurationSection config, Action<IOrionContext> setup)
         {
-            services.AddSingleton<IOrionContext>((sp) =>
-            {
-                var ctx = new OrionContext(sp.GetService<IConfiguration>());
-                setup(ctx);
-                ctx.Configure(config);
-                ctx.Run();
-                return ctx;
-            });
+            var ctx = new OrionContext(config);
+            setup(ctx);
+            ctx.Configure(config);
+            ctx.Run();
+            services.AddSingleton<IOrionContext>(ctx);
+            return ctx;
         }
 
         public static void AddDonutDb(this IServiceCollection services, DonutDbConfig orUseConfig)

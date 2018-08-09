@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -16,7 +17,10 @@ namespace Donut.Orion
     {
         private OrionSink _writer;
         private OrionSource _reader;
-        private Dictionary<int, TaskCompletionSource<JToken>> _requests;
+
+        public string Id { get; }
+
+        private ConcurrentDictionary<int, TaskCompletionSource<JToken>> _requests;
         private int _seq;
         
         public enum BehaviourServerCommand
@@ -28,7 +32,8 @@ namespace Donut.Orion
 
         public OrionClient()
         {
-            _requests = new Dictionary<int, TaskCompletionSource<JToken>>();
+            Id = Guid.NewGuid().ToString();
+            _requests = new ConcurrentDictionary<int, TaskCompletionSource<JToken>>();
             _writer = new OrionSink();
             _reader = new OrionSource("Cl");
             _reader.OnMessage += ReaderOnMessage;
@@ -160,7 +165,8 @@ namespace Donut.Orion
         {
             TaskCompletionSource<JToken> awaiter = new TaskCompletionSource<JToken>();
             awaiterId = _seq++;
-            _requests.Add(awaiterId, awaiter);
+            //Console.WriteLine("Adding request with id: " + awaiterId);
+            _requests.TryAdd(awaiterId, awaiter);
             return awaiter;
         }
 

@@ -15,6 +15,7 @@ namespace Donut.Orion
 
     public class OrionContext : IOrionContext
     {
+        public string Id { get; private set; }
         private OrionClient _client;
         private OrionEventsListener _eventListener;
         private string _destinationIp;
@@ -52,7 +53,8 @@ namespace Donut.Orion
         public OrionContext(
             IConfiguration configuration)
         {
-            _client = new global::Donut.Orion.OrionClient();
+            Id = Guid.NewGuid().ToString();
+            _client = new OrionClient();
             _eventListener = new OrionEventsListener();
             _configuration = configuration;
             _eventListener.NewMessage += HandleNewEventMessage;
