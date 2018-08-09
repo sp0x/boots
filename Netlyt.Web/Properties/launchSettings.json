@@ -23,6 +23,7 @@
         "MONGO_HOST": "loc.mongo.netlyt.com",
         "PGSQL_HOST": "loc.postgres.netlyt.com",
         "MONGO_PORT": "27017",
+        "EXP_DIR": "..\\orion",
         "PGSQL_PASS": "gpiowuert0g9",
         "PGSQL_DB": "netlyt",
         "MONGO_USER": "netlyt",

@@ -24,8 +24,9 @@ namespace Netlyt.Web
     {
         public ServiceProvider BackgroundServiceProvider { get; set; }
         public DonutOrionHandler OrionHandler { get; set; }
-        public void ConfigureBackgroundServices()
+        public void ConfigureBackgroundServices(IServiceCollection mainServices)
         {
+            var mainOrionContext = mainServices.BuildServiceProvider().GetService<IOrionContext>();
             var services = new ServiceCollection();
             var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
             services.AddDbContext<ManagementDbContext>(options =>
@@ -46,7 +47,7 @@ namespace Netlyt.Web
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<IOrionContext>(this.OrionContext);
+            services.AddSingleton<IOrionContext>(mainOrionContext);
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();

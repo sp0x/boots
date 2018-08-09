@@ -42,6 +42,7 @@ namespace Netlyt.Web.Controllers
         private SignInManager<User> _signInManager;
         private IConfiguration _configuration;
         private ManagementDbContext _db;
+        private UserManager<User> _userManager;
 
         public ModelController(IMapper mapper,
             IOrionContext behaviourCtx,
@@ -60,6 +61,7 @@ namespace Netlyt.Web.Controllers
             _modelService = modelService;
             _integrationService = integrationService;
             _signInManager = signInManager;
+            _userManager = userManager;
             _configuration = configuration;
             _db = db;
         }
@@ -96,9 +98,11 @@ namespace Netlyt.Web.Controllers
 
         [HttpGet("/model/{id}/performance", Name = "GetModelPerformance")]
         [AllowAnonymous]
-        public IActionResult GetPerformance(long id)
+        public async Task<IActionResult> GetPerformance(long id)
         {
-            var item = _modelService.GetById(id);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            var item = _modelService.GetById(id, user);
             if (item == null) return NotFound();
             var status = _modelService.GetModelStatus(item);
             if (status != Donut.Models.ModelPrepStatus.Done)
@@ -128,9 +132,11 @@ namespace Netlyt.Web.Controllers
 
         [HttpGet("/model/{id}", Name = "GetById")]
         [AllowAnonymous]
-        public IActionResult GetById(long id)
+        public async Task<IActionResult> GetById(long id)
         {
-            var item = _modelService.GetById(id);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            var item = _modelService.GetById(id, user);
             if (item == null) return NotFound();
             
             var fmi = item.DataIntegrations.FirstOrDefault();
@@ -148,12 +154,8 @@ namespace Netlyt.Web.Controllers
         [AllowAnonymous]
         public IActionResult GetAsset(string path)
         {
-            var isAbsolute = false;
-            var expPath = OrionSink.GetExperimentsPath(_configuration, out isAbsolute, ref path);
-            Trace.WriteLine(expPath);
-            Console.WriteLine(expPath);
-            var assetPath = System.IO.Path.Combine(expPath, path);
-            if (!System.IO.File.Exists(assetPath))
+            var assetPath = _orionContext.GetExperimentAsset(path);
+            if (assetPath==null)
             {
                 return NotFound();
             }
@@ -307,7 +309,9 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/model/{id}/executeScript")]
         public async Task<IActionResult> ExecuteScript([FromBody] ScriptViewModel data, long id)
         {
-            var model = _modelService.GetById(id);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            var model = _modelService.GetById(id, user);
             if (model == null) return NotFound();
             JToken trainingTask = null;
             if (data?.Data!=null && data.Data.UseScript)
@@ -325,7 +329,9 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/model/{id}/build")]
         public async Task<IActionResult> Build(long id)
         {
-            var model = _modelService.GetById(id);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            var model = _modelService.GetById(id, user);
             if (model == null) return NotFound();
             var trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration());
             return Json(new {taskId = trainingTask});
@@ -397,7 +403,9 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/model/{id}/infer")]
         public async Task<IActionResult> Infer(long id)
         {
-            var model = _modelService.GetById(id);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            var model = _modelService.GetById(id, user);
             if (model == null) return NotFound();
             var rootIgn = model.GetRootIntegration();
             //TODO:
@@ -417,9 +425,11 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpGet("/model/{modelId}/modelPrepStatus")]
-        public IActionResult GetModelPreparationStatus(long modelId)
+        public async Task<IActionResult> GetModelPreparationStatus(long modelId)
         {
-            var model = _modelService.GetById(modelId);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            var model = _modelService.GetById(modelId, user);
             if (model == null) return NotFound();
             var status = _modelService.GetModelStatus(model);
             return Json(new { status = status.ToString().ToLower() });
@@ -434,23 +444,27 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpGet("/model/{id}/status")]
-        public IActionResult GetStatus(long id)
+        public async Task<IActionResult> GetStatus(long id)
         {
-            var model = _modelService.GetById(id);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            var model = _modelService.GetById(id, user);
             if (model == null) return NotFound();
             var status = _modelService.GetModelStatus(model);
             return Json(new { status = status.ToString().ToLower() });
         }
 
         [HttpPut("/model/{id}")]
-        public IActionResult Update(long id, [FromBody] ModelUpdateViewModel item)
+        public async Task<IActionResult> Update(long id, [FromBody] ModelUpdateViewModel item)
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             if (item == null || item.Id != id)
             {
                 return BadRequest();
             }
 
-            var model = _modelService.GetById(id);
+            var model = _modelService.GetById(id, user);
             if (model == null)
             {
                 return NotFound();
@@ -472,7 +486,9 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/model/{id}/[action]")]
         public async Task<IActionResult> Train(long id)
         {
-            var model = _modelService.GetById(id);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            var model = _modelService.GetById(id, user);
             if (model == null) return NotFound();
             //var json = await Request.GetRawBodyString();
             var m_id = await _modelService.TrainModel(model, model.GetRootIntegration());
@@ -480,11 +496,13 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpPost("/model/{id}/[action]")]
-        public IActionResult Deploy(long id)
+        public async Task<IActionResult> Deploy(long id)
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             var json = Request.GetRawBodyString();
             JObject data = JObject.Parse(json.Result);
-            var m = _modelService.GetById(id);
+            var m = _modelService.GetById(id, user);
             if (m == null) return NotFound();
             m.CurrentModel = data.GetValue("current_model").ToString();
             _modelService.SaveChanges();

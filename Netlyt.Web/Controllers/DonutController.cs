@@ -26,9 +26,11 @@ namespace Netlyt.Web.Controllers
         private IOrionContext _orionContext;
         private ModelService _modelService;
         private IDonutService _donutService;
+        private UserManager<User> _userManager;
 
         public DonutController(IMapper mapper,
             IOrionContext behaviourCtx,
+            UserManager<User> userManager,
             ModelService modelService,
             IDonutService donutService)
         {
@@ -37,12 +39,15 @@ namespace Netlyt.Web.Controllers
             _orionContext = behaviourCtx;
             _modelService = modelService;
             _donutService = donutService;
+            _userManager = userManager;
         }
 
         [HttpGet("/donut/{id}", Name = "GetDonutById")]
         public async Task<IActionResult> GetById(long id)
         {
-            var item = _modelService.GetById(id);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            var item = _modelService.GetById(id, user);
             if (item == null) return NotFound();
             var donut = (DonutScriptInfo)item.DonutScript;
             if (donut == null)

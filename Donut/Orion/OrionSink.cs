@@ -89,6 +89,11 @@ namespace Donut.Orion
             if (!string.IsNullOrEmpty(envExperiments))
             {
                 cfg = envExperiments;
+            }
+            var envExpDirAbs = Environment.GetEnvironmentVariable("EXP_DIR_ABS");
+            if (!string.IsNullOrEmpty(envExpDirAbs))
+            {
+                cfg = envExpDirAbs;
                 isAbs = true;
             }
             var osNameAndVersion = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
@@ -98,6 +103,7 @@ namespace Donut.Orion
                 assetPath = assetPath.Replace("/", "\\");
                 cfg = cfg.Replace("/", "\\");
             }
+            assetPath = assetPath.Trim('\\');
 
             var cwd = Environment.CurrentDirectory;
             var fullExpPath = !isAbs ? System.IO.Path.Combine(cwd, cfg) : cfg;

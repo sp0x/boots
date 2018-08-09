@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Microsoft.Extensions.Configuration;
@@ -21,18 +22,39 @@ namespace Donut.Orion
         private int _outputPort;
         private ITargetBlock<IntegratedDocument> _actionBlock;
         private int _eventsPort;
+        private IConfiguration _configuration;
 
-#region Events
+        #region Events
         public event OrionEventsListener.OrionEventHandler NewMessage;
         public event FeaturesGenerated FeaturesGenerated;
         public event TrainingComplete TrainingComplete;
         public event TrainingComplete PredictionReady;
-#endregion
 
-        public OrionContext()
+        public string GetExperimentAsset(string path)
+        {
+            var isAbsolute = false;
+            var expPath = OrionSink.GetExperimentsPath(_configuration, out isAbsolute, ref path);
+            Trace.WriteLine(expPath);
+            Console.WriteLine(expPath);
+            var assetPath = System.IO.Path.Combine(expPath, path);
+            if (!System.IO.File.Exists(assetPath))
+            {
+                return null;
+            }
+            else
+            {
+                return assetPath;
+            }
+        }
+
+        #endregion
+
+        public OrionContext(
+            IConfiguration configuration)
         {
             _client = new global::Donut.Orion.OrionClient();
             _eventListener = new OrionEventsListener();
+            _configuration = configuration;
             _eventListener.NewMessage += HandleNewEventMessage;
             _actionBlock = new ActionBlock<IntegratedDocument>((doc) =>
             {

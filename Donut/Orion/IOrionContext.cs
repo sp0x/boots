@@ -15,5 +15,6 @@ namespace Donut.Orion
         event FeaturesGenerated FeaturesGenerated;
         event TrainingComplete TrainingComplete;
         event TrainingComplete PredictionReady;
+        string GetExperimentAsset(string path);
     }
 }

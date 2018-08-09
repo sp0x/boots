@@ -27,7 +27,7 @@ namespace Netlyt.Web
     public partial class Startup
     {
         public IConfiguration Configuration { get; private set; }
-        private IOrionContext OrionContext { get; set; }
+        
         public IHostingEnvironment HostingEnvironment { get; }
 
         public Startup(IHostingEnvironment env)
@@ -40,40 +40,6 @@ namespace Netlyt.Web
                 .AddEnvironmentVariables();
             Configuration = cfgBuilder.Build();
             DBConfig.GetInstance(Configuration);
-            //            var dbConfig = DBConfig.GetGeneralDatabase();
-            //            var mongoList = new MongoList(dbConfig, "1145146c-bff3-495f-ac1c-40afce4536fd");
-            //            var featuresCollection = new MongoList(dbConfig, "1145146c-bff3-495f-ac1c-40afce4536fd_ftr");
-            //            featuresCollection.Truncate();
-            //            var recRom = mongoList.Records;
-            //            var groupKeys = new BsonDocument();
-            //            var groupFields = new BsonDocument();
-            //            var projections = new BsonDocument();
-            //            var pipeline = new List<BsonDocument>();
-            //
-            //            groupFields.Merge(BsonDocument.Parse(@"{""f_0"":{""$min"":""$rssi""}}"));
-            //            groupFields.Merge(BsonDocument.Parse(@"{""g1817192762"":{""$first"":""$timestamp""}}"));
-            //
-            //            projections.Merge(new BsonDocument { { "f_0", "$f_0" } });
-            //            projections.Merge(BsonDocument.Parse(@"{""f_1"":{""$dayOfMonth"":""$g1817192762""}}"));
-            //            projections.Merge(BsonDocument.Parse(@"{""f_2"":{""$year"":""$g1817192762""}}"));
-            //            projections.Merge(BsonDocument.Parse(@"{""f_3"":{""$month"":""$g1817192762""}}"));
-            //            projections.Merge(BsonDocument.Parse(@"{""f_4"":{""$dayOfWeek"":""$g1817192762""}}"));
-            //
-            //            var idSubKey1 = new BsonDocument { { "idKey", "$_id" } };
-            //            var idSubKey2 = new BsonDocument { { "tsKey", new BsonDocument { { "$dayOfYear", "$timestamp" } } } };
-            //            groupKeys.Merge(idSubKey1);
-            //            groupKeys.Merge(idSubKey2);
-            //            var grouping = new BsonDocument();
-            //            grouping["_id"] = groupKeys;
-            //            grouping = grouping.Merge(groupFields);
-            //            pipeline.Add(new BsonDocument{
-            //                {"$group", grouping}});
-            //            pipeline.Add(new BsonDocument{
-            //                {"$project", projections} });
-            //            pipeline.Add(new BsonDocument{
-            //                {"$out", featuresCollection.CollectionName}}); 
-            //var aggOptions = new AggregateOptions(){ AllowDiskUse = true, BatchSize=1 }; 
-            //            var aggregateResult = recRom.Aggregate<BsonDocument>(pipeline, aggOptions);
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -120,7 +86,7 @@ namespace Netlyt.Web
             // Add application services.
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            OrionContext = services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { });
+            services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { });
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();
@@ -147,7 +113,7 @@ namespace Netlyt.Web
             //services.AddAutoMapper(mc => { mc.AddProfiles(GetType().Assembly); });
             services.AddDomainAutomapper();
             services.AddMvc();
-            ConfigureBackgroundServices();
+            ConfigureBackgroundServices(services);
             //Enable for 100% auth coverage by default
             //            services.AddMvc(options =>
             //            {
@@ -204,12 +170,6 @@ namespace Netlyt.Web
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
             InitializeDatabase(app);
-            //            app.UseMvc(routes =>
-            //            {
-            //                routes.MapRoute(
-            //                    name: "default",
-            //                    template: "{controller=Home}/{action=Index}/{id?}");
-            //            });
         }
 
         private void InitializeDatabase(IApplicationBuilder app)

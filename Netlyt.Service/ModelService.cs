@@ -53,13 +53,13 @@ namespace Netlyt.Service
                 .Take(pageSize);
         }
 
-        public Model GetById(long id)
+        public Model GetById(long id, User user)
         {
             return _context.Models
                 .Include(x=>x.DataIntegrations)
                 .Include(x=>x.DonutScript)
                 .Include(x=>x.Performance)
-                .FirstOrDefault(t => t.Id == id);
+                .FirstOrDefault(t => t.Id == id && t.User==user);
         }
 
         /// <summary>
@@ -315,6 +315,11 @@ namespace Netlyt.Service
             return tt;
         }
 
+        public TrainingTask GetBuildById(long buildId, User user)
+        {
+            var task = this._context.TrainingTasks.FirstOrDefault(x => x.Id == buildId && x.Model.User == user);
+            return task;
+        }
         public bool IsBuilding(Model src)
         {
             return src.TrainingTasks.Any(x => x.Status == TrainingTaskStatus.InProgress ||
@@ -325,18 +330,7 @@ namespace Netlyt.Service
         {
             return $"http://predict.netlyt.com/";
         }
-
-        public string GetTaskAssetUrl(TrainingTask task, string asset)
-        {
-//            mapped.Endpoint = $"http://inference.netlyt.com/";
-//            if (item.Performance != null)
-//            {
-//                mapped.Performance.IsRegression = true;
-//                mapped.Performance.ReportUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.ReportUrl}";
-//                mapped.Performance.TestResultsUrl = $"http://api.netlyt.com/model/getAsset?path={mapped.Performance.TestResultsUrl}";
-//            }
-            return $"http://api.netlyt.com/asset/{task.Id}/{asset}";
-        }
+        
 
     }
 }

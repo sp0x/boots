@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Donut;
 using Donut.Data;
 using Donut.FeatureGeneration;
 using Donut.Lex.Data;
+using Donut.Models;
 using Donut.Orion;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 
 namespace Netlyt.Service
@@ -22,6 +26,80 @@ namespace Netlyt.Service
         {
             _orion = orion;
         }
+
+        public string GetInferenceUrl()
+        {
+            return "http://inference.netlyt.com";
+        }
+
+        public string GetSnippet(User user, TrainingTask trainingTask, string language)
+        {
+            var inferenceUrl = GetInferenceUrl();
+            inferenceUrl += "/" + HttpUtility.UrlEncode(trainingTask.Model.ModelName);
+            ApiAuth apikey = user.ApiKeys.FirstOrDefault()?.Api;
+            var rootIgn = trainingTask.Model.GetRootIntegration();
+            var idKey = !string.IsNullOrEmpty(rootIgn.DataIndexColumn) ? rootIgn.DataIndexColumn : null;
+            string output = "";
+            if (language == "python")
+            {
+                var dataPart = "";
+                if (idKey == null) dataPart = "\""+ idKey  + "\": <idValue> OR ..data row..";
+                if (idKey == null) dataPart = "..data row..";
+                output = $@"
+import requests
+data = " + "{ " + dataPart + " } #or array of data" + $@"\n
+r = requests.post('{inferenceUrl}', data=data, headers=" + "{key: \"" + apikey.AppId + "\", secret: \"" + apikey.AppSecret + "\" }" + @")\n
+predictions = r.json()\n
+                ";
+            }
+            else if (language == "js")
+            {
+                var headers = "{key: \"" + apikey.AppId + "\", secret: \"" + apikey.AppSecret + "\" }\n";
+                var dataPart = "";
+                if (idKey == null) dataPart = "\"" + idKey + "\": <idValue> OR ..data row..";
+                if (idKey == null) dataPart = "..data row or array of data rows..";
+                output = "fetch(\"" + inferenceUrl +"\", {\n" +
+                    "method: \"POST\",\n" +
+                    "headers: " + headers +
+                    "body: " + dataPart + "\n" +
+                    "\n})\n" +
+                    ".json()\n" +
+                    ".then(predictions=>{\n" +
+                    "console.log(predictions)" +
+                    "\n})";
+            }
+            else if (language == "cs")
+            {
+                var dataPart = "";
+                if (idKey == null) dataPart = "values[\"" + idKey + "\"] = <idValue> //OR ..data row..";
+                if (idKey == null) dataPart = "//values = ..data row..";
+                output = @"
+using System.Net.Http;
+float Predict(){
+  HttpClient client = new HttpClient();
+  client.DefaultRequestHeaders.Add(" + "\"key\", \"" + apikey.AppId + "\"" + @")\n
+  client.DefaultRequestHeaders.Add(" + "\"secret\", \"" + apikey.AppSecret + "\"" + @")\n
+  var values = new Dictionary<string, string>();
+  " + dataPart + @"\n
+  var content = new FormUrlEncodedContent(values);
+  " + "var response = await client.PostAsync(\"" + inferenceUrl + "\", content);\n" + @"
+  var predictions = JArray.parse(response.Content.ReadAsStringAsync().Result);
+  return predictions[0];
+}
+";
+            }
+            return output;
+        }
+
+        public Dictionary<string, string> GetSnippets(User user, TrainingTask trainingTask)
+        {
+            var output = new Dictionary<string, string>();
+            output["js"] = GetSnippet(user, trainingTask, "js");
+            output["cs"] = GetSnippet(user, trainingTask, "cs");
+            output["python"] = GetSnippet(user, trainingTask, "python");
+            return output;
+        }
+
         public async Task<IHarvesterResult> RunExtraction(DonutScript script, DataIntegration integration, IServiceProvider serviceProvider)
         {
             var dbConfig = serviceProvider.GetService(typeof(IDatabaseConfiguration)) as IDatabaseConfiguration;
