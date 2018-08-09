@@ -72,6 +72,7 @@ namespace Netlyt.Web
                 options.Password.RequireUppercase = false;
                 options.Password.RequireLowercase = false;
             });
+            services.AddCors();
             services.AddIdentity<User, UserRole>()
                 .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();
@@ -110,6 +111,7 @@ namespace Netlyt.Web
             services.AddTransient<OrganizationService>();
             services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
+            
             SetupAuthentication(services);
             //services.AddAutoMapper(mc => { mc.AddProfiles(GetType().Assembly); });
             services.AddDomainAutomapper();
@@ -138,7 +140,7 @@ namespace Netlyt.Web
                 // Cookie settings
                 options.Cookie.HttpOnly = true;
                 options.Cookie.Expiration = TimeSpan.FromDays(500);
-                options.Cookie.Domain = ".netlyt.com";
+                //options.Cookie.Domain = ".netlyt.com";
                 options.LoginPath = "/user/Login"; // If the LoginPath is not set here, ASP.NET Core will default to /Account/Login
                 options.LogoutPath = "/user/Logout"; // If the LogoutPath is not set here, ASP.NET Core will default to /Account/Logout
                 options.AccessDeniedPath = "/user/AccessDenied"; // If the AccessDeniedPath is not set here, ASP.NET Core will default to /Account/AccessDenied
@@ -200,6 +202,21 @@ namespace Netlyt.Web
         /// <returns></returns>
         private static void SetupApi(IApplicationBuilder app)
         {
+            app.UseCors(builder =>
+            {
+                builder
+                .AllowAnyMethod()
+                .WithHeaders("Set-Cookie")
+                .AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowCredentials();
+            });
+            var cookiePolicyOptions = new CookiePolicyOptions
+            {
+                Secure = CookieSecurePolicy.SameAsRequest,
+                MinimumSameSitePolicy = SameSiteMode.None
+            };
+            app.UseCookiePolicy(cookiePolicyOptions);
             app.UseEnableRequestRewind();
             app.UseSession();
             app.UseMvc(routes =>

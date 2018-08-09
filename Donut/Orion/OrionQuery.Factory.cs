@@ -337,6 +337,12 @@ namespace Donut.Orion
                 return qr;
             }
 
+            /// <summary>
+            /// Create a script generation query.
+            /// </summary>
+            /// <param name="model">The model to use.</param>
+            /// <param name="ds">The donut script to create a python script for.</param>
+            /// <returns></returns>
             public static OrionQuery CreateScriptGenerationQuery(Model model, IDonutScript ds)
             {
                 var qr = new OrionQuery(OrionOp.CreateScript);
