@@ -32,7 +32,7 @@ namespace Donut.Orion
             Socket.ReceiveReady += OnDataAvailable;
             _pinger.Elapsed += (s, a) =>
             {
-                ///Console.WriteLine($"{Tag} Pinger - " + DateTime.Now.ToString());
+                //Console.WriteLine($"{Tag} Pinger - " + DateTime.Now.ToString());
             };
         }
 
@@ -55,7 +55,7 @@ namespace Donut.Orion
             string frame = e.Socket.ReceiveFrameString();
             //e.Socket.TrySendFrame("ack");
             //var inpuMessage = e.Socket.ReceiveMultipartMessage(); 
-            Console.WriteLine("[" + this.Tag + "] Received frame: " + frame);
+            //Console.WriteLine("[" + this.Tag + "] Received frame: " + frame);
             OnMessage?.Invoke(this, frame);
         }
 

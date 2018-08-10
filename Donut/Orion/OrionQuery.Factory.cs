@@ -93,11 +93,11 @@ namespace Donut.Orion
                 return qr;
             }
 
-            private static JArray GetFieldsOptions(IIntegration cl, Func<FieldDefinition, bool> fieldFilter = null)
+            private static JArray GetFieldsOptions(IIntegration integration, Func<FieldDefinition, bool> fieldFilter = null)
             {
                 var fields = new JArray();
                 if (fieldFilter == null) fieldFilter = (x) => true;
-                foreach (var fld in cl.Fields.Where(fieldFilter))
+                foreach (var fld in integration.Fields.Where(fieldFilter))
                 {
                     var isEncoded = fld.DataEncoding != FieldDataEncoding.None;
                     if (!isEncoded)
@@ -108,21 +108,27 @@ namespace Donut.Orion
                     }
                     else
                     {
-                        var encoding = FieldEncoding.Factory.Create(cl, fld.DataEncoding);
-                        var encodedFields = encoding.GetFieldNames(fld);
-                        foreach (var encField in encodedFields)
-                        {
-                            var newField = new JObject
-                            {
-                                {"name" as string, encField},
-                                {"encoding" as string, fld.DataEncoding.ToString().ToLower()}
-                            };
-                            (fields).Add(newField);
-                        }
+                        var flds = GetEncodedFieldSubfields(integration, fld);
+                        foreach (var encFld in flds) fields.Add(encFld);
                     }
                 }
 
                 return fields;
+            }
+
+            private static IEnumerable<JObject> GetEncodedFieldSubfields(IIntegration cl, FieldDefinition fld)
+            {
+                var encoding = FieldEncoding.Factory.Create(cl, fld.DataEncoding);
+                var encodedFields = encoding.GetFieldNames(fld);
+                foreach (var encField in encodedFields)
+                {
+                    var newField = new JObject
+                    {
+                        {"name" as string, encField},
+                        {"encoding" as string, fld.DataEncoding.ToString().ToLower()}
+                    };
+                    yield return newField;
+                }
             }
 
             /// <summary>
@@ -177,20 +183,33 @@ namespace Donut.Orion
                 {
                     var jsfld = new JObject();
                     jsfld["name"] = field.Name;
-                    jsfld["is_key"] = rootIntegration.DataIndexColumn != null &&
-                                      !string.IsNullOrEmpty(rootIntegration.DataIndexColumn) &&
-                                      field.Name == rootIntegration.DataIndexColumn;
-                    jsfld["type"] = "float";
-                    
-                    if (field.Value.IsDateTime)
+                    var matchingField = rootIntegration.Fields.FirstOrDefault(x => x.Name == field.Name);
+                    var isEncoded = matchingField != null && matchingField.DataEncoding != FieldDataEncoding.None;
+                    if (isEncoded)
                     {
-                        jsfld["type"] = "datetime";
+                        var encodedFields = GetEncodedFieldSubfields(rootIntegration, matchingField);
+                        foreach (var encFld in encodedFields)
+                        {
+                            encFld["is_key"] = rootIntegration.DataIndexColumn != null &&
+                                              !string.IsNullOrEmpty(rootIntegration.DataIndexColumn) &&
+                                              encFld["name"].ToString() == rootIntegration.DataIndexColumn;
+                            encFld["type"] = "float";
+                            //if (encFld.Value.IsDateTime) jsfld["type"] = "datetime";
+                            //else if (encFld.Value.IsString) jsfld["type"] = "str";
+                            output.Add(encFld);
+                        }
                     }
-                    else if (field.Value.IsString)
+                    else
                     {
-                        jsfld["type"] = "str";
+                        jsfld["is_key"] = rootIntegration.DataIndexColumn != null &&
+                                          !string.IsNullOrEmpty(rootIntegration.DataIndexColumn) &&
+                                          field.Name == rootIntegration.DataIndexColumn;
+                        jsfld["type"] = "float";
+                        if (field.Value.IsDateTime)jsfld["type"] = "datetime";
+                        else if (field.Value.IsString)jsfld["type"] = "str";
+                        output.Add(jsfld);
                     }
-                    output.Add(jsfld);
+
                 }
                 return output;
             }
