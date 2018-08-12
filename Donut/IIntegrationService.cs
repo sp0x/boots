@@ -7,6 +7,8 @@ using Donut.Data;
 using Donut.Data.Format;
 using Donut.Integration;
 using Donut.IntegrationSource;
+using Donut.Models;
+using MongoDB.Bson;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Newtonsoft.Json.Linq;
@@ -61,5 +63,6 @@ namespace Donut
         IQueryable<Data.DataIntegration> GetById(long id);
         void Remove(Data.DataIntegration importTaskIntegration);
         void SetTargetTypes(DataIntegration ign, JToken description);
+        Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask);
     }
 }

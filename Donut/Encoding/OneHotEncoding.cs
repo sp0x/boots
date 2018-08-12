@@ -123,6 +123,11 @@ namespace Donut.Encoding
                 yield return extra.Key;
             }
         }
+
+        public override string DecodeField(FieldDefinition field, BsonValue value)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 
 }

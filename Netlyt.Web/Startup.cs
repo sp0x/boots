@@ -2,6 +2,8 @@
 using AutoMapper;
 using Donut;
 using Donut.Orion;
+using EntityFramework.DbContextScope;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -43,6 +45,16 @@ namespace Netlyt.Web
             DBConfig.GetInstance(Configuration);
         }
 
+        public DbContextOptionsBuilder<ManagementDbContext> GetDbOptionsBuilder()
+        {
+            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
+            Console.WriteLine("Management DB at: " + postgresConnectionString);
+            var dbOptions = new DbContextOptionsBuilder<ManagementDbContext>()
+                .UseNpgsql(postgresConnectionString)
+                .UseLazyLoadingProxies();
+            return dbOptions;
+        }
+
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
@@ -50,6 +62,7 @@ namespace Netlyt.Web
             var dbConfigInstance = DBConfig.GetInstance(Configuration);
             var databaseConfiguration = DBConfig.GetInstance().GetGeneralDatabase();
             if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!");
+            var dbOptions = GetDbOptionsBuilder();
             var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
             Console.WriteLine("Management DB at: " + postgresConnectionString);
             services.AddDbContext<ManagementDbContext>(options =>
@@ -96,11 +109,14 @@ namespace Netlyt.Web
 
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
+
+            services.AddTransient<IDbContextFactory>((sp) => new DbContextFactory(dbOptions));
+            services.AddTransient<IDbContextScopeFactory>((sp) => new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
+
             services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
                 new DynamicContextFactory(() =>
                 {
-                    var opsBuilder = new DbContextOptionsBuilder<ManagementDbContext>().UseNpgsql(postgresConnectionString);
-                    return new ManagementDbContext(opsBuilder.Options);
+                    return new ManagementDbContext(dbOptions.Options);
                 })
             );
             services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));

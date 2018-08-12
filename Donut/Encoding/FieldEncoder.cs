@@ -67,6 +67,19 @@ namespace Donut.Encoding
             }
         }
 
+        public IEnumerable<KeyValuePair<string, int>> GetFieldpairs(BsonDocument doc)
+        {
+            if (doc == null) yield break;
+            foreach (var encoding in _encoders)
+            {
+                var fields = encoding.GetFieldpairs(doc).ToList();
+                foreach (var field in fields)
+                {
+                    yield return field;
+                }
+            }
+        }
+
         public async Task ApplyToAllFields(IMongoCollection<BsonDocument> collection, CancellationToken? ct)
         {
             foreach (var encoding in _encoders)
@@ -74,6 +87,28 @@ namespace Donut.Encoding
                 await encoding.ApplyToAllFields(collection, ct);
                 if (ct != null && ct.Value.IsCancellationRequested) break;
             }
+        }
+
+        public virtual void DecodeFields<TData>(TData f) where TData : class, IIntegratedDocument
+        {
+            var internalDoc = f.Document?.Value;
+            if (internalDoc == null) return;
+            var fields = GetFieldpairs(f).ToList();
+            foreach (var field in fields)
+            {
+                internalDoc[field.Key] = field.Value;
+            }
+        }
+
+        public virtual void DecodeFields(BsonDocument document, IFieldExtraRepository fieldsRepo)
+        {
+            if (document == null) return;
+            foreach (var encoding in _encoders)
+            {
+                encoding.SetExtrasRepository(fieldsRepo);
+                encoding.DecodeFields(document);
+            }
+
         }
 
     }

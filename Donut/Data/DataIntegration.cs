@@ -10,7 +10,10 @@ using Donut.IntegrationSource;
 using Donut.Models;
 using Donut.Source;
 using Dynamitey;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Integration;
 
@@ -221,6 +224,12 @@ namespace Donut.Data
             var inputFormatter = new BsonFormatter<ExpandoObject>();
             var mongoSource = MongoSource.CreateFromCollection(Collection, inputFormatter);
             return mongoSource;
+        }
+
+        public IMongoCollection<BsonDocument> GetMongoCollection()
+        {
+            var mCol = MongoHelper.GetCollection(Collection);
+            return mCol;
         }
 
         public FieldDefinition GetField(string fieldName)

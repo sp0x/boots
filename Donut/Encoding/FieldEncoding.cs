@@ -22,6 +22,7 @@ namespace Donut.Encoding
         private Dictionary<string, ConcurrentDictionary<string, FieldExtra>> _fieldDict;
         public int Limit { get; set; } = 8;
         public FieldDataEncoding Encoding { get; set; }
+        public IFieldExtraRepository ExtrasRepository { get; private set; }
         protected List<FieldDefinition> TargetFields => _targetFields;
         protected IIntegration Integration => _integration;
         /// <summary>
@@ -166,5 +167,24 @@ namespace Donut.Encoding
             targetField.Extras = new FieldExtras();
             //targetField.Extras.Field = targetField;
         }
+
+
+        public void DecodeFields(BsonDocument document)
+        {
+            foreach (var field in TargetFields)
+            {
+                if (!document.Contains(field.Name)) continue;
+                var encValue = document[field.Name];
+                var decValue = DecodeField(field, encValue);
+                document[field.Name] = decValue;
+            }
+        }
+
+        public void SetExtrasRepository(IFieldExtraRepository fieldsRepo)
+        {
+            this.ExtrasRepository = fieldsRepo;
+        }
+
+        public abstract string DecodeField(FieldDefinition field, BsonValue value);
     }
 }

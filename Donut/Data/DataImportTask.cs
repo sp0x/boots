@@ -83,7 +83,8 @@ namespace Donut.Data
             OutputDestinationCollection = outCollection;
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
             if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit);
-            _encoder = FieldEncoder.Factory.Create(_integration);// new OneHotEncoding(new FieldEncodingOptions { Integration = _integration });
+            _encoder = FieldEncoder.Factory.Create(_integration);
+            // new OneHotEncoding(new FieldEncodingOptions { Integration = _integration });
         }
 
         /// <summary>

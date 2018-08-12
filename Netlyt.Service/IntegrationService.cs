@@ -7,14 +7,21 @@ using System.Threading.Tasks;
 using Donut;
 using Donut.Data;
 using Donut.Data.Format;
+using Donut.Encoding;
 using Donut.Integration;
 using Donut.IntegrationSource;
+using Donut.Models;
+using EntityFramework.DbContextScope;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Exceptions;
+using Netlyt.Service.Repisitories;
 using Newtonsoft.Json.Linq;
 using DataIntegration = Donut.Data.DataIntegration;
 
@@ -23,24 +30,27 @@ namespace Netlyt.Service
     public class IntegrationService : IIntegrationService
     {
         //private IFactory<ManagementDbContext> _factory;
-        private ManagementDbContext _context;
+        private ManagementDbContext _dbContext;
 
         private ApiService _apiService;
         private UserService _userService;
         private TimestampService _timestampService;
         private IDatabaseConfiguration _dbConfig;
+        private IDbContextScopeFactory _contextFactory;
 
-        public IntegrationService(ManagementDbContext context,
+        public IntegrationService(ManagementDbContext dbContext,
             ApiService apiService,
             UserService userService,
             TimestampService tsService,
-            IDatabaseConfiguration dbConfig)
+            IDatabaseConfiguration dbConfig,
+            IDbContextScopeFactory dbContextFactory)
         {
-            _context = context;
+            _dbContext = dbContext;
             _apiService = apiService;
             _userService = userService;
             _timestampService = tsService;
             _dbConfig = dbConfig;
+            _contextFactory = dbContextFactory;
         }
 
         public void SaveOrFetchExisting(ref DataIntegration type)
@@ -50,8 +60,8 @@ namespace Netlyt.Service
             var appId = typeApiKey.AppId;
             if (!IntegrationExists(type, appId, out exitingIntegration))
             {
-                _context.Integrations.Add(type);
-                _context.SaveChanges();
+                _dbContext.Integrations.Add(type);
+                _dbContext.SaveChanges();
             }
             else
             {
@@ -93,7 +103,7 @@ namespace Netlyt.Service
         {
             var localFields = type.Fields;
 
-            existingDefinition = (from x in _context.Integrations
+            existingDefinition = (from x in _dbContext.Integrations
                                   where x.APIKey.AppId == appId
                                         && x.Name == type.Name
                                         && x.Fields.All(f => localFields.Any(lf => lf.Name == f.Name))
@@ -119,7 +129,7 @@ namespace Netlyt.Service
         /// <returns></returns>
         public bool IntegrationExists(IIntegration type, long apiId, out DataIntegration existingDefinition)
         {
-            existingDefinition = _context.Integrations.FirstOrDefault(x => x.APIKey.Id == apiId && (x.Fields == type.Fields || x.Name == type.Name));
+            existingDefinition = _dbContext.Integrations.FirstOrDefault(x => x.APIKey.Id == apiId && (x.Fields == type.Fields || x.Name == type.Name));
             return existingDefinition != null;
         }
         /// <summary>
@@ -128,9 +138,9 @@ namespace Netlyt.Service
         /// <param name="importTaskIntegration"></param>
         public void Remove(DataIntegration importTaskIntegration)
         {
-            _context.Integrations.Remove(importTaskIntegration);
+            _dbContext.Integrations.Remove(importTaskIntegration);
             importTaskIntegration.AggregateKeys.Clear();
-            _context.SaveChanges();
+            _dbContext.SaveChanges();
             if (!string.IsNullOrEmpty(importTaskIntegration.Collection))
             {
                 var collection = MongoHelper.GetCollection(importTaskIntegration.Collection);
@@ -155,6 +165,31 @@ namespace Netlyt.Service
             ign.Fields = fields;
         }
 
+        public async Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask)
+        {
+            var rootIntegration = trainingTask.Model.GetRootIntegration();
+            var dataCollection = MongoHelper.GetCollection(trainingTask.Model.GetFeaturesCollection());
+            var collectionSize = dataCollection.Count(new BsonDocument());
+            var skipPerc = 0.8;
+            int startingPoint = (int)Math.Floor(collectionSize * skipPerc);
+            var ops = new FindOptions();
+            var examplesList = await dataCollection.Find<BsonDocument>(new BsonDocument(), ops)
+                .Skip(startingPoint)
+                .Project(Builders<BsonDocument>.Projection.Exclude("_id"))
+                .Limit(1)
+                .ToListAsync();
+            var example = examplesList.FirstOrDefault();
+            using (var context = _contextFactory.Create())
+            {
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                var extrasRepo = new FieldExtraRepository(ambientDbContextLocator);
+                var encoder = FieldEncoder.Factory.Create(rootIntegration);
+                encoder.DecodeFields(example, extrasRepo);
+            }
+            //Decode
+            return example;
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -162,7 +197,7 @@ namespace Netlyt.Service
         /// <returns></returns>
         public IQueryable<DataIntegration> GetById(long id)
         {
-            return _context.Integrations.Where(x => x.Id == id);
+            return _dbContext.Integrations.Where(x => x.Id == id);
         }
 
         /// <summary>
@@ -173,7 +208,7 @@ namespace Netlyt.Service
         /// <returns></returns>
         public IIntegration GetByName(IApiAuth contextApiAuth, string name)
         {
-            var integration = _context.Integrations
+            var integration = _dbContext.Integrations
                 .Include(x => x.APIKey)
                 .FirstOrDefault(x => x.APIKey.Id == contextApiAuth.Id && x.Name == name);
             return integration;
@@ -290,7 +325,7 @@ namespace Netlyt.Service
             options.Integration = ign;
             var importTask = new DataImportTask<ExpandoObject>(options);
             var result = await importTask.Import();
-            _context.SaveChanges();
+            _dbContext.SaveChanges();
             return result;
         }
 
@@ -308,11 +343,11 @@ namespace Netlyt.Service
             {
                 var collection = MongoHelper.GetCollection(integrationInfo.Collection);
                 await importTask.Encode(collection);
-                _context.Integrations.Add(integrationInfo);
+                _dbContext.Integrations.Add(integrationInfo);
             }
             try
             {
-                _context.SaveChanges(); //Save any changes done to the integration.
+                _dbContext.SaveChanges(); //Save any changes done to the integration.
             }
             catch (Exception e)
             {
@@ -461,15 +496,15 @@ namespace Netlyt.Service
             newIntegration.Owner = crUser;
             newIntegration.APIKey = apiKey;
 
-            var existingIntegration = _context.Integrations
+            var existingIntegration = _dbContext.Integrations
                 .FirstOrDefault(x => x.Name.ToLower() == integrationName.ToLower()
                 && x.Owner.Id == crUser.Id);
             if (existingIntegration != null)
             {
                 throw new ObjectAlreadyExists("Integration with the same name already exists!");
             }
-            _context.Integrations.Add(newIntegration);
-            _context.SaveChanges();
+            _dbContext.Integrations.Add(newIntegration);
+            _dbContext.SaveChanges();
             return await Task.FromResult(newIntegration);
         }
         /// <summary>

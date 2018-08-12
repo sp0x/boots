@@ -426,7 +426,7 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<long?>("FieldExtrasId");
+                    b.Property<long>("FieldExtrasId");
 
                     b.Property<long?>("FieldId");
 
@@ -907,9 +907,10 @@ namespace Netlyt.Service.Migrations
 
             modelBuilder.Entity("Donut.Source.FieldExtra", b =>
                 {
-                    b.HasOne("Donut.Source.FieldExtras")
+                    b.HasOne("Donut.Source.FieldExtras", "FieldExtras")
                         .WithMany("Extra")
-                        .HasForeignKey("FieldExtrasId");
+                        .HasForeignKey("FieldExtrasId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Donut.Source.FieldDefinition", "Field")
                         .WithMany()

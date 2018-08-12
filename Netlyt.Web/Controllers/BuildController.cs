@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
+using MongoDB.Bson.IO;
+using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Web.Models.ManageViewModels;
@@ -29,6 +32,7 @@ namespace Netlyt.Web.Controllers
         private ModelService _modelService;
         private IOrionContext _orion;
         private IDonutService _donut;
+        private IIntegrationService _integrationService;
 
         [TempData]
         public string StatusMessage { get; set; }
@@ -41,7 +45,8 @@ namespace Netlyt.Web.Controllers
             ModelService modelService,
             UrlEncoder urlEncoder,
             IOrionContext orionContext,
-            IDonutService donut)
+            IDonutService donut,
+            IIntegrationService integrations)
         {
             _modelService = modelService;
             _userManager = userManager;
@@ -51,6 +56,7 @@ namespace Netlyt.Web.Controllers
             _urlEncoder = urlEncoder;
             _orion = orionContext;
             _donut = donut;
+            _integrationService = integrations;
         }
 
         [HttpGet("/build/{buildId}/getSnippets")]
@@ -62,6 +68,9 @@ namespace Netlyt.Web.Controllers
             if (trainingTask == null) return NotFound();
             if (trainingTask.Performance is null) return NotFound();
             var snippets = _donut.GetSnippets(user, trainingTask);
+            BsonDocument dataSnippet = await _integrationService.GetTaskDataSample(trainingTask);
+            var jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict, Indent=true };
+            snippets["data"] = dataSnippet.ToJson(jsonWriterSettings);
             return Json(snippets);
         }
 

@@ -146,6 +146,12 @@ namespace Donut.Encoding
         {
             yield return fld.Name;
         }
+
+        public override string DecodeField(FieldDefinition field, BsonValue value)
+        {
+            var fieldExtra = ExtrasRepository.GetByKey(field.Extras.Id, value.ToString());
+            return fieldExtra?.Value.ToString();
+        }
     }
 
 }

@@ -2,6 +2,7 @@
 using Donut.Data;
 using Donut.Models;
 using Donut.Source;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,7 +13,7 @@ using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service.Data
 {
-    public class ManagementDbContext : IdentityDbContext<User>
+    public class ManagementDbContext : IdentityDbContext<User>, IDbContext
     {
         public DbSet<DataIntegration> Integrations { get; set; }
         public DbSet<Organization> Organizations { get; set; }
@@ -20,6 +21,7 @@ namespace Netlyt.Service.Data
         public DbSet<Rule> Rules { get; set; }
         public DbSet<FieldDefinition> Fields { get; set; }
         public DbSet<FieldExtras> FieldExtras { get; set; }
+        public DbSet<FieldExtra> FieldExtra { get; set; }
         public DbSet<ApiAuth> ApiKeys { get; set; }
         public DbSet<ApiUser> ApiUsers { get; set; }
         public DbSet<FeatureGenerationTask> FeatureGenerationTasks { get; set; }

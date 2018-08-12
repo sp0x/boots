@@ -2,6 +2,8 @@
 using AutoMapper;
 using Donut;
 using Donut.Orion;
+using EntityFramework.DbContextScope;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +30,7 @@ namespace Netlyt.Web
         {
             var services = new ServiceCollection();
             var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
+            var dbOptions = GetDbOptionsBuilder();
             services.AddDbContext<ManagementDbContext>(options =>
                 {
                     options.UseLazyLoadingProxies();
@@ -52,19 +55,13 @@ namespace Netlyt.Web
             services.AddTransient<SignInManager<User>>();
             services.AddTransient<CompilerService>();
             services.AddTransient<IDonutService, DonutService>();
-            services.AddTransient<IEmailSender, AuthMessageSender>((sp) =>
-                {
-                    return new AuthMessageSender(Configuration);
-                });
+            services.AddTransient<IEmailSender, AuthMessageSender>((sp) => new AuthMessageSender(Configuration));
+            
             services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
-                new DynamicContextFactory(() =>
-                {
-                    var opsBuilder = new DbContextOptionsBuilder<ManagementDbContext>()
-                        .UseNpgsql(postgresConnectionString)
-                        .UseLazyLoadingProxies();
-                    return new ManagementDbContext(opsBuilder.Options);
-                })
+                new DynamicContextFactory(() =>new ManagementDbContext(dbOptions.Options))
             );
+            services.AddTransient<IDbContextFactory>((sp)=> new DbContextFactory(dbOptions));
+            services.AddTransient<IDbContextScopeFactory>((sp)=>new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
             services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
             services.AddTransient<UserService>();
             services.AddTransient<ApiService>();

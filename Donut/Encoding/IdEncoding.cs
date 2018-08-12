@@ -83,5 +83,10 @@ namespace Donut.Encoding
         {
             yield return fld.Name;
         }
+
+        public override string DecodeField(FieldDefinition field, BsonValue value)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
