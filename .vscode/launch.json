@@ -4,6 +4,7 @@
    // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
    "version": "0.2.0",
    "configurations": [
+       
         {
             "name": "Python",
             "type": "python",
@@ -20,28 +21,14 @@
             ]
         },
         {
-            "name": ".NET Core Launch (console)",
+            "name": "Netlyt.Web",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceRoot}/IntegrationDaemon/IntegrationDaemon/bin/Debug/netcoreapp2.0/IntegrationDaemon.dll",
+            "program": "${workspaceRoot}/Netlyt.Web/bin/Debug/netcoreapp2.1/Netlyt.Web.dll",
             "args": [],
-            "cwd": "${workspaceRoot}/IntegrationDaemon/IntegrationDaemon",
-            // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
-            "console": "internalConsole",
-            "stopAtEntry": false,
-            "internalConsoleOptions": "openOnSessionStart"
-        },
-        {
-            "name": "Peeralytics Web",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceRoot}/Netlyt/bin/Debug/netcoreapp2.0/Netlyt.dll",
-            "args": [],
-            "cwd": "${workspaceRoot}/Netlyt",
+            "cwd": "${workspaceRoot}/Netlyt.Web",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
             "console": "internalConsole",
             "stopAtEntry": false,
