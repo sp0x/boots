@@ -33,13 +33,15 @@ namespace Netlyt.Service
         private TimestampService _timestampService;
         private ManagementDbContext _dbContext;
         private IRedisCacher _cacher;
+        private IRateService _rateService;
 
         public ModelService(ManagementDbContext context,
             IOrionContext orionContext,
             IHttpContextAccessor ctxAccessor,
             TimestampService timestampService,
             ManagementDbContext dbContext,
-            IRedisCacher cacher)
+            IRedisCacher cacher,
+            IRateService rateService)
         {
             _contextAccessor = ctxAccessor;
             _context = context;
@@ -47,6 +49,7 @@ namespace Netlyt.Service
             _timestampService = timestampService;
             _dbContext = dbContext;
             _cacher = cacher;
+            _rateService = rateService;
         }
 
         public IEnumerable<Model> GetAllForUser(User user, int page, int pageSize = 25)
@@ -316,11 +319,11 @@ namespace Netlyt.Service
         /// <returns></returns>
         public async Task PublishModel(Model model, List<ModelTrainingPerformance> targetPerformances)
         {
-            foreach (var trainingPerf in targetPerformances)
+            foreach (var trainingTask in model.TrainingTasks)
             {
-                var target = trainingPerf.TargetName;
-                var task = model.TrainingTasks.LastOrDefault(x => x.Target.Column.Name == trainingPerf.TargetName);
-                var modelKey = $"builds:published:{task.Id}";
+                var target = trainingTask.Target.Column.Name;
+                var performance = targetPerformances.LastOrDefault(x => x.TargetName == trainingTask.Target.Column.Name);
+                var modelKey = $"builds:published:{trainingTask.Id}";
                 var dict = new Dictionary<string, string>();
                 dict["target"] = target;
                 dict["key"] = model.APIKey.AppId;
@@ -329,8 +332,19 @@ namespace Netlyt.Service
                 dict["user"] = model.User.UserName;
                 _cacher.SetHash(modelKey, dict);
             }
+            SetUserRateCache(model.User);
         }
 
+        private void SetUserRateCache(User user)
+        {
+            var key = $"rates:allowed:{user.UserName}";
+            var dict = new Dictionary<string, string>();
+            ApiRateLimit rate = _rateService.GetAllowed(user);
+            dict["weekly_usage"] = rate.Weekly.ToString();
+            dict["monthly_usage"] = rate.Monthly.ToString();
+            dict["daily_usage"] = rate.Daily.ToString();
+            _cacher.SetHash(key, dict);
+        }
 
         private TrainingTask CreateTrainingTask(ModelTarget target)
         {

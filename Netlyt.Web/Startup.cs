@@ -120,6 +120,7 @@ namespace Netlyt.Web
                 })
             );
             services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
+            services.AddTransient<IRateService, RateService>();
             services.AddTransient<UserService>();
             services.AddTransient<ApiService>();
             services.AddTransient<TimestampService>();
@@ -156,7 +157,7 @@ namespace Netlyt.Web
                 // Cookie settings
                 options.Cookie.HttpOnly = true;
                 options.Cookie.Expiration = TimeSpan.FromDays(500);
-                options.Cookie.Domain = ".netlyt.com";
+                //options.Cookie.Domain = ".netlyt.com";
                 options.LoginPath = "/user/Login"; // If the LoginPath is not set here, ASP.NET Core will default to /Account/Login
                 options.LogoutPath = "/user/Logout"; // If the LogoutPath is not set here, ASP.NET Core will default to /Account/Logout
                 options.AccessDeniedPath = "/user/AccessDenied"; // If the AccessDeniedPath is not set here, ASP.NET Core will default to /Account/AccessDenied

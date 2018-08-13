@@ -665,6 +665,24 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("ApiPermissionsSet");
                 });
 
+            modelBuilder.Entity("Netlyt.Interfaces.Models.ApiRateLimit", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<int>("Daily");
+
+                    b.Property<int>("Monthly");
+
+                    b.Property<string>("Name");
+
+                    b.Property<int>("Weekly");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Rates");
+                });
+
             modelBuilder.Entity("Netlyt.Interfaces.Models.Organization", b =>
                 {
                     b.Property<long>("Id")
@@ -718,6 +736,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed");
 
+                    b.Property<long>("RateLimitId");
+
                     b.Property<string>("RoleId");
 
                     b.Property<string>("SecurityStamp");
@@ -737,6 +757,8 @@ namespace Netlyt.Service.Migrations
                         .HasName("UserNameIndex");
 
                     b.HasIndex("OrganizationId");
+
+                    b.HasIndex("RateLimitId");
 
                     b.HasIndex("RoleId");
 
@@ -1025,6 +1047,11 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Interfaces.Models.Organization", "Organization")
                         .WithMany("Members")
                         .HasForeignKey("OrganizationId");
+
+                    b.HasOne("Netlyt.Interfaces.Models.ApiRateLimit", "RateLimit")
+                        .WithMany()
+                        .HasForeignKey("RateLimitId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Netlyt.Interfaces.Models.UserRole", "Role")
                         .WithMany()

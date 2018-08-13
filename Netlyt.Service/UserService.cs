@@ -54,7 +54,8 @@ namespace Netlyt.Service
                 UserName = username,
                 Email = model.Email,
                 FirstName = model.FirstName,
-                LastName = model.LastName
+                LastName = model.LastName,
+                RateLimit = ApiRateLimit.CreateDefault()
             };
             var org = _orgService.Get(model.Org);
             if (org == null)

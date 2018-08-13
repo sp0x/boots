@@ -23,6 +23,7 @@ namespace Netlyt.Service.Data
         public DbSet<FieldExtras> FieldExtras { get; set; }
         public DbSet<FieldExtra> FieldExtra { get; set; }
         public DbSet<ApiAuth> ApiKeys { get; set; }
+        public DbSet<ApiRateLimit> Rates { get; set; }
         public DbSet<ApiUser> ApiUsers { get; set; }
         public DbSet<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
         public DbSet<DonutScriptInfo> DonutScripts { get; set; }

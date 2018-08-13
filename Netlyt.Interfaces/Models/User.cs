@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
 
 namespace Netlyt.Interfaces.Models
@@ -10,6 +11,9 @@ namespace Netlyt.Interfaces.Models
         public string LastName { get; set; }
         public virtual Organization Organization { get; set; }
         public virtual ICollection<ApiUser> ApiKeys { get; set; }
+        [ForeignKey("RateLimit")]
+        public long RateLimitId { get; set; }
+        public virtual ApiRateLimit RateLimit { get; set; }
         public virtual UserRole Role { get; set; }
 
         public User()

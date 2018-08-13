@@ -103,6 +103,7 @@ namespace Netlyt.Service.Donut
                 var targetTask = model.TrainingTasks.FirstOrDefault(x => x.Target.Column.Name == targetName);
                 if (targetTask != null)
                 {
+                    perfObj.TargetName = targetTask.Target.Column.Name;
                     targetTask.TypeInfo = modelTypeInfo;
                     targetTask.Performance = perfObj;
                     targetTask.Scoring = scoring;

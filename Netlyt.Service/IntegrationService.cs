@@ -11,6 +11,7 @@ using Donut.Encoding;
 using Donut.Integration;
 using Donut.IntegrationSource;
 using Donut.Models;
+using Donut.Orion;
 using EntityFramework.DbContextScope;
 using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,13 @@ using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service
 {
+    public class RateService : IRateService
+    {
+        public ApiRateLimit GetAllowed(User user)
+        {
+            return user.RateLimit;
+        }
+    }
     public class IntegrationService : IIntegrationService
     {
         //private IFactory<ManagementDbContext> _factory;

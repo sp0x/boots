@@ -57,7 +57,8 @@ namespace Netlyt.Service
             );
             services.AddTransient<IDbContextFactory>((sp) => new DbContextFactory(dbContextBuilder));
             services.AddTransient<IDbContextScopeFactory>((sp) => new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
-            services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
+            services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Service.Logs"));
+            services.AddTransient<IRateService, RateService>();
             services.AddTransient<UserService>();
             services.AddTransient<ApiService>();
             services.AddTransient<TimestampService>();
