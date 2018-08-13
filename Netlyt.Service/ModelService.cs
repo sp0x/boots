@@ -20,6 +20,7 @@ using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models;
 using Newtonsoft.Json.Linq;
+using StackExchange.Redis;
 using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service
@@ -31,18 +32,21 @@ namespace Netlyt.Service
         private IOrionContext _orion;
         private TimestampService _timestampService;
         private ManagementDbContext _dbContext;
+        private IRedisCacher _cacher;
 
         public ModelService(ManagementDbContext context,
             IOrionContext orionContext,
             IHttpContextAccessor ctxAccessor,
             TimestampService timestampService,
-            ManagementDbContext dbContext)
+            ManagementDbContext dbContext,
+            IRedisCacher cacher)
         {
             _contextAccessor = ctxAccessor;
             _context = context;
             _orion = orionContext;
             _timestampService = timestampService;
             _dbContext = dbContext;
+            _cacher = cacher;
         }
 
         public IEnumerable<Model> GetAllForUser(User user, int page, int pageSize = 25)
@@ -87,6 +91,8 @@ namespace Netlyt.Service
         {
             var newModel = new Model() { UseFeatures = generateFeatures, ModelName = name, Callback = callbackUrl };
             newModel.UserId = user.Id;
+            newModel.APIKey = user.ApiKeys.Select(x=>x.Api).FirstOrDefault();
+            newModel.PublicKey = ApiAuth.Generate();
             newModel.Targets = new List<ModelTarget>(targets);
             newModel.CreatedOn = DateTime.UtcNow;
 
@@ -301,6 +307,30 @@ namespace Netlyt.Service
             _dbContext.SaveChanges();
             return trainingResponse["ids"];
         }
+
+        /// <summary>
+        /// Publishes the model to our cache so that it's active for usage.
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="targetPerformances"></param>
+        /// <returns></returns>
+        public async Task PublishModel(Model model, List<ModelTrainingPerformance> targetPerformances)
+        {
+            foreach (var trainingPerf in targetPerformances)
+            {
+                var target = trainingPerf.TargetName;
+                var task = model.TrainingTasks.LastOrDefault(x => x.Target.Column.Name == trainingPerf.TargetName);
+                var modelKey = $"builds:published:{task.Id}";
+                var dict = new Dictionary<string, string>();
+                dict["target"] = target;
+                dict["key"] = model.APIKey.AppId;
+                dict["sec"] = model.APIKey.AppSecret;
+                dict["model_id"] = model.Id.ToString();
+                dict["user"] = model.User.UserName;
+                _cacher.SetHash(modelKey, dict);
+            }
+        }
+
 
         private TrainingTask CreateTrainingTask(ModelTarget target)
         {

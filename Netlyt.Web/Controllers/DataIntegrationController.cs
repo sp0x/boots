@@ -115,7 +115,7 @@ namespace Netlyt.Web.Controllers
             else
             {
                 //Set social network token value
-                var socToken = ReservedDocumentTokens.GetUserSocialNetworkTokenName(socialNetwork.ToString());
+                var socToken = ReservedDocumentTokensService.GetUserSocialNetworkTokenName(socialNetwork.ToString());
                 matchingDocument.Reserved.Set(socToken, socialNetworkDetails["userToken"].ToString());
                 //Save the modified entity
                 matchingDocument.SaveOrUpdate(x => x.Id == matchingDocument.Id);

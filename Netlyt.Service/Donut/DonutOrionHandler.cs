@@ -69,73 +69,11 @@ namespace Netlyt.Service.Donut
 
         private async Task _orion_TrainingComplete(JObject trainingCompleteNotification)
         {
-            try
-            {
-                var trainingResult = trainingCompleteNotification["result"];
-                var trainingParams = trainingCompleteNotification["params"];
-                if (trainingParams == null) return;
-                var modelId = long.Parse(trainingParams["model_id"].ToString());
-                var taskIds = trainingParams["tasks"].Select(x => long.Parse(x.ToString()));
-                Model model = _db.Models
-                    .Include(x => x.DataIntegrations)
-                    .Include(x=>x.TrainingTasks)
-                    .Include(x => x.User)
-                    .FirstOrDefault(x => x.Id == modelId);
-
-                if (model.User == null)
-                {
-                    model.User = _db.Users.FirstOrDefault(x => x.Id == model.UserId);
-                }
-                if (model.User == null) return;
-                var completedTasks = model.TrainingTasks.Where(x => taskIds.Any(y=> y == x.Id));
-                foreach (var task in completedTasks)
-                {
-                    task.Status = TrainingTaskStatus.Done;
-                    task.UpdatedOn = DateTime.UtcNow;
-                }
-
-                ParseTrainingResult(trainingResult, model);
-                _db.SaveChanges();
-                //Notify user that training is complete
-                var endpoint = "http://dev.netlyt.com/oneclick/" + model.Id;
-                var mailMessage = $"Model training for {model.ModelName} is now complete." +
-                    $"Get your results here: {endpoint}";
-                await _emailService.SendEmailAsync(model.User.Email, "Training complete.", mailMessage);
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-            }
+            var handler = _serviceProvider.GetService(typeof(TrainingHandler)) as TrainingHandler;
+            await handler.HandleComplete(trainingCompleteNotification);
         }
 
-        private void ParseTrainingResult(JToken results, Model model)
-        {
-            //We go over the target performances  and set the task results.
-            foreach (JProperty resultProp in results)
-            {
-                var targetName = resultProp.Name;
-                var result = resultProp.Value[0];
-                string modelTypeInfo = result["model"].ToString();
-                string scoring = result["scoring"]?.ToString();
-                var perf = result["performance"];
-                var perfObj = new ModelTrainingPerformance();
-                perfObj.ModelId = (long)perf["ModelId"];
-                perfObj.Accuracy = (float)perf["Accuracy"];
-                perfObj.ReportUrl = perf["ReportUrl"].ToString();
-                perfObj.TaskType = perf["TaskType"].ToString();
-                perfObj.Scoring = perf["Scoring"].ToString();
-                perfObj.TestResultsUrl = perf["TestResultsUrl"].ToString();
-                perfObj.AdvancedReport = perf["AdvancedReport"].ToString();
-                perfObj.FeatureImportance = perf["FeatureImportance"].ToString();
-                var targetTask = model.TrainingTasks.FirstOrDefault(x => x.Target.Column.Name == targetName);
-                if (targetTask != null)
-                {
-                    targetTask.TypeInfo = modelTypeInfo;
-                    targetTask.Performance = perfObj;
-                    targetTask.Scoring = scoring;
-                }
-            }
-        }
+        
 
         /// <summary>
         /// Handle the features that orion generated, and assign them.

@@ -216,6 +216,8 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
+                    b.Property<long>("APIKeyId");
+
                     b.Property<string>("Callback");
 
                     b.Property<DateTime>("CreatedOn");
@@ -230,6 +232,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("ModelName");
 
+                    b.Property<long?>("PublicKeyId");
+
                     b.Property<string>("TrainingParams");
 
                     b.Property<bool>("UseFeatures");
@@ -238,7 +242,11 @@ namespace Netlyt.Service.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("APIKeyId");
+
                     b.HasIndex("DonutScriptId");
+
+                    b.HasIndex("PublicKeyId");
 
                     b.HasIndex("UserId");
 
@@ -818,9 +826,18 @@ namespace Netlyt.Service.Migrations
 
             modelBuilder.Entity("Donut.Models.Model", b =>
                 {
+                    b.HasOne("Netlyt.Interfaces.Models.ApiAuth", "APIKey")
+                        .WithMany()
+                        .HasForeignKey("APIKeyId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("Donut.DonutScriptInfo", "DonutScript")
                         .WithMany()
                         .HasForeignKey("DonutScriptId");
+
+                    b.HasOne("Netlyt.Interfaces.Models.ApiAuth", "PublicKey")
+                        .WithMany()
+                        .HasForeignKey("PublicKeyId");
 
                     b.HasOne("Netlyt.Interfaces.Models.User", "User")
                         .WithMany()

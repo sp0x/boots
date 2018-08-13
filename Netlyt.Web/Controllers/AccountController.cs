@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
@@ -299,7 +300,13 @@ namespace Netlyt.Web.Controllers
             }
             else
             {
-                return BadRequest("Invalid registration data.");
+                var response = Json(new
+                {
+                    success = false,
+                    errors = ModelState.Values.SelectMany(v => v.Errors)
+                });
+                response.StatusCode = 400;
+                return response;
             }
              
         }

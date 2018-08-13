@@ -28,54 +28,7 @@ namespace Netlyt.Web
         public DonutOrionHandler OrionHandler { get; set; }
         public void ConfigureBackgroundServices(IServiceProvider mainServices)
         {
-            var services = new ServiceCollection();
-            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
-            var dbOptions = GetDbOptionsBuilder();
-            services.AddDbContext<ManagementDbContext>(options =>
-                {
-                    options.UseLazyLoadingProxies();
-                    options.UseNpgsql(postgresConnectionString);
-                }
-            );
-            services.AddIdentity<User, UserRole>()
-                .AddEntityFrameworkStores<ManagementDbContext>()
-                .AddDefaultTokenProviders();
-            services.AddMemoryCache();
-            services.AddSession();
-            services.AddDonutDb(DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig());
-            services.AddSingleton(Configuration);
-            services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
-            services.AddSingleton<IRedisCacher>(DBConfig.GetInstance().GetCacheContext());
-            // Add application services.
-            services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<IOrionContext>(OrionContext);
-            services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
-            services.AddTransient<UserManager<User>>();
-            services.AddTransient<SignInManager<User>>();
-            services.AddTransient<CompilerService>();
-            services.AddTransient<IDonutService, DonutService>();
-            services.AddTransient<IEmailSender, AuthMessageSender>((sp) => new AuthMessageSender(Configuration));
-            
-            services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
-                new DynamicContextFactory(() =>new ManagementDbContext(dbOptions.Options))
-            );
-            services.AddTransient<IDbContextFactory>((sp)=> new DbContextFactory(dbOptions));
-            services.AddTransient<IDbContextScopeFactory>((sp)=>new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
-            services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
-            services.AddTransient<UserService>();
-            services.AddTransient<ApiService>();
-            services.AddTransient<TimestampService>();
-            services.AddTransient<ModelService>();
-            services.AddTransient<OrganizationService>();
-            services.AddTransient<IIntegrationService, IntegrationService>();
-            services.AddDomainAutomapper();
-
-            services.AddSingleton<DonutOrionHandler>();
-
-            BackgroundServiceProvider = services.BuildServiceProvider();
-            OrionHandler = BackgroundServiceProvider.GetOrionHandler();
-            OrionHandler = OrionHandler;
+            NetlytService.SetupBackgroundServices(GetDbOptionsBuilder(), Configuration, OrionContext);
         }
 
     }

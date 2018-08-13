@@ -383,6 +383,7 @@ namespace Donut.Orion
                 p["targets"] = targets;
                 p["model_id"] = model.Id;
                 p["data_flags"] = dataFlags;
+                p["use_featuregen"] = model.UseFeatures;
                 qr["params"] = p;
                 return qr;
             }

@@ -16,6 +16,12 @@ namespace Donut.Models
         [ForeignKey("User")]
         public string UserId { get; set; }
         public virtual User User { get; set; }
+        [ForeignKey("APIKey")]
+        public long APIKeyId { get; set; }
+        public virtual ApiAuth APIKey { get; set; }
+        public long? PublicKeyId { get; set; }
+        public virtual ApiAuth PublicKey { get; set; }
+
         public virtual ModelTrainingPerformance Performance { get; set; }
         public virtual ICollection<ModelIntegration> DataIntegrations { get; set; }
         public virtual ICollection<ModelRule> Rules { get; set; }
