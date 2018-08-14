@@ -35,7 +35,7 @@ namespace Netlyt.Service
         public string GetSnippet(User user, TrainingTask trainingTask, string language)
         {
             var inferenceUrl = GetInferenceUrl();
-            inferenceUrl += "/" + HttpUtility.UrlEncode(trainingTask.Model.ModelName);
+            inferenceUrl += "/" + HttpUtility.UrlEncode(trainingTask.Id.ToString());
             ApiAuth apikey = user.ApiKeys.FirstOrDefault()?.Api;
             var rootIgn = trainingTask.Model.GetRootIntegration();
             var idKey = !string.IsNullOrEmpty(rootIgn.DataIndexColumn) ? rootIgn.DataIndexColumn : null;

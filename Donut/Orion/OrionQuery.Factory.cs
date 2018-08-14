@@ -125,7 +125,8 @@ namespace Donut.Orion
                     var newField = new JObject
                     {
                         {"name" as string, encField},
-                        {"encoding" as string, fld.DataEncoding.ToString().ToLower()}
+                        {"encoding" as string, fld.DataEncoding.ToString().ToLower()},
+                        {"id", fld.Id}
                     };
                     yield return newField;
                 }
@@ -184,6 +185,10 @@ namespace Donut.Orion
                     var jsfld = new JObject();
                     jsfld["name"] = field.Name;
                     var matchingField = rootIntegration.Fields.FirstOrDefault(x => x.Name == field.Name);
+                    if (matchingField != null)
+                    {
+                        jsfld["id"] = matchingField.Id;
+                    }
                     var isEncoded = matchingField != null && matchingField.DataEncoding != FieldDataEncoding.None;
                     if (isEncoded)
                     {

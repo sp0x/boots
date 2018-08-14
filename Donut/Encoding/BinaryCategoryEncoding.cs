@@ -44,6 +44,7 @@ namespace Donut.Encoding
                     {
                         var newExtra = new FieldExtra()
                         {
+                            Field = field,
                             Key = EncodeKey(categories.Count + 1),
                             Value = docFieldVal
                         };
@@ -118,7 +119,7 @@ namespace Donut.Encoding
                     if (fld.Extras.Extra.Any(y => y.Key == columnVal)) continue;
                     var fieldExtra = new FieldExtra()
                     {
-                        Field = fld as FieldDefinition,
+                        Field = fld,
                         Key = EncodeKey(iVariation++),
                         Value = columnVal,
                         Type = FieldExtraType.Dummy

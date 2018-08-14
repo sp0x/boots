@@ -90,6 +90,7 @@ namespace Donut.Encoding
                 {
                     var newExtra = new FieldExtra()
                     {
+                        Field = field,
                         Key = $"{field.Name}{categories.Count + 1}",
                         Value = docFieldVal
                     };
