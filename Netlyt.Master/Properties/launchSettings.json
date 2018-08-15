@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Netlyt.Master": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "MQ_USER": "netlyt",
+        "MQ_HOST": "mq.netlyt.com",
+        "MQ_PORT": "5672",
+        "MQ_PASS": "rgwsoertkgpowrk$"
+      }
+    }
+  }
+}

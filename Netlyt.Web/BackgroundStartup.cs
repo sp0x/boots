@@ -24,11 +24,11 @@ namespace Netlyt.Web
 {
     public partial class Startup
     {
-        public ServiceProvider BackgroundServiceProvider { get; set; }
         public DonutOrionHandler OrionHandler { get; set; }
         public void ConfigureBackgroundServices(IServiceProvider mainServices)
         {
-            NetlytService.SetupBackgroundServices(GetDbOptionsBuilder(), Configuration, OrionContext);
+            var dbConfig = Configuration.GetDbOptionsBuilder();
+            NetlytService.SetupBackgroundServices(dbConfig, Configuration, OrionContext);
         }
 
     }

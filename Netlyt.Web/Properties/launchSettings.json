@@ -19,6 +19,10 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
+        "MQ_USER": "netlyt",
+        "MQ_HOST": "mq.netlyt.com",
+        "MQ_PORT": "5672",
+        "MQ_PASS": "rgwsoertkgpowrk$",
         "MONGO_PASS": "gsoeghjoijasg43o0jw90e8bjsdfog",
         "MONGO_HOST": "loc.mongo.netlyt.com",
         "PGSQL_HOST": "loc.postgres.netlyt.com",

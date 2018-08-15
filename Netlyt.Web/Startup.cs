@@ -29,7 +29,6 @@ namespace Netlyt.Web
     public partial class Startup
     {
         public IConfiguration Configuration { get; private set; }
-        
         public IHostingEnvironment HostingEnvironment { get; }
         public IOrionContext OrionContext { get; private set; }
 
@@ -45,16 +44,6 @@ namespace Netlyt.Web
             DBConfig.GetInstance(Configuration);
         }
 
-        public DbContextOptionsBuilder<ManagementDbContext> GetDbOptionsBuilder()
-        {
-            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
-            Console.WriteLine("Management DB at: " + postgresConnectionString);
-            var dbOptions = new DbContextOptionsBuilder<ManagementDbContext>()
-                .UseNpgsql(postgresConnectionString)
-                .UseLazyLoadingProxies();
-            return dbOptions;
-        }
-
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
@@ -62,7 +51,7 @@ namespace Netlyt.Web
             var dbConfigInstance = DBConfig.GetInstance(Configuration);
             var databaseConfiguration = DBConfig.GetInstance().GetGeneralDatabase();
             if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!");
-            var dbOptions = GetDbOptionsBuilder();
+            var dbOptions = Configuration.GetDbOptionsBuilder();
             var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
             Console.WriteLine("Management DB at: " + postgresConnectionString);
             services.AddDbContext<ManagementDbContext>(options =>

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Donut.Caching;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
@@ -12,6 +13,15 @@ namespace Netlyt.Service.Data
 {
     public static class Extensions
     {
+        public static DbContextOptionsBuilder<ManagementDbContext> GetDbOptionsBuilder(this IConfiguration configuration)
+        {
+            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(configuration);
+            Console.WriteLine("Management DB at: " + postgresConnectionString);
+            var dbOptions = new DbContextOptionsBuilder<ManagementDbContext>()
+                .UseNpgsql(postgresConnectionString)
+                .UseLazyLoadingProxies();
+            return dbOptions;
+        }
         public static DonutDbConfig ToDonutDbConfig(this DatabaseConfiguration dbc)
         {
             var ddb = new DonutDbConfig(dbc.Name, dbc.Role, dbc.Value);

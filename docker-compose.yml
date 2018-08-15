@@ -29,6 +29,17 @@ services:
     ports:
       - "5000:5000"
       - "81:80"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: "loc.mq.netlyt.com"
+    container_name: rabbitmq
+    env_file:
+      - rabbitmq.env
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
   
   jenkins:
     privileged: true
