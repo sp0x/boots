@@ -1,13 +1,13 @@
-﻿{
-  "$schema": "http://json.schemastore.org/launchsettings.json",
+{
   "iisSettings": {
-    "windowsAuthentication": false, 
-    "anonymousAuthentication": true, 
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
     "iisExpress": {
       "applicationUrl": "http://localhost:60862",
       "sslPort": 44328
     }
   },
+  "$schema": "http://json.schemastore.org/launchsettings.json",
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
@@ -21,14 +21,19 @@
       "commandName": "Project",
       "launchBrowser": true,
       "launchUrl": "api/values",
-      "applicationUrl": "https://localhost:5001;http://localhost:5000",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",        
+        "NAPI_SECRET": "JrKBPZKH5DkTZ4xv8oh/XpTQ6NED5Iy+1khn+7JxigY=",
         "MQ_USER": "netlyt",
-        "MQ_HOST": "mq.netlyt.com",
         "MQ_PORT": "5672",
-        "MQ_PASS": "rgwsoertkgpowrk$"
-      }
+        "MQ_PASS": "rgwsoertkgpowrk$",
+        "REDIS_HOST": "redis.netlyt.com",
+        "REDIS_PORT": "6399",
+        "MQ_HOST": "mq.netlyt.com",
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "NAPI_NAME": "Testing",
+        "NAPI_KEY": "d84bc683d40d4860a39b43f09d07d8f5"
+      },
+      "applicationUrl": "https://localhost:5001;http://localhost:5000"
     }
   }
 }

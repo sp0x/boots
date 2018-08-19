@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Netlyt.Web.Models.ManageViewModels
@@ -17,5 +18,6 @@ namespace Netlyt.Web.Models.ManageViewModels
         public string PhoneNumber { get; set; }
 
         public string StatusMessage { get; set; }
+        public IEnumerable<string> Roles { get; set; }
     }
 }

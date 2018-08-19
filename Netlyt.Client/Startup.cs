@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Orion;
@@ -9,17 +7,16 @@ using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using nvoid.db.DB.Configuration;
+using Netlyt.Client.Slave;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service;
-using Netlyt.Service.Cloud;
 using Netlyt.Service.Data;
 
 namespace Netlyt.Client
@@ -49,6 +46,7 @@ namespace Netlyt.Client
                     options.UseLazyLoadingProxies();
                 }
             );
+            services.AddCache();
             services.AddTransient<IDbContextFactory>((sp) => new DbContextFactory(dbOptions));
             services.AddTransient<IDbContextScopeFactory>((sp) => new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
             services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Client.Logs"));
@@ -61,13 +59,16 @@ namespace Netlyt.Client
             services.AddTransient<OrganizationService>();
             services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
-            SlaveConnector = new SlaveConnector(Configuration);
-            SlaveConnector.Run();
-            services.AddSingleton<SlaveConnector>(SlaveConnector);
-            SlaveConnector.Send("Pesho is here.");
+            services.AddSingleton<NetlytNode>(x => Helpers.GetLocalNode());
+            //SlaveConnector = new SlaveConnector(Configuration, Helpers.GetLocalNode());
+            services.AddSingleton<ISlaveConnector, SlaveConnector>();
 
             OrionContext = services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { });
-            ConfigureBackgroundServices(services.BuildServiceProvider());
+            var servicesBuild = services.BuildServiceProvider();
+            ConfigureBackgroundServices(servicesBuild);
+
+            SlaveConnector = servicesBuild.GetService<ISlaveConnector>() as ISlaveConnector;
+            Task.WaitAll(SlaveConnector.Run());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

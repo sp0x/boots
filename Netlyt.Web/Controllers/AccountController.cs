@@ -38,11 +38,11 @@ namespace Netlyt.Web.Controllers
 
         public AccountController(
             IMapper mapper,
+            UserService userService,
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             IEmailSender emailSender,
-            ILogger<AccountController> logger, 
-            UserService userService,
+            ILogger<AccountController> logger,
             ApiService apiService,
             IActionDescriptorCollectionProvider actionDescriptorCollectionProvider)
         {

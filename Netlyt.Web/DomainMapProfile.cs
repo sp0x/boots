@@ -18,7 +18,7 @@ namespace Netlyt.Web
 {
     public class DomainMapProfile : Profile
     {
-        public DomainMapProfile(ModelService modelService)
+        public DomainMapProfile(ModelService modelService, UserService userService)
         {
             CreateMap<ApiAuth, AuthKeyViewModel>()
                 .ForMember(x=>x.Secret, opt=>opt.MapFrom(src=>src.AppSecret))
@@ -79,12 +79,19 @@ namespace Netlyt.Web
             CreateMap<ApiAuth, ApiAuthViewModel>()
                 .ForMember(x => x.AppId, opt => opt.MapFrom(src => src.AppId));
             CreateMap<User, UserViewModel>()
-                .ForMember(x => x.Role, opt => opt.ResolveUsing(src =>
-                {
-                    return src.Role?.Name;
-                }));
+                .ForMember(x => x.Role, opt => opt.ResolveUsing(src => src.Role?.Name));
             CreateMap<IntegrationExtra, IntegrationExtraViewModel>();
-            CreateMap<DataIntegration, DataIntegrationViewModel>(); 
+            CreateMap<DataIntegration, DataIntegrationViewModel>();
+            CreateMap<User, UsersViewModel>()
+                .ForMember(x=>x.Roles, opt=>opt.ResolveUsing(src =>
+                {
+                    return userService.GetRoles(src).Result;
+                }));
+            CreateMap<User, UserPreviewViewModel>()
+                .ForMember(x => x.Roles, opt => opt.ResolveUsing(src =>
+                {
+                    return userService.GetRoles(src).Result;
+                }));
         }
     }
 }

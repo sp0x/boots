@@ -15,10 +15,12 @@ namespace Netlyt.Interfaces.Models
         public long RateLimitId { get; set; }
         public virtual ApiRateLimit RateLimit { get; set; }
         public virtual UserRole Role { get; set; }
+        public virtual IEnumerable<UserPermission> UserPermissions { get; set; }
 
         public User()
         {
             ApiKeys = new HashSet<ApiUser>();
+            UserPermissions = new HashSet<UserPermission>();
         }
     }
 }

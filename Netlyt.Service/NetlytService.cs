@@ -40,7 +40,7 @@ namespace Netlyt.Service
             services.AddDonutDb(DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig());
             services.AddSingleton(configuration);
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
-            services.AddSingleton<IRedisCacher>(DBConfig.GetInstance().GetCacheContext());
+            services.AddCache();
             // Add application services.
             //services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();

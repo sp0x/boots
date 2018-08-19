@@ -17,7 +17,7 @@ namespace Netlyt.Web.Extensions
         {
             sp.AddTransient(p => new MapperConfiguration(cfg =>
             {
-                cfg.AddProfile(new DomainMapProfile(p.GetService<ModelService>()));
+                cfg.AddProfile(new DomainMapProfile(p.GetService<ModelService>(), p.GetService<UserService>()));
             }).CreateMapper());
         }
         public static IEnumerable<ModelTarget> ToModelTargets(this IEnumerable<TargetSelectionViewModel> viewmodels, DataIntegration integration)

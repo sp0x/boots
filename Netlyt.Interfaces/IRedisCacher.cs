@@ -11,6 +11,7 @@ namespace Netlyt.Interfaces
         byte[] Get(string key);
         Task<byte[]> GetAsync(string key, CancellationToken token = default(CancellationToken));
         HashEntry[] GetHash(string key);
+        Dictionary<string, RedisValue> GetHashAsDict(string key);
         int GetInt(string key);
         SortedSetEntry? GetSortedSetMax(string fqkey);
         void Increment(string key, string member);

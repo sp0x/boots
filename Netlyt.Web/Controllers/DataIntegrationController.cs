@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Orion;
@@ -8,20 +6,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.Extensions.Primitives;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using nvoid.db;
 using nvoid.db.Extensions;
-using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Service.Integration;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
-using Netlyt.Web.Services;
 using Newtonsoft.Json.Linq; 
 
 namespace Netlyt.Web.Controllers
@@ -37,7 +31,6 @@ namespace Netlyt.Web.Controllers
         private RemoteDataSource<IntegratedDocument> _documentStore; 
         private ApiService _apiService;
         private IIntegrationService _integrationService;
-        private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
 
         public DataIntegrationController(UserManager<User> userManager,
             IUserStore<User> userStore,
@@ -45,13 +38,11 @@ namespace Netlyt.Web.Controllers
             ManagementDbContext context,
             SocialNetworkApiManager socNetManager,
             IIntegrationService integrationService,
-            ApiService apiService,
-            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider)
+            ApiService apiService)
         {  
             _apiService = apiService; 
             _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
             _integrationService = integrationService;
-            _actionDescriptorCollectionProvider = actionDescriptorCollectionProvider;
         }
 
 
@@ -122,24 +113,6 @@ namespace Netlyt.Web.Controllers
                 return Json(new { success = true });
             }
         }
-
-
-
-
-        [Route("[action]")]
-        [HttpPost]
-        public ActionResult EntityData()
-        {
-
-            var requestBody = (new StreamReader(Request.Body)).ReadToEnd();
-            return Json(new
-            {
-                success = true,
-                id = 2
-            });
-        }
-
-
 
     }
 }

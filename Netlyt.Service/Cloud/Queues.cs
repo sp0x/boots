@@ -4,8 +4,11 @@ using System.Text;
 
 namespace Netlyt.Service.Cloud
 {
-    public abstract class Queues
+    public static class Queues
     {
-        public static string Notification { get; private set; } = "Notification";
+        public const string Notification = "Notification";
+        public const string Request = "Request";
+        public const string MessageNotification = "notification.quota";
+        public const string AuthorizeNode = "auth.node_authorize";
     }
 }

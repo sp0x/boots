@@ -13,6 +13,34 @@ namespace Netlyt.Service.Data
 {
     public static class Extensions
     {
+        public static byte[][] Split(this byte[] source, byte[] separator)
+        {
+            var Parts = new List<byte[]>();
+            var Index = 0;
+            byte[] Part;
+            for (var I = 0; I < source.Length; ++I)
+            {
+                if (Equals(source, separator, I))
+                {
+                    Part = new byte[I - Index];
+                    Array.Copy(source, Index, Part, 0, Part.Length);
+                    Parts.Add(Part);
+                    Index = I + separator.Length;
+                    I += separator.Length - 1;
+                }
+            }
+            Part = new byte[source.Length - Index];
+            Array.Copy(source, Index, Part, 0, Part.Length);
+            Parts.Add(Part);
+            return Parts.ToArray();
+        }
+        private static bool Equals(byte[] source, byte[] separator, int index)
+        {
+            for (int i = 0; i < separator.Length; ++i)
+                if (index + i >= source.Length || source[index + i] != separator[i])
+                    return false;
+            return true;
+        }
         public static DbContextOptionsBuilder<ManagementDbContext> GetDbOptionsBuilder(this IConfiguration configuration)
         {
             var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(configuration);
@@ -43,8 +71,9 @@ namespace Netlyt.Service.Data
         public static IRedisCacher GetCacheContext(this DBConfig config)
         {
             var psettings = config.PersistanceSettings;
-            var conString = $"{psettings.Cache.Host}:{psettings.Cache.Port}";
-            if (!string.IsNullOrEmpty(psettings.Cache.Arguments)) conString += "," + psettings.Cache.Arguments;
+            var cacheConfig = psettings.GetCacheConfig();
+            var conString = $"{cacheConfig.Host}:{cacheConfig.Port}";
+            if (!string.IsNullOrEmpty(cacheConfig.Arguments)) conString += "," + cacheConfig.Arguments;
             var fnew = new RedisCacher(new RedisCacheOptions()
             {
                 Configuration = conString

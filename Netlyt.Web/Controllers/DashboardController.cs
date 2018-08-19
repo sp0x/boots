@@ -23,17 +23,20 @@ namespace Netlyt.Web.Controllers
         private IEmailSender _emailSender;
         private ILogger<DashboardController> _logger;
         private UrlEncoder _urlEncoder;
+        private UserService _userService;
 
         [TempData]
         public string StatusMessage { get; set; }
 
         public DashboardController(
+            UserService userService,
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             IEmailSender emailSender,
             ILogger<DashboardController> logger,
             UrlEncoder urlEncoder)
         {
+            _userService = userService;
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
@@ -49,12 +52,14 @@ namespace Netlyt.Web.Controllers
             {
                 throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             }
+            var roles = await _userService.GetRoles(user);
             var model = new IndexViewModel
             {
                 Username = user.UserName,
                 Email = user.Email,
                 IsEmailConfirmed = user.EmailConfirmed,
-                StatusMessage = StatusMessage
+                StatusMessage = StatusMessage,
+                Roles = roles
             };
             return Json(model);
         }

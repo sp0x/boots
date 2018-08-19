@@ -46,6 +46,11 @@ namespace Netlyt.Service
             _context = context;
         }
 
+        public IEnumerable<User> GetUsers()
+        {
+            return _context.Users.Include(x=>x.Role);
+        }
+
         public IdentityResult CreateUser(RegisterViewModel model, out User user)
         {
             var username = model.Email.Substring(0, model.Email.IndexOf("@"));
@@ -152,6 +157,11 @@ namespace Netlyt.Service
             return userModel;
         }
 
+        public User GetUser(string id)
+        {
+            return _context.Users.Find(id);
+        }
+
         public async Task<User> GetCurrentUser()
         {
             var userClaim = _contextAccessor.HttpContext.User;
@@ -241,6 +251,38 @@ namespace Netlyt.Service
         public User GetUsername(string modelEmail)
         {
             return _context.Users.FirstOrDefault(x => x.Email == modelEmail);
+        }
+
+        public async Task<bool> ModifyUser(User user, IEnumerable<string> newRoles)
+        {
+            foreach (var newRole in newRoles)
+            {
+                var existingRole = _context.Roles.FirstOrDefault(x => x.Name == newRole);
+                if (existingRole == null)
+                {
+                    var newRoleObj = new UserRole()
+                    {
+                        Name = newRole,
+                        NormalizedName = newRole.ToUpper()
+                    };
+                    _context.Roles.Add(newRoleObj);
+                    await _context.SaveChangesAsync();
+                }
+                var isCurrentlyInRole = await _userManager.IsInRoleAsync(user, newRole);
+                if (isCurrentlyInRole) continue;
+                var idResult = await _userManager.AddToRoleAsync(user, newRole);
+                if (!idResult.Succeeded)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public async Task<IEnumerable<string>> GetRoles(User src)
+        {
+            var userRoles = await _userManager.GetRolesAsync(src);
+            return userRoles;
         }
     }
 }

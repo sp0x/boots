@@ -765,6 +765,40 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("AspNetUsers");
                 });
 
+            modelBuilder.Entity("Netlyt.Interfaces.Models.UserPermission", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("Name");
+
+                    b.Property<string>("UserId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserPermission");
+                });
+
+            modelBuilder.Entity("Netlyt.Service.Cloud.CloudAuthorizationEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<long?>("ApiKeyId");
+
+                    b.Property<DateTime>("CreatedOn");
+
+                    b.Property<string>("Token");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApiKeyId");
+
+                    b.ToTable("CloudAuthorizations");
+                });
+
             modelBuilder.Entity("Netlyt.Interfaces.Models.UserRole", b =>
                 {
                     b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityRole");
@@ -1056,6 +1090,20 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Interfaces.Models.UserRole", "Role")
                         .WithMany()
                         .HasForeignKey("RoleId");
+                });
+
+            modelBuilder.Entity("Netlyt.Interfaces.Models.UserPermission", b =>
+                {
+                    b.HasOne("Netlyt.Interfaces.Models.User", "User")
+                        .WithMany("UserPermissions")
+                        .HasForeignKey("UserId");
+                });
+
+            modelBuilder.Entity("Netlyt.Service.Cloud.CloudAuthorizationEvent", b =>
+                {
+                    b.HasOne("Netlyt.Interfaces.Models.ApiAuth", "ApiKey")
+                        .WithMany()
+                        .HasForeignKey("ApiKeyId");
                 });
 #pragma warning restore 612, 618
         }

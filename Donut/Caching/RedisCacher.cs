@@ -609,6 +609,19 @@ namespace Donut.Caching
             return entries;
         }
 
+        public Dictionary<string, RedisValue> GetHashAsDict(string key)
+        {
+            Connect();
+            var entries = _db.HashGetAll(key);
+            if (entries.Length == 0) return null;
+            var output = new Dictionary<string, RedisValue>();
+            foreach (var hashItem in entries)
+            {
+                output[hashItem.Name] = hashItem.Value;
+            }
+            return output;
+        }
+
         public void SetAddAll(string fullKey, IEnumerable<RedisValue> set)
         {
             Connect();

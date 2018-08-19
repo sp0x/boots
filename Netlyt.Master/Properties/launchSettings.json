@@ -4,9 +4,14 @@
       "commandName": "Project",
       "environmentVariables": {
         "MQ_USER": "netlyt",
-        "MQ_HOST": "mq.netlyt.com",
+        "PGSQL_HOST": "loc.postgres.netlyt.com",
         "MQ_PORT": "5672",
-        "MQ_PASS": "rgwsoertkgpowrk$"
+        "MQ_PASS": "rgwsoertkgpowrk$",
+        "REDIS_HOST": "redis.netlyt.com",
+        "PGSQL_PASS": "gpiowuert0g9",
+        "PGSQL_DB": "netlyt",
+        "REDIS_PORT": "6399",
+        "MQ_HOST": "mq.netlyt.com"
       }
     }
   }

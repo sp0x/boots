@@ -1,4 +1,5 @@
 ﻿using System;
+using Netlyt.Client.Slave;
 using Netlyt.Service;
 using Netlyt.Service.Cloud;
 using Netlyt.Service.Data;
@@ -8,7 +9,7 @@ namespace Netlyt.Client
     public partial class Startup
     {
         public DonutOrionHandler OrionHandler { get; set; }
-        public SlaveConnector SlaveConnector { get; private set; }
+        public ISlaveConnector SlaveConnector { get; private set; }
 
         public void ConfigureBackgroundServices(IServiceProvider mainServices)
         {

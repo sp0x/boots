@@ -1,4 +1,5 @@
-﻿using Donut;
+﻿using System;
+using Donut;
 using Donut.Data;
 using Donut.Models;
 using Donut.Source;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Cloud;
 using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service.Data
@@ -18,6 +20,7 @@ namespace Netlyt.Service.Data
         public DbSet<DataIntegration> Integrations { get; set; }
         public DbSet<Organization> Organizations { get; set; }
         public DbSet<Model> Models { get; set; }
+        public DbSet<CloudAuthorizationEvent> CloudAuthorizations { get; set; }
         public DbSet<Rule> Rules { get; set; }
         public DbSet<FieldDefinition> Fields { get; set; }
         public DbSet<FieldExtras> FieldExtras { get; set; }
@@ -40,11 +43,11 @@ namespace Netlyt.Service.Data
                            || level == LogLevel.Error
                            || level == LogLevel.Warning), true)
             });
-
+        
         public ManagementDbContext(DbContextOptions<ManagementDbContext> options)
             : base(options)
         {
-            //Console.WriteLine("Initialized context with options: " + options.ToString());
+            Console.WriteLine("Initialized context with options: " + options.ToString());
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

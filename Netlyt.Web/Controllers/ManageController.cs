@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using AutoMapper;
 using Donut;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +16,7 @@ using Netlyt.Service;
 using Netlyt.Web.Extensions;
 using Netlyt.Web.Models.ManageViewModels;
 using Netlyt.Web.Services;
+using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web.Controllers
 {
@@ -27,10 +29,14 @@ namespace Netlyt.Web.Controllers
         private readonly IEmailSender _emailSender;
         private readonly ILogger _logger;
         private readonly UrlEncoder _urlEncoder;
+        private IMapper _mapper;
+        private UserService _userService;
 
         private const string AuthenicatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
 
         public ManageController(
+          IMapper mapper,
+          UserService userService,
           UserManager<User> userManager,
           SignInManager<User> signInManager,
           IEmailSender emailSender,
@@ -42,6 +48,8 @@ namespace Netlyt.Web.Controllers
             _emailSender = emailSender;
             _logger = logger;
             _urlEncoder = urlEncoder;
+            _mapper = mapper;
+            _userService = userService;
         }
 
         [TempData]
@@ -149,6 +157,32 @@ namespace Netlyt.Web.Controllers
             var model = new ChangePasswordViewModel { StatusMessage = StatusMessage };
             return View(model);
         }
+
+
+        [HttpGet("/manage/users")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = _userService.GetUsers();
+            var outputUsers = users.Select(x => _mapper.Map<UsersViewModel>(x));
+            return Json(outputUsers);
+        }
+
+        [HttpGet("/manage/user/{id}")]
+        public async Task<IActionResult> GetUser(string id)
+        {
+            var user = _userService.GetUser(id);
+            var userPreview = _mapper.Map<UserPreviewViewModel>(user);
+            return Json(userPreview);
+        }
+
+        [HttpPatch("/manage/userEdit/{id}")]
+        public async Task<IActionResult> UserEdit(string id, [FromBody]UserEditViewModel modification)
+        {
+            var user = _userService.GetUser(id);
+            var modified = await _userService.ModifyUser(user, modification.Roles);
+            return Json(new { success = modified });
+        }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]

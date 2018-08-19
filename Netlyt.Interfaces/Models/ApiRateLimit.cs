@@ -12,7 +12,15 @@
         {
 
         }
-
+        public static ApiRateLimit operator -(ApiRateLimit a, ApiRateLimit b)
+        {
+            var output = new ApiRateLimit();
+            output.Daily = a.Daily - b.Daily;
+            output.Weekly = a.Weekly - b.Weekly;
+            output.Monthly = a.Monthly - b.Monthly;
+            output.Name = b.Name;
+            return output;
+        }
         public static ApiRateLimit CreateDefault()
         {
             return new ApiRateLimit

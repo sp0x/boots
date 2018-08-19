@@ -3,15 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Donut;
 using Donut.Data;
 using Donut.Integration;
 using Donut.Lex.Data;
 using Donut.Lex.Expressions;
-using Donut.Lex.Parsing;
 using Donut.Models;
 using Donut.Orion;
-using Donut.Parsing.Tokenizers;
 using Donut.Source;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +17,6 @@ using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models;
 using Newtonsoft.Json.Linq;
-using StackExchange.Redis;
 using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service
@@ -332,19 +328,10 @@ namespace Netlyt.Service
                 dict["user"] = model.User.UserName;
                 _cacher.SetHash(modelKey, dict);
             }
-            SetUserRateCache(model.User);
+            _rateService.ApplyDefaultForUser(model.User);
+            //SetUserRateCache(model.User);
         }
 
-        private void SetUserRateCache(User user)
-        {
-            var key = $"rates:allowed:{user.UserName}";
-            var dict = new Dictionary<string, string>();
-            ApiRateLimit rate = _rateService.GetAllowed(user);
-            dict["weekly_usage"] = rate.Weekly.ToString();
-            dict["monthly_usage"] = rate.Monthly.ToString();
-            dict["daily_usage"] = rate.Daily.ToString();
-            _cacher.SetHash(key, dict);
-        }
 
         private TrainingTask CreateTrainingTask(ModelTarget target)
         {
