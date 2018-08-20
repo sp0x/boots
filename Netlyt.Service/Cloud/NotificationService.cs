@@ -26,17 +26,17 @@ namespace Netlyt.Service.Cloud
 
         public void SendRegisteredNotification(User resultItem2)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         public void SendLoggedInNotification(ClaimsPrincipal httpContextUser)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         public void SendNewIntegrationSummary(IIntegration newIntegration)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
     }
 }
