@@ -43,6 +43,10 @@ namespace Netlyt.Service
 
         public ApiRateLimit GetCurrentQuotaLeftForUser(User user)
         {
+            if (user == null)
+            {
+                return null;
+            }
             var key = $"rates:allowed:{user.UserName}";
             var cachedValue = _cacher.GetHashAsDict(key);
             ApiRateLimit allowed = null;

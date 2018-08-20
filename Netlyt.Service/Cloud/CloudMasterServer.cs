@@ -61,11 +61,14 @@ namespace Netlyt.Service.Cloud
         private void AuthListener_AuthenticationRequested(object sender, AuthenticationRequest e)
         {
             var result = _authService.Authenticate(e);
+            var nodeRole = result.Role.ToString();
             var reply = JObject.FromObject(new
             {
                 token = result.Token,
                 success = result.Authenticated,
-                quota = _rateService.GetCurrentQuotaLeftForUser(result.User)
+                quota = _rateService.GetCurrentQuotaLeftForUser(result.User),
+                role = nodeRole,
+                user = result.User?.UserName
             });
             AuthListener.Reply(e, reply);
         }

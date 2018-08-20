@@ -18,6 +18,7 @@ using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
+using Netlyt.Service.Cloud;
 using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Data;
 using Netlyt.Web.Extensions;
@@ -121,6 +122,7 @@ namespace Netlyt.Web
             services.AddTransient<OrganizationService>();
             services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
+            services.AddTransient<INotificationService, NotificationService>();
             services.AddSingleton<NetlytNode>(x => Helpers.GetLocalNode());
             services.AddSingleton<ISlaveConnector, SlaveConnector>();
             

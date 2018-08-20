@@ -10,7 +10,8 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces.Models;
-using Netlyt.Service; 
+using Netlyt.Service;
+using Netlyt.Service.Cloud;
 using Netlyt.Service.Models.Account;
 using Netlyt.Web.Extensions;
 using Netlyt.Web.Models.AccountViewModels;
@@ -29,6 +30,7 @@ namespace Netlyt.Web.Controllers
         private ApiService _apiService;
         private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
         private IMapper _mapper;
+        private INotificationService _notifications;
 
         public AccountController(
             IMapper mapper,
@@ -38,8 +40,10 @@ namespace Netlyt.Web.Controllers
             IEmailSender emailSender,
             ILogger<AccountController> logger,
             ApiService apiService,
-            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider)
+            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
+            INotificationService notificationService)
         {
+            _notifications = notificationService;
             _mapper = mapper;
             _userService = userService;
             _userManager = userManager;
@@ -97,6 +101,7 @@ namespace Netlyt.Web.Controllers
                 { 
                     _logger.LogInformation("User logged in."); 
                     _userService.InitializeUserSession(HttpContext.User);
+                    _notifications.SendLoggedInNotification(HttpContext.User);
                     return Json(new
                     {
                         success = true,
@@ -269,6 +274,7 @@ namespace Netlyt.Web.Controllers
                     _logger.LogInformation("User created a new account with password.");
                     var response = Json(new {success= true});
                     response.StatusCode = 200;
+                    _notifications.SendRegisteredNotification(result.Item2);
                     return response;
                     //return RedirectToLocal(returnUrl);
                 }

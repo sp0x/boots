@@ -25,5 +25,5 @@
         }
     }
 
-    public enum NodeRole { Master, Slave }
+    public enum NodeRole { Master, Slave, Cloud }
 }

@@ -7,6 +7,7 @@ namespace Netlyt.Service.Cloud.Auth
         public bool Authenticated { get; private set; }
         public string Token { get; private set; }
         public User User { get; set; }
+        public NodeRole Role { get; set; }
 
         public NodeAuthenticationResult()
         {

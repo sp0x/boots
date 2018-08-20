@@ -10,7 +10,6 @@ using Netlyt.Service;
 using Netlyt.Web.Models;
 using System.Threading.Tasks; 
 using System.IO;
-using System.Text;
 using AutoMapper;
 using Donut;
 using Donut.Data;
@@ -19,14 +18,12 @@ using Donut.Orion;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using static Netlyt.Web.Attributes;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Data.ViewModels;
-using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Cloud;
 using Netlyt.Service.Data;
 using Netlyt.Service.Helpers;
-using Netlyt.Web.Services;
 using Newtonsoft.Json;
 
 namespace Netlyt.Web.Controllers
@@ -34,35 +31,25 @@ namespace Netlyt.Web.Controllers
     [Route("integration")]
     public class IntegrationsController : Controller
     {
-        private ApiService _apiService;
-        private RemoteDataSource<IntegratedDocument> _documentStore;
         private IIntegrationService _integrationService;
-        private FormOptions _defaultFormOptions;
         private UserService _userService;
         private IMapper _mapper;
 
         private IOrionContext _orionContext;
+        private INotificationService _notifications;
 
         // GET: /<controller>/
-        public IntegrationsController(UserManager<User> userManager,
-            IUserStore<User> userStore,
-            IOrionContext behaviourCtx,
-            ManagementDbContext context,
-            SocialNetworkApiManager socNetManager,
-            ApiService apiService,
-            UserService userService,
+        public IntegrationsController(UserService userService,
             IIntegrationService integrationService,
-            IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
             IMapper mapper,
-            IOrionContext orionContext)
+            IOrionContext orionContext,
+            INotificationService notificationsService)
         {
-            _apiService = apiService;
-            _documentStore = typeof(IntegratedDocument).GetDataSource<IntegratedDocument>();
-            _defaultFormOptions = new FormOptions();
             _userService = userService;
             _integrationService = integrationService;
             _mapper = mapper;
             _orionContext = orionContext;
+            _notifications = notificationsService;
         }
 
         [HttpGet("/integrations/me")]
@@ -235,6 +222,7 @@ namespace Netlyt.Web.Controllers
                 if (result != null)
                 {
                     IIntegration newIntegration = result.Integration;
+                    _notifications.SendNewIntegrationSummary(newIntegration);
                     var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                     return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
                 }

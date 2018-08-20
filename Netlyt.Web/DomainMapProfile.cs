@@ -78,6 +78,9 @@ namespace Netlyt.Web
                 .ForMember(x => x.IsBuilding, opt => opt.ResolveUsing(src => modelService.IsBuilding(src)));
             CreateMap<ApiAuth, ApiAuthViewModel>()
                 .ForMember(x => x.AppId, opt => opt.MapFrom(src => src.AppId));
+            CreateMap<ApiUser, ApiAuthViewModel>()
+                .ForMember(x => x.AppId, opt => opt.MapFrom(src => src.Api.AppId))
+                .ForMember(x=>x.Id, opt=>opt.MapFrom(src=>src.ApiId));
             CreateMap<User, UserViewModel>()
                 .ForMember(x => x.Role, opt => opt.ResolveUsing(src => src.Role?.Name));
             CreateMap<IntegrationExtra, IntegrationExtraViewModel>();

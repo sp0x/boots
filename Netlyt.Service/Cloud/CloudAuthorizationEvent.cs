@@ -11,5 +11,8 @@ namespace Netlyt.Service.Cloud
         public virtual ApiAuth ApiKey { get; set; }
         public DateTime CreatedOn { get; set; }
         public string Token { get; set; }
+        public string Name { get; set; }
+        public NodeRole Role { get; set; }
+
     }
 }

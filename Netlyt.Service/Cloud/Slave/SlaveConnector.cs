@@ -10,14 +10,19 @@ namespace Netlyt.Service.Cloud.Slave
     public class SlaveConnector : IDisposable, ISlaveConnector
     {
         private ConnectionFactory _factory;
-        public bool Running { get; set; }
         private IConnection connection;
         private IModel channel;
         private NodeAuthClient authClient;
         private NotificationClient notificationClient;
         private IRateService _rateService;
+        public bool Running { get; set; }
         public NetlytNode Node { get; private set; }
         public ApiRateLimit Quota { get; private set; }
+
+        public NotificationClient NotificationClient
+        {
+            get { return notificationClient; }
+        }
 
         public SlaveConnector(IConfiguration config, NetlytNode node, IRateService rateService)
         {
@@ -46,6 +51,11 @@ namespace Netlyt.Service.Cloud.Slave
                     var authResult = await authClient.AuthorizeNode(Node);
                     Quota = authResult.Result["quota"].ToObject<ApiRateLimit>();
                     _rateService.ApplyGlobal(Quota);
+                    _rateService.SetAvailabilityForUser(authResult.GetUsername().ToString(), Quota);
+                }
+                else
+                {
+                    var authResult = await authClient.AuthorizeCloudNode(Node);
                 }
             }
             catch (AuthenticationFailed authFailed)

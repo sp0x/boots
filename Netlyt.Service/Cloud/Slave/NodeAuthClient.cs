@@ -27,17 +27,69 @@ namespace Netlyt.Service.Cloud.Slave
             channel.QueueBind(CallbackQueue.QueueName, Exchanges.Auth, CallbackQueue.QueueName);
         }
 
+        public async Task<AuthenticationResponse> AuthorizeCloudNode(NetlytNode node)
+        {
+            byte[] body = CreateCloudAuthPayload(node);
+            var props = _channel.CreateBasicProperties();
+            props.Persistent = true;
+            props.ReplyTo = CallbackQueue.QueueName;
+            props.CorrelationId = Guid.NewGuid().ToString();
+            props.Expiration = (AuthTimeout).ToString();
+            _channel.BasicPublish(exchange: Exchanges.Auth,
+                routingKey: Routes.AuthorizeNode,
+                basicProperties: props,
+                body: body);
+
+            var consumer = new QueueingBasicConsumer(_channel);
+            _channel.BasicConsume(CallbackQueue.QueueName, true, consumer);
+            var authTimeoutTask = Task.Delay(AuthTimeout);
+            var authTask = Task.Run(() =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        var authResponse = consumer.Queue.Dequeue();
+                        if (authResponse.BasicProperties.CorrelationId != props.CorrelationId) continue;
+                        var response = AuthenticationResponse.FromRequest(authResponse);
+                        var result = response.Result;
+                        var successfull = result["success"] as JValue;
+                        if (!((bool)successfull))
+                        {
+                            throw new AuthenticationFailed();
+                        }
+                        else
+                        {
+                            AuthenticationToken = response.Result["token"].ToString();
+                            OnAuthenticated?.Invoke(this, response);
+                            return response;
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new AuthenticationFailed();
+                    }
+                }
+            });
+            var resultingTask = await Task.WhenAny(authTimeoutTask, authTask);
+            if (resultingTask.IsFaulted)
+            {
+                throw new AuthenticationFailed();
+            }
+            else if (resultingTask.Id == authTimeoutTask.Id)
+            {
+                throw new TimeoutException("Authentication timed out.");
+            }
+            else
+            {
+                return authTask.Result;
+            }
+        }
+
         public async Task<AuthenticationResponse> AuthorizeNode(NetlytNode node)
         {
-            var authPayload = new MemoryStream();
-            var streamWriter = new StreamWriter(authPayload) { AutoFlush = true};
-            streamWriter.Write(node.ApiKey.AppId);
-            streamWriter.Write("//\\\\");
-            streamWriter.Write(node.ApiKey.AppSecret);
-            var rawBytes = authPayload.ToArray();
-            var authPayloadStr = Convert.ToBase64String(rawBytes);
-            var body = Encoding.ASCII.GetBytes(authPayloadStr);
-
+            var body = CreateAuthPayload(node);
             var props = _channel.CreateBasicProperties();
             props.Persistent = true;
             props.ReplyTo = CallbackQueue.QueueName;
@@ -51,7 +103,6 @@ namespace Netlyt.Service.Cloud.Slave
 
             var consumer = new QueueingBasicConsumer(_channel);
             _channel.BasicConsume(CallbackQueue.QueueName, true, consumer);
-            //Todo: add timeout
             var authTimeoutTask = Task.Delay(AuthTimeout);
             var authTask = Task.Run(() =>
             {
@@ -94,6 +145,31 @@ namespace Netlyt.Service.Cloud.Slave
             {
                 return authTask.Result;
             }
+        }
+
+        private static byte[] CreateAuthPayload(NetlytNode node)
+        {
+            var authPayload = new MemoryStream();
+            var streamWriter = new StreamWriter(authPayload) {AutoFlush = true};
+            streamWriter.Write(node.ApiKey.AppId);
+            streamWriter.Write("//\\\\");
+            streamWriter.Write(node.ApiKey.AppSecret);
+            var rawBytes = authPayload.ToArray();
+            var authPayloadStr = Convert.ToBase64String(rawBytes);
+            var body = Encoding.ASCII.GetBytes(authPayloadStr);
+            return body;
+        }
+
+        private static byte[] CreateCloudAuthPayload(NetlytNode node)
+        {
+            var authPayload = new MemoryStream();
+            var streamWriter = new StreamWriter(authPayload) { AutoFlush = true };
+            streamWriter.Write("__cloud__;");
+            streamWriter.Write(node.Name);
+            var rawBytes = authPayload.ToArray();
+            var authPayloadStr = Convert.ToBase64String(rawBytes);
+            var body = Encoding.ASCII.GetBytes(authPayloadStr);
+            return body;
         }
     }
 

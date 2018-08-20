@@ -790,6 +790,10 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<DateTime>("CreatedOn");
 
+                    b.Property<string>("Name");
+
+                    b.Property<int>("Role");
+
                     b.Property<string>("Token");
 
                     b.HasKey("Id");
