@@ -34,7 +34,6 @@ namespace Netlyt.Web
         public IConfiguration Configuration { get; private set; }
         public IHostingEnvironment HostingEnvironment { get; }
         public IOrionContext OrionContext { get; private set; }
-        public ISlaveConnector SlaveConnector { get; private set; }
 
         public Startup(IHostingEnvironment env)
         {
@@ -133,8 +132,6 @@ namespace Netlyt.Web
             services.AddMvc();
             var builtServices = services.BuildServiceProvider();
             OrionContext = builtServices.GetService<IOrionContext>();
-            SlaveConnector = builtServices.GetService<ISlaveConnector>() as ISlaveConnector;
-            SlaveConnector.Run();
             ConfigureBackgroundServices(builtServices);
         }
 

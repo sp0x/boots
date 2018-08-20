@@ -18,6 +18,7 @@ namespace Netlyt.Service.Cloud.Slave
         public bool Running { get; set; }
         public NetlytNode Node { get; private set; }
         public ApiRateLimit Quota { get; private set; }
+        public string Id { get; private set; }
 
         public NotificationClient NotificationClient
         {
@@ -26,6 +27,7 @@ namespace Netlyt.Service.Cloud.Slave
 
         public SlaveConnector(IConfiguration config, NetlytNode node, IRateService rateService)
         {
+            this.Id = Guid.NewGuid().ToString();
             this.Node = node;
             var mqConfig = MqConfig.GetConfig(config);
             _rateService = rateService;

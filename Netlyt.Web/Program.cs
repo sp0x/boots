@@ -7,11 +7,13 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Netlyt.Service.Cloud.Slave;
 
 namespace Netlyt.Web
 {
     public class Program
     {
+        public static ISlaveConnector SlaveConnector { get; private set; }
         public static void Main(string[] args)
         {
             BuildWebHost(args).Run();
@@ -27,6 +29,8 @@ namespace Netlyt.Web
                 .CaptureStartupErrors(true)
                 .UseStartup<Startup>()
                 .Build();
+            SlaveConnector = host.Services.GetService(typeof(ISlaveConnector)) as ISlaveConnector;
+            SlaveConnector.Run();
             return host;
         }
             
