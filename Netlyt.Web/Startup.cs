@@ -134,22 +134,11 @@ namespace Netlyt.Web
             SlaveConnector = builtServices.GetService<ISlaveConnector>() as ISlaveConnector;
             SlaveConnector.Run();
             ConfigureBackgroundServices(builtServices);
-            //Enable for 100% auth coverage by default
-            //            services.AddMvc(options =>
-            //            {
-            //                // All endpoints need authentication
-            //                options.Filters.Add(new AuthorizeFilter(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build()));
-            //            }); 
         }
 
         public void SetupAuthentication(IServiceCollection services)
         {
             services.AddHmacAuthentication();
-            //            //Add cookie auth
-            //            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-            //                .AddCookie(options => {
-            //                    options.LoginPath = "/user/Login/";
-            //                });
             services.ConfigureApplicationCookie(options =>
             {
                 // Cookie settings

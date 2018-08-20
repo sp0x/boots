@@ -41,9 +41,12 @@ namespace Netlyt.Service.Cloud.Slave
             authClient = new NodeAuthClient(channel);
             try
             {
-                var authResult = await authClient.AuthorizeNode(Node);
-                Quota = authResult.Result["quota"].ToObject<ApiRateLimit>();
-                _rateService.ApplyGlobal(Quota);
+                if (!this.Node.Equals(NetlytNode.Cloud))
+                {
+                    var authResult = await authClient.AuthorizeNode(Node);
+                    Quota = authResult.Result["quota"].ToObject<ApiRateLimit>();
+                    _rateService.ApplyGlobal(Quota);
+                }
             }
             catch (AuthenticationFailed authFailed)
             {

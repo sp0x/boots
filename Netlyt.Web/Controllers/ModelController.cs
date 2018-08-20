@@ -164,8 +164,6 @@ namespace Netlyt.Web.Controllers
             }
         }
 
-
-
         [AllowAnonymous]
         [HttpPost("/model/createUser")]
         public async Task<IActionResult> CreateUser()
@@ -181,10 +179,10 @@ namespace Netlyt.Web.Controllers
                 newRegistration.FirstName = "Userx";
                 newRegistration.LastName = "Lastnamex";
                 newRegistration.Org = "Lol";
-                var newUserCreated = _userService.CreateUser(newRegistration, out user);
-                if (newUserCreated.Succeeded)
+                var result = await _userService.CreateUser(newRegistration);
+                if (result.Item1.Succeeded)
                 {
-                    await _signInManager.SignInAsync(user, isPersistent: false);
+                    await _signInManager.SignInAsync(result.Item2, isPersistent: false);
                 }
 
             }

@@ -8,19 +8,27 @@ namespace Netlyt.Service.Cloud.Slave
         public static NetlytNode GetLocalNode()
         {
             var node = new NetlytNode();
-            var authKey = Environment.GetEnvironmentVariable("NAPI_KEY");
-            var authSecret = Environment.GetEnvironmentVariable("NAPI_SECRET");
-            var nodeName = Environment.GetEnvironmentVariable("NAPI_NAME");
-            if (string.IsNullOrEmpty(authKey)) throw new Exception("Api key is empty");
-            if (string.IsNullOrEmpty(authSecret)) throw new Exception("Api secret is empty");
-            if (string.IsNullOrEmpty(nodeName)) throw new Exception("Api node name is empty");
-            node.ApiKey = new ApiAuth()
+            var nodeType = Environment.GetEnvironmentVariable("NODE_TYPE");
+            if (nodeType == NetlytNode.NODE_TYPE_CLOUD)
             {
-                AppId = authKey,
-                AppSecret = authSecret
-            };
-            node.Name = nodeName;
-            return node;
+                return NetlytNode.Cloud;
+            }
+            else
+            {
+                var authKey = Environment.GetEnvironmentVariable("NAPI_KEY");
+                var authSecret = Environment.GetEnvironmentVariable("NAPI_SECRET");
+                var nodeName = Environment.GetEnvironmentVariable("NAPI_NAME");
+                if (string.IsNullOrEmpty(authKey)) throw new Exception("Api key is empty");
+                if (string.IsNullOrEmpty(authSecret)) throw new Exception("Api secret is empty");
+                if (string.IsNullOrEmpty(nodeName)) throw new Exception("Api node name is empty");
+                node.ApiKey = new ApiAuth()
+                {
+                    AppId = authKey,
+                    AppSecret = authSecret
+                };
+                node.Name = nodeName;
+                return node;
+            }
         }
     }
 }

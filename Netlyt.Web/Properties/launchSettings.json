@@ -20,18 +20,19 @@
       "launchBrowser": true,
       "environmentVariables": {
         "MQ_USER": "netlyt",
-        "MQ_HOST": "mq.netlyt.com",
-        "MQ_PORT": "5672",
-        "MQ_PASS": "rgwsoertkgpowrk$",
         "MONGO_PASS": "gsoeghjoijasg43o0jw90e8bjsdfog",
         "MONGO_HOST": "loc.mongo.netlyt.com",
-        "MONGO_PORT": "27017",
-        "EXP_DIR": "..\\orion",
         "PGSQL_HOST": "loc.postgres.netlyt.com",
+        "MQ_PORT": "5672",
+        "MONGO_PORT": "27017",
+        "MQ_PASS": "rgwsoertkgpowrk$",
+        "EXP_DIR": "..\\orion",
         "PGSQL_PASS": "gpiowuert0g9",
         "PGSQL_DB": "netlyt",
+        "MQ_HOST": "mq.netlyt.com",
         "MONGO_USER": "netlyt",
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "NODE_TYPE": "cloud"
       },
       "applicationUrl": "http://localhost:33838/"
     }
