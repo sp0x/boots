@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using Donut;
@@ -18,13 +16,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
-using Netlyt.Service.Models;
+using Netlyt.Service.Helpers;
 using Netlyt.Web.Extensions;
-using Netlyt.Web.Helpers;
-using Netlyt.Web.ViewModels;
 using Newtonsoft.Json;
 using DataIntegration = Donut.Data.DataIntegration;
 

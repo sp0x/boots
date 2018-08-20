@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Web.Models.ManageViewModels;
-using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web.Controllers
 {
@@ -19,10 +18,6 @@ namespace Netlyt.Web.Controllers
     public class DashboardController : Controller
     {
         private UserManager<User> _userManager;
-        private SignInManager<User> _signInManager;
-        private IEmailSender _emailSender;
-        private ILogger<DashboardController> _logger;
-        private UrlEncoder _urlEncoder;
         private UserService _userService;
 
         [TempData]
@@ -30,18 +25,10 @@ namespace Netlyt.Web.Controllers
 
         public DashboardController(
             UserService userService,
-            UserManager<User> userManager,
-            SignInManager<User> signInManager,
-            IEmailSender emailSender,
-            ILogger<DashboardController> logger,
-            UrlEncoder urlEncoder)
+            UserManager<User> userManager)
         {
             _userService = userService;
             _userManager = userManager;
-            _signInManager = signInManager;
-            _emailSender = emailSender;
-            _logger = logger;
-            _urlEncoder = urlEncoder;
         }
 
         [HttpGet("/dashboard")]

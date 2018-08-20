@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Netlyt.Web.Helpers
+namespace Netlyt.Service.Helpers
 {
     public class ForbiddenException : Exception
     {

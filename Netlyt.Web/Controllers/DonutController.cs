@@ -10,10 +10,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;
-using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web.Controllers
 {

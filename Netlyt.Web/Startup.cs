@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using AutoMapper;
 using Donut;
 using Donut.Orion;
@@ -17,6 +18,7 @@ using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
+using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Data;
 using Netlyt.Web.Extensions;
 using Netlyt.Web.Middleware;
@@ -31,6 +33,7 @@ namespace Netlyt.Web
         public IConfiguration Configuration { get; private set; }
         public IHostingEnvironment HostingEnvironment { get; }
         public IOrionContext OrionContext { get; private set; }
+        public ISlaveConnector SlaveConnector { get; private set; }
 
         public Startup(IHostingEnvironment env)
         {
@@ -91,6 +94,7 @@ namespace Netlyt.Web
             services.AddSingleton<RoutingConfiguration>(new RoutingConfiguration(Configuration));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             OrionContext = services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { });
+
             services.AddSingleton<SocialNetworkApiManager>(new SocialNetworkApiManager());
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();
@@ -117,13 +121,18 @@ namespace Netlyt.Web
             services.AddTransient<OrganizationService>();
             services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
+            services.AddSingleton<NetlytNode>(x => Helpers.GetLocalNode());
+            services.AddSingleton<ISlaveConnector, SlaveConnector>();
             
+
             SetupAuthentication(services);
             //services.AddAutoMapper(mc => { mc.AddProfiles(GetType().Assembly); });
             services.AddDomainAutomapper();
             services.AddMvc();
             var builtServices = services.BuildServiceProvider();
-            var orionContext = builtServices.GetService<IOrionContext>();
+            OrionContext = builtServices.GetService<IOrionContext>();
+            SlaveConnector = builtServices.GetService<ISlaveConnector>() as ISlaveConnector;
+            SlaveConnector.Run();
             ConfigureBackgroundServices(builtServices);
             //Enable for 100% auth coverage by default
             //            services.AddMvc(options =>

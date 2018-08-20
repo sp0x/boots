@@ -2,7 +2,7 @@
 using System.IO;
 using Microsoft.Net.Http.Headers;
 
-namespace Netlyt.Web.Helpers
+namespace Netlyt.Service.Helpers
 {
     public static class MultipartRequestHelper
     {

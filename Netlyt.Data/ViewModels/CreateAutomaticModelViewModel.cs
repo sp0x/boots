@@ -1,4 +1,4 @@
-namespace Netlyt.Web.ViewModels
+namespace Netlyt.Data.ViewModels
 {
     public class CreateAutomaticModelViewModel
     {

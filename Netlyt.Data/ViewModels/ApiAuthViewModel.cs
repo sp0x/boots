@@ -1,6 +1,4 @@
-using System.Collections.Generic;
-
-namespace Netlyt.Web.ViewModels
+namespace Netlyt.Data.ViewModels
 {
     public class ScriptViewModel
     {

@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Netlyt.Interfaces.Models;
 
-namespace Netlyt.Client.Slave
+namespace Netlyt.Service.Cloud.Slave
 {
     public class Helpers
     {

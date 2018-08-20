@@ -4,15 +4,13 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using Netlyt.Interfaces;
-using Netlyt.Service;
 
-namespace Netlyt.Web.Helpers
+namespace Netlyt.Service.Helpers
 {
     public static class FileStreamingHelper
     {

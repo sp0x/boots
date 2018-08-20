@@ -51,10 +51,11 @@ namespace Netlyt.Service
             return _context.Users.Include(x=>x.Role);
         }
 
-        public IdentityResult CreateUser(RegisterViewModel model, out User user)
+        public async Task<Tuple<IdentityResult, User>> CreateUser(RegisterViewModel model)
         {
+            var isFirstUser = _context.Users.Count()==0;
             var username = model.Email.Substring(0, model.Email.IndexOf("@"));
-            user = new User
+            var user = new User
             {
                 UserName = username,
                 Email = model.Email,
@@ -71,7 +72,12 @@ namespace Netlyt.Service
             var apiKey = _apiService.Generate();
             user.ApiKeys.Add(new ApiUser(user, apiKey));
             var result = _userManager.CreateAsync(user, model.Password).Result;
-            return result;
+            if (result.Succeeded && isFirstUser)
+            {
+                await AddRolesToUser(user, new string[] {"Admin"});
+            }
+            var output = new Tuple<IdentityResult, User>(result, user);
+            return output;
         }
         public async Task CreateUser(User model, string password, ApiAuth appAuth)
         {
@@ -253,7 +259,7 @@ namespace Netlyt.Service
             return _context.Users.FirstOrDefault(x => x.Email == modelEmail);
         }
 
-        public async Task<bool> ModifyUser(User user, IEnumerable<string> newRoles)
+        public async Task<bool> AddRolesToUser(User user, IEnumerable<string> newRoles)
         {
             foreach (var newRole in newRoles)
             {

@@ -13,6 +13,7 @@ using Donut.IntegrationSource;
 using Donut.Models;
 using EntityFramework.DbContextScope;
 using EntityFramework.DbContextScope.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -21,6 +22,7 @@ using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Exceptions;
+using Netlyt.Service.Helpers;
 using Netlyt.Service.Repisitories;
 using Newtonsoft.Json.Linq;
 using DataIntegration = Donut.Data.DataIntegration;
@@ -212,6 +214,34 @@ namespace Netlyt.Service
                 .Include(x => x.APIKey)
                 .FirstOrDefault(x => x.APIKey.Id == contextApiAuth.Id && x.Name == name);
             return integration;
+        }
+
+        public async Task<DataImportResult> CreateOrAppendToIntegration(HttpRequest request)
+        {
+            string targetFilePath = Path.GetTempFileName();
+            string fileContentType = null;
+            DataImportResult result = null;
+            try
+            {
+                using (var targetStream = System.IO.File.Create(targetFilePath))
+                {
+                    var form = await request.StreamFile(targetStream);
+                    fileContentType = form.GetValue("mime-type").ToString();
+                    var filename = form.GetValue("filename")
+                        .ToString().Trim('\"').Replace('.', '_').Replace('-', '_');
+                    targetStream.Position = 0;
+                    result = await CreateOrAppendToIntegration(targetStream, fileContentType, filename);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+            finally
+            {
+                System.IO.File.Delete(targetFilePath);
+            }
+            return result;
         }
 
         /// <summary>

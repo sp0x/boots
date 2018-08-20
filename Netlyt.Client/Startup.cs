@@ -13,10 +13,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using nvoid.db.DB.Configuration;
-using Netlyt.Client.Slave;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
+using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Data;
 
 namespace Netlyt.Client
@@ -60,7 +60,6 @@ namespace Netlyt.Client
             services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
             services.AddSingleton<NetlytNode>(x => Helpers.GetLocalNode());
-            //SlaveConnector = new SlaveConnector(Configuration, Helpers.GetLocalNode());
             services.AddSingleton<ISlaveConnector, SlaveConnector>();
 
             OrionContext = services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { });
@@ -82,7 +81,6 @@ namespace Netlyt.Client
             {
                 app.UseHsts();
             }
-
             app.UseHttpsRedirection();
             app.UseMvc();
         }

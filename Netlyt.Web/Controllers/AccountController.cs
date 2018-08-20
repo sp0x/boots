@@ -1,25 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
-using Donut;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
-using Netlyt.Interfaces;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service; 
 using Netlyt.Service.Models.Account;
 using Netlyt.Web.Extensions;
 using Netlyt.Web.Models.AccountViewModels;
-using Netlyt.Web.Services;
-using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web.Controllers
 {
@@ -58,18 +52,7 @@ namespace Netlyt.Web.Controllers
 
         [TempData]
         public string ErrorMessage { get; set; }
-
-        //        [HttpGet]
-        //        [AllowAnonymous]
-        //        public async Task<IActionResult> Login(string returnUrl = null)
-        //        {
-        //            // Clear the existing external cookie to ensure a clean login process
-        //            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-        //
-        //            ViewData["ReturnUrl"] = returnUrl;
-        //            return View();
-        //        }
-        //
+         
         [HttpGet("/user/me")] // /me = host/me, me = host/user/GetProfile/me  
         public async Task<ActionResult> GetProfile()
         {
@@ -270,12 +253,11 @@ namespace Netlyt.Web.Controllers
         public async Task<IActionResult> Register([FromBody]RegisterViewModel model, string returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
-            IdentityResult result;
             if (ModelState.IsValid)
             {
-                User user;
-                result = _userService.CreateUser(model, out user);
-                if (result.Succeeded)
+                var result = await _userService.CreateUser(model);
+                var user = result.Item2;
+                if (result.Item1.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
 

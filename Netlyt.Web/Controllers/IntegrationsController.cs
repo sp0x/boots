@@ -21,12 +21,12 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using static Netlyt.Web.Attributes;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
-using Netlyt.Web.Helpers;
+using Netlyt.Service.Helpers;
 using Netlyt.Web.Services;
-using Netlyt.Web.ViewModels;
 using Newtonsoft.Json;
 
 namespace Netlyt.Web.Controllers
@@ -160,11 +160,6 @@ namespace Netlyt.Web.Controllers
             return null;
         }
 
-        private Encoding GetEncoding(MultipartSection section)
-        {
-            return new UTF8Encoding(); //Todo: implement this
-        }
-
         [HttpPut("{id}")]
         [Authorize]
         public IActionResult Update(long id, [FromBody] DataIntegrationUpdateViewModel item)
@@ -186,7 +181,7 @@ namespace Netlyt.Web.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize] 
         public IActionResult Delete(long id)
         {
             var item = _integrationService.GetById(id).FirstOrDefault();
@@ -230,39 +225,16 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/integration/schema")]
         public async Task<IActionResult> UploadAndGetSchema()
         {
-            IIntegration newIntegration = null;
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
                 return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
             }
-
             try
             {
-                NewIntegrationViewModel integrationParams = new NewIntegrationViewModel();
-                string targetFilePath = Path.GetTempFileName();
-                string fileContentType = null;
-                DataImportResult result = null;
-                using (var targetStream = System.IO.File.Create(targetFilePath))
-                {
-                    var form = await Request.StreamFile(targetStream);
-                    fileContentType = form.GetValue("mime-type").ToString();
-                    var filename = form.GetValue("filename")
-                        .ToString().Trim('\"').Replace('.', '_').Replace('-', '_');
-                    targetStream.Position = 0;
-                    try
-                    {
-                        result = await _integrationService.CreateOrAppendToIntegration(targetStream, fileContentType,
-                            filename);
-                        newIntegration = result?.Integration;
-                    }
-                    catch (Exception ex)
-                    {
-                        return BadRequest(ex.Message);
-                    }
-                }
+                var result = await _integrationService.CreateOrAppendToIntegration(Request);
                 if (result != null)
                 {
-                    System.IO.File.Delete(targetFilePath);
+                    IIntegration newIntegration = result.Integration;
                     var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                     return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
                 }

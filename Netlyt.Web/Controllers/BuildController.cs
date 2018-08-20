@@ -25,17 +25,10 @@ namespace Netlyt.Web.Controllers
     public class BuildController : Controller
     {
         private UserManager<User> _userManager;
-        private SignInManager<User> _signInManager;
-        private IEmailSender _emailSender;
-        private ILogger<DashboardController> _logger;
-        private UrlEncoder _urlEncoder;
         private ModelService _modelService;
         private IOrionContext _orion;
         private IDonutService _donut;
         private IIntegrationService _integrationService;
-
-        [TempData]
-        public string StatusMessage { get; set; }
 
         public BuildController(
             UserManager<User> userManager,
@@ -50,10 +43,6 @@ namespace Netlyt.Web.Controllers
         {
             _modelService = modelService;
             _userManager = userManager;
-            _signInManager = signInManager;
-            _emailSender = emailSender;
-            _logger = logger;
-            _urlEncoder = urlEncoder;
             _orion = orionContext;
             _donut = donut;
             _integrationService = integrations;

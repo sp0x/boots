@@ -6,8 +6,8 @@ using AutoMapper;
 using Donut.Data;
 using Donut.Source;
 using Microsoft.Extensions.DependencyInjection;
+using Netlyt.Data.ViewModels;
 using Netlyt.Service;
-using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web.Extensions
 {

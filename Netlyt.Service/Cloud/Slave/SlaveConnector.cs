@@ -1,20 +1,11 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Text;
 using System.Threading.Tasks;
-using Donut.Orion;
 using Microsoft.Extensions.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
-using Netlyt.Service;
-using Netlyt.Service.Cloud;
-using Netlyt.Service.Cloud.Interfaces;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 
-namespace Netlyt.Client.Slave
+namespace Netlyt.Service.Cloud.Slave
 {
     public class SlaveConnector : IDisposable, ISlaveConnector
     {

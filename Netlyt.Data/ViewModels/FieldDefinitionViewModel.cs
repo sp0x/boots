@@ -1,7 +1,6 @@
-using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
-namespace Netlyt.Web.ViewModels
+namespace Netlyt.Data.ViewModels
 {
     public class FieldDefinitionViewModel
     {

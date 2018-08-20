@@ -10,13 +10,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Web.Extensions;
 using Netlyt.Web.Models.ManageViewModels;
 using Netlyt.Web.Services;
-using Netlyt.Web.ViewModels;
 
 namespace Netlyt.Web.Controllers
 {
@@ -179,7 +179,7 @@ namespace Netlyt.Web.Controllers
         public async Task<IActionResult> UserEdit(string id, [FromBody]UserEditViewModel modification)
         {
             var user = _userService.GetUser(id);
-            var modified = await _userService.ModifyUser(user, modification.Roles);
+            var modified = await _userService.AddRolesToUser(user, modification.Roles);
             return Json(new { success = modified });
         }
 

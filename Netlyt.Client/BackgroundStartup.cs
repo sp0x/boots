@@ -1,7 +1,7 @@
 ﻿using System;
-using Netlyt.Client.Slave;
 using Netlyt.Service;
 using Netlyt.Service.Cloud;
+using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
 namespace Netlyt.Client

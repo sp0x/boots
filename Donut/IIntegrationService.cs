@@ -8,6 +8,7 @@ using Donut.Data.Format;
 using Donut.Integration;
 using Donut.IntegrationSource;
 using Donut.Models;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
@@ -25,6 +26,7 @@ namespace Donut
         Task<DataImportResult> AppendToIntegration(Data.DataIntegration ign, Stream inputData, ApiAuth apiKey,
             string mime = null);
         Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, string mime = null, string name = null);
+        Task<DataImportResult> CreateOrAppendToIntegration(HttpRequest request);
 
         Task<DataImportResult> CreateOrAppendToIntegration(string filePath, ApiAuth apiKey, User user,
             string name = null);
