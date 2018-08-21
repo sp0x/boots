@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,13 @@ namespace Netlyt.Service
 {
     public static class Extensions
     {
+        public static void AddDomainAutomapper(this IServiceCollection sp)
+        {
+            sp.AddTransient(p => new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile(new DomainMapProfile(p.GetService<ModelService>(), p.GetService<UserService>()));
+            }).CreateMapper());
+        }
         public static void AddCache(this IServiceCollection services)
         {
             services.AddSingleton<IRedisCacher>(DBConfig.GetInstance().GetCacheContext());

@@ -5,16 +5,12 @@ using Donut;
 using Donut.Data;
 using Donut.Models;
 using Donut.Source;
-using MongoDB.Bson;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
-using Netlyt.Service;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using DataIntegration = Donut.Data.DataIntegration;
 
-namespace Netlyt.Web
+namespace Netlyt.Service
 {
     public class DomainMapProfile : Profile
     {

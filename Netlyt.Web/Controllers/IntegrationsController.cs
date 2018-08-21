@@ -183,30 +183,15 @@ namespace Netlyt.Web.Controllers
         [HttpGet("{id}/schema")]
         public async Task<IActionResult> GetSchema(long id)
         {
-            var ign = _integrationService.GetById(id)
-                .Include(x=>x.Fields)
-                .Include(x=>x.Models)
-                .ThenInclude(x=>x.Model)
-                .ThenInclude(x=>x.Targets)
-                .ThenInclude(x=>x.Column)
-                .FirstOrDefault();
-            if (ign == null)
+            try
             {
-                return new NotFoundResult();
+                IntegrationSchemaViewModel schema = await _integrationService.GetSchema(id);
+                return Json(schema);
             }
-            var fields = ign.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
-            var schema = new IntegrationSchemaViewModel(ign.Id, fields);
-            schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
-                .Select(x => _mapper.Map<ModelTargetViewModel>(x));
-            var targets = schema.Targets
-                .Select(x =>new ModelTarget(ign.GetField(x.Id)))
-                .Where(x=>x.Column!=null);
-            var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign, targets);
-            var description = await _orionContext.Query(descQuery);
-            _integrationService.SetTargetTypes(ign, description);
-            schema.AddDataDescription(description);
-           
-            return Json(schema);
+            catch (NotFound ex)
+            {
+                return NotFound();
+            }
         }
 
         [HttpPost("/integration/schema")]

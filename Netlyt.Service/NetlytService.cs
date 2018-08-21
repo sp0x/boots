@@ -37,6 +37,7 @@ namespace Netlyt.Service
                 .AddDefaultTokenProviders();
             services.AddMemoryCache();
             services.AddSession();
+            services.AddDomainAutomapper();
             services.AddDonutDb(DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig());
             services.AddSingleton(configuration);
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 

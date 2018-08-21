@@ -32,7 +32,7 @@ namespace Netlyt.Web.Controllers
         private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
         private IMapper _mapper;
         private INotificationService _notifications;
-        private NetlytNode _nodeInfo;
+        private ICloudNodeService _nodeInfo;
         private ISlaveConnector _slaveConnector;
 
         public AccountController(
@@ -45,7 +45,7 @@ namespace Netlyt.Web.Controllers
             ApiService apiService,
             IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
             INotificationService notificationService,
-            NetlytNode node,
+            ICloudNodeService nodeResolver,
             ISlaveConnector slaveConnector)
         {
             _notifications = notificationService;
@@ -57,7 +57,7 @@ namespace Netlyt.Web.Controllers
             _logger = logger;
             _apiService = apiService;
             _actionDescriptorCollectionProvider = actionDescriptorCollectionProvider;
-            _nodeInfo = node;
+            _nodeInfo = nodeResolver;
             _slaveConnector = slaveConnector;
         }
 
@@ -94,7 +94,7 @@ namespace Netlyt.Web.Controllers
             if (ModelState.IsValid)
             {
                 
-                if (_nodeInfo.HasToVerifyLogins())
+                if (_nodeInfo.ResolveLocal().HasToVerifyLogins())
                 {
                     var authResult = await _slaveConnector.AuthenticationClient.LoginUser(model.Email, model.Password);
                     if (!authResult.Item1) return InvalidLogin();

@@ -115,7 +115,7 @@ namespace Netlyt.Web
             services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
             services.AddTransient<INotificationService, NotificationService>();
-            services.AddSingleton<NetlytNode>(x => Helpers.GetLocalNode());
+            services.AddSingleton<ICloudNodeService, CloudNodeService>();
             services.AddSingleton<ISlaveConnector, SlaveConnector>();
             
 

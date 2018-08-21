@@ -18,7 +18,7 @@ namespace Netlyt.Service.Cloud.Slave
         private IRateService _rateService;
         private IIntegrationService _integrations;
         public bool Running { get; set; }
-        public NetlytNode Node { get; private set; }
+        public ICloudNodeService _cloudNodeService { get; private set; }
         public ApiRateLimit Quota { get; private set; }
         public string Id { get; private set; }
 
@@ -32,16 +32,18 @@ namespace Netlyt.Service.Cloud.Slave
             get { return authClient; }
         }
 
-        public SlaveConnector(IConfiguration config,
-            NetlytNode node, 
-            IRateService rateService,
-            IIntegrationService integrationService)
+        public SlaveConnector(
+            IConfiguration config,
+            ICloudNodeService cloudNodeService, 
+            IRateService rateService
+            //IIntegrationService integrationService
+            )
         {
             this.Id = Guid.NewGuid().ToString();
-            this.Node = node;
+            _cloudNodeService = cloudNodeService;
             var mqConfig = MqConfig.GetConfig(config);
             _rateService = rateService;
-            _integrations = integrationService;
+            //_integrations = integrationService;
             _factory = new ConnectionFactory()
             {
                 HostName = mqConfig.Host,
@@ -59,16 +61,17 @@ namespace Netlyt.Service.Cloud.Slave
             authClient = new NodeAuthClient(channel);
             try
             {
-                if (!this.Node.Equals(NetlytNode.Cloud))
+                var node = _cloudNodeService.ResolveLocal();
+                if (!node.Equals(NetlytNode.Cloud))
                 {
-                    var authResult = await authClient.AuthorizeNode(Node);
+                    var authResult = await authClient.AuthorizeNode(node);
                     Quota = authResult.Result["quota"].ToObject<ApiRateLimit>();
                     _rateService.ApplyGlobal(Quota);
                     _rateService.SetAvailabilityForUser(authResult.GetUsername().ToString(), Quota);
                 }
                 else
                 {
-                    var authResult = await authClient.AuthorizeCloudNode(Node);
+                    var authResult = await authClient.AuthorizeCloudNode(node);
                 }
             }
             catch (AuthenticationFailed authFailed)

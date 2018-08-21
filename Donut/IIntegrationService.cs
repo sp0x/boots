@@ -10,6 +10,7 @@ using Donut.IntegrationSource;
 using Donut.Models;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Newtonsoft.Json.Linq;
@@ -19,11 +20,11 @@ namespace Donut
     public interface IIntegrationService
     {
         IIntegration GetByName(IApiAuth contextApiAuth, string integrationSourceIntegrationName);
-        Task<DataImportResult> AppendToIntegration(Data.DataIntegration ign, string filePath, ApiAuth apiKey);
+        Task<DataImportResult> AppendToIntegration(DataIntegration ign, string filePath, ApiAuth apiKey);
 
-        Task<DataImportResult> AppendToIntegration(Data.DataIntegration ign, InputSource source, ApiAuth apiKey,
+        Task<DataImportResult> AppendToIntegration(DataIntegration ign, InputSource source, ApiAuth apiKey,
             string mime = null);
-        Task<DataImportResult> AppendToIntegration(Data.DataIntegration ign, Stream inputData, ApiAuth apiKey,
+        Task<DataImportResult> AppendToIntegration(DataIntegration ign, Stream inputData, ApiAuth apiKey,
             string mime = null);
         Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, string mime = null, string name = null);
         Task<DataImportResult> CreateOrAppendToIntegration(HttpRequest request);
@@ -59,13 +60,15 @@ namespace Donut
             User owner,
             string name);
 
-        Task<Data.DataIntegration> Create(string integrationName, string formatType);
+        Task<DataIntegration> Create(string integrationName, string formatType);
         IInputFormatter<T> ResolveFormatter<T>(string mimeType) where T : class;
 
-        IQueryable<Data.DataIntegration> GetById(long id);
-        void Remove(Data.DataIntegration importTaskIntegration);
+        IEnumerable<DataIntegration> GetById(long id);
+        void Remove(DataIntegration importTaskIntegration);
         void SetTargetTypes(DataIntegration ign, JToken description);
         Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask);
         void OnRemoteIntegrationCreated(JToken eBody);
+        Task<IntegrationSchemaViewModel> GetSchema(long id);
+        Task<DataIntegration> GetIntegrationForAutobuild(CreateAutomaticModelViewModel modelData);
     }
 }

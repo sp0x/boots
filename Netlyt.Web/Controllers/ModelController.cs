@@ -263,22 +263,9 @@ namespace Netlyt.Web.Controllers
             {
                 return BadRequest("Target is required.");
             }
-            var integration = _integrationService.GetById(modelData.IntegrationId)
-                .Include(x=>x.Fields)
-                .Include(x=>x.Models)
-                .Include(x=>x.APIKey)
-                .FirstOrDefault();
-            if (integration == null)
-            {
-                return NotFound("Integration not found.");
-            }
-            var modelName = modelData.Name.Replace(".", "_");
-            if (modelData.IdColumn != null && !string.IsNullOrEmpty(modelData.IdColumn.Name))
-            {
-                integration.DataIndexColumn = modelData.IdColumn.Name;
-                _db.SaveChanges();
-            }
+            DataIntegration integration = await _integrationService.GetIntegrationForAutobuild(modelData);
             var targets = new ModelTarget(integration.GetField(modelData.Target.Name));
+            var modelName = modelData.Name.Replace(".", "_");
             var newModel = await _modelService.CreateModel(user,
                 modelName,
                 new List<DataIntegration>(new[] { integration }),
