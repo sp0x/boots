@@ -66,5 +66,6 @@ namespace Donut
         void Remove(Data.DataIntegration importTaskIntegration);
         void SetTargetTypes(DataIntegration ign, JToken description);
         Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask);
+        void OnRemoteIntegrationCreated(JToken eBody);
     }
 }

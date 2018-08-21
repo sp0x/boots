@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Text;
+using Netlyt.Service.Cloud.Auth;
 using Newtonsoft.Json.Linq;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
 namespace Netlyt.Service.Cloud.Slave
 {
-    public class NotificationClient
+    public class NotificationClient : NotificationExchange
     {
         private IModel channel;
 
-        public NotificationClient(IModel channel)
+        public NotificationClient(IModel channel) : base(channel)
         {
             this.channel = channel;
             channel.QueueDeclare(queue: Queues.Notification,
@@ -21,9 +22,21 @@ namespace Netlyt.Service.Cloud.Slave
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += OnNotification;
             channel.BasicConsume(queue: Queues.Notification,
-                autoAck: false,
-                consumer: consumer);
+                autoAck: false, consumer: consumer);
         }
+
+        #region Handlers
+        
+        private void OnNotification(object sender, BasicDeliverEventArgs e)
+        {
+            var props = e.BasicProperties;
+            var body = e.Body;
+            var message = Encoding.UTF8.GetString(body);
+            Console.WriteLine(" [x] Received {0}", message);
+            channel.BasicAck(e.DeliveryTag, false);
+        }
+
+        #endregion
 
         public void Send(string message)
         {
@@ -49,14 +62,6 @@ namespace Netlyt.Service.Cloud.Slave
                 body: body);
         } 
 
-        private void OnNotification(object sender, BasicDeliverEventArgs e)
-        {
-            var props = e.BasicProperties;
-            var body = e.Body;
-            var message = Encoding.UTF8.GetString(body);
-            Console.WriteLine(" [x] Received {0}", message);
-            channel.BasicAck(e.DeliveryTag, false);
-        }
 
     }
 }

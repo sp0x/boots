@@ -53,6 +53,8 @@ namespace Netlyt.Master
             services.AddTransient<OrganizationService>();
             services.AddTransient<ModelService>();
             services.AddTransient<TimestampService>();
+            services.AddTransient<IIntegrationService, IntegrationService>();
+            services.AddTransient<ILoggingService, LoggingService>();
             services.AddTransient<IDbContextFactory>((sp) => new DbContextFactory(dbOptions));
             services.AddTransient<IDbContextScopeFactory>((sp) => new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
             OrionContext = services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { }, false);

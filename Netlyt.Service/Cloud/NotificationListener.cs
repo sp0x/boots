@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Netlyt.Service.Cloud.Auth;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -9,6 +10,8 @@ namespace Netlyt.Service.Cloud
     public class NotificationListener : NotificationExchange
     {
         private IModel channel;
+        public event EventHandler<JsonNotification> OnIntegrationCreated;
+        public event EventHandler<JsonNotification> OnIntegrationViewed;
 
         public NotificationListener(IModel channel) : base(channel)
         {
@@ -52,7 +55,6 @@ namespace Netlyt.Service.Cloud
         #region Consumer methods
         private void Register_Received(object sender, BasicDeliverEventArgs e)
         {
-            throw new NotImplementedException();
             channel.BasicAck(e.DeliveryTag, false);
         }
 
@@ -64,14 +66,12 @@ namespace Netlyt.Service.Cloud
 
         private void IntegrationViewedConsumer_Received(object sender, BasicDeliverEventArgs e)
         {
-            throw new NotImplementedException();
-            channel.BasicAck(e.DeliveryTag, false);
+            OnIntegrationViewed?.Invoke(this, JsonNotification.FromRequest(e));
         }
 
         private void NewIntegrationConsumer_Received(object sender, BasicDeliverEventArgs e)
         {
-            throw new NotImplementedException();
-            channel.BasicAck(e.DeliveryTag, false);
+            OnIntegrationCreated?.Invoke(this, JsonNotification.FromRequest(e));
         }
 
         private void OnQuotaNotification(object sender, BasicDeliverEventArgs e)

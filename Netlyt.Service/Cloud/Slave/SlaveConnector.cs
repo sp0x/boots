@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Donut;
 using Microsoft.Extensions.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
@@ -15,6 +16,7 @@ namespace Netlyt.Service.Cloud.Slave
         private NodeAuthClient authClient;
         private NotificationClient notificationClient;
         private IRateService _rateService;
+        private IIntegrationService _integrations;
         public bool Running { get; set; }
         public NetlytNode Node { get; private set; }
         public ApiRateLimit Quota { get; private set; }
@@ -30,12 +32,16 @@ namespace Netlyt.Service.Cloud.Slave
             get { return authClient; }
         }
 
-        public SlaveConnector(IConfiguration config, NetlytNode node, IRateService rateService)
+        public SlaveConnector(IConfiguration config,
+            NetlytNode node, 
+            IRateService rateService,
+            IIntegrationService integrationService)
         {
             this.Id = Guid.NewGuid().ToString();
             this.Node = node;
             var mqConfig = MqConfig.GetConfig(config);
             _rateService = rateService;
+            _integrations = integrationService;
             _factory = new ConnectionFactory()
             {
                 HostName = mqConfig.Host,
@@ -73,6 +79,9 @@ namespace Netlyt.Service.Cloud.Slave
             notificationClient = new NotificationClient(channel);
         }
 
+        #region Handlers
+
+        #endregion
 
         public void Send(string message)
         {

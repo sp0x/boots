@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Donut;
 using Donut.Orion;
 using Microsoft.Extensions.Configuration;
 using Netlyt.Interfaces;
@@ -21,18 +22,24 @@ namespace Netlyt.Service.Cloud
         private ICloudAuthenticationService _authService;
         private IRateService _rateService;
         private UserService _userService;
+        private IIntegrationService _integrations;
+        private ILoggingService _loggingService;
         public bool Running { get; set; }
         public NotificationListener NotificationListener { get; private set; }
         public AuthListener AuthListener { get; private set; }
         public CloudMasterServer(IConfiguration config, 
             ICloudAuthenticationService authService,
             IRateService rateService,
-            UserService userService)
+            UserService userService,
+            IIntegrationService integrations,
+            ILoggingService loggingService)
         {
             var mqConfig = MqConfig.GetConfig(config);
             _userService = userService;
             _authService = authService;
             _rateService = rateService;
+            _integrations = integrations;
+            _loggingService = loggingService;
             _factory = new ConnectionFactory()
             {
                 HostName = mqConfig.Host,
@@ -55,6 +62,8 @@ namespace Netlyt.Service.Cloud
                         AuthListener = new AuthListener(channel, AuthMode.Master);
                         AuthListener.AuthenticationRequested += AuthListener_AuthenticationRequested;
                         AuthListener.UserAuthenticationRequested += AuthListener_UserAuthenticationRequested;
+                        NotificationListener.OnIntegrationCreated += NotificationListener_OnIntegrationCreated;
+                        NotificationListener.OnIntegrationViewed += NotificationListener_OnIntegrationViewed;
                         while (this.Running)
                         {
                             System.Threading.Thread.Sleep(1);
@@ -62,6 +71,19 @@ namespace Netlyt.Service.Cloud
                     }
                 }
             });
+        }
+
+        private void NotificationListener_OnIntegrationViewed(object sender, JsonNotification e)
+        {
+            _loggingService.OnIntegrationViewed(e.Body);
+            NotificationListener.Ack(e);
+
+        }
+
+        private void NotificationListener_OnIntegrationCreated(object sender, JsonNotification e)
+        {
+            _integrations.OnRemoteIntegrationCreated(e.Body);
+            NotificationListener.Ack(e);
         }
 
         private void AuthListener_UserAuthenticationRequested(object sender, UserLoginRequest e)

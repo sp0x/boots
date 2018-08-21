@@ -58,6 +58,7 @@ namespace Netlyt.Service.Cloud
             var body = JObject.FromObject(new
             {
                 username = newIntegration.Owner.UserName,
+                user_id = newIntegration.Owner.Id,
                 name = newIntegration.Name,
                 id = newIntegration.Id,
                 fields = newIntegration.Fields.Select(x => new

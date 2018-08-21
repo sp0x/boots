@@ -192,6 +192,11 @@ namespace Netlyt.Service
             return example;
         }
 
+        public void OnRemoteIntegrationCreated(JToken eBody)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// 
         /// </summary>
