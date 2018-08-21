@@ -7,7 +7,8 @@ namespace Netlyt.Service.Cloud
     public interface INotificationService
     {
         void SendRegisteredNotification(User resultItem2);
-        void SendLoggedInNotification(ClaimsPrincipal httpContextUser);
+        void SendLoggedInNotification(User httpContextUser);
         void SendNewIntegrationSummary(IIntegration newIntegration);
+        void SendIntegrationViewed(IIntegration viewedIntegration);
     }
 }

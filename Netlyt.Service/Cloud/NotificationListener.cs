@@ -6,31 +6,19 @@ using RabbitMQ.Client.Events;
 
 namespace Netlyt.Service.Cloud
 {
-    public class NotificationListener
+    public class NotificationListener : NotificationExchange
     {
         private IModel channel;
 
-        public NotificationListener(IModel channel)
+        public NotificationListener(IModel channel) : base(channel)
         {
             this.channel = channel;
-            channel.ExchangeDeclare(exchange: Exchanges.Notifications,
-                type: ExchangeType.Topic,
-                durable: true,
-                autoDelete: false);
-            channel.QueueDeclare(queue: Queues.MessageNotification, 
-                durable: true,
-                exclusive: false, 
-                autoDelete: false);
-            var specs = new Dictionary<string, object>();
-            specs["x-match"] = "any";
-            //specs["type"] = "";
-            channel.QueueBind(queue: Queues.MessageNotification,
-                exchange: Exchanges.Notifications,
-                routingKey: Routes.MessageNotification,
-                arguments: specs);
             ConsumeQuotaNotifications();
+            ConsumeIntegrationNotifications();
+            ConsumeUserAuthNotifications();
         }
 
+        #region Consume setup methods
         private void ConsumeQuotaNotifications()
         {
             var requestConsumer = new EventingBasicConsumer(channel);
@@ -40,9 +28,56 @@ namespace Netlyt.Service.Cloud
                 consumer: requestConsumer);
         }
 
+        private void ConsumeUserAuthNotifications()
+        {
+            var login = new EventingBasicConsumer(channel);
+            var register = new EventingBasicConsumer(channel);
+            login.Received += Login_Received; ;
+            register.Received += Register_Received; ;
+            channel.BasicConsume(Queues.UserLogin, false, login);
+            channel.BasicConsume(Queues.UserRegister, false, register);
+        }
+
+        public void ConsumeIntegrationNotifications()
+        {
+            var newIntegrationConsumer = new EventingBasicConsumer(channel);
+            var integrationViewedConsumer = new EventingBasicConsumer(channel);
+            newIntegrationConsumer.Received += NewIntegrationConsumer_Received;
+            integrationViewedConsumer.Received += IntegrationViewedConsumer_Received;
+            channel.BasicConsume(Queues.IntegrationCreated, false, newIntegrationConsumer);
+            channel.BasicConsume(Queues.IntegrationViewed, false, integrationViewedConsumer);
+        }
+        #endregion
+
+        #region Consumer methods
+        private void Register_Received(object sender, BasicDeliverEventArgs e)
+        {
+            throw new NotImplementedException();
+            channel.BasicAck(e.DeliveryTag, false);
+        }
+
+        private void Login_Received(object sender, BasicDeliverEventArgs e)
+        {
+            var jsbody = e.GetJson();
+        }
+
+
+        private void IntegrationViewedConsumer_Received(object sender, BasicDeliverEventArgs e)
+        {
+            throw new NotImplementedException();
+            channel.BasicAck(e.DeliveryTag, false);
+        }
+
+        private void NewIntegrationConsumer_Received(object sender, BasicDeliverEventArgs e)
+        {
+            throw new NotImplementedException();
+            channel.BasicAck(e.DeliveryTag, false);
+        }
+
         private void OnQuotaNotification(object sender, BasicDeliverEventArgs e)
         {
             channel.BasicAck(e.DeliveryTag, false);
         }
+        #endregion
     }
 }

@@ -55,14 +55,7 @@ namespace Netlyt.Web
             var databaseConfiguration = DBConfig.GetInstance().GetGeneralDatabase();
             if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!");
             var dbOptions = Configuration.GetDbOptionsBuilder();
-            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
-            Console.WriteLine("Management DB at: " + postgresConnectionString);
-            services.AddDbContext<ManagementDbContext>(options =>
-                {
-                    options.UseNpgsql(postgresConnectionString);
-                    options.UseLazyLoadingProxies();
-                }
-            );
+            services.AddManagementDbContext(Configuration);
             //services.AddScoped<IDataAccessProvider, DataAccessPostgreSqlProvider.DataAccessPostgreSqlProvider>();
             services.AddTransient<IDatabaseConfiguration>((sp) =>
                 {

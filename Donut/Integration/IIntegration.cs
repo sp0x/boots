@@ -13,10 +13,12 @@ namespace Donut.Integration
         long Id { get; set; }
         string Name { get; set; }
         int DataEncoding { get; set; }
+        User Owner { get; set; }
         ApiAuth APIKey { get; set; }
         string Collection { get; set; }
         string FeaturesCollection { get; set; }
         string DataTimestampColumn { get; set; }
+        string DataIndexColumn { get; set; }
         /// <summary>
         /// The type of origin of this type
         /// </summary>

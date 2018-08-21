@@ -8,6 +8,7 @@ namespace Netlyt.Service.Cloud.Slave
         NetlytNode Node { get; }
         ApiRateLimit Quota { get; }
         bool Running { get; set; }
+        NodeAuthClient AuthenticationClient { get; }
         NotificationClient NotificationClient { get; }
         Task Run();
         void Send(string message);

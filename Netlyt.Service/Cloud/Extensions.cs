@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Netlyt.Service.Cloud.Interfaces;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RabbitMQ.Client.Events;
 
 namespace Netlyt.Service.Cloud
 {
@@ -14,7 +17,7 @@ namespace Netlyt.Service.Cloud
             var props = exchange.Channel.CreateBasicProperties();
             //Result is realted to the request
             props.CorrelationId = message.CorrelationId;
-            channel.BasicPublish(exchange.Name, message.From, false, props, reply);
+            channel.BasicPublish(exchange.Name, message.From, true, props, reply);
             channel.BasicAck(message.DeliveryTag, false);
         }
         public static void Reply(this IRPCableExchange exchange, IRpcMessage message, JObject reply)
@@ -24,8 +27,15 @@ namespace Netlyt.Service.Cloud
             var props = exchange.Channel.CreateBasicProperties();
             //Result is realted to the request
             props.CorrelationId = message.CorrelationId;
-            channel.BasicPublish(exchange.Name, message.From, false, props, encodedReply);
+            channel.BasicPublish(exchange.Name, message.From, true, props, encodedReply);
             channel.BasicAck(message.DeliveryTag, false);
+        }
+
+        public static JToken GetJson(this BasicDeliverEventArgs e)
+        {
+            var reader = new JsonTextReader(new StreamReader(new MemoryStream(e.Body)));
+            var js = JObject.ReadFrom(reader);//JsonSerializer.Create().Deserialize(reader);
+            return js;
         }
     }
 }

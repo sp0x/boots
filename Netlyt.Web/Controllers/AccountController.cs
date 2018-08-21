@@ -12,6 +12,7 @@ using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Cloud;
+using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Models.Account;
 using Netlyt.Web.Extensions;
 using Netlyt.Web.Models.AccountViewModels;
@@ -31,6 +32,8 @@ namespace Netlyt.Web.Controllers
         private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
         private IMapper _mapper;
         private INotificationService _notifications;
+        private NetlytNode _nodeInfo;
+        private ISlaveConnector _slaveConnector;
 
         public AccountController(
             IMapper mapper,
@@ -41,7 +44,9 @@ namespace Netlyt.Web.Controllers
             ILogger<AccountController> logger,
             ApiService apiService,
             IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            NetlytNode node,
+            ISlaveConnector slaveConnector)
         {
             _notifications = notificationService;
             _mapper = mapper;
@@ -52,6 +57,8 @@ namespace Netlyt.Web.Controllers
             _logger = logger;
             _apiService = apiService;
             _actionDescriptorCollectionProvider = actionDescriptorCollectionProvider;
+            _nodeInfo = node;
+            _slaveConnector = slaveConnector;
         }
 
         [TempData]
@@ -86,46 +93,71 @@ namespace Netlyt.Web.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var emailuser = _userService.GetUsername(model.Email);
-                if (emailuser == null)
-                {
-                    var resp = Json(new { success = false, message = "Invalid login attempt." });
-                    resp.StatusCode = 400;
-                    return resp;
-                }
-                var result = await _signInManager.PasswordSignInAsync(emailuser.UserName, model.Password, true, lockoutOnFailure: false);
                 
-                if (result.Succeeded)
-                { 
-                    _logger.LogInformation("User logged in."); 
-                    _userService.InitializeUserSession(HttpContext.User);
-                    _notifications.SendLoggedInNotification(HttpContext.User);
-                    return Json(new
+                if (_nodeInfo.HasToVerifyLogins())
+                {
+                    var authResult = await _slaveConnector.AuthenticationClient.LoginUser(model.Email, model.Password);
+                    if (!authResult.Item1) return InvalidLogin();
+                    var user = authResult.Item2;
+                    if (_userService.GetUserByEmail(model.Email) == null)
                     {
-                        success = true,
-                        token = emailuser.Id
-                    }); 
-                }
-                if (result.RequiresTwoFactor)
-                {
-                    return RedirectToAction(nameof(LoginWith2fa), new { returnUrl });
-                }
-                if (result.IsLockedOut)
-                {
-                    _logger.LogWarning("User account locked out.");
-                    return RedirectToAction(nameof(Lockout));
+                        _userService.AddUser(user);
+                    }
+                    return await LoginUser(model, returnUrl, user);
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    var resp = Json(new { success = false, message = "Invalid login attempt." });
-                    resp.StatusCode = 400;
-                    return resp;
+                    // This doesn't count login failures towards account lockout
+                    // To enable password failures to trigger account lockout, set lockoutOnFailure: true
+                    var emailuser = _userService.GetUsername(model.Email);
+                    if (emailuser == null) return InvalidLogin();
+                    return await LoginUser(model, returnUrl, emailuser);
                 }
             }
             return BadRequest();
+        }
+
+        private IActionResult InvalidLogin()
+        {
+            var resp = Json(new {success = false, message = "Invalid login attempt."});
+            resp.StatusCode = 400;
+            return resp;
+        }
+
+        private async Task<IActionResult> LoginUser(LoginViewModel model, string returnUrl, User emailuser)
+        {
+            var result =
+                await _signInManager.PasswordSignInAsync(emailuser.UserName, model.Password, true, lockoutOnFailure: false);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("User logged in.");
+                _userService.InitializeUserSession(HttpContext.User);
+                _notifications.SendLoggedInNotification(emailuser);
+                return Json(new
+                {
+                    success = true,
+                    token = emailuser.Id
+                });
+            }
+
+            if (result.RequiresTwoFactor)
+            {
+                return RedirectToAction(nameof(LoginWith2fa), new {returnUrl});
+            }
+
+            if (result.IsLockedOut)
+            {
+                _logger.LogWarning("User account locked out.");
+                return RedirectToAction(nameof(Lockout));
+            }
+            else
+            {
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                var resp = Json(new {success = false, message = "Invalid login attempt."});
+                resp.StatusCode = 400;
+                return resp;
+            }
         }
 
         [HttpGet]

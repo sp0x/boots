@@ -18,11 +18,16 @@ namespace Netlyt.Service.Cloud
             //Declare our authorizations queue
             channel.QueueDeclare(queue: Queues.AuthorizeNode,
                 durable: true, exclusive: false, autoDelete: false);
+            channel.QueueDeclare(queue: Queues.UserLoginForNode,
+                durable: true, exclusive: false, autoDelete: false);
             var specs = new Dictionary<string, object>();
             channel.QueueBind(queue: Queues.AuthorizeNode,
                 exchange: Exchanges.Auth,
                 routingKey: Routes.AuthorizeNode,
                 arguments: specs);
+            channel.QueueBind(queue: Queues.UserLoginForNode,
+                exchange: Exchanges.Auth,
+                routingKey: Routes.UserLoginForNode);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using Netlyt.Service.Cloud.Auth;
 using Netlyt.Service.Cloud.Interfaces;
 using Newtonsoft.Json.Linq;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
 namespace Netlyt.Service.Cloud.Slave
 {
@@ -19,60 +21,63 @@ namespace Netlyt.Service.Cloud.Slave
         public event EventHandler<AuthenticationResponse> OnAuthenticated;
         public string AuthenticationToken { get; private set; }
 
+        private ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>> _requests;
+        private EventingBasicConsumer _callbackConsumer;
+
         public NodeAuthClient(IModel channel) : base(channel)
         {
             _authListener = new AuthListener(channel, AuthMode.Client);
             _channel = channel;
             CallbackQueue = channel.QueueDeclare(exclusive: true);
             channel.QueueBind(CallbackQueue.QueueName, Exchanges.Auth, CallbackQueue.QueueName);
+            _requests = new ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>>();
+            _callbackConsumer = new EventingBasicConsumer(_channel);
+            _channel.BasicConsume(CallbackQueue.QueueName, true, _callbackConsumer);
+            _callbackConsumer.Received += OnCallback;
         }
 
-        public async Task<AuthenticationResponse> AuthorizeCloudNode(NetlytNode node)
+        private void OnCallback(object sender, BasicDeliverEventArgs e)
         {
-            byte[] body = CreateCloudAuthPayload(node);
+            TaskCompletionSource<BasicDeliverEventArgs> completionSource;
+            if (_requests.TryGetValue(e.BasicProperties.CorrelationId, out completionSource))
+            {
+                completionSource.TrySetResult(e);
+            }
+        }
+
+        /// <summary>
+        /// Creates a new awaiter that waits for a message
+        /// </summary>
+        /// <returns></returns>
+        private TaskCompletionSource<BasicDeliverEventArgs> CreateMessageAwaiter(string correlationId)
+        {
+            var awaiter = new TaskCompletionSource<BasicDeliverEventArgs>();
+            //Console.WriteLine("Adding request with id: " + awaiterId);
+            _requests.TryAdd(correlationId, awaiter);
+            return awaiter;
+        }
+
+        public async Task<Tuple<bool, User>> LoginUser(string email, string password)
+        {
+            var body = JToken.FromObject(new
+            {
+                email = email,
+                password = password
+            });
+            var bodyBytes = Encoding.UTF8.GetBytes(body.ToString());
             var props = _channel.CreateBasicProperties();
             props.Persistent = true;
             props.ReplyTo = CallbackQueue.QueueName;
             props.CorrelationId = Guid.NewGuid().ToString();
+            Console.WriteLine("Sending login request: " + props.CorrelationId);
             props.Expiration = (AuthTimeout).ToString();
+            var awaitCompletionTask = CreateMessageAwaiter(props.CorrelationId);
             _channel.BasicPublish(exchange: Exchanges.Auth,
-                routingKey: Routes.AuthorizeNode,
+                routingKey: Routes.UserLoginForNode,
                 basicProperties: props,
-                body: body);
-
-            var consumer = new QueueingBasicConsumer(_channel);
-            _channel.BasicConsume(CallbackQueue.QueueName, true, consumer);
+                body: bodyBytes);
             var authTimeoutTask = Task.Delay(AuthTimeout);
-            var authTask = Task.Run(() =>
-            {
-                while (true)
-                {
-                    try
-                    {
-                        var authResponse = consumer.Queue.Dequeue();
-                        if (authResponse.BasicProperties.CorrelationId != props.CorrelationId) continue;
-                        var response = AuthenticationResponse.FromRequest(authResponse);
-                        var result = response.Result;
-                        var successfull = result["success"] as JValue;
-                        if (!((bool)successfull))
-                        {
-                            throw new AuthenticationFailed();
-                        }
-                        else
-                        {
-                            AuthenticationToken = response.Result["token"].ToString();
-                            OnAuthenticated?.Invoke(this, response);
-                            return response;
-                            break;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new AuthenticationFailed();
-                    }
-                }
-            });
-            var resultingTask = await Task.WhenAny(authTimeoutTask, authTask);
+            var resultingTask = await Task.WhenAny(authTimeoutTask, awaitCompletionTask.Task);
             if (resultingTask.IsFaulted)
             {
                 throw new AuthenticationFailed();
@@ -83,7 +88,75 @@ namespace Netlyt.Service.Cloud.Slave
             }
             else
             {
-                return authTask.Result;
+                var response = awaitCompletionTask.Task.Result as BasicDeliverEventArgs;
+                try
+                {
+                    var result = response.GetJson();
+                    var successfull = result["success"] as JValue;
+                    if (!((bool)successfull))
+                    {
+                        throw new AuthenticationFailed();
+                    }
+                    else
+                    {
+                        var userObj = result["user"].ToObject<User>();
+                        return new Tuple<bool, User>(true, userObj);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new AuthenticationFailed();
+                }
+            }
+        }
+
+
+        public async Task<AuthenticationResponse> AuthorizeCloudNode(NetlytNode node)
+        {
+            byte[] body = CreateCloudAuthPayload(node);
+            var props = _channel.CreateBasicProperties();
+            props.Persistent = true;
+            props.ReplyTo = CallbackQueue.QueueName;
+            props.CorrelationId = Guid.NewGuid().ToString();
+            props.Expiration = (AuthTimeout).ToString();
+            var awaitCompletionTask = CreateMessageAwaiter(props.CorrelationId);
+            _channel.BasicPublish(exchange: Exchanges.Auth,
+                routingKey: Routes.AuthorizeNode,
+                basicProperties: props,
+                body: body);
+            var authTimeoutTask = Task.Delay(AuthTimeout);
+            var resultingTask = await Task.WhenAny(authTimeoutTask, awaitCompletionTask.Task);
+            if (resultingTask.IsFaulted)
+            {
+                throw new AuthenticationFailed();
+            }
+            else if (resultingTask.Id == authTimeoutTask.Id)
+            {
+                throw new TimeoutException("Authentication timed out.");
+            }
+            else
+            {
+                try
+                {
+                    BasicDeliverEventArgs authResponse = awaitCompletionTask.Task.Result;
+                    var response = AuthenticationResponse.FromRequest(authResponse);
+                    var result = response.Result;
+                    var successfull = result["success"] as JValue;
+                    if (!((bool)successfull))
+                    {
+                        throw new AuthenticationFailed();
+                    }
+                    else
+                    {
+                        AuthenticationToken = response.Result["token"].ToString();
+                        OnAuthenticated?.Invoke(this, response);
+                        return response;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new AuthenticationFailed();
+                }
             }
         }
 
@@ -95,55 +168,44 @@ namespace Netlyt.Service.Cloud.Slave
             props.ReplyTo = CallbackQueue.QueueName;
             props.CorrelationId = Guid.NewGuid().ToString();
             props.Expiration = (AuthTimeout).ToString();
-            
+            var awaitCompletionTask = CreateMessageAwaiter(props.CorrelationId);
             _channel.BasicPublish(exchange: Exchanges.Auth,
                 routingKey: Routes.AuthorizeNode,
                 basicProperties: props,
                 body: body);
-
-            var consumer = new QueueingBasicConsumer(_channel);
-            _channel.BasicConsume(CallbackQueue.QueueName, true, consumer);
             var authTimeoutTask = Task.Delay(AuthTimeout);
-            var authTask = Task.Run(() =>
-            {
-                while (true)
-                {
-                    try
-                    {
-                        var authResponse = consumer.Queue.Dequeue();
-                        if (authResponse.BasicProperties.CorrelationId != props.CorrelationId) continue;
-                        var response = AuthenticationResponse.FromRequest(authResponse);
-                        var result = response.Result;
-                        var successfull = result["success"] as JValue;
-                        if (!((bool) successfull))
-                        {
-                            throw new AuthenticationFailed();
-                        }
-                        else
-                        {
-                            AuthenticationToken = response.Result["token"].ToString();
-                            OnAuthenticated?.Invoke(this, response);
-                            return response;
-                            break;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new AuthenticationFailed();
-                    }
-                }
-            });
-            var resultingTask = await Task.WhenAny(authTimeoutTask, authTask);
+            var resultingTask = await Task.WhenAny(authTimeoutTask, awaitCompletionTask.Task);
             if (resultingTask.IsFaulted)
             {
                 throw new AuthenticationFailed();
-            }else if (resultingTask.Id == authTimeoutTask.Id)
+            }
+            else if (resultingTask.Id == authTimeoutTask.Id)
             {
                 throw new TimeoutException("Authentication timed out.");
             }
             else
             {
-                return authTask.Result;
+                try
+                {
+                    var authResponse = awaitCompletionTask.Task.Result;
+                    var response = AuthenticationResponse.FromRequest(authResponse);
+                    var result = response.Result;
+                    var successfull = result["success"] as JValue;
+                    if (!((bool)successfull))
+                    {
+                        throw new AuthenticationFailed();
+                    }
+                    else
+                    {
+                        AuthenticationToken = response.Result["token"].ToString();
+                        OnAuthenticated?.Invoke(this, response);
+                        return response;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new AuthenticationFailed();
+                }
             }
         }
 

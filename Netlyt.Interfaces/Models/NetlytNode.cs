@@ -23,6 +23,11 @@
         {
             this.Name = name;
         }
+
+        public bool HasToVerifyLogins()
+        {
+            return !this.Equals(Cloud); //Only our cloud nodes dont have to verify logins.
+        }
     }
 
     public enum NodeRole { Master, Slave, Cloud }

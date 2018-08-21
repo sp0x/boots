@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using Newtonsoft.Json.Linq;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -29,12 +30,24 @@ namespace Netlyt.Service.Cloud.Slave
             var props = channel.CreateBasicProperties();
             props.Persistent = true;
             var body = Encoding.UTF8.GetBytes(message);
-            channel.BasicPublish(exchange: Exchanges.Notifications,
-                routingKey: Routes.MessageNotification,
-                basicProperties: props,
-                body: body);
+            Send(Routes.MessageNotification, props, body);
         }
 
+        public void Send(string routingKey, JToken body)
+        {
+            var props = channel.CreateBasicProperties();
+            props.Persistent = true;
+            var bodyBytes = Encoding.UTF8.GetBytes(body.ToString());
+            Send(routingKey, props, bodyBytes);
+        }
+
+        public void Send(string routingKey, IBasicProperties properties, byte[] body)
+        {
+            channel.BasicPublish(exchange: Exchanges.Notifications,
+                routingKey: routingKey,
+                basicProperties: properties,
+                body: body);
+        } 
 
         private void OnNotification(object sender, BasicDeliverEventArgs e)
         {

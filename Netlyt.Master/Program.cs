@@ -1,31 +1,32 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using Donut;
 using Donut.Orion;
 using EntityFramework.DbContextScope;
 using EntityFramework.DbContextScope.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using nvoid.db.DB.Configuration;
-using Netlyt.Interfaces;
 using Netlyt.Service;
 using Netlyt.Service.Cloud;
 using Netlyt.Service.Cloud.Interfaces;
 using Netlyt.Service.Data;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
+using nvoid.db.DB.Configuration;
+using Netlyt.Interfaces.Models;
 
 namespace Netlyt.Master
 {
     class Program
     {
         public static IConfigurationRoot Configuration { get; set; }
+        public static IOrionContext OrionContext { get; private set; }
 
         static void Main(string[] args)
         {
-            var serviceProvider = SetupServices();
             Configure();
+            var serviceProvider = SetupServices();
             var server = serviceProvider.GetService<ICloudMasterServer>();//new CloudMasterServer(Configuration);
             var runTask = server.Run();
             Console.WriteLine(" Press [enter] to exit.");
@@ -41,18 +42,20 @@ namespace Netlyt.Master
                 .AddSingleton<ICloudMasterServer, CloudMasterServer>()
                 .AddTransient<IConfiguration>((sp) => Configuration);
             var dbOptions = Configuration.GetDbOptionsBuilder();
-            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
-            Console.WriteLine("Management DB at: " + postgresConnectionString);
-            services.AddDbContext<ManagementDbContext>(options =>
-                {
-                    options.UseNpgsql(postgresConnectionString);
-                    options.UseLazyLoadingProxies();
-                }
-            );
+            services.AddManagementDbContext(Configuration);
             services.AddCache();
+            services.AddIdentity<User, UserRole>()
+                .AddEntityFrameworkStores<ManagementDbContext>()
+                .AddDefaultTokenProviders();
             services.AddTransient<IRateService, RateService>();
+            services.AddTransient<UserService>();
+            services.AddTransient<ApiService>();
+            services.AddTransient<OrganizationService>();
+            services.AddTransient<ModelService>();
+            services.AddTransient<TimestampService>();
             services.AddTransient<IDbContextFactory>((sp) => new DbContextFactory(dbOptions));
             services.AddTransient<IDbContextScopeFactory>((sp) => new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
+            OrionContext = services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { }, false);
 
             var serviceProvider = services.BuildServiceProvider();
             return serviceProvider;

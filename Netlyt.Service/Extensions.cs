@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
@@ -13,6 +15,18 @@ namespace Netlyt.Service
         public static void AddCache(this IServiceCollection services)
         {
             services.AddSingleton<IRedisCacher>(DBConfig.GetInstance().GetCacheContext());
+        }
+
+        public static void AddManagementDbContext(this IServiceCollection services, IConfiguration configuration)
+        {
+            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(configuration);
+            Console.WriteLine("Management DB at: " + postgresConnectionString);
+            services.AddDbContext<ManagementDbContext>(options =>
+                {
+                    options.UseNpgsql(postgresConnectionString);
+                    options.UseLazyLoadingProxies();
+                }
+            );
         }
     }
 }

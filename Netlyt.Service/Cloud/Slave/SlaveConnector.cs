@@ -25,6 +25,11 @@ namespace Netlyt.Service.Cloud.Slave
             get { return notificationClient; }
         }
 
+        public NodeAuthClient AuthenticationClient
+        {
+            get { return authClient; }
+        }
+
         public SlaveConnector(IConfiguration config, NetlytNode node, IRateService rateService)
         {
             this.Id = Guid.NewGuid().ToString();

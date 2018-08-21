@@ -290,5 +290,34 @@ namespace Netlyt.Service
             var userRoles = await _userManager.GetRolesAsync(src);
             return userRoles;
         }
+
+        public async Task<User> GetUserByLogin(string email, string password)
+        {
+            var user = _context.Users.FirstOrDefault(x => x.Email == email);
+            if (user == null)
+            {
+                return null;
+            }
+            var result = await _userManager.CheckPasswordAsync(user, password);
+            if (result)
+            {
+                return user;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public void AddUser(User user)
+        {
+            _context.Users.Add(user);
+            _context.SaveChanges();
+        }
+
+        public User GetUserByEmail(string modelEmail)
+        {
+            return _context.Users.FirstOrDefault(x => x.Email == modelEmail);
+        }
     }
 }
