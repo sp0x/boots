@@ -37,30 +37,27 @@ namespace Netlyt.Service
     {
         //private IFactory<ManagementDbContext> _factory;
         
-        private ApiService _apiService;
         private UserService _userService;
         private TimestampService _timestampService;
-        private IDatabaseConfiguration _dbConfig;
         private IDbContextScopeFactory _contextFactory;
         private IOrionContext _orionContext;
         private IMapper _mapper;
+        private IIntegrationRepository _integrationsRepo;
 
         public IntegrationService(
-            ApiService apiService,
             UserService userService,
             TimestampService tsService,
-            IDatabaseConfiguration dbConfig,
             IDbContextScopeFactory dbContextFactory,
             IOrionContext orionContext,
-            IMapper mapper)
+            IMapper mapper,
+            IIntegrationRepository integrationsRepo)
         {
             _mapper = mapper;
-            _apiService = apiService;
             _userService = userService;
             _timestampService = tsService;
-            _dbConfig = dbConfig;
             _contextFactory = dbContextFactory;
             _orionContext = orionContext;
+            _integrationsRepo = integrationsRepo;
         }
 
         public void SaveOrFetchExisting(ref DataIntegration type)
@@ -225,16 +222,14 @@ namespace Netlyt.Service
 
         public void OnRemoteIntegrationCreated(JToken eBody)
         {
-            throw new NotImplementedException();
+            
         }
 
         public async Task<IntegrationSchemaViewModel> GetSchema(long id)
         {
             using (var context = _contextFactory.Create())
             {
-                var ambientDbContextLocator = new AmbientDbContextLocator();
-                var integrationRepo = new IntegrationRepository(ambientDbContextLocator);
-                var ign = integrationRepo.GetById(id)
+                var ign = _integrationsRepo.GetById(id)
                     .Include(x => x.Fields)
                     .Include(x => x.Models)
                     .ThenInclude(x => x.Model)
@@ -265,9 +260,7 @@ namespace Netlyt.Service
 
             using (var context = _contextFactory.Create())
             {
-                var ambientDbContextLocator = new AmbientDbContextLocator();
-                var integrationRepo = new IntegrationRepository(ambientDbContextLocator);
-                var integration = integrationRepo.GetById(modelData.IntegrationId)
+                var integration = _integrationsRepo.GetById(modelData.IntegrationId)
                     .Include(x => x.Fields)
                     .Include(x => x.Models)
                     .Include(x => x.APIKey)
@@ -279,7 +272,7 @@ namespace Netlyt.Service
                 if (modelData.IdColumn != null && !string.IsNullOrEmpty(modelData.IdColumn.Name))
                 {
                     integration.DataIndexColumn = modelData.IdColumn.Name;
-                    integrationRepo.DbContext.SaveChanges();
+                    context.SaveChanges();
                 }
                 return integration;
             }
@@ -290,14 +283,11 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public IEnumerable<DataIntegration> GetById(long id)
+        public DataIntegration GetById(long id)
         {
-
             using (var context = _contextFactory.Create())
             {
-                var ambientDbContextLocator = new AmbientDbContextLocator();
-                var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
-                return dbContext.Integrations.Where(x => x.Id == id);
+                return _integrationsRepo.GetById(id).FirstOrDefault();
             }
         }
 
@@ -376,10 +366,13 @@ namespace Netlyt.Service
         /// <returns></returns>
         public async Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, string mime = null, string name = null)
         {
-            var options = new DataImportTaskOptions();
-            var apiKey = await _userService.GetCurrentApi();
-            var crUser = await _userService.GetCurrentUser();
-            return await CreateOrAppendToIntegration(inputData, apiKey, crUser, mime, name);
+            using (var context = _contextFactory.Create())
+            {
+                var options = new DataImportTaskOptions();
+                var apiKey = await _userService.GetCurrentApi();
+                var crUser = await _userService.GetCurrentUser();
+                return await CreateOrAppendToIntegration(inputData, apiKey, crUser, mime, name);
+            }
         }
 
         /// <summary>
@@ -478,14 +471,20 @@ namespace Netlyt.Service
         /// <returns></returns>
         public async Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, ApiAuth apiKey, User owner, string mime = null, string name = null)
         {
-            var integrationInfo = CreateIntegrationImportTask(inputData, apiKey, owner, mime, name, out var isNewIntegration, out var importTask);
-            var result = await importTask.Import();
-
-
+            
             using (var context = _contextFactory.Create())
             {
                 var ambientDbContextLocator = new AmbientDbContextLocator();
                 var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
+                if (apiKey != null)
+                {
+                    var dbApikey = dbContext.ApiKeys.FirstOrDefault(x => x.Id == apiKey.Id);
+                    if (dbApikey != null) apiKey = dbApikey;
+                }
+
+                var integrationInfo = CreateIntegrationImportTask(inputData, apiKey, owner, mime, name, out var isNewIntegration, out var importTask);
+                var result = await importTask.Import();
+
                 if (isNewIntegration)
                 {
                     var collection = MongoHelper.GetCollection(integrationInfo.Collection);
@@ -500,10 +499,10 @@ namespace Netlyt.Service
                 {
                     throw e;
                 }
+                return result;
             }
 
             
-            return result;
         }
 
         /// <summary>

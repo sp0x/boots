@@ -614,6 +614,30 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("IntegrationExtra");
                 });
 
+            modelBuilder.Entity("Netlyt.Interfaces.Models.ActionLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<DateTime>("Created");
+
+                    b.Property<string>("InstanceToken");
+
+                    b.Property<string>("Name");
+
+                    b.Property<int>("Type");
+
+                    b.Property<string>("UserId");
+
+                    b.Property<string>("Value");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Logs");
+                });
+
             modelBuilder.Entity("Netlyt.Interfaces.Models.ApiAuth", b =>
                 {
                     b.Property<long>("Id")
@@ -1057,6 +1081,13 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Donut.Data.DataIntegration")
                         .WithMany("Extras")
                         .HasForeignKey("DataIntegrationId");
+                });
+
+            modelBuilder.Entity("Netlyt.Interfaces.Models.ActionLog", b =>
+                {
+                    b.HasOne("Netlyt.Interfaces.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.ApiPermission", b =>

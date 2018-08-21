@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using nvoid.db;
-using nvoid.db.Extensions;
 using Netlyt.Service;
 using Netlyt.Web.Models;
 using System.Threading.Tasks; 
@@ -15,14 +12,9 @@ using Donut;
 using Donut.Data;
 using Donut.Integration;
 using Donut.Orion;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using static Netlyt.Web.Attributes;
-using Microsoft.EntityFrameworkCore;
 using Netlyt.Data.ViewModels;
-using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud;
-using Netlyt.Service.Data;
 using Netlyt.Service.Helpers;
 using Newtonsoft.Json;
 
@@ -37,19 +29,22 @@ namespace Netlyt.Web.Controllers
 
         private IOrionContext _orionContext;
         private INotificationService _notifications;
+        private ICloudNodeService _nodeService;
 
         // GET: /<controller>/
         public IntegrationsController(UserService userService,
             IIntegrationService integrationService,
             IMapper mapper,
             IOrionContext orionContext,
-            INotificationService notificationsService)
+            INotificationService notificationsService,
+            ICloudNodeService nodeService)
         {
             _userService = userService;
             _integrationService = integrationService;
             _mapper = mapper;
             _orionContext = orionContext;
             _notifications = notificationsService;
+            _nodeService = nodeService;
         }
 
         [HttpGet("/integrations/me")]
@@ -171,7 +166,7 @@ namespace Netlyt.Web.Controllers
         [Authorize] 
         public IActionResult Delete(long id)
         {
-            var item = _integrationService.GetById(id).FirstOrDefault();
+            var item = _integrationService.GetById(id);
             if (item == null)
             {
                 return NotFound();
@@ -185,7 +180,13 @@ namespace Netlyt.Web.Controllers
         {
             try
             {
+                var integration = _integrationService.GetById(id);
+                if (integration == null) throw new NotFound();
                 IntegrationSchemaViewModel schema = await _integrationService.GetSchema(id);
+                //if (!_nodeService.ResolveLocal().IsCloud())
+                //{
+                _notifications.SendIntegrationViewed(id);
+                //}
                 return Json(schema);
             }
             catch (NotFound ex)

@@ -117,6 +117,7 @@ namespace Netlyt.Web
             services.AddTransient<INotificationService, NotificationService>();
             services.AddSingleton<ICloudNodeService, CloudNodeService>();
             services.AddSingleton<ISlaveConnector, SlaveConnector>();
+            services.AddRepositories();
             
 
             SetupAuthentication(services);

@@ -4,17 +4,21 @@ using Microsoft.AspNetCore.Http;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
+using Netlyt.Service.Repisitories;
 
 namespace Netlyt.Service
 {
     public class ApiService
     { 
         private IHttpContextAccessor _contextAccessor;
-        private ManagementDbContext _context; 
+        private ManagementDbContext _context;
+        private IApiKeyRepository _apiKeyRepisitory;
 
         public ApiService(ManagementDbContext context,
-            IHttpContextAccessor contextAccessor)
-        { 
+            IHttpContextAccessor contextAccessor,
+            IApiKeyRepository apiKeyRepository)
+        {
+            _apiKeyRepisitory = apiKeyRepository;
             _context = context;
             _contextAccessor = contextAccessor; 
         }
@@ -112,7 +116,8 @@ namespace Netlyt.Service
 
         public IQueryable<ApiUser> GetUserKeys(User user)
         {
-            return _context.Users.Where(x => x.Id == user.Id).SelectMany(x => x.ApiKeys);
+            return _apiKeyRepisitory.GetForUser(user);
+            //return _context.Users.Where(x => x.Id == user.Id).SelectMany(x => x.ApiKeys);
         }
     }
 }

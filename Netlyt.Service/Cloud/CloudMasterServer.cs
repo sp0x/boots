@@ -82,6 +82,7 @@ namespace Netlyt.Service.Cloud
 
         private void NotificationListener_OnIntegrationCreated(object sender, JsonNotification e)
         {
+            _loggingService.OnIntegrationCreated(e.Body);
             _integrations.OnRemoteIntegrationCreated(e.Body);
             NotificationListener.Ack(e);
         }

@@ -15,6 +15,7 @@ using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models.Account;
+using Netlyt.Service.Repisitories;
 using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service
@@ -28,6 +29,7 @@ namespace Netlyt.Service
         private OrganizationService _orgService;
         private ModelService _modelService;
         private ManagementDbContext _context;
+        private IUsersRepository _userRepository;
 
         public UserService(UserManager<User> userManager,
             ApiService apiService,
@@ -35,7 +37,8 @@ namespace Netlyt.Service
             IHttpContextAccessor contextAccessor,
             OrganizationService orgService,
             ModelService modelService,
-            ManagementDbContext context)
+            ManagementDbContext context,
+            IUsersRepository usersRepository)
         {
             if (lfactory != null) _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
             _userManager = userManager;
@@ -44,6 +47,7 @@ namespace Netlyt.Service
             _orgService = orgService;
             _modelService = modelService;
             _context = context;
+            _userRepository = usersRepository;
         }
 
         public IEnumerable<User> GetUsers()
@@ -157,6 +161,7 @@ namespace Netlyt.Service
             var userModel = await _userManager.GetUserAsync(user);
             if (userModel != null)
             {
+                userModel = _userRepository.GetById(userModel.Id).FirstOrDefault();
                 var keys = _apiService.GetUserKeys(userModel);
                 if (keys != null) userModel.ApiKeys = keys?.ToList();
             }
@@ -165,7 +170,7 @@ namespace Netlyt.Service
 
         public User GetUser(string id)
         {
-            return _context.Users.Find(id);
+            return _userRepository.GetById(id).FirstOrDefault();
         }
 
         public async Task<User> GetCurrentUser()

@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Text;
 using AutoMapper;
+using EntityFramework.DbContextScope;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Service.Data;
+using Netlyt.Service.Repisitories;
 
 namespace Netlyt.Service
 {
@@ -19,6 +22,28 @@ namespace Netlyt.Service
             {
                 cfg.AddProfile(new DomainMapProfile(p.GetService<ModelService>(), p.GetService<UserService>()));
             }).CreateMapper());
+        }
+
+        public static void AddRepositories(this IServiceCollection services)
+        {
+            services.AddTransient<IIntegrationRepository, IntegrationRepository>(sp =>
+            {
+                var ctxFactory = sp.GetService<IDbContextScopeFactory>();
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                return new IntegrationRepository(ambientDbContextLocator);
+            });
+            services.AddTransient<IUsersRepository, UserRepository>(sp =>
+            {
+                var ctxFactory = sp.GetService<IDbContextScopeFactory>();
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                return new UserRepository(ambientDbContextLocator);
+            });
+            services.AddTransient<IApiKeyRepository, ApiKeyRepository>(sp =>
+            {
+                var ctxFactory = sp.GetService<IDbContextScopeFactory>();
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                return new ApiKeyRepository(ambientDbContextLocator);
+            });
         }
         public static void AddCache(this IServiceCollection services)
         {

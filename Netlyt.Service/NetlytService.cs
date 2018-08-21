@@ -69,6 +69,7 @@ namespace Netlyt.Service
             //services.AddDomainAutomapper();
             services.AddTransient<TrainingHandler>();
             services.AddSingleton<DonutOrionHandler>();
+            services.AddRepositories();
 
             var backgroundServiceProvider = services.BuildServiceProvider();
             var orionHandler = backgroundServiceProvider.GetOrionHandler();

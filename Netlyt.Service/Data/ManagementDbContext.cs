@@ -34,6 +34,8 @@ namespace Netlyt.Service.Data
         public DbSet<TrainingTask> TrainingTasks { get; set; }
         public DbSet<AggregateKey> AggregateKeys { get; set; }
         public DbSet<ModelTarget> ModelTargets { get; set; }
+        public DbSet<ActionLog> Logs { get; set; }
+
         public static readonly LoggerFactory Logger
             = new LoggerFactory(new[]
             {

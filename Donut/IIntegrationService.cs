@@ -63,7 +63,7 @@ namespace Donut
         Task<DataIntegration> Create(string integrationName, string formatType);
         IInputFormatter<T> ResolveFormatter<T>(string mimeType) where T : class;
 
-        IEnumerable<DataIntegration> GetById(long id);
+        DataIntegration GetById(long id);
         void Remove(DataIntegration importTaskIntegration);
         void SetTargetTypes(DataIntegration ign, JToken description);
         Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask);

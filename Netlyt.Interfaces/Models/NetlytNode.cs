@@ -19,6 +19,11 @@
 
         }
 
+        public bool IsCloud()
+        {
+            return this.Equals(Cloud);
+        }
+
         public NetlytNode(string name) : this()
         {
             this.Name = name;

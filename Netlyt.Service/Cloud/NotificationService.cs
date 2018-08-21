@@ -4,8 +4,12 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using Donut.Integration;
+using EntityFramework.DbContextScope;
+using EntityFramework.DbContextScope.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud.Slave;
+using Netlyt.Service.Data;
+using Netlyt.Service.Repisitories;
 using Newtonsoft.Json.Linq;
 
 namespace Netlyt.Service.Cloud
@@ -13,10 +17,16 @@ namespace Netlyt.Service.Cloud
     public class NotificationService : INotificationService
     {
         private ISlaveConnector _connector;
+        private IIntegrationRepository _integrations;
+        private IDbContextScopeFactory _dbContextFactory;
 
-        public NotificationService(ISlaveConnector connector)
+        public NotificationService(ISlaveConnector connector,
+            IIntegrationRepository integrations,
+            IDbContextScopeFactory dbContextFactory)
         {
             _connector = connector;
+            _integrations = integrations;
+            _dbContextFactory = dbContextFactory;
         }
 
         public void SendNotification(JToken body)
@@ -32,7 +42,8 @@ namespace Netlyt.Service.Cloud
                 username = user.UserName,
                 id = user.Id,
                 email = user.Email,
-                on = DateTime.UtcNow
+                on = DateTime.UtcNow,
+                token = _connector.AuthenticationClient.AuthenticationToken
             });
             _connector.NotificationClient.Send(Routes.UserRegisterNotification, body);
         }
@@ -44,7 +55,8 @@ namespace Netlyt.Service.Cloud
                 username = user.UserName,
                 id = user.Id,
                 email = user.Email,
-                on = DateTime.UtcNow
+                on = DateTime.UtcNow,
+                token = _connector.AuthenticationClient.AuthenticationToken
             });
             _connector.NotificationClient.Send(Routes.UserLoginNotification, body);
         }
@@ -71,15 +83,30 @@ namespace Netlyt.Service.Cloud
                 }),
                 ts_column = newIntegration.DataTimestampColumn,
                 ix_column = newIntegration.DataIndexColumn,
-                on = DateTime.UtcNow
+                on = DateTime.UtcNow,
+                token = _connector.AuthenticationClient.AuthenticationToken
             });
             _connector.NotificationClient.Send(Routes.IntegrationCreated, body);
         }
 
-        public void SendIntegrationViewed(IIntegration viewedIntegration)
+        public void SendIntegrationViewed(long viewedIntegrationId)
         {
-            var body = JObject.FromObject(new {id = viewedIntegration.Id, on = DateTime.UtcNow});
-            _connector.NotificationClient.Send(Routes.IntegrationViewed, body);
+
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                var integration = _integrations.GetById(viewedIntegrationId).FirstOrDefault();
+                var body = JObject.FromObject(new
+                {
+                    id = viewedIntegrationId,
+                    on = DateTime.UtcNow,
+                    user_id = integration.Owner.Id,
+                    name = integration.Name,
+                    token = _connector.AuthenticationClient.AuthenticationToken
+                });
+                _connector.NotificationClient.Send(Routes.IntegrationViewed, body);
+            }
+
+            
         }
 
     }

@@ -9,6 +9,6 @@ namespace Netlyt.Service.Cloud
         void SendRegisteredNotification(User resultItem2);
         void SendLoggedInNotification(User httpContextUser);
         void SendNewIntegrationSummary(IIntegration newIntegration);
-        void SendIntegrationViewed(IIntegration viewedIntegration);
+        void SendIntegrationViewed(long viewedIntegrationId);
     }
 }
