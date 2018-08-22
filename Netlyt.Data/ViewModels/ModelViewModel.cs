@@ -50,6 +50,7 @@ namespace Netlyt.Data.ViewModels
         public bool IsBuilding { get; set; }
         public string Status { get; set; }
         public IEnumerable<ModelBuildViewModel> BuiltTargets { get; set; }
+        public IEnumerable<PermissionViewModel> Permissions {get; set; }
 
     }
 }

@@ -65,6 +65,7 @@ namespace Netlyt.Service
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
+            services.AddTransient<PermissionService>();
             //services.AddDomainAutomapper();
             services.AddTransient<TrainingHandler>();
             services.AddSingleton<DonutOrionHandler>();

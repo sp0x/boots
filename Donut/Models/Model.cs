@@ -44,6 +44,8 @@ namespace Donut.Models
         public string Callback { get; set; }
         public string TrainingParams { get; set; }
         public string HyperParams { get; set; }
+        public virtual ICollection<Permission> Permissions{ get; set; }
+
 
         public Model()
         {
@@ -52,6 +54,8 @@ namespace Donut.Models
             FeatureGenerationTasks = new List<FeatureGenerationTask>();
             TrainingTasks = new List<TrainingTask>();
             Targets = new List<ModelTarget>();
+            Permissions = new HashSet<Permission>();
+
         }
 
         /// <summary>

@@ -102,6 +102,9 @@ namespace Netlyt.Web.Controllers
             var item = _modelService.GetById(id, user);
             if (item == null) return NotFound();
             var status = _modelService.GetModelStatus(item);
+            if (!item.Permissions.Any(x=>x.ShareWith.Id == user.Organization.Id)){
+                return Forbid("You are not authorized to view this model");
+            }
             if (status != Donut.Models.ModelPrepStatus.Done)
             {
                 var resp = Json(new {message = "Try again later.", status = status.ToString().ToLower()});
@@ -135,7 +138,9 @@ namespace Netlyt.Web.Controllers
             if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             var item = _modelService.GetById(id, user);
             if (item == null) return NotFound();
-            
+            if (!item.Permissions.Any(x=>x.ShareWith.Id == user.Organization.Id)){
+                return Forbid("You are not authorized to view this model");
+            }
             var fmi = item.DataIntegrations.FirstOrDefault();
             var fIntegration = _db.Integrations
                 .Include(x=>x.APIKey)
@@ -200,6 +205,9 @@ namespace Netlyt.Web.Controllers
             if (item == null) return BadRequest();
             var user = await _userService.GetCurrentUser();
             var integration = _userService.GetUserIntegration(user, item.DataSource);
+            if (!integration.Permissions.Any(x=>x.ShareWith.Id == user.Organization.Id)){
+                return Forbid("You are not authorized to use this integration for model building");
+            }
             var relations = item.Relations?.Select(x => new FeatureGenerationRelation(x[0], x[1]));
             var targets = new ModelTarget(integration.GetField(item.TargetAttribute));
             //This really needs a builder..
@@ -227,6 +235,9 @@ namespace Netlyt.Web.Controllers
             if (props.Targets == null) return BadRequest("Model targets are required.");
             var user = await _userService.GetCurrentUser();
             var integration = _userService.GetUserIntegration(user, props.IntegrationId);
+            if (!integration.Permissions.Any(x=>x.ShareWith.Id == user.Organization.Id)){
+                return Forbid("You are not authorized to use this integration for model building");
+            }
             var modelName = props.ModelName.Replace(".", "_");
             if (props.IdColumn != null && !string.IsNullOrEmpty(props.IdColumn.Name))
             {

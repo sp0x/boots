@@ -66,7 +66,7 @@ namespace Netlyt.Web.Controllers
         [Authorize]
         public IActionResult GetById(long id, string target, string attr, string script)
         {
-            var item = _integrationService.GetById(id);
+            var item = _integrationService.GetById(id).Include(x=>x.Permissions);
             if (item == null)
             {
                 return NotFound();
@@ -185,6 +185,7 @@ namespace Netlyt.Web.Controllers
         {
             var ign = _integrationService.GetById(id)
                 .Include(x=>x.Fields)
+                .Include(x => x.Permissions)
                 .Include(x=>x.Models)
                 .ThenInclude(x=>x.Model)
                 .ThenInclude(x=>x.Targets)
@@ -193,6 +194,10 @@ namespace Netlyt.Web.Controllers
             if (ign == null)
             {
                 return new NotFoundResult();
+            }
+            var user = _userService.GetCurrentUser();
+            if (!ign.Permissions.Any(x => x.ShareWith.Id == user.Result.Organization.Id)){
+               return Forbid(string.Format("You are not allowed to view this integration"));
             }
             var fields = ign.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
             var schema = new IntegrationSchemaViewModel(ign.Id, fields);

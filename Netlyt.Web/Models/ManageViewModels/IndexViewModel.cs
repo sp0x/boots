@@ -1,13 +1,16 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Netlyt.Data.ViewModels;
 
 namespace Netlyt.Web.Models.ManageViewModels
 {
     public class IndexViewModel
     {
+        public string Id { get; set; }
         public string Username { get; set; }
 
         public bool IsEmailConfirmed { get; set; }
+        public OrganizationViewModel Organization { get; set; }
 
         [Required]
         [EmailAddress]

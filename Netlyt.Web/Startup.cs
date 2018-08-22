@@ -119,10 +119,11 @@ namespace Netlyt.Web
             services.AddTransient<TimestampService>();
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
+            services.AddTransient<PermissionService>();
             services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
             services.AddTransient<INotificationService, NotificationService>();
-            services.AddSingleton<NetlytNode>(x => Helpers.GetLocalNode());
+            services.AddSingleton<NetlytNode>(x => null);
             services.AddSingleton<ISlaveConnector, SlaveConnector>();
             
 

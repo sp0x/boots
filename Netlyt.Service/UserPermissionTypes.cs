@@ -9,5 +9,6 @@ namespace Netlyt.Service
         public const string PERMISSION_SET_FILE = "permission.set.forfile";
         public const string PREDICTION_PREDICT = "prediction.predict";
         public const string PROJECT_EXPORT = "project.export";
+        public const string USE_INTEGRATION = "integration.buildModel";
     }
 }

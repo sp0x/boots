@@ -15,4 +15,12 @@ namespace Netlyt.Data.ViewModels
         public string DataFormatType { get; set; }
         public string OriginType { get; set; }
     }
+
+    public class NewPermissionViewModel{
+        public string Org { get; set; }
+        public bool CanRead { get; set; }
+        public bool CanModify { get; set; }
+        public string ObjectType { get; set; }
+        public long ObjectId { get; set; }
+    }
 }
