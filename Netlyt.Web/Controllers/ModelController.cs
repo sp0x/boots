@@ -66,7 +66,8 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/model/mymodels/{type}")]
         public async Task<IEnumerable<ModelViewModel>> GetAll([FromQuery] int page, string type)
         {
-            var userModels = await _userService.GetMyModels(page, 200);
+            var user = await _userService.GetCurrentUser();
+            var userModels = _modelService.GetAllForUser(user, page, 200);
             if (type == "building")
             {
                 userModels = userModels.Where(x =>
@@ -225,23 +226,8 @@ namespace Netlyt.Web.Controllers
             if (props == null) return BadRequest();
             if (string.IsNullOrEmpty(props.ModelName)) return BadRequest("Model name is required.");
             if (props.Targets == null) return BadRequest("Model targets are required.");
-            var user = await _userService.GetCurrentUser();
-            var integration = _userService.GetUserIntegration(user, props.IntegrationId);
-            var modelName = props.ModelName.Replace(".", "_");
-            if (props.IdColumn != null && !string.IsNullOrEmpty(props.IdColumn.Name))
-            {
-                integration.DataIndexColumn = props.IdColumn.Name;
-                _db.SaveChanges();
-            }
-            var targets = props.Targets.ToModelTargets(integration);//new ModelTarget(integration.GetField(modelData.Target.Name));
-            var newModel = await _modelService.CreateModel(user,
-                modelName,
-                new List<DataIntegration>(new[] { integration }),
-                props.CallbackUrl,
-                props.GenerateFeatures,
-                null,
-                integration.GetFields(props.FeatureCols),
-                targets.ToArray());
+
+            Model newModel = await _modelService.CreateEmptyModel(props);
             return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
         }
 
@@ -461,7 +447,8 @@ namespace Netlyt.Web.Controllers
         [HttpDelete("/model/{id}")]
         public async Task<IActionResult> Delete(long id)
         {
-            await _userService.DeleteModel(id);
+            var user = await _userService.GetCurrentUser();
+            _modelService.DeleteModel(user, id);
             return new NoContentResult();
         }
 

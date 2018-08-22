@@ -16,5 +16,6 @@ namespace Donut
         Task<string> ToPythonModule(DonutScriptInfo donut);
         string GetSnippet(User user, TrainingTask trainingTask, string language);
         Dictionary<string,string> GetSnippets(User user, TrainingTask trainingTask);
+        Task<Tuple<string, DonutScriptInfo>> GeneratePythonModule(long id, User user);
     }
 }

@@ -70,5 +70,6 @@ namespace Donut
         void OnRemoteIntegrationCreated(JToken eBody);
         Task<IntegrationSchemaViewModel> GetSchema(long id);
         Task<DataIntegration> GetIntegrationForAutobuild(CreateAutomaticModelViewModel modelData);
+        void SetIndexColumn(DataIntegration integration, string idColumnName);
     }
 }

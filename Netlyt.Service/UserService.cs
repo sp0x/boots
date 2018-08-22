@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Donut.Models;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -27,25 +28,28 @@ namespace Netlyt.Service
         private ApiService _apiService;
         private IHttpContextAccessor _contextAccessor;
         private OrganizationService _orgService;
-        private ModelService _modelService;
+        //private ModelService _modelService;
         private ManagementDbContext _context;
         private IUsersRepository _userRepository;
+        private IDbContextScopeFactory _contextScope;
 
         public UserService(UserManager<User> userManager,
             ApiService apiService,
             ILoggerFactory lfactory,
             IHttpContextAccessor contextAccessor,
             OrganizationService orgService,
-            ModelService modelService,
+            //ModelService modelService,
             ManagementDbContext context,
-            IUsersRepository usersRepository)
+            IUsersRepository usersRepository,
+            IDbContextScopeFactory contextScope)
         {
             if (lfactory != null) _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
+            _contextScope = contextScope;
             _userManager = userManager;
             _apiService = apiService;
             _contextAccessor = contextAccessor;
             _orgService = orgService;
-            _modelService = modelService;
+            //_modelService = modelService;
             _context = context;
             _userRepository = usersRepository;
         }
@@ -159,11 +163,14 @@ namespace Netlyt.Service
         public async Task<User> GetUser(ClaimsPrincipal user)
         {
             var userModel = await _userManager.GetUserAsync(user);
-            if (userModel != null)
+            using (var ctxSrc = _contextScope.Create())
             {
-                userModel = _userRepository.GetById(userModel.Id).FirstOrDefault();
-                var keys = _apiService.GetUserKeys(userModel);
-                if (keys != null) userModel.ApiKeys = keys?.ToList();
+                if (userModel != null)
+                {
+                    userModel = _userRepository.GetById(userModel.Id).FirstOrDefault();
+                    var keys = _apiService.GetUserKeys(userModel);
+                    if (keys != null) userModel.ApiKeys = keys?.ToList();
+                }
             }
             return userModel;
         }
@@ -180,30 +187,22 @@ namespace Netlyt.Service
             return userObj;
         }
 
-        public async Task<IEnumerable<Model>> GetMyModels(int page, int pageSize = 25)
-        {
-            var myuser = await this.GetCurrentUser();
-            return _modelService.GetAllForUser(myuser, page, pageSize);
-        }
-
-        public async Task DeleteModel(long id)
-        {
-            var cruser = await GetCurrentUser();
-            _modelService.DeleteModel(cruser, id);
-        }
-
         /// <summary>
         /// Gets the current user's first api key.
         /// </summary>
         /// <returns></returns>
         public async Task<ApiAuth> GetCurrentApi() 
         {
-            var crUser = await GetCurrentUser();
-            if (crUser == null) return null;
-            var api = crUser.ApiKeys.ToList().FirstOrDefault();
-            if (api == null) return null;
-            var apiObj = _context.ApiKeys.FirstOrDefault(x=>x.Id == api.ApiId);
-            return apiObj;
+            using (var contextSrc = _contextScope.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var crUser = await GetCurrentUser();
+                if (crUser == null) return null;
+                var api = crUser.ApiKeys.ToList().FirstOrDefault();
+                if (api == null) return null;
+                var apiObj = context.ApiKeys.FirstOrDefault(x => x.Id == api.ApiId);
+                return apiObj;
+            }
         }
 
         public async Task<IEnumerable<DataIntegration>> GetIntegrations(User user, int page, int pageSize)
@@ -238,11 +237,16 @@ namespace Netlyt.Service
         public DataIntegration GetUserIntegration(User user, long id)
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
-            var integration = _context.Integrations.FirstOrDefault(x => x.APIKey != null
-                                                                        && (user.ApiKeys.Any(y => y.ApiId == x.APIKey.Id)
-                                                                            || user.ApiKeys.Any(y => y.ApiId == x.PublicKeyId))
-                                                                        && x.Id == id);
-            return integration;
+            using (var ctxSrc = _contextScope.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var userApiKeys = context.ApiUsers.Where(x => x.UserId == user.Id);
+                var integration = context.Integrations.FirstOrDefault(x => x.APIKey != null
+                                                                            && (userApiKeys.Any(y => y.ApiId == x.APIKey.Id)
+                                                                                || userApiKeys.Any(y => y.ApiId == x.PublicKeyId))
+                                                                            && x.Id == id);
+                return integration;
+            }
         }
 
 
@@ -324,5 +328,6 @@ namespace Netlyt.Service
         {
             return _context.Users.FirstOrDefault(x => x.Email == modelEmail);
         }
+
     }
 }

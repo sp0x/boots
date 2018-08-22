@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Donut;
 using Donut.Data;
 using Donut.Integration;
 using Donut.Lex.Data;
@@ -10,12 +11,15 @@ using Donut.Lex.Expressions;
 using Donut.Models;
 using Donut.Orion;
 using Donut.Source;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models;
+using Netlyt.Service.Repisitories;
 using Newtonsoft.Json.Linq;
 using DataIntegration = Donut.Data.DataIntegration;
 
@@ -30,6 +34,12 @@ namespace Netlyt.Service
         private ManagementDbContext _dbContext;
         private IRedisCacher _cacher;
         private IRateService _rateService;
+        private UserService _userService;
+        private IIntegrationService _integrationService;
+        private IDbContextScopeFactory _dbContextFactory;
+        private IModelRepository _modelRepository;
+        private IDonutRepository _donutRepository;
+
 
         public ModelService(ManagementDbContext context,
             IOrionContext orionContext,
@@ -37,8 +47,15 @@ namespace Netlyt.Service
             TimestampService timestampService,
             ManagementDbContext dbContext,
             IRedisCacher cacher,
-            IRateService rateService)
+            IRateService rateService,
+            UserService userService,
+            IIntegrationService integrationService,
+            IDbContextScopeFactory dbContextFactory,
+            IModelRepository modelRepository,
+            IDonutRepository donutRepository)
         {
+            _integrationService = integrationService;
+            _userService = userService;
             _contextAccessor = ctxAccessor;
             _context = context;
             _orion = orionContext;
@@ -46,6 +63,9 @@ namespace Netlyt.Service
             _dbContext = dbContext;
             _cacher = cacher;
             _rateService = rateService;
+            _dbContextFactory = dbContextFactory;
+            _modelRepository = modelRepository;
+            _donutRepository = donutRepository;
         }
 
         public IEnumerable<Model> GetAllForUser(User user, int page, int pageSize = 25)
@@ -88,50 +108,46 @@ namespace Netlyt.Service
             params ModelTarget[] targets
             )
         {
-            var newModel = new Model() { UseFeatures = generateFeatures, ModelName = name, Callback = callbackUrl };
-            newModel.UserId = user.Id;
-            newModel.APIKey = user.ApiKeys.Select(x=>x.Api).FirstOrDefault();
-            newModel.PublicKey = ApiAuth.Generate();
-            newModel.Targets = new List<ModelTarget>(targets);
-            newModel.CreatedOn = DateTime.UtcNow;
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                var newModel = new Model() { UseFeatures = generateFeatures, ModelName = name, Callback = callbackUrl };
+                newModel.UserId = user.Id;
+                newModel.APIKey = user.ApiKeys.Select(x => x.Api).FirstOrDefault();
+                newModel.PublicKey = ApiAuth.Generate();
+                newModel.Targets = new List<ModelTarget>(targets);
+                newModel.CreatedOn = DateTime.UtcNow;
 
-            if (integrations != null)
-            {
-                newModel.DataIntegrations = integrations.Select(ign => new ModelIntegration(newModel, DataIntegration.Wrap(ign))).ToList(); 
-            }
-            _context.Models.Add(newModel);
-            try
-            {
-                _context.SaveChanges();
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                throw new Exception("Could not create a new model!");
-            }
-            if (generateFeatures)
-            {
-                await GenerateFeatures(newModel, relations, selectedFields, targets);
-            }
-            else
-            {
-                var script = GenerateDonutScriptForModel(newModel, selectedFields);
-                newModel.SetScript(script);
-            }
+                if (integrations != null)
+                {
+                    newModel.DataIntegrations = integrations.Select(ign => new ModelIntegration(newModel, DataIntegration.Wrap(ign))).ToList();
+                }
+                _modelRepository.Add(newModel);
+                if (generateFeatures)
+                {
+                    await GenerateFeatures(newModel, relations, selectedFields, targets);
+                }
+                else
+                {
+                    var script = GenerateDonutScriptForModel(newModel, selectedFields);
+                    newModel.SetScript(script);
+                    _donutRepository.Add(newModel.DonutScript);
+                }
 
-            var targetParsingQuery = OrionQuery.Factory.CreateTargetParsingQuery(newModel);
-            var targetsInfo = await _orion.Query(targetParsingQuery);
-            ParseTargetTasksTypes(newModel, targetsInfo);
-            try
-            {
-                _context.SaveChanges();
+                var targetParsingQuery = OrionQuery.Factory.CreateTargetParsingQuery(newModel);
+                var targetsInfo = await _orion.Query(targetParsingQuery);
+                ParseTargetTasksTypes(newModel, targetsInfo);
+                try
+                {
+                    contextSrc.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine(ex.Message);
+                    throw new Exception("Could not create a new model!");
+                }
+
+                return newModel;
             }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.Message);
-                throw new Exception("Could not create a new model!");
-            }
-            return newModel;
         }
 
         private void ParseTargetTasksTypes(Model newModel, JToken targetsInfo)
@@ -345,7 +361,7 @@ namespace Netlyt.Service
             target.Model.TrainingTasks.Add(tt);
             return tt;
         }
-
+        
         public TrainingTask GetBuildById(long buildId, User user)
         {
             var task = this._context.TrainingTasks.FirstOrDefault(x => x.Id == buildId && x.Model.User == user);
@@ -361,7 +377,30 @@ namespace Netlyt.Service
         {
             return $"http://predict.netlyt.com/";
         }
-        
 
+
+        public async Task<Model> CreateEmptyModel(CreateEmptyModelViewModel props)
+        {
+            var modelName = props.ModelName.Replace(".", "_");
+            using (var ctxSource = _dbContextFactory.Create())
+            {
+                var user = await _userService.GetCurrentUser();
+                var integration = _userService.GetUserIntegration(user, props.IntegrationId);
+                if (props.IdColumn != null && !string.IsNullOrEmpty(props.IdColumn.Name))
+                {
+                    _integrationService.SetIndexColumn(integration, props.IdColumn.Name);
+                }
+                var targets = props.Targets.ToModelTargets(integration);//new ModelTarget(integration.GetField(modelData.Target.Name));
+                var newModel = await CreateModel(user,
+                    modelName,
+                    new List<DataIntegration>(new[] { integration }),
+                    props.CallbackUrl,
+                    props.GenerateFeatures,
+                    null,
+                    integration.GetFields(props.FeatureCols),
+                    targets.ToArray());
+                return newModel;
+            }
+        }
     }
 }

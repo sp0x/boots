@@ -10,10 +10,13 @@ using Donut.FeatureGeneration;
 using Donut.Lex.Data;
 using Donut.Models;
 using Donut.Orion;
+using EntityFramework.DbContextScope.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
+using Netlyt.Service.Repisitories;
 
 namespace Netlyt.Service
 {
@@ -21,10 +24,16 @@ namespace Netlyt.Service
     public class DonutService : IDonutService
     {
         private IOrionContext _orion;
+        private IDbContextScopeFactory _dbContextFactory;
+        private IModelRepository _modelRepository;
 
-        public DonutService(IOrionContext orion)
+        public DonutService(IOrionContext orion,
+            IDbContextScopeFactory dbContextFactory,
+            IModelRepository modelRepository)
         {
             _orion = orion;
+            _dbContextFactory = dbContextFactory;
+            _modelRepository = modelRepository;
         }
 
         public string GetInferenceUrl()
@@ -98,6 +107,26 @@ float Predict(){
             output["cs"] = GetSnippet(user, trainingTask, "cs");
             output["python"] = GetSnippet(user, trainingTask, "python");
             return output;
+        }
+
+        public async Task<Tuple<string, DonutScriptInfo>> GeneratePythonModule(long id, User user)
+        {
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                var item = _modelRepository.GetById(id)
+                    .Include(x=>x.DonutScript)
+                    .Include(x=>x.User)
+                    .FirstOrDefault();
+                if (item == null) throw new NotFound();
+                if (item.User.Id != user.Id)
+                {
+                    throw new InvalidOperationException("Only owners of models can create python modules for them.");
+                }
+                var donut = (DonutScriptInfo)item.DonutScript;
+                if (donut == null) throw new NotFound();
+                var pythonCode = await ToPythonModule(donut);
+                return new Tuple<string, DonutScriptInfo>(pythonCode, donut);
+            }
         }
 
         public async Task<IHarvesterResult> RunExtraction(DonutScript script, DataIntegration integration, IServiceProvider serviceProvider)

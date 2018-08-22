@@ -277,6 +277,19 @@ namespace Netlyt.Service
                 return integration;
             }
         }
+        
+        public void SetIndexColumn(DataIntegration integration, string idColumnName)
+        {
+            using (var ctxSrc = _contextFactory.Create())
+            {
+                integration = _integrationsRepo.GetById(integration.Id).FirstOrDefault();
+                if (integration != null)
+                {
+                    integration.DataIndexColumn = idColumnName;
+                    ctxSrc.SaveChanges();
+                }
+            }
+        }
 
         /// <summary>
         /// 

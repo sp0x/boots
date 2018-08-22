@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
 using Donut;
@@ -14,7 +15,7 @@ namespace Netlyt.Service
 {
     public class DomainMapProfile : Profile
     {
-        public DomainMapProfile(ModelService modelService, UserService userService)
+        public DomainMapProfile(IServiceProvider services)
         {
             CreateMap<ApiAuth, AuthKeyViewModel>()
                 .ForMember(x=>x.Secret, opt=>opt.MapFrom(src=>src.AppSecret))
@@ -38,6 +39,7 @@ namespace Netlyt.Service
             CreateMap<Model, ModelViewModel>()
                 .ForMember(x => x.BuiltTargets, opt => opt.ResolveUsing(src =>
                 {
+                    var modelService = services.GetService(typeof(ModelService)) as ModelService;
                     var output = new List<ModelBuildViewModel>();
                     var sourceTargets = src.TrainingTasks
                         .Where(tt => tt.Status == TrainingTaskStatus.Done)
@@ -70,8 +72,16 @@ namespace Netlyt.Service
                     return output;
                 }))
                 .ForMember(x => x.Status,
-                    opt => opt.ResolveUsing(src => { return modelService.GetModelStatus(src).ToString(); }))
-                .ForMember(x => x.IsBuilding, opt => opt.ResolveUsing(src => modelService.IsBuilding(src)));
+                    opt => opt.ResolveUsing(src =>
+                    {
+                        var modelService = services.GetService(typeof(ModelService)) as ModelService;
+                        return modelService.GetModelStatus(src).ToString();
+                    }))
+                .ForMember(x => x.IsBuilding, opt => opt.ResolveUsing(src =>
+                {
+                    var modelService = services.GetService(typeof(ModelService)) as ModelService;
+                    return modelService.IsBuilding(src);
+                }));
             CreateMap<ApiAuth, ApiAuthViewModel>()
                 .ForMember(x => x.AppId, opt => opt.MapFrom(src => src.AppId));
             CreateMap<ApiUser, ApiAuthViewModel>()
@@ -84,11 +94,13 @@ namespace Netlyt.Service
             CreateMap<User, UsersViewModel>()
                 .ForMember(x=>x.Roles, opt=>opt.ResolveUsing(src =>
                 {
+                    var userService = services.GetService(typeof(UserService)) as UserService;
                     return userService.GetRoles(src).Result;
                 }));
             CreateMap<User, UserPreviewViewModel>()
                 .ForMember(x => x.Roles, opt => opt.ResolveUsing(src =>
                 {
+                    var userService = services.GetService(typeof(UserService)) as UserService;
                     return userService.GetRoles(src).Result;
                 }));
         }
