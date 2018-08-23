@@ -40,19 +40,28 @@ namespace Netlyt.Service
         private IOrionContext _orionContext;
         private IMapper _mapper;
         private IIntegrationRepository _integrationsRepo;
+        private IUsersRepository _users;
+        private IApiKeyRepository _keysRepository;
+        private PermissionService _permissionService;
 
         public IntegrationService(
             TimestampService tsService,
             IDbContextScopeFactory dbContextFactory,
             IOrionContext orionContext,
             IMapper mapper,
-            IIntegrationRepository integrationsRepo)
+            IIntegrationRepository integrationsRepo,
+            IUsersRepository users,
+            IApiKeyRepository keys,
+            PermissionService permissionService)
         {
+            _keysRepository = keys;
             _mapper = mapper;
             _timestampService = tsService;
             _contextFactory = dbContextFactory;
             _orionContext = orionContext;
             _integrationsRepo = integrationsRepo;
+            _users = users;
+            _permissionService = permissionService;
         }
 
         /// <summary>
@@ -343,6 +352,22 @@ namespace Netlyt.Service
             }
         }
 
+        public async Task<IntegrationViewModel> GetIntegrationView(User user, long id)
+        {
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var ign = _integrationsRepo.GetById(id).FirstOrDefault();
+                var schema = await GetSchema(user, id);
+                var output = new IntegrationViewModel();
+                output.Schema = schema;
+                output.UserIsOwner = ign.Owner.Id == user.Id;
+                output.AccessLog = new List<AccessLogViewModel>();
+                output.Permissions = ign.Permissions.Select(x => _mapper.Map<PermissionViewModel>(x)).ToList();
+                return output;
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -438,7 +463,6 @@ namespace Netlyt.Service
         {
             using (var context = _contextFactory.Create())
             {
-                var options = new DataImportTaskOptions();
                 //var apiKey = await _userService.GetCurrentApi();
                 //var crUser = await _userService.GetCurrentUser();
                 return await CreateOrAppendToIntegration(inputData, apiKey, user, mime, name);
@@ -544,8 +568,12 @@ namespace Netlyt.Service
             
             using (var context = _contextFactory.Create())
             {
+                owner = _users.GetById(owner.Id).FirstOrDefault();
+                apiKey = _keysRepository.GetById(apiKey.Id);
+
                 var ambientDbContextLocator = new AmbientDbContextLocator();
                 var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
+                
                 if (apiKey != null)
                 {
                     var dbApikey = dbContext.ApiKeys.FirstOrDefault(x => x.Id == apiKey.Id);
@@ -559,11 +587,25 @@ namespace Netlyt.Service
                 {
                     var collection = MongoHelper.GetCollection(integrationInfo.Collection);
                     await importTask.Encode(collection);
+                    integrationInfo.Permissions.Add(new Permission
+                    {
+                        Owner = owner.Organization,
+                        ShareWith = owner.Organization,
+                        CanRead = true,
+                        CanModify = true
+                    });
                     dbContext.Integrations.Add(integrationInfo);
+                    
                 }
+
                 try
                 {
                     dbContext.SaveChanges(); //Save any changes done to the integration.
+                }
+                catch (DbUpdateException dbe)
+                {
+                    if (!string.IsNullOrEmpty(dbe?.InnerException?.Message)) Console.WriteLine(dbe.InnerException.Message);
+                    throw dbe;
                 }
                 catch (Exception e)
                 {

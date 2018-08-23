@@ -11,10 +11,10 @@ namespace Netlyt.Service.Cloud
     {
         void SendRegisteredNotification(User resultItem2);
         void SendLoggedInNotification(User httpContextUser);
-        void SendNewIntegrationSummary(IIntegration newIntegration);
-        void SendIntegrationViewed(long viewedIntegrationId);
-        void SendModelCreated(Model newModel);
-        void SendModelBuilding(Model model, JToken trainingTask);
-        void SendModelTrained(Model model, List<ModelTrainingPerformance> targetPerformances);
+        void SendNewIntegrationSummary(IIntegration newIntegration, User user);
+        void SendIntegrationViewed(long viewedIntegrationId, string userId);
+        void SendModelCreated(Model newModel, User user);
+        void SendModelBuilding(Model model, User user, JToken trainingTask);
+        void SendModelTrained(Model model, User user, List<ModelTrainingPerformance> targetPerformances);
     }
 }

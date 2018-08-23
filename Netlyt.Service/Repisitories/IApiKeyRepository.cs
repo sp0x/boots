@@ -7,5 +7,6 @@ namespace Netlyt.Service.Repisitories
     public interface IApiKeyRepository
     {
         IQueryable<ApiUser> GetForUser(User id);
+        ApiAuth GetById(long apiKeyId);
     }
 }

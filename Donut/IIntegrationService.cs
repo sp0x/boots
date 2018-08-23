@@ -74,5 +74,6 @@ namespace Donut
         Task<IntegrationSchemaViewModel> GetSchema(User user,long id);
         Task<DataIntegration> GetIntegrationForAutobuild(CreateAutomaticModelViewModel modelData);
         void SetIndexColumn(DataIntegration integration, string idColumnName);
+        Task<IntegrationViewModel> GetIntegrationView(User user, long id);
     }
 }

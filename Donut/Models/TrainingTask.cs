@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Donut.Data;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 
 namespace Donut.Models
 {
@@ -26,5 +27,6 @@ namespace Donut.Models
         public string TypeInfo { get; set; }
         public DateTime CreatedOn { get; set; }
         public DateTime UpdatedOn { get; set; }
+        public virtual User User { get; set; }
     }
 }

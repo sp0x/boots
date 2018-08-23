@@ -96,13 +96,7 @@ namespace Netlyt.Web
             services.AddTransient<ICloudTaskService, CloudTaskService>();
             services.AddTransient<IDbContextFactory>((sp) => new DbContextFactory(dbOptions));
             services.AddTransient<IDbContextScopeFactory>((sp) => new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
-
-            services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
-                new DynamicContextFactory(() =>
-                {
-                    return new ManagementDbContext(dbOptions.Options);
-                })
-            );
+            
             services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
             services.AddTransient<IRateService, RateService>();
             services.AddTransient<ApiService>();
@@ -112,9 +106,7 @@ namespace Netlyt.Web
             services.AddTransient<PermissionService>();
             services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
-            services.AddTransient<INotificationService, NotificationService>();
-            services.AddSingleton<ICloudNodeService, CloudNodeService>();
-            services.AddSingleton<ISlaveConnector, SlaveConnector>();
+            services.AddCloudComs();
             services.AddRepositories();
             
 

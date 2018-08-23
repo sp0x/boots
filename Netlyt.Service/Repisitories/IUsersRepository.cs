@@ -6,5 +6,6 @@ namespace Netlyt.Service.Repisitories
     public interface IUsersRepository
     {
         IQueryable<User> GetById(string id);
+        User GetByUsername(string toString);
     }
 }

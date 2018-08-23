@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using Donut.Models;
 using EntityFramework.DbContextScope.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 
 namespace Netlyt.Service.Repisitories
@@ -34,6 +35,10 @@ namespace Netlyt.Service.Repisitories
             return DbContext.Models.Where(x => x.Id == id);
         }
 
+        public IQueryable<Model> GetById(long id, User user)
+        {
+            return DbContext.Models.Where(x => x.Id == id && x.UserId == user.Id);
+        }
         public void Add(Model newModel)
         {
             try

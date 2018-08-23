@@ -33,5 +33,10 @@ namespace Netlyt.Service.Repisitories
         {
             return DbContext.Users.Where(x => x.Id == user.Id).SelectMany(x => x.ApiKeys);
         }
+
+        public ApiAuth GetById(long apiKeyId)
+        {
+            return DbContext.ApiKeys.FirstOrDefault(x => x.Id == apiKeyId);
+        }
     }
 }

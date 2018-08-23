@@ -13,6 +13,8 @@ using nvoid.db.DB.Configuration;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Cloud;
+using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Data;
 using Netlyt.Service.Repisitories;
 
@@ -58,6 +60,13 @@ namespace Netlyt.Service
             }).CreateMapper());
         }
 
+        public static void AddCloudComs(this IServiceCollection services)
+        {
+            services.AddTransient<INotificationService, NotificationService>();
+            services.AddSingleton<ICloudNodeService, CloudNodeService>();
+            services.AddTransient<ICloudTaskService, CloudTaskService>();
+            services.AddSingleton<ISlaveConnector, SlaveConnector>();
+        }
         public static void AddRepositories(this IServiceCollection services)
         {
             services.AddTransient<IIntegrationRepository, IntegrationRepository>(sp =>
@@ -88,6 +97,7 @@ namespace Netlyt.Service
 
         public static void AddManagementDbContext(this IServiceCollection services, IConfiguration configuration)
         {
+            var dbOptions = configuration.GetDbOptionsBuilder();
             var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(configuration);
             Console.WriteLine("Management DB at: " + postgresConnectionString);
             services.AddDbContext<ManagementDbContext>(options =>
@@ -95,6 +105,12 @@ namespace Netlyt.Service
                     options.UseNpgsql(postgresConnectionString);
                     options.UseLazyLoadingProxies();
                 }
+            );
+            services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
+                new DynamicContextFactory(() =>
+                {
+                    return new ManagementDbContext(dbOptions.Options);
+                })
             );
         }
 

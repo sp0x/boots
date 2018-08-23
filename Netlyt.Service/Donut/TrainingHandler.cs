@@ -78,7 +78,7 @@ namespace Netlyt.Service.Donut
                 var mailMessage = $"Model training for {model.ModelName} is now complete." +
                                   $"Get your results here: {endpoint}";
                 await _emailService.SendEmailAsync(model.User.Email, "Training complete.", mailMessage);
-                _notifications.SendModelTrained(model, targetPerformances);
+                _notifications.SendModelTrained(model, completedTasks.FirstOrDefault()?.User , targetPerformances);
             }
             catch (Exception ex)
             {

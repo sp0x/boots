@@ -93,5 +93,11 @@ namespace Netlyt.Service
                 return null;
             }
         }
+
+        public User GetUserByUsername(string username)
+        {
+            var user = _context.Users.FirstOrDefault(x => x.UserName == username);
+            return user;
+        }
     }
 }

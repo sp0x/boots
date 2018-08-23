@@ -19,7 +19,7 @@ namespace Netlyt.Web.Controllers
     {
         private UserManager<User> _userManager;
         private IUserManagementService _userService;
-        private RateService _rateService;
+        private IRateService _rateService;
 
         [TempData]
         public string StatusMessage { get; set; }
@@ -27,7 +27,7 @@ namespace Netlyt.Web.Controllers
         public DashboardController(
             IUserManagementService userService,
             UserManager<User> userManager,
-            RateService rateService)
+            IRateService rateService)
         {
             _userService = userService;
             _userManager = userManager;
@@ -50,7 +50,12 @@ namespace Netlyt.Web.Controllers
                 IsEmailConfirmed = user.EmailConfirmed,
                 StatusMessage = StatusMessage,
                 Roles = roles,
-                Id = user.Id
+                Id = user.Id,
+                Organization = new Data.ViewModels.OrganizationViewModel
+                {
+                    Id = user.Organization.Id,
+                    Name = user.Organization.Name
+                }
             };
             return Json(model);
         }
@@ -65,8 +70,7 @@ namespace Netlyt.Web.Controllers
             }
             var allowed = _rateService.GetAllowed(user);
             var usage = _rateService.GetCurrentUsageForUser(user);
-            var used = allowed - usage;
-            var quota = new {Used=used, Total=allowed};
+            var quota = new {Used= usage, Total=allowed, Left=allowed-usage};
             return Json(new {usage, quota});
         }
     }

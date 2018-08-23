@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud.Auth;
 using Netlyt.Service.Cloud.Interfaces;
+using Netlyt.Service.Repisitories;
 using Newtonsoft.Json.Linq;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -19,10 +20,11 @@ namespace Netlyt.Service.Cloud.Slave
         private IModel _channel;
         public QueueDeclareOk CallbackQueue { get; private set; }
         public event EventHandler<AuthenticationResponse> OnAuthenticated;
-        public string AuthenticationToken { get; private set; }
+        public string AuthenticationToken { get; private set; } 
 
         private ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>> _requests;
         private EventingBasicConsumer _callbackConsumer;
+        private IUsersRepository _users;
 
         /// <summary>
         /// 
@@ -237,6 +239,7 @@ namespace Netlyt.Service.Cloud.Slave
             var body = Encoding.ASCII.GetBytes(authPayloadStr);
             return body;
         }
+         
     }
 
 }

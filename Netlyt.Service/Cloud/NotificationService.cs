@@ -16,15 +16,18 @@ namespace Netlyt.Service.Cloud
         private ISlaveConnector _connector;
         private IIntegrationRepository _integrations;
         private IDbContextScopeFactory _dbContextFactory;
+        private IModelRepository _models;
 
         public NotificationService(
             ISlaveConnector connector,
             IIntegrationRepository integrations,
-            IDbContextScopeFactory dbContextFactory)
+            IDbContextScopeFactory dbContextFactory,
+            IModelRepository models)
         {
             _connector = connector;
             _integrations = integrations;
             _dbContextFactory = dbContextFactory;
+            _models = models;
         }
 
         public void SendNotification(JToken body)
@@ -63,12 +66,12 @@ namespace Netlyt.Service.Cloud
         /// 
         /// </summary>
         /// <param name="newIntegration"></param>
-        public void SendNewIntegrationSummary(IIntegration newIntegration)
+        public void SendNewIntegrationSummary(IIntegration newIntegration, User user)
         {
             var body = JObject.FromObject(new
             {
-                username = newIntegration.Owner.UserName,
-                user_id = newIntegration.Owner.Id,
+                username = user.UserName,
+                user_id = user.Id,
                 name = newIntegration.Name,
                 id = newIntegration.Id,
                 fields = newIntegration.Fields.Select(x => new
@@ -87,9 +90,8 @@ namespace Netlyt.Service.Cloud
             _connector.NotificationClient.Send(Routes.IntegrationCreated, body);
         }
 
-        public void SendIntegrationViewed(long viewedIntegrationId)
+        public void SendIntegrationViewed(long viewedIntegrationId, string userId)
         {
-
             using (var contextSrc = _dbContextFactory.Create())
             {
                 var integration = _integrations.GetById(viewedIntegrationId).FirstOrDefault();
@@ -97,7 +99,7 @@ namespace Netlyt.Service.Cloud
                 {
                     id = viewedIntegrationId,
                     on = DateTime.UtcNow,
-                    user_id = integration.Owner.Id,
+                    user_id = userId,
                     name = integration.Name,
                     token = _connector.AuthenticationClient.AuthenticationToken
                 });
@@ -107,19 +109,55 @@ namespace Netlyt.Service.Cloud
             
         }
 
-        public void SendModelCreated(Model newModel)
+        public void SendModelCreated(Model newModel, User user)
         {
-            throw new NotImplementedException();
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                newModel = _models.GetById(newModel.Id).FirstOrDefault();
+                var body = JObject.FromObject(new
+                {
+                    id = newModel.Id,
+                    on = DateTime.UtcNow,
+                    user_id = user.Id,
+                    name = newModel.ModelName,
+                    token = _connector.AuthenticationClient.AuthenticationToken
+                });
+                _connector.NotificationClient.Send(Routes.IntegrationViewed, body);
+            }
         }
 
-        public void SendModelBuilding(Model model, JToken trainingTask)
+        public void SendModelBuilding(Model model, User user, JToken trainingTask)
         {
-            throw new NotImplementedException();
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                model = _models.GetById(model.Id).FirstOrDefault();
+                var body = JObject.FromObject(new
+                {
+                    id = model.Id,
+                    on = DateTime.UtcNow,
+                    user_id = user.Id,
+                    name = model.ModelName,
+                    token = _connector.AuthenticationClient.AuthenticationToken
+                });
+                _connector.NotificationClient.Send(Routes.IntegrationViewed, body);
+            }
         }
 
-        public void SendModelTrained(Model model, List<ModelTrainingPerformance> targetPerformances)
+        public void SendModelTrained(Model model, User user, List<ModelTrainingPerformance> targetPerformances)
         {
-            throw new NotImplementedException();
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                model = _models.GetById(model.Id).FirstOrDefault();
+                var body = JObject.FromObject(new
+                {
+                    id = model.Id,
+                    on = DateTime.UtcNow,
+                    user_id = user.Id,
+                    name = model.ModelName,
+                    token = _connector.AuthenticationClient.AuthenticationToken
+                });
+                _connector.NotificationClient.Send(Routes.IntegrationViewed, body);
+            }
         }
     }
 }

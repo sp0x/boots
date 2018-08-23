@@ -128,7 +128,8 @@ namespace Netlyt.Service.Donut
             }
         }
 
-        private async Task<JToken> ExtractAndTrainFeatures(Model model,
+        private async Task<JToken> ExtractAndTrainFeatures(
+            Model model,
             DonutScript script)
         {
             var sourceIntegration = script.Integrations.FirstOrDefault();
@@ -141,7 +142,7 @@ namespace Netlyt.Service.Donut
                 .FirstOrDefault(x => x.Id == sourceIntegration.Id);
             //Run the donut to extract features
             var result = await _donutService.RunExtraction(script, sourceIntegration, _serviceProvider);
-            var t_id = await _modelService.TrainModel(model, sourceIntegration);
+            var t_id = await _modelService.TrainModel(model, model.User, sourceIntegration);
             return t_id;
         }
 

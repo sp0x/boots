@@ -57,27 +57,7 @@ namespace Netlyt.Web.Controllers
             var dataIntegrations = await _integrationService.GetIntegrations(user, page, pageSize);
             return dataIntegrations.Select(x => _mapper.Map<DataIntegrationViewModel>(x));
         }
-
-        [HttpGet("/integration/{id}", Name = "GetIntegration")]
-        [Authorize]
-        public IActionResult GetById(long id, string target, string attr, string script)
-        {
-            var item = _integrationService.GetById(id, withPermissions:true);
-            if (item == null)
-            {
-                return NotFound();
-            }
-            if (target != null)
-            {
-                if (script == null || attr == null)
-                {
-                    return BadRequest();
-                }
-                //kick the async
-                return Accepted();
-            }
-            return new ObjectResult(item);
-        }
+         
         [HttpGet("/job/{id}")]
         [Authorize]
         public IActionResult GetJob(long id)
@@ -180,7 +160,25 @@ namespace Netlyt.Web.Controllers
             _integrationService.Remove(item);
             return new NoContentResult();
         }
-
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetIntegration(long id)
+        {
+            try
+            {
+                var user = await _userManagementService.GetCurrentUser();
+                var integrationView = await _integrationService.GetIntegrationView(user, id);
+                _notifications.SendIntegrationViewed(id, user.Id);
+                return Json(integrationView);
+            }
+            catch (Forbidden f)
+            {
+                return Forbid(f.Message);
+            }
+            catch (NotFound)
+            {
+                return NotFound();
+            }
+        }
         [HttpGet("{id}/schema")]
         public async Task<IActionResult> GetSchema(long id)
         {
@@ -188,7 +186,7 @@ namespace Netlyt.Web.Controllers
             {
                 var user = await _userManagementService.GetCurrentUser();
                 var schema = await _integrationService.GetSchema(user, id);
-                _notifications.SendIntegrationViewed(id);
+                _notifications.SendIntegrationViewed(id, user.Id);
                 return Json(schema);
             }
             catch (Forbidden f)
@@ -216,7 +214,7 @@ namespace Netlyt.Web.Controllers
                 if (result != null)
                 {
                     IIntegration newIntegration = result.Integration;
-                    _notifications.SendNewIntegrationSummary(newIntegration);
+                    _notifications.SendNewIntegrationSummary(newIntegration, user);
                     var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                     return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
                 }

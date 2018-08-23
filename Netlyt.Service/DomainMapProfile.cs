@@ -34,41 +34,16 @@ namespace Netlyt.Service
             CreateMap<FieldDefinition, FieldDefinitionViewModel>()
                 .ForMember(x=>x.TargetType, opt=>opt.MapFrom(y=>y.TargetType));
             CreateMap<DonutScriptInfo, DonutScriptViewModel>();
+            CreateMap<Permission, PermissionViewModel>();
             CreateMap<ModelTarget, ModelTargetViewModel>()
                 .ForMember(x=>x.Column, opt=> opt.MapFrom(src=>src.Column));
             CreateMap<Model, ModelViewModel>()
+                .ForMember(x=>x.ApiKey, opt=> opt.Ignore())
+                .ForMember(x=>x.Permissions, opt=> opt.Ignore())
                 .ForMember(x => x.BuiltTargets, opt => opt.ResolveUsing(src =>
                 {
                     var modelService = services.GetService(typeof(ModelService)) as ModelService;
-                    var output = new List<ModelBuildViewModel>();
-                    var sourceTargets = src.TrainingTasks
-                        .Where(tt => tt.Status == TrainingTaskStatus.Done)
-                        .GroupBy(tt => tt.Target.Column.Name)
-                        .Select(x=>x.FirstOrDefault());
-                    foreach (TrainingTask srcTargetTask in sourceTargets)
-                    {
-                        var vm = new ModelBuildViewModel();
-                        var srcPerformance = srcTargetTask.Performance;
-                        vm.TaskType = srcPerformance.TaskType;
-                        vm.Id = srcTargetTask.Id;
-                        vm.Endpoint = modelService.GetTrainedEndpoint(srcTargetTask);
-                        vm.Target = srcTargetTask.Target.Column.Name;
-                        vm.CurrentModel = srcTargetTask.TypeInfo;
-                        vm.Performance = new ModelTrainingPerformanceViewModel();
-                        vm.Performance.Accuracy = srcTargetTask.Performance.Accuracy;
-                        vm.Performance.AdvancedReport = srcTargetTask.Performance.AdvancedReport;
-                        vm.Performance.FeatureImportance = srcTargetTask.Performance.FeatureImportance;
-                        vm.Performance.Id = srcTargetTask.Performance.Id;
-                        vm.Performance.IsRegression = srcTargetTask.Target.IsRegression;
-                        vm.Performance.LastRequestIP = srcTargetTask.Performance.LastRequestIP;
-                        vm.Performance.LastRequestTs = srcTargetTask.Performance.LastRequestTs;
-                        vm.Performance.MontlyUsage = srcTargetTask.Performance.MonthlyUsage;
-                        vm.Performance.WeeklyUsage = srcTargetTask.Performance.WeeklyUsage;
-                        vm.Performance.TargetName = srcTargetTask.Target.Column.Name;
-                        vm.Performance.TaskType = vm.TaskType;
-                        vm.Scoring = srcPerformance.Scoring;
-                        output.Add(vm);
-                    }
+                    var output = modelService.GetBuildViews(src);
                     return output;
                 }))
                 .ForMember(x => x.Status,
@@ -98,6 +73,7 @@ namespace Netlyt.Service
                     return userService.GetRoles(src).Result;
                 }));
             CreateMap<User, UserPreviewViewModel>()
+                .ForMember(x=>x.Username, opt=> opt.ResolveUsing(src=> src.UserName))
                 .ForMember(x => x.Roles, opt => opt.ResolveUsing(src =>
                 {
                     var userService = services.GetService(typeof(IUserManagementService)) as IUserManagementService;

@@ -2,9 +2,11 @@
 using System;
 using System.Threading.Tasks;
 using Donut;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Repisitories;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -24,10 +26,13 @@ namespace Netlyt.Service.Cloud.Slave
         private IRateService _rateService;
         private IIntegrationService _integrations;
         private ModelService _modelService;
+        private IDbContextScopeFactory _dbContextFactory;
+        private IUsersRepository _users;
         public bool Running { get; set; }
         public ICloudNodeService _cloudNodeService { get; private set; }
         public ApiRateLimit Quota { get; private set; }
         public string Id { get; private set; }
+        public User User { get; private set; }
 
         public NotificationClient NotificationClient
         {
@@ -44,9 +49,13 @@ namespace Netlyt.Service.Cloud.Slave
             ICloudNodeService cloudNodeService, 
             IRateService rateService,
             ModelService modelService,
-            IIntegrationService integrationService
+            IIntegrationService integrationService,
+            IUsersRepository users,
+            IDbContextScopeFactory dbContextFactory
             )
         {
+            _dbContextFactory = dbContextFactory;
+            _users = users;
             this.Id = Guid.NewGuid().ToString();
             _cloudNodeService = cloudNodeService;
             var mqConfig = MqConfig.GetConfig(config);
@@ -76,10 +85,15 @@ namespace Netlyt.Service.Cloud.Slave
                 {
                     var authResult = await authClient.AuthorizeNode(node);
                     Quota = authResult.Result["quota"].ToObject<ApiRateLimit>();
+                    using (var ctxSrc = _dbContextFactory.Create())
+                    {
+                        User = _users.GetByUsername(authResult.Result["username"].ToString());
+                    }
                     _rateService.ApplyGlobal(Quota);
                     _rateService.SetAvailabilityForUser(authResult.GetUsername().ToString(), Quota);
                     taskClient = new TaskClient(channel, authClient.AuthenticationToken);
                     taskClient.OnCommand += (sender, e) => { TaskClient_OnCommand(sender, e); };
+
                 }
                 else
                 {
@@ -107,11 +121,13 @@ namespace Netlyt.Service.Cloud.Slave
             switch (command)
             {
                 case "train":
-                    await _modelService.TrainOnCommand(e.Item2);
+                    await _modelService.TrainOnCommand(e.Item2, User);
                     break;
             }
             exchange.Ack(e.Item2);
         }
+
+        
 
         #endregion
 

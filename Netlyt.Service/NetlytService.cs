@@ -62,11 +62,11 @@ namespace Netlyt.Service
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
-            services.AddTransient<ICloudTaskService, CloudTaskService>();
             services.AddTransient<PermissionService>();
             //services.AddDomainAutomapper();
             services.AddTransient<TrainingHandler>();
             services.AddSingleton<DonutOrionHandler>();
+            services.AddCloudComs();
             services.AddRepositories();
 
             var backgroundServiceProvider = services.BuildServiceProvider();

@@ -71,14 +71,8 @@ namespace Netlyt.Web.Controllers
         public async Task<IEnumerable<ModelViewModel>> GetAll([FromQuery] int page, string type)
         {
             var user = await _userManagementService.GetCurrentUser();
-            var userModels = _modelService.GetAllForUser(user, page, 200);
-            if (type == "building")
-            {
-                userModels = userModels.Where(x =>
-                    x.TrainingTasks.Any(tt => tt.Status == TrainingTaskStatus.InProgress ||
-                                              tt.Status == TrainingTaskStatus.Starting));
-            }
-            var viewModels = userModels.Select(m => _mapper.Map<ModelViewModel>(m));
+            var userModels = _modelService.GetAllForUserAsViews(user, page, 200, type);
+            var viewModels = userModels;
             return viewModels;
         }
 
@@ -286,7 +280,7 @@ namespace Netlyt.Web.Controllers
             //If we don`t use features, go straight to training
             if (!newModel.UseFeatures)
             {
-                var t_id = await _modelService.TrainModel(newModel, newModel.GetRootIntegration());
+                var t_id = await _modelService.TrainModel(newModel, user, newModel.GetRootIntegration());
             }
             return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
         }
@@ -302,17 +296,15 @@ namespace Netlyt.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-            var model = _modelService.GetById(id, user);
-            if (model == null) return NotFound();
             JToken trainingTask = null;
             if (data?.Data!=null && data.Data.UseScript)
             {
-                trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration(), 
-                    new TrainingScript(data.Data.Script, data.Data.Code));
+                var script = new TrainingScript(data.Data.Script, data.Data.Code);
+                trainingTask = await _modelService.TrainModel(id, user, script);
             }
             else
             {
-                trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration());
+                trainingTask = await _modelService.TrainModel(id, user);
             }
             return Json(new { models_tasks = trainingTask, success= true });
         }
@@ -325,8 +317,8 @@ namespace Netlyt.Web.Controllers
             var model = _modelService.GetById(id, user);
             if (model == null) return NotFound();
             
-            var trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration());
-            _notifications.SendModelBuilding(model, trainingTask);
+            var trainingTask = await _modelService.TrainModel(model.Id, user);
+            _notifications.SendModelBuilding(model, user, trainingTask);
             return Json(new {taskId = trainingTask});
         }
 
@@ -486,7 +478,7 @@ namespace Netlyt.Web.Controllers
             var model = _modelService.GetById(id, user);
             if (model == null) return NotFound();
             //var json = await Request.GetRawBodyString();
-            var m_id = await _modelService.TrainModel(model, model.GetRootIntegration());
+            var m_id = await _modelService.TrainModel(model, user, model.GetRootIntegration());
             return Accepted(m_id);
         }
 

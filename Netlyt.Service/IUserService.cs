@@ -17,5 +17,6 @@ namespace Netlyt.Service
         User GetUserByEmail(string modelEmail);
         User GetUsername(string modelEmail);
         User GetUserByLogin(string email, string password);
+        User GetUserByUsername(string username);
     }
 }

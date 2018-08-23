@@ -170,7 +170,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/manage/user/{id}")]
         public async Task<IActionResult> GetUser(string id)
         {
-            var user = _userService.GetUser(id);
+            var user = await _userService.GetUser(id);
             var userPreview = _mapper.Map<UserPreviewViewModel>(user);
             return Json(userPreview);
         }

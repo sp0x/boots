@@ -21,7 +21,7 @@ namespace Netlyt.Service.Cloud
         private ConnectionFactory _factory;
         private ICloudAuthenticationService _authService;
         private IRateService _rateService;
-        private UserService _userService;
+        private IUserService _userService;
         private IIntegrationService _integrations;
         private ILoggingService _loggingService;
         public bool Running { get; set; }
@@ -30,7 +30,7 @@ namespace Netlyt.Service.Cloud
         public CloudMasterServer(IConfiguration config, 
             ICloudAuthenticationService authService,
             IRateService rateService,
-            UserService userService,
+            IUserService userService,
             IIntegrationService integrations,
             ILoggingService loggingService)
         {

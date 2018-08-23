@@ -61,7 +61,11 @@ namespace Netlyt.Service
         }
         public Task<User> GetUser(string id)
         {
-            return Task.FromResult<User>(_userRepository.GetById(id).FirstOrDefault());
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                var result = _userRepository.GetById(id).FirstOrDefault();
+                return Task.FromResult<User>(result);
+            }
         }
 
         public IEnumerable<User> GetUsers()

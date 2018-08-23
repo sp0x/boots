@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Donut;
 using Donut.Data;
 using Donut.Integration;
@@ -39,6 +40,8 @@ namespace Netlyt.Service
         private IModelRepository _modelRepository;
         private IDonutRepository _donutRepository;
         private IIntegrationRepository _integrations;
+        private IMapper _mapper;
+        private IFactory<ManagementDbContext> _dbFactory;
 
 
         public ModelService(
@@ -47,14 +50,17 @@ namespace Netlyt.Service
             TimestampService timestampService,
             IRedisCacher cacher,
             IRateService rateService,
-            //IIntegrationService integrationService,
+            IIntegrationService integrationService,
             IDbContextScopeFactory dbContextFactory,
             IModelRepository modelRepository,
             IDonutRepository donutRepository,
-            IIntegrationRepository integrations)
+            IIntegrationRepository integrations,
+            IMapper mapper,
+            IFactory<ManagementDbContext> dbFactory)
         {
+            _dbFactory = dbFactory;
             _integrations = integrations;
-            //_integrationService = integrationService;
+            _integrationService = integrationService;
             _contextAccessor = ctxAccessor;
             _orion = orionContext;
             _timestampService = timestampService;
@@ -63,18 +69,33 @@ namespace Netlyt.Service
             _dbContextFactory = dbContextFactory;
             _modelRepository = modelRepository;
             _donutRepository = donutRepository;
+            _mapper = mapper;
         }
 
-        public IEnumerable<Model> GetAllForUser(User user, int page, int pageSize = 25)
+        public IEnumerable<ModelViewModel> GetAllForUserAsViews(User user, int page, int pageSize = 25, string typeFilter = "all")
         {
-            using (var ctxSrc = _dbContextFactory.Create())
+            var items = GetAllForUser(user, page, pageSize, typeFilter)
+                .Include(x => x.TrainingTasks)
+                .Include(x => x.Permissions)
+                .Include(x => x.APIKey);
+            var results = items
+                .Select(m => _mapper.Map<ModelViewModel>(m)).ToList();
+            return results;
+        }
+        public IQueryable<Model> GetAllForUser(User user, int page, int pageSize = 25, string typeFilter="all")
+        {
+            var context = _dbFactory.Create();
+            var query = context.Models
+                .Where(x => x.User == user)
+                .Skip(page * pageSize)
+                .Take(pageSize);
+            if (typeFilter == "building")
             {
-                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
-                return context.Models
-                    .Where(x => x.User == user)
-                    .Skip(page * pageSize)
-                    .Take(pageSize);
+                query = query.Where(x =>
+                    x.TrainingTasks.Any(tt => tt.Status == TrainingTaskStatus.InProgress ||
+                                              tt.Status == TrainingTaskStatus.Starting));
             }
+            return query;
         }
 
         public Model GetById(long id, User user)
@@ -254,24 +275,28 @@ namespace Netlyt.Service
 
         public ModelPrepStatus GetModelStatus(Model model)
         {
-            if (model == null) return ModelPrepStatus.Invalid;
-            var buildingTasks = model.TrainingTasks.FirstOrDefault(x => x.Status == TrainingTaskStatus.InProgress 
-                                                                        || x.Status == TrainingTaskStatus.Starting);
-            if (buildingTasks != null)
+            using (var ctxSource = _dbContextFactory.Create())
             {
-                return ModelPrepStatus.Building;
-            }
-            if (model.TrainingTasks == null || model.TrainingTasks.Count == 0) return ModelPrepStatus.Incomplete;
-            if (!model.UseFeatures) return ModelPrepStatus.Done;
-            else
-            {
-                var task = model.FeatureGenerationTasks.LastOrDefault();
-                if (task == null) return ModelPrepStatus.GeneratingFeatures;
+                if (model == null) return ModelPrepStatus.Invalid;
+                model = _modelRepository.GetById(model.Id).FirstOrDefault();
+                var buildingTasks = model.TrainingTasks.FirstOrDefault(x => x.Status == TrainingTaskStatus.InProgress
+                                                                            || x.Status == TrainingTaskStatus.Starting);
+                if (buildingTasks != null)
+                {
+                    return ModelPrepStatus.Building;
+                }
+                if (model.TrainingTasks == null || model.TrainingTasks.Count == 0) return ModelPrepStatus.Incomplete;
+                if (!model.UseFeatures) return ModelPrepStatus.Done;
                 else
                 {
-                    return task.Status == FeatureGenerationTaskStatus.Done
-                        ? ModelPrepStatus.Done
-                        : ModelPrepStatus.GeneratingFeatures;
+                    var task = model.FeatureGenerationTasks.LastOrDefault();
+                    if (task == null) return ModelPrepStatus.GeneratingFeatures;
+                    else
+                    {
+                        return task.Status == FeatureGenerationTaskStatus.Done
+                            ? ModelPrepStatus.Done
+                            : ModelPrepStatus.GeneratingFeatures;
+                    }
                 }
             }
         } 
@@ -311,7 +336,7 @@ namespace Netlyt.Service
 
         }
 
-        public async Task TrainOnCommand(BasicDeliverEventArgs basicRequest)
+        public async Task TrainOnCommand(BasicDeliverEventArgs basicRequest, User user)
         {
             var body = basicRequest.GetJson();
             using (var contextSrc = _dbContextFactory.Create())
@@ -320,15 +345,27 @@ namespace Netlyt.Service
                 var integrationId = body["integration_id"];
                 var integration = _integrations.GetById(long.Parse(integrationId.ToString())).FirstOrDefault();
                 var model = new Model();
-                var result = await TrainModel(model, integration);
+                var result = await TrainModel(model, user, integration);
                 result = result;
             }
         }
-        public async Task<JToken> TrainModel(Model model, DataIntegration sourceIntegration, TrainingScript trainingScript = null)
+
+        public async Task<JToken> TrainModel(long modelId, User user, TrainingScript trainingScript = null)
         {
             using (var ctxSrc = _dbContextFactory.Create())
             {
                 var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var model = _modelRepository.GetById(modelId, user).FirstOrDefault();
+                if (model == null) throw new NotFound("Model not found.");
+                return await TrainModel(model, user, model.GetRootIntegration(), trainingScript);
+            }
+        }
+        public async Task<JToken> TrainModel(Model model, User user, DataIntegration sourceIntegration, TrainingScript trainingScript = null)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                user = context.Users.FirstOrDefault(x => x.Id == user.Id);
                 var modelStatus = GetModelStatus(model);
                 if (modelStatus == ModelPrepStatus.Building)
                 {
@@ -340,7 +377,7 @@ namespace Netlyt.Service
                 var newTrainingTasks = new List<TrainingTask>();
                 foreach (var target in model.Targets)
                 {
-                    var task = CreateTrainingTask(target);
+                    var task = CreateTrainingTask(target, user);
                     task.Script = trainingScript;
                     newTrainingTasks.Add(task);
                 }
@@ -389,7 +426,7 @@ namespace Netlyt.Service
         }
 
 
-        private TrainingTask CreateTrainingTask(ModelTarget target)
+        private TrainingTask CreateTrainingTask(ModelTarget target, User user)
         {
             var tt = new TrainingTask();
             tt.CreatedOn = DateTime.UtcNow;
@@ -398,6 +435,7 @@ namespace Netlyt.Service
             tt.Status = TrainingTaskStatus.Starting;
             tt.Target = target;
             tt.Scoring = target.Scoring;
+            tt.User = user;
             target.Model.TrainingTasks.Add(tt);
             return tt;
         }
@@ -454,5 +492,42 @@ namespace Netlyt.Service
             }
         }
 
+        public List<ModelBuildViewModel> GetBuildViews(Model src)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var output = new List<ModelBuildViewModel>();
+                src = _modelRepository.GetById(src.Id).FirstOrDefault();
+                var sourceTargets = src.TrainingTasks
+                    .Where(tt => tt.Status == TrainingTaskStatus.Done)
+                    .GroupBy(tt => tt.Target.Column.Name)
+                    .Select(x => x.FirstOrDefault()).ToList();
+                foreach (TrainingTask srcTargetTask in sourceTargets)
+                {
+                    var vm = new ModelBuildViewModel();
+                    var srcPerformance = srcTargetTask.Performance;
+                    vm.TaskType = srcPerformance.TaskType;
+                    vm.Id = srcTargetTask.Id;
+                    vm.Endpoint = GetTrainedEndpoint(srcTargetTask);
+                    vm.Target = srcTargetTask.Target.Column.Name;
+                    vm.CurrentModel = srcTargetTask.TypeInfo;
+                    vm.Performance = new ModelTrainingPerformanceViewModel();
+                    vm.Performance.Accuracy = srcTargetTask.Performance.Accuracy;
+                    vm.Performance.AdvancedReport = srcTargetTask.Performance.AdvancedReport;
+                    vm.Performance.FeatureImportance = srcTargetTask.Performance.FeatureImportance;
+                    vm.Performance.Id = srcTargetTask.Performance.Id;
+                    vm.Performance.IsRegression = srcTargetTask.Target.IsRegression;
+                    vm.Performance.LastRequestIP = srcTargetTask.Performance.LastRequestIP;
+                    vm.Performance.LastRequestTs = srcTargetTask.Performance.LastRequestTs;
+                    vm.Performance.MontlyUsage = srcTargetTask.Performance.MonthlyUsage;
+                    vm.Performance.WeeklyUsage = srcTargetTask.Performance.WeeklyUsage;
+                    vm.Performance.TargetName = srcTargetTask.Target.Column.Name;
+                    vm.Performance.TaskType = vm.TaskType;
+                    vm.Scoring = srcPerformance.Scoring;
+                    output.Add(vm);
+                }
+                return output;
+            }
+        }
     }
 }

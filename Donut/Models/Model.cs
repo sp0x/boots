@@ -27,6 +27,7 @@ namespace Donut.Models
         public virtual ICollection<ModelRule> Rules { get; set; }
         public virtual ICollection<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
         public virtual ICollection<TrainingTask> TrainingTasks { get; set; }
+        
         public string Grouping { get; set; }
         public DateTime CreatedOn { get; set; }
         public virtual ICollection<ModelTarget> Targets { get; set; }

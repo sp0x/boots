@@ -32,5 +32,10 @@ namespace Netlyt.Service.Repisitories
         {
             return DbContext.Users.Where(x => x.Id == id);
         }
+
+        public User GetByUsername(string username)
+        {
+            return DbContext.Users.FirstOrDefault(x => x.UserName == username);
+        }
     }
 }
