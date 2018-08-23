@@ -240,6 +240,11 @@ namespace Netlyt.Service
                 {
                     throw new NotFound();
                 }
+                var user = _userService.GetCurrentUser();
+                if (!ign.Permissions.Any(x => x.ShareWith.Id == user.Result.Organization.Id))
+                {
+                    throw new Forbidden(string.Format("You are not allowed to view this integration"));
+                }
                 var fields = ign.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                 var schema = new IntegrationSchemaViewModel(ign.Id, fields);
                 schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
@@ -296,11 +301,16 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public DataIntegration GetById(long id)
+        public DataIntegration GetById(long id, bool withPermissions = false)
         {
             using (var context = _contextFactory.Create())
             {
-                return _integrationsRepo.GetById(id).FirstOrDefault();
+                var qr = _integrationsRepo.GetById(id);
+                if (withPermissions)
+                {
+                    qr = qr.Include(x => x.Permissions);
+                }
+                return qr.FirstOrDefault();
             }
         }
 

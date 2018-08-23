@@ -68,6 +68,7 @@ namespace Netlyt.Service
             services.AddTransient<OrganizationService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
             services.AddTransient<ICloudTaskService, CloudTaskService>();
+            services.AddTransient<PermissionService>();
             //services.AddDomainAutomapper();
             services.AddTransient<TrainingHandler>();
             services.AddSingleton<DonutOrionHandler>();

@@ -85,6 +85,7 @@ namespace Netlyt.Service
         {
             return _context.Models
                 .Include(x=>x.DataIntegrations)
+                .Include(x=>x.Permissions)
                 .Include(x=>x.DonutScript)
                 .Include(x=>x.Performance)
                 .FirstOrDefault(t => t.Id == id && t.User==user);

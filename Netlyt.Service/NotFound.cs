@@ -16,4 +16,17 @@ namespace Netlyt.Service
 
         }
     }
+
+    public class Forbidden : Exception
+    {
+        public Forbidden()
+        {
+
+        }
+
+        public Forbidden(string message) : base(message)
+        {
+
+        }
+    }
 }

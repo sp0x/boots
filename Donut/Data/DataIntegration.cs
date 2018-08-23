@@ -60,6 +60,7 @@ namespace Donut.Data
         public virtual ICollection<IntegrationExtra> Extras { get; set; }
 
         public static DataIntegration Empty { get; set; } = new DataIntegration("Empty");
+        public virtual ICollection<Permission> Permissions{ get; set; }
 
 
         public DataIntegration()
@@ -68,6 +69,7 @@ namespace Donut.Data
             Models = new HashSet<ModelIntegration>();
             Extras = new HashSet<IntegrationExtra>();
             AggregateKeys = new HashSet<AggregateKey>();
+            Permissions = new HashSet<Permission>();
             this.PublicKey = ApiAuth.Generate();
         }
 

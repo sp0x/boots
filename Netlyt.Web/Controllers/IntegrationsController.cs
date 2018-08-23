@@ -61,7 +61,7 @@ namespace Netlyt.Web.Controllers
         [Authorize]
         public IActionResult GetById(long id, string target, string attr, string script)
         {
-            var item = _integrationService.GetById(id);
+            var item = _integrationService.GetById(id, withPermissions:true);
             if (item == null)
             {
                 return NotFound();
@@ -180,16 +180,15 @@ namespace Netlyt.Web.Controllers
         {
             try
             {
-                var integration = _integrationService.GetById(id);
-                if (integration == null) throw new NotFound();
-                IntegrationSchemaViewModel schema = await _integrationService.GetSchema(id);
-                //if (!_nodeService.ResolveLocal().IsCloud())
-                //{
+                var schema = await _integrationService.GetSchema(id);
                 _notifications.SendIntegrationViewed(id);
-                //}
                 return Json(schema);
             }
-            catch (NotFound ex)
+            catch (Forbidden f)
+            {
+                return Forbid(f.Message);
+            }
+            catch (NotFound)
             {
                 return NotFound();
             }
