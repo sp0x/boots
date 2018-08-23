@@ -30,13 +30,13 @@ namespace Netlyt.Web.Controllers
         private readonly ILogger _logger;
         private readonly UrlEncoder _urlEncoder;
         private IMapper _mapper;
-        private UserService _userService;
+        private IUserManagementService _userService;
 
         private const string AuthenicatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
 
         public ManageController(
           IMapper mapper,
-          UserService userService,
+          IUserManagementService userService,
           UserManager<User> userManager,
           SignInManager<User> signInManager,
           IEmailSender emailSender,
@@ -178,7 +178,7 @@ namespace Netlyt.Web.Controllers
         [HttpPatch("/manage/userEdit/{id}")]
         public async Task<IActionResult> UserEdit(string id, [FromBody]UserEditViewModel modification)
         {
-            var user = _userService.GetUser(id);
+            var user = await _userService.GetUser(id);
             var modified = await _userService.AddRolesToUser(user, modification.Roles);
             return Json(new { success = modified });
         }

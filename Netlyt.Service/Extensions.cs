@@ -5,12 +5,14 @@ using AutoMapper;
 using Donut.Data;
 using EntityFramework.DbContextScope;
 using EntityFramework.DbContextScope.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using nvoid.db.DB.Configuration;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
 using Netlyt.Service.Repisitories;
 
@@ -94,6 +96,12 @@ namespace Netlyt.Service
                     options.UseLazyLoadingProxies();
                 }
             );
+        }
+
+        public static void AddApiIdentity(this IServiceCollection services)
+        {
+            services.AddTransient<IUserService, UserService>();
+            services.AddTransient<IUserManagementService, UserManagementService>();
         }
     }
 }

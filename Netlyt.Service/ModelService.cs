@@ -30,13 +30,10 @@ namespace Netlyt.Service
     public class ModelService
     {
         private IHttpContextAccessor _contextAccessor;
-        private ManagementDbContext _context;
         private IOrionContext _orion;
         private TimestampService _timestampService;
-        private ManagementDbContext _dbContext;
         private IRedisCacher _cacher;
         private IRateService _rateService;
-        private UserService _userService;
         private IIntegrationService _integrationService;
         private IDbContextScopeFactory _dbContextFactory;
         private IModelRepository _modelRepository;
@@ -44,28 +41,23 @@ namespace Netlyt.Service
         private IIntegrationRepository _integrations;
 
 
-        public ModelService(ManagementDbContext context,
+        public ModelService(
             IOrionContext orionContext,
             IHttpContextAccessor ctxAccessor,
             TimestampService timestampService,
-            ManagementDbContext dbContext,  
             IRedisCacher cacher,
             IRateService rateService,
-            UserService userService,
-            IIntegrationService integrationService,
+            //IIntegrationService integrationService,
             IDbContextScopeFactory dbContextFactory,
             IModelRepository modelRepository,
             IDonutRepository donutRepository,
             IIntegrationRepository integrations)
         {
             _integrations = integrations;
-            _integrationService = integrationService;
-            _userService = userService;
+            //_integrationService = integrationService;
             _contextAccessor = ctxAccessor;
-            _context = context;
             _orion = orionContext;
             _timestampService = timestampService;
-            _dbContext = dbContext;
             _cacher = cacher;
             _rateService = rateService;
             _dbContextFactory = dbContextFactory;
@@ -75,20 +67,28 @@ namespace Netlyt.Service
 
         public IEnumerable<Model> GetAllForUser(User user, int page, int pageSize = 25)
         {
-            return _context.Models
-                .Where(x => x.User == user)
-                .Skip(page * pageSize)
-                .Take(pageSize);
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                return context.Models
+                    .Where(x => x.User == user)
+                    .Skip(page * pageSize)
+                    .Take(pageSize);
+            }
         }
 
         public Model GetById(long id, User user)
         {
-            return _context.Models
-                .Include(x=>x.DataIntegrations)
-                .Include(x=>x.Permissions)
-                .Include(x=>x.DonutScript)
-                .Include(x=>x.Performance)
-                .FirstOrDefault(t => t.Id == id && t.User==user);
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                return context.Models
+                    .Include(x => x.DataIntegrations)
+                    .Include(x => x.Permissions)
+                    .Include(x => x.DonutScript)
+                    .Include(x => x.Performance)
+                    .FirstOrDefault(t => t.Id == id && t.User == user);
+            }
         }
 
         /// <summary>
@@ -222,30 +222,34 @@ namespace Netlyt.Service
 
         public void DeleteModel(User cruser, long id)
         {
-            var targetModel = _context.Models
-                .Include(x=>x.Targets)
-                .FirstOrDefault(x => x.User == cruser && x.Id == id);
-            if (targetModel != null)
+            using (var ctxSrc = _dbContextFactory.Create())
             {
-                targetModel.Targets.Clear();
-                targetModel.DonutScript = null;
-                _context.Models.Remove(targetModel);
-                _context.SaveChanges();
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var targetModel = context.Models
+                    .Include(x => x.Targets)
+                    .FirstOrDefault(x => x.User == cruser && x.Id == id);
+                if (targetModel != null)
+                {
+                    targetModel.Targets.Clear();
+                    targetModel.DonutScript = null;
+                    context.Models.Remove(targetModel);
+                    context.SaveChanges();
+                }
             }
-        }
 
-        public void SaveChanges()
-        {
-            _context.SaveChanges();
-        }
+        } 
 
         public FeatureGenerationTask GetFeatureGenerationTask(long id)
         {
-            var model = _context.Models
-                .Include(x => x.FeatureGenerationTasks)
-                .FirstOrDefault(x=>x.Id == id);
-            if (model == null) return null;
-            return model.FeatureGenerationTasks.LastOrDefault();
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var model = context.Models
+                    .Include(x => x.FeatureGenerationTasks)
+                    .FirstOrDefault(x => x.Id == id);
+                if (model == null) return null;
+                return model.FeatureGenerationTasks.LastOrDefault();
+            }
         }
 
         public ModelPrepStatus GetModelStatus(Model model)
@@ -274,26 +278,37 @@ namespace Netlyt.Service
 
         public TrainingTask GetTrainingStatus(long id)
         {
-            var model = _context.Models
-                .Include(x => x.TrainingTasks)
-                .FirstOrDefault(x => x.Id == id);
-            if (model == null) return null;
-            return model.TrainingTasks.LastOrDefault();
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var model = context.Models
+                    .Include(x => x.TrainingTasks)
+                    .FirstOrDefault(x => x.Id == id);
+                if (model == null) return null;
+                return model.TrainingTasks.LastOrDefault();
+            }
+
         }
 
         public void AddIntegrationsToScript(DonutScript dscript, ICollection<ModelIntegration> modelDataIntegrations)
         {
-            foreach (var integration in modelDataIntegrations)
+            using (var ctxSrc = _dbContextFactory.Create())
             {
-                var ign = _dbContext.Integrations
-                    .Include(x => x.Fields)
-                    .Include(x => x.Extras)
-                    .Include(x => x.APIKey)
-                    .Include(x => x.AggregateKeys)
-                    .Include(x => x.PublicKey)
-                    .FirstOrDefault(x => x.Id == integration.IntegrationId);
-                dscript.AddIntegrations(ign);
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                foreach (var integration in modelDataIntegrations)
+                {
+                    var ign = context.Integrations
+                        .Include(x => x.Fields)
+                        .Include(x => x.Extras)
+                        .Include(x => x.APIKey)
+                        .Include(x => x.AggregateKeys)
+                        .Include(x => x.PublicKey)
+                        .FirstOrDefault(x => x.Id == integration.IntegrationId);
+                    dscript.AddIntegrations(ign);
+                }
             }
+
+
         }
 
         public async Task TrainOnCommand(BasicDeliverEventArgs basicRequest)
@@ -311,35 +326,41 @@ namespace Netlyt.Service
         }
         public async Task<JToken> TrainModel(Model model, DataIntegration sourceIntegration, TrainingScript trainingScript = null)
         {
-            var modelStatus = GetModelStatus(model);
-            if (modelStatus == ModelPrepStatus.Building)
+            using (var ctxSrc = _dbContextFactory.Create())
             {
-                return new JArray(model.TrainingTasks.Where(x => x.Status == TrainingTaskStatus.InProgress ||
-                                                      x.Status == TrainingTaskStatus.Starting)
-                    .Select(x=>x.Id).ToArray());
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var modelStatus = GetModelStatus(model);
+                if (modelStatus == ModelPrepStatus.Building)
+                {
+                    return new JArray(model.TrainingTasks.Where(x => x.Status == TrainingTaskStatus.InProgress ||
+                                                                     x.Status == TrainingTaskStatus.Starting)
+                        .Select(x => x.Id).ToArray());
+                }
+
+                var newTrainingTasks = new List<TrainingTask>();
+                foreach (var target in model.Targets)
+                {
+                    var task = CreateTrainingTask(target);
+                    task.Script = trainingScript;
+                    newTrainingTasks.Add(task);
+                }
+                context.SaveChanges();
+                var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration, newTrainingTasks);
+                var trainingResponse = await _orion.Query(query);
+                var trainingTaskIds = trainingResponse["tids"];
+                foreach (var tt in newTrainingTasks)
+                {
+                    var tid = trainingTaskIds.Cast<JProperty>().FirstOrDefault(x => x.Name == tt.Target.Column.Name);
+                    if (tid != null)
+                    {
+                        tt.TrainingTargetId = (int)tid;
+                    }
+                }
+                context.SaveChanges();
+                return trainingResponse["ids"];
             }
 
-            var newTrainingTasks = new List<TrainingTask>();
-            foreach (var target in model.Targets)
-            {
-                var task = CreateTrainingTask(target);
-                task.Script = trainingScript;
-                newTrainingTasks.Add(task);
-            }
-            _dbContext.SaveChanges();
-            var query = OrionQuery.Factory.CreateTrainQuery(model, sourceIntegration, newTrainingTasks);
-            var trainingResponse = await _orion.Query(query);
-            var trainingTaskIds = trainingResponse["tids"];
-            foreach (var tt in newTrainingTasks)
-            {
-                var tid = trainingTaskIds.Cast<JProperty>().FirstOrDefault(x => x.Name == tt.Target.Column.Name);
-                if (tid != null)
-                {
-                    tt.TrainingTargetId = (int)tid;
-                }
-            }
-            _dbContext.SaveChanges();
-            return trainingResponse["ids"];
+            
         }
 
         /// <summary>
@@ -383,8 +404,13 @@ namespace Netlyt.Service
         
         public TrainingTask GetBuildById(long buildId, User user)
         {
-            var task = this._context.TrainingTasks.FirstOrDefault(x => x.Id == buildId && x.Model.User == user);
-            return task;
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var task = context.TrainingTasks
+                    .FirstOrDefault(x => x.Id == buildId && x.Model.User == user);
+                return task;
+            }
         }
         public bool IsBuilding(Model src)
         {
@@ -398,13 +424,19 @@ namespace Netlyt.Service
         }
 
 
-        public async Task<Model> CreateEmptyModel(CreateEmptyModelViewModel props)
+        public async Task<Model> CreateEmptyModel(User user, CreateEmptyModelViewModel props)
         {
             var modelName = props.ModelName.Replace(".", "_");
             using (var ctxSource = _dbContextFactory.Create())
             {
-                var user = await _userService.GetCurrentUser();
-                var integration = _userService.GetUserIntegration(user, props.IntegrationId);
+                var context = ctxSource.DbContexts.Get<ManagementDbContext>();
+                user = context.Users.FirstOrDefault(x=>x.Id==user.Id);
+                var integration = _integrationService.GetUserIntegration(user, props.IntegrationId);
+                if (!integration.Permissions.Any(x => x.ShareWith.Id == user.Organization.Id))
+                {
+                    throw new Forbidden("You are not authorized to use this integration for model building");
+                }
+
                 if (props.IdColumn != null && !string.IsNullOrEmpty(props.IdColumn.Name))
                 {
                     _integrationService.SetIndexColumn(integration, props.IdColumn.Name);

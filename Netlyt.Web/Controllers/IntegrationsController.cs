@@ -24,7 +24,7 @@ namespace Netlyt.Web.Controllers
     public class IntegrationsController : Controller
     {
         private IIntegrationService _integrationService;
-        private UserService _userService;
+        private IUserManagementService _userManagementService;
         private IMapper _mapper;
 
         private IOrionContext _orionContext;
@@ -32,14 +32,15 @@ namespace Netlyt.Web.Controllers
         private ICloudNodeService _nodeService;
 
         // GET: /<controller>/
-        public IntegrationsController(UserService userService,
+        public IntegrationsController(
+            IUserManagementService userManagementService,
             IIntegrationService integrationService,
             IMapper mapper,
             IOrionContext orionContext,
             INotificationService notificationsService,
             ICloudNodeService nodeService)
         {
-            _userService = userService;
+            _userManagementService = userManagementService;
             _integrationService = integrationService;
             _mapper = mapper;
             _orionContext = orionContext;
@@ -51,9 +52,9 @@ namespace Netlyt.Web.Controllers
         [Authorize]
         public async Task<IEnumerable<DataIntegrationViewModel>> GetAll([FromQuery] int page)
         {
-            var user = await _userService.GetCurrentUser();
+            var user = await _userManagementService.GetCurrentUser();
             int pageSize = 25;
-            var dataIntegrations = await _userService.GetIntegrations(user, page, pageSize);
+            var dataIntegrations = await _integrationService.GetIntegrations(user, page, pageSize);
             return dataIntegrations.Select(x => _mapper.Map<DataIntegrationViewModel>(x));
         }
 
@@ -92,7 +93,10 @@ namespace Netlyt.Web.Controllers
             {
                 return BadRequest("No integration name given.");
             }
-            var newIntegration = await _integrationService.Create(integration.Name, integration.DataFormatType);
+
+            var user = await _userManagementService.GetCurrentUser();
+            var apiKey = await _userManagementService.GetCurrentApi();
+            var newIntegration = await _integrationService.Create(user, apiKey, integration.Name, integration.DataFormatType);
             return CreatedAtRoute("GetIntegration", new { id = newIntegration.Id }, _mapper.Map<DataIntegrationViewModel>(newIntegration));
 
         }
@@ -114,6 +118,8 @@ namespace Netlyt.Web.Controllers
             string targetFilePath = Path.GetTempFileName();
             string fileContentType = null;
             DataImportResult result = null;
+            var user = await _userManagementService.GetCurrentUser();
+            var apiKey = await _userManagementService.GetCurrentApi();
             using (var targetStream = System.IO.File.Create(targetFilePath))
             {
                 var form = await Request.StreamFile(targetStream);
@@ -124,7 +130,7 @@ namespace Netlyt.Web.Controllers
                 targetStream.Position = 0;
                 try
                 {
-                    result = await _integrationService.CreateOrAppendToIntegration(targetStream, fileContentType,
+                    result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, targetStream, fileContentType,
                         integrationParams.Name);
                     newIntegration = result?.Integration;
                 }
@@ -180,7 +186,8 @@ namespace Netlyt.Web.Controllers
         {
             try
             {
-                var schema = await _integrationService.GetSchema(id);
+                var user = await _userManagementService.GetCurrentUser();
+                var schema = await _integrationService.GetSchema(user, id);
                 _notifications.SendIntegrationViewed(id);
                 return Json(schema);
             }
@@ -203,7 +210,9 @@ namespace Netlyt.Web.Controllers
             }
             try
             {
-                var result = await _integrationService.CreateOrAppendToIntegration(Request);
+                var user = await _userManagementService.GetCurrentUser();
+                var apiKey = await _userManagementService.GetCurrentApi();
+                var result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, Request);
                 if (result != null)
                 {
                     IIntegration newIntegration = result.Integration;

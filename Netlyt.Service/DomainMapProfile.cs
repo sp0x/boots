@@ -94,13 +94,13 @@ namespace Netlyt.Service
             CreateMap<User, UsersViewModel>()
                 .ForMember(x=>x.Roles, opt=>opt.ResolveUsing(src =>
                 {
-                    var userService = services.GetService(typeof(UserService)) as UserService;
+                    var userService = services.GetService(typeof(IUserManagementService)) as IUserManagementService;
                     return userService.GetRoles(src).Result;
                 }));
             CreateMap<User, UserPreviewViewModel>()
                 .ForMember(x => x.Roles, opt => opt.ResolveUsing(src =>
                 {
-                    var userService = services.GetService(typeof(UserService)) as UserService;
+                    var userService = services.GetService(typeof(IUserManagementService)) as IUserManagementService;
                     return userService.GetRoles(src).Result;
                 }));
         }

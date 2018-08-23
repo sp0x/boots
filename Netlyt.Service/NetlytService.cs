@@ -25,17 +25,12 @@ namespace Netlyt.Service
         public static ServiceProvider SetupBackgroundServices(DbContextOptionsBuilder<ManagementDbContext> dbContextBuilder,
             IConfiguration configuration, IOrionContext orionContext)
         {
-            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(configuration);
             var services = new ServiceCollection();
-            services.AddDbContext<ManagementDbContext>(options =>
-            {
-                options.UseLazyLoadingProxies();
-                options.UseNpgsql(postgresConnectionString);
-            }
-            );
+            services.AddManagementDbContext(configuration);
             services.AddIdentity<User, UserRole>()
                 .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();
+            services.AddApiIdentity();
             services.AddMemoryCache();
             services.AddSession();
             services.AddDomainAutomapper();

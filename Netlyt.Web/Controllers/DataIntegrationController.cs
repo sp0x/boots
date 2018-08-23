@@ -64,18 +64,6 @@ namespace Netlyt.Web.Controllers
 
         [Route("[action]")]
         [HttpPost]
-        public async Task<ActionResult> Entity()
-        {
-            //GetRoutes();
-            var result = await _integrationService.CreateOrAppendToIntegration(Request.Body, null);
-            return Json(new
-            {
-                success = true
-            });
-        }
-
-        [Route("[action]")]
-        [HttpPost]
         public ActionResult SocialEntity()
         {
             var userAppId = HttpContext.Session.GetUserApiId();

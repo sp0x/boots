@@ -44,6 +44,7 @@ namespace Netlyt.Master
             var dbOptions = Configuration.GetDbOptionsBuilder();
             services.AddManagementDbContext(Configuration);
             services.AddCache();
+            services.AddTransient<UserManager<User>>();
             services.AddIdentity<User, UserRole>()
                 .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();

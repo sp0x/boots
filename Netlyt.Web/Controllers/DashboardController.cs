@@ -18,14 +18,14 @@ namespace Netlyt.Web.Controllers
     public class DashboardController : Controller
     {
         private UserManager<User> _userManager;
-        private UserService _userService;
+        private IUserManagementService _userService;
         private RateService _rateService;
 
         [TempData]
         public string StatusMessage { get; set; }
 
         public DashboardController(
-            UserService userService,
+            IUserManagementService userService,
             UserManager<User> userManager,
             RateService rateService)
         {

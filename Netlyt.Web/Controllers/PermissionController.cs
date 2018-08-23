@@ -12,6 +12,8 @@ using Netlyt.Service;
 using Netlyt.Web.Models.ManageViewModels;
 using Netlyt.Data.ViewModels;
 using Donut;
+using Donut.Data;
+using Donut.Models;
 
 namespace Netlyt.Web.Controllers
 {
@@ -20,20 +22,20 @@ namespace Netlyt.Web.Controllers
     public class PermissionController : Controller
     {
         private UserManager<User> _userManager;
-        private UserService _userService;
+        private IUserManagementService _userManagementService;
         private PermissionService _permissionService;
         private IIntegrationService _integrationService;
         private ModelService _modelService;
         private OrganizationService _orgService;
 
         public PermissionController(
-            UserService userService,
+            IUserManagementService userManagementService,
             UserManager<User> userManager,
             PermissionService permService,
             ModelService modelService,
             IIntegrationService integrationService,
             OrganizationService orgService){
-            _userService = userService;
+            _userManagementService = userManagementService;
             _userManager = userManager;
             _permissionService = permService;
             _modelService = modelService;
@@ -44,7 +46,7 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/permission/create_permission")]
         [Authorize]
         public async Task<IActionResult> Create([FromBody]NewPermissionViewModel perm){
-            var user = await _userService.GetCurrentUser();
+            var user = await _userManagementService.GetCurrentUser();
             var obj = new object();
             if(perm.ObjectType == "integration"){
                 obj = _integrationService.GetById(perm.ObjectId);
@@ -61,13 +63,10 @@ namespace Netlyt.Web.Controllers
             var newPerm = await _permissionService.Create(user.Organization, org, perm.CanRead, perm.CanModify);
             if (perm.ObjectType == "integration")
             {
-                var obj1 = (Donut.Data.DataIntegration)obj;
-                obj1.Permissions.Add(newPerm);
+                _permissionService.AddForIntegration(obj as DataIntegration, newPerm);
             }else if (perm.ObjectType == "model")
             {
-                var obj1 = (Donut.Models.Model)obj;
-                obj1.Permissions.Add(newPerm);
-                _modelService.SaveChanges();
+                _permissionService.AddForModel(obj as Model, newPerm);
             }
             
             return Ok();
@@ -77,7 +76,7 @@ namespace Netlyt.Web.Controllers
         [HttpPatch("/permission/{id}/")]
         public async Task<IActionResult> SetPermission(long id, [FromBody]NewPermissionViewModel perm){
             var perm1 = _permissionService.Get(id);
-            var user = await _userService.GetCurrentUser();
+            var user = await _userManagementService.GetCurrentUser();
             if(user.Organization != perm1.Owner){
                 return Forbid(string.Format("You are not the owner of this permission and cannot modify it"));
             }
@@ -92,7 +91,7 @@ namespace Netlyt.Web.Controllers
         [HttpDelete("permission/{id}")]
         public async Task<IActionResult> Revoke(long id){
             var perm = _permissionService.Get(id);
-            var user = await _userService.GetCurrentUser();
+            var user = await _userManagementService.GetCurrentUser();
              if(user.Organization != perm.Owner){
                 return Forbid(string.Format("You are not the owner of this permission and cannot modify it"));
             }

@@ -25,7 +25,7 @@ namespace Netlyt.Web.Middleware.Hmac
         //private int _iterations;
         private byte[] _salt;
         private ApiService _apiService;
-        private UserService _userService;
+        private IUserManagementService _userService;
         private IHttpContextAccessor _contextAccessor;
 
         public HmacHandler(
@@ -35,7 +35,7 @@ namespace Netlyt.Web.Middleware.Hmac
             ISystemClock clock,
             IMemoryCache memoryCache,
             ApiService apiService,
-            UserService userService,
+            IUserManagementService userService,
             IHttpContextAccessor contextAccessor) : base(options, logger, encoder, clock)
         {
             // store custom services here...

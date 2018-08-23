@@ -33,7 +33,7 @@ namespace Netlyt.Web.Controllers
     public class ModelController : Controller
     {
         private IOrionContext _orionContext;
-        private UserService _userService;
+        private IUserManagementService _userManagementService;
         private IMapper _mapper;
         private ModelService _modelService;
         private IIntegrationService _integrationService;
@@ -46,7 +46,7 @@ namespace Netlyt.Web.Controllers
         public ModelController(IMapper mapper,
             IOrionContext behaviourCtx,
             UserManager<User> userManager,
-            UserService userService,
+            IUserManagementService userManagementService,
             ModelService modelService,
             IIntegrationService integrationService,
             SignInManager<User> signInManager,
@@ -58,7 +58,7 @@ namespace Netlyt.Web.Controllers
             _mapper = mapper;
             //_modelContext = typeof(Model).GetDataSource<Model>(); 
             _orionContext = behaviourCtx;
-            _userService = userService;
+            _userManagementService = userManagementService;
             _modelService = modelService;
             _integrationService = integrationService;
             _signInManager = signInManager;
@@ -70,7 +70,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/model/mymodels/{type}")]
         public async Task<IEnumerable<ModelViewModel>> GetAll([FromQuery] int page, string type)
         {
-            var user = await _userService.GetCurrentUser();
+            var user = await _userManagementService.GetCurrentUser();
             var userModels = _modelService.GetAllForUser(user, page, 200);
             if (type == "building")
             {
@@ -178,7 +178,7 @@ namespace Netlyt.Web.Controllers
         [HttpPost("/model/createUser")]
         public async Task<IActionResult> CreateUser()
         {
-            var user = await _userService.GetCurrentUser();
+            var user = await _userManagementService.GetCurrentUser();
             var rnd = new Random();
             if (user == null)
             {
@@ -189,7 +189,7 @@ namespace Netlyt.Web.Controllers
                 newRegistration.FirstName = "Userx";
                 newRegistration.LastName = "Lastnamex";
                 newRegistration.Org = "Lol";
-                var result = await _userService.CreateUser(newRegistration);
+                var result = await _userManagementService.CreateUser(newRegistration);
                 if (result.Item1.Succeeded)
                 {
                     await _signInManager.SignInAsync(result.Item2, isPersistent: false);
@@ -208,8 +208,8 @@ namespace Netlyt.Web.Controllers
         public async Task<IActionResult> Create([FromBody] ModelCreationViewModel item)
         {
             if (item == null) return BadRequest();
-            var user = await _userService.GetCurrentUser();
-            var integration = _userService.GetUserIntegration(user, item.DataSource);
+            var user = await _userManagementService.GetCurrentUser();
+            var integration = _integrationService.GetUserIntegration(user, item.DataSource);
             if (!integration.Permissions.Any(x=>x.ShareWith.Id == user.Organization.Id)){
                 return Forbid("You are not authorized to use this integration for model building");
             }
@@ -238,12 +238,20 @@ namespace Netlyt.Web.Controllers
             if (props == null) return BadRequest();
             if (string.IsNullOrEmpty(props.ModelName)) return BadRequest("Model name is required.");
             if (props.Targets == null) return BadRequest("Model targets are required.");
-
-            Model newModel = await _modelService.CreateEmptyModel(props);
-            if (!integration.Permissions.Any(x=>x.ShareWith.Id == user.Organization.Id)){
-                return Forbid("You are not authorized to use this integration for model building");
+            try
+            {
+                var user = await _userManagementService.GetCurrentUser();
+                Model newModel = await _modelService.CreateEmptyModel(user, props);
+                return CreatedAtRoute("GetById", new {id = newModel.Id}, _mapper.Map<ModelViewModel>(newModel));
             }
-            return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
+            catch (Forbidden f)
+            {
+                return Forbid(f.Message);
+            }
+            catch (NotFound nf)
+            {
+                return NotFound(nf.Message);
+            }
         }
 
         /// <summary>
@@ -255,10 +263,10 @@ namespace Netlyt.Web.Controllers
         [RequestSizeLimit(100_000_000)]
         public async Task<IActionResult> CreateAuto([FromBody]CreateAutomaticModelViewModel modelData)
         {
-            var user = await _userService.GetCurrentUser();
+            var user = await _userManagementService.GetCurrentUser();
             if (!string.IsNullOrEmpty(modelData.UserEmail))
             {
-                _userService.SetUserEmail(user, modelData.UserEmail);
+                _userManagementService.SetUserEmail(user, modelData.UserEmail);
             }
             if (modelData.Target == null || string.IsNullOrEmpty(modelData.Target.Name))
             {
@@ -335,7 +343,8 @@ namespace Netlyt.Web.Controllers
             NewModelIntegrationViewmodel modelParams = new NewModelIntegrationViewmodel();
             string targetFilePath = Path.GetTempFileName();
             string fileContentType = null;
-            var user = await _userService.GetCurrentUser();
+            var user = await _userManagementService.GetCurrentUser();
+            var apiKey = await _userManagementService.GetCurrentApi();
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
                 return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
@@ -353,13 +362,13 @@ namespace Netlyt.Web.Controllers
                 {
                     if (!string.IsNullOrEmpty(modelParams.UserEmail))
                     {
-                        _userService.SetUserEmail(user, modelParams.UserEmail);
+                        _userManagementService.SetUserEmail(user, modelParams.UserEmail);
                     }
                     else
                     {
                         return BadRequest();
                     }
-                    result = await _integrationService.CreateOrAppendToIntegration(sourceStream, fileContentType,
+                    result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, sourceStream, fileContentType,
                         modelParams.Name);
                     newIntegration = result?.Integration;
                 }
@@ -464,7 +473,7 @@ namespace Netlyt.Web.Controllers
         [HttpDelete("/model/{id}")]
         public async Task<IActionResult> Delete(long id)
         {
-            var user = await _userService.GetCurrentUser();
+            var user = await _userManagementService.GetCurrentUser();
             _modelService.DeleteModel(user, id);
             return new NoContentResult();
         }
@@ -486,12 +495,13 @@ namespace Netlyt.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            throw new NotImplementedException();
             var json = Request.GetRawBodyString();
             JObject data = JObject.Parse(json.Result);
             var m = _modelService.GetById(id, user);
             if (m == null) return NotFound();
             m.CurrentModel = data.GetValue("current_model").ToString();
-            _modelService.SaveChanges();
+//            _modelService.SaveChanges();
             return new NoContentResult();
         }
 

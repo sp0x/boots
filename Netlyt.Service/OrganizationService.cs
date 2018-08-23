@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
@@ -10,16 +11,20 @@ namespace Netlyt.Service
     public class OrganizationService
     {
         //private IHttpContextAccessor _contextAccessor;
-        private ManagementDbContext _context;
-        public OrganizationService(ManagementDbContext context)
+        private IDbContextScopeFactory _contextFactory;
+        public OrganizationService(IDbContextScopeFactory contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public Organization Get(string modelOrg)
         {
-            var org = _context.Organizations.FirstOrDefault(x => String.Equals(x.Name, modelOrg, StringComparison.CurrentCultureIgnoreCase));
-            return org;
+            using (var ctxSrc = _contextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var org = context.Organizations.FirstOrDefault(x => String.Equals(x.Name, modelOrg, StringComparison.CurrentCultureIgnoreCase));
+                return org;
+            }
         }
     }
 }

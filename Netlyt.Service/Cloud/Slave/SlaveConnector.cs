@@ -43,8 +43,8 @@ namespace Netlyt.Service.Cloud.Slave
             IConfiguration config,
             ICloudNodeService cloudNodeService, 
             IRateService rateService,
-            ModelService modelService
-            //IIntegrationService integrationService
+            ModelService modelService,
+            IIntegrationService integrationService
             )
         {
             this.Id = Guid.NewGuid().ToString();
@@ -52,7 +52,7 @@ namespace Netlyt.Service.Cloud.Slave
             var mqConfig = MqConfig.GetConfig(config);
             _rateService = rateService;
             _modelService = modelService;
-            //_integrations = integrationService;
+            _integrations = integrationService;
             _factory = new ConnectionFactory()
             {
                 HostName = mqConfig.Host,

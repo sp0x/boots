@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -69,6 +70,8 @@ namespace Netlyt.Web
             services.AddIdentity<User, UserRole>()
                 .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();
+            services.AddApiIdentity();
+//            services.AddTransient<IUserStore<User>, UserStore<User>>();
 
             //            services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
             //                .AddDefaultTokenProviders();
@@ -102,7 +105,6 @@ namespace Netlyt.Web
             );
             services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
             services.AddTransient<IRateService, RateService>();
-            services.AddTransient<UserService>();
             services.AddTransient<ApiService>();
             services.AddTransient<TimestampService>();
             services.AddTransient<ModelService>();

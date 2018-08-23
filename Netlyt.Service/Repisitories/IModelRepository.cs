@@ -10,8 +10,4 @@ namespace Netlyt.Service.Repisitories
         void Add(Model newModel);
     }
 
-    public interface IDonutRepository
-    {
-        void Add(DonutScriptInfo donut);
-    }
 }

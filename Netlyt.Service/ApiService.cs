@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
@@ -11,33 +12,39 @@ namespace Netlyt.Service
     public class ApiService
     { 
         private IHttpContextAccessor _contextAccessor;
-        private ManagementDbContext _context;
         private IApiKeyRepository _apiKeyRepisitory;
+        private IDbContextScopeFactory _dbContextFactory;
 
-        public ApiService(ManagementDbContext context,
+        public ApiService(
             IHttpContextAccessor contextAccessor,
-            IApiKeyRepository apiKeyRepository)
+            IApiKeyRepository apiKeyRepository,
+            IDbContextScopeFactory dbScopeFactory)
         {
             _apiKeyRepisitory = apiKeyRepository;
-            _context = context;
-            _contextAccessor = contextAccessor; 
+            _contextAccessor = contextAccessor;
+            _dbContextFactory = dbScopeFactory;
         }
 
         public ApiAuth GetApi(long userApiId)
         {
             //using (var context = _factory.Create())
             //{
-            var api = _context.ApiKeys.Find(userApiId);
-            return api;
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var api = context.ApiKeys.Find(userApiId);
+                return api;
+            }
             //}
         }
         public ApiAuth GetApi(string appId)
         {
-            //            using (var context = _factory.Create())
-            //            {
-            var api = _context.ApiKeys.FirstOrDefault(x => x.AppId == appId);
-            return api;
-            //}
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var api = context.ApiKeys.FirstOrDefault(x => x.AppId == appId);
+                return api;
+            }
         }
 
         /// <summary>
@@ -51,11 +58,15 @@ namespace Netlyt.Service
 
         public User GetCurrentApiUser()
         {
-            var appApiIdStr = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");
-            if (string.IsNullOrEmpty(appApiIdStr)) return null;
-            var id = long.Parse(appApiIdStr);
-            var user = _context.Users.FirstOrDefault(x => x.ApiKeys.Any(a => a.ApiId == id));
-            return user;
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var appApiIdStr = _contextAccessor.HttpContext.Session.GetString("APP_API_ID");
+                if (string.IsNullOrEmpty(appApiIdStr)) return null;
+                var id = long.Parse(appApiIdStr);
+                var user = context.Users.FirstOrDefault(x => x.ApiKeys.Any(a => a.ApiId == id));
+                return user;
+            }
         }
 //        public async Task<ApiAuth> GetCurrentApi()
 //        {
@@ -86,8 +97,12 @@ namespace Netlyt.Service
 
         public User GetApiUser(ApiAuth api)
         {
-            var user = _context.Users.FirstOrDefault(x => x.ApiKeys.Any(a=> a.ApiId == api.Id));
-            return user;
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var user = context.Users.FirstOrDefault(x => x.ApiKeys.Any(a => a.ApiId == api.Id));
+                return user;
+            }
         }
 
         public ApiAuth Create(string appId)
@@ -99,19 +114,31 @@ namespace Netlyt.Service
         }
         public void Register(ApiAuth key)
         {
-            _context.ApiKeys.Add(key);
-            _context.SaveChanges();
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                context.ApiKeys.Add(key);
+                context.SaveChanges();
+            }
         }
         public async Task RegisterAsync(ApiAuth key)
         {
-            _context.ApiKeys.Add(key);
-            await _context.SaveChangesAsync();
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                context.ApiKeys.Add(key);
+                await context.SaveChangesAsync();
+            }
         }
 
         public void RemoveKey(ApiAuth appId)
         {
-            _context.ApiKeys.Remove(appId);
-            _context.SaveChanges();
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                context.ApiKeys.Remove(appId);
+                context.SaveChanges();
+            }
         }
 
         public IQueryable<ApiUser> GetUserKeys(User user)

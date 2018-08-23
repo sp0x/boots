@@ -89,7 +89,7 @@ namespace Netlyt.Service.Cloud
 
         private void AuthListener_UserAuthenticationRequested(object sender, UserLoginRequest e)
         {
-            User user = _userService.GetUserByLogin(e.Email, e.Password).Result;
+            User user = _userService.GetUserByLogin(e.Email, e.Password);
             if (user == null)
             {
                 throw new Exception("Invalid login.");

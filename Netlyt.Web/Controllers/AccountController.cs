@@ -27,17 +27,19 @@ namespace Netlyt.Web.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly IEmailSender _emailSender;
         private readonly ILogger _logger;
-        private readonly UserService _userService;
+        private readonly IUserManagementService _userManagementService;
         private ApiService _apiService;
         private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
         private IMapper _mapper;
         private INotificationService _notifications;
         private ICloudNodeService _nodeInfo;
         private ISlaveConnector _slaveConnector;
+        private IUserService _userService;
 
         public AccountController(
             IMapper mapper,
-            UserService userService,
+            IUserManagementService userManagementService,
+            IUserService userService,
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             IEmailSender emailSender,
@@ -50,7 +52,7 @@ namespace Netlyt.Web.Controllers
         {
             _notifications = notificationService;
             _mapper = mapper;
-            _userService = userService;
+            _userManagementService = userManagementService;
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
@@ -59,6 +61,7 @@ namespace Netlyt.Web.Controllers
             _actionDescriptorCollectionProvider = actionDescriptorCollectionProvider;
             _nodeInfo = nodeResolver;
             _slaveConnector = slaveConnector;
+            _userService = userService;
         }
 
         [TempData]
@@ -67,7 +70,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/user/me")] // /me = host/me, me = host/user/GetProfile/me  
         public async Task<ActionResult> GetProfile()
         {
-            User user = await _userService.GetUser(User);
+            User user = await _userManagementService.GetUser(User);
             if (user != null)
             { 
                 return Ok(_mapper.Map<UserViewModel>(user));
@@ -101,7 +104,7 @@ namespace Netlyt.Web.Controllers
                     var user = authResult.Item2;
                     if (_userService.GetUserByEmail(model.Email) == null)
                     {
-                        _userService.AddUser(user);
+                        _userManagementService.AddUser(user);
                     }
                     return await LoginUser(model, returnUrl, user);
                 }
@@ -132,7 +135,7 @@ namespace Netlyt.Web.Controllers
             if (result.Succeeded)
             {
                 _logger.LogInformation("User logged in.");
-                _userService.InitializeUserSession(HttpContext.User);
+                _userManagementService.InitializeUserSession(HttpContext.User);
                 _notifications.SendLoggedInNotification(emailuser);
                 return Json(new
                 {
@@ -292,7 +295,7 @@ namespace Netlyt.Web.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                var result = await _userService.CreateUser(model);
+                var result = await _userManagementService.CreateUser(model);
                 var user = result.Item2;
                 if (result.Item1.Succeeded)
                 {
@@ -522,7 +525,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/user/keys")]
         public async Task<ActionResult> GetApiKeys()
         {
-            var user = await _userService.GetUser(User);
+            var user = await _userManagementService.GetUser(User);
             if (user == null) return Json(new {success = false, message = "No user matching your keys."});
             return Json(user.ApiKeys
                 .Select(x=>_mapper.Map<ApiAuthViewModel>(x)));
