@@ -4,6 +4,19 @@ using RabbitMQ.Client;
 
 namespace Netlyt.Service.Cloud
 {
+    public abstract class TaskExchange : IRPCableExchange
+    {
+        public IModel Channel { get; private set; }
+        public string Name { get; private set; }
+
+        public TaskExchange(IModel channel)
+        {
+            this.Channel = Channel;
+            this.Name = Exchanges.Tasks;
+            channel.ExchangeDeclare(exchange: Name, type: ExchangeType.Headers, durable: true, autoDelete: false);
+        }
+    }
+
     public abstract class AuthExchange : IRPCableExchange
     {
         public IModel Channel { get; private set; }
@@ -13,7 +26,7 @@ namespace Netlyt.Service.Cloud
         {
             this.Channel = channel;
             this.Name = Exchanges.Auth;
-            channel.ExchangeDeclare(exchange: Exchanges.Auth,
+            channel.ExchangeDeclare(exchange: Name,
                 type: ExchangeType.Direct, durable: true, autoDelete: false);
             //Declare our authorizations queue
             channel.QueueDeclare(queue: Queues.AuthorizeNode,

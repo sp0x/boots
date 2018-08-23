@@ -24,6 +24,10 @@ namespace Netlyt.Service.Cloud.Slave
         private ConcurrentDictionary<string, TaskCompletionSource<BasicDeliverEventArgs>> _requests;
         private EventingBasicConsumer _callbackConsumer;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="channel"></param>
         public NodeAuthClient(IModel channel) : base(channel)
         {
             _authListener = new AuthListener(channel, AuthMode.Client);

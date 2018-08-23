@@ -27,6 +27,12 @@ namespace Netlyt.Service.Cloud
             channel.BasicAck(message.DeliveryTag, false);
         }
 
+        public static void Ack(this IRPCableExchange exchange, BasicDeliverEventArgs message)
+        {
+            var channel = exchange.Channel;
+            channel.BasicAck(message.DeliveryTag, false);
+        }
+
         public static void Reply(this IRPCableExchange exchange, IRpcMessage message, JObject reply)
         {
             var encodedReply = Encoding.UTF8.GetBytes(reply.ToString());

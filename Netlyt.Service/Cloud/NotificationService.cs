@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
-using System.Text;
 using Donut.Integration;
-using EntityFramework.DbContextScope;
+using Donut.Models;
 using EntityFramework.DbContextScope.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud.Slave;
-using Netlyt.Service.Data;
 using Netlyt.Service.Repisitories;
 using Newtonsoft.Json.Linq;
 
@@ -20,7 +17,8 @@ namespace Netlyt.Service.Cloud
         private IIntegrationRepository _integrations;
         private IDbContextScopeFactory _dbContextFactory;
 
-        public NotificationService(ISlaveConnector connector,
+        public NotificationService(
+            ISlaveConnector connector,
             IIntegrationRepository integrations,
             IDbContextScopeFactory dbContextFactory)
         {
@@ -109,5 +107,19 @@ namespace Netlyt.Service.Cloud
             
         }
 
+        public void SendModelCreated(Model newModel)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SendModelBuilding(Model model, JToken trainingTask)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SendModelTrained(Model model, List<ModelTrainingPerformance> targetPerformances)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

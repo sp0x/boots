@@ -17,10 +17,12 @@ using Microsoft.EntityFrameworkCore;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Cloud;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models;
 using Netlyt.Service.Repisitories;
 using Newtonsoft.Json.Linq;
+using RabbitMQ.Client.Events;
 using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service
@@ -39,21 +41,24 @@ namespace Netlyt.Service
         private IDbContextScopeFactory _dbContextFactory;
         private IModelRepository _modelRepository;
         private IDonutRepository _donutRepository;
+        private IIntegrationRepository _integrations;
 
 
         public ModelService(ManagementDbContext context,
             IOrionContext orionContext,
             IHttpContextAccessor ctxAccessor,
             TimestampService timestampService,
-            ManagementDbContext dbContext,
+            ManagementDbContext dbContext,  
             IRedisCacher cacher,
             IRateService rateService,
             UserService userService,
             IIntegrationService integrationService,
             IDbContextScopeFactory dbContextFactory,
             IModelRepository modelRepository,
-            IDonutRepository donutRepository)
+            IDonutRepository donutRepository,
+            IIntegrationRepository integrations)
         {
+            _integrations = integrations;
             _integrationService = integrationService;
             _userService = userService;
             _contextAccessor = ctxAccessor;
@@ -290,6 +295,19 @@ namespace Netlyt.Service
             }
         }
 
+        public async Task TrainOnCommand(BasicDeliverEventArgs basicRequest)
+        {
+            var body = basicRequest.GetJson();
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                var modelId = body["model_id"];
+                var integrationId = body["integration_id"];
+                var integration = _integrations.GetById(long.Parse(integrationId.ToString())).FirstOrDefault();
+                var model = new Model();
+                var result = await TrainModel(model, integration);
+                result = result;
+            }
+        }
         public async Task<JToken> TrainModel(Model model, DataIntegration sourceIntegration, TrainingScript trainingScript = null)
         {
             var modelStatus = GetModelStatus(model);
@@ -402,5 +420,6 @@ namespace Netlyt.Service
                 return newModel;
             }
         }
+
     }
 }

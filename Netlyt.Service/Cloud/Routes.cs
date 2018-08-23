@@ -21,10 +21,6 @@
         /// </summary>
         public const string IntegrationCreated = "notification.integration.created";
         /// <summary>
-        /// Whenever the stage of a model is updated
-        /// </summary>
-        public const string ModelStageUpdate = "notification.model.stage_update";
-        /// <summary>
         /// Whenever an integration is viewed
         /// </summary>
         public const string IntegrationViewed = "notification.integration.view";
@@ -32,9 +28,14 @@
         /// Whenever a model is edited.
         /// </summary>
         public const string ModelEdit = "notification.model.edit";
+        /// <summary>
+        /// Whenever the stage of a model is updated
+        /// </summary>
+        public const string ModelStageUpdate = "notification.model.stage_update";
 
         public const string ModelCreate = "notification.model.created";
         public const string ModelBuild = "notification.model.build";
+        public const string ModelTrained = "notification.model.trained";
         public const string QuotaUpdate = "notification.quota.sync";
 
         public const string AuthorizeNode = "auth.node_authorize";

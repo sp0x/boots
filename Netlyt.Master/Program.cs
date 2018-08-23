@@ -56,6 +56,7 @@ namespace Netlyt.Master
             services.AddTransient<IIntegrationService, IntegrationService>();
             services.AddTransient<ILoggingService, LoggingService>();
             services.AddSingleton<ICloudNodeService, CloudNodeService>();
+            services.AddTransient<ICloudTaskService, CloudTaskService>();
             services.AddDomainAutomapper();
             services.AddRepositories();
             services.AddTransient<IDbContextFactory>((sp) => new DbContextFactory(dbOptions));

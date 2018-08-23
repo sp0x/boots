@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
-using AutoMapper;
 using Donut;
 using Donut.Orion;
 using EntityFramework.DbContextScope;
@@ -14,17 +12,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using nvoid.db.DB.Configuration;
-using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Cloud;
 using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Data;
-using Netlyt.Web.Extensions;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
-using Netlyt.Web.Services;
 using Newtonsoft.Json;
 
 namespace Netlyt.Web
@@ -95,7 +90,7 @@ namespace Netlyt.Web
 
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
-
+            services.AddTransient<ICloudTaskService, CloudTaskService>();
             services.AddTransient<IDbContextFactory>((sp) => new DbContextFactory(dbOptions));
             services.AddTransient<IDbContextScopeFactory>((sp) => new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
 

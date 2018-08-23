@@ -19,6 +19,7 @@ using Microsoft.Extensions.Configuration;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Cloud;
 using Netlyt.Service.Data;
 using Netlyt.Service.Helpers;
 using Netlyt.Web.Extensions;
@@ -40,6 +41,7 @@ namespace Netlyt.Web.Controllers
         private IConfiguration _configuration;
         private ManagementDbContext _db;
         private UserManager<User> _userManager;
+        private INotificationService _notifications;
 
         public ModelController(IMapper mapper,
             IOrionContext behaviourCtx,
@@ -49,8 +51,10 @@ namespace Netlyt.Web.Controllers
             IIntegrationService integrationService,
             SignInManager<User> signInManager,
             IConfiguration configuration,
-            ManagementDbContext db)
+            ManagementDbContext db,
+            INotificationService notifications)
         {
+            _notifications = notifications;
             _mapper = mapper;
             //_modelContext = typeof(Model).GetDataSource<Model>(); 
             _orionContext = behaviourCtx;
@@ -228,6 +232,7 @@ namespace Netlyt.Web.Controllers
             if (props.Targets == null) return BadRequest("Model targets are required.");
 
             Model newModel = await _modelService.CreateEmptyModel(props);
+            _notifications.SendModelCreated(newModel);
             return CreatedAtRoute("GetById", new { id = newModel.Id }, _mapper.Map<ModelViewModel>(newModel));
         }
 
@@ -301,7 +306,9 @@ namespace Netlyt.Web.Controllers
             if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             var model = _modelService.GetById(id, user);
             if (model == null) return NotFound();
+            
             var trainingTask = await _modelService.TrainModel(model, model.GetRootIntegration());
+            _notifications.SendModelBuilding(model, trainingTask);
             return Json(new {taskId = trainingTask});
         }
 

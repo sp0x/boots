@@ -1,13 +1,18 @@
-﻿using System;
+﻿
+using System;
 using System.Threading.Tasks;
 using Donut;
 using Microsoft.Extensions.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
 namespace Netlyt.Service.Cloud.Slave
 {
+    /// <summary>
+    /// Connects to the master cloud
+    /// </summary>
     public class SlaveConnector : IDisposable, ISlaveConnector
     {
         private ConnectionFactory _factory;
@@ -15,8 +20,10 @@ namespace Netlyt.Service.Cloud.Slave
         private IModel channel;
         private NodeAuthClient authClient;
         private NotificationClient notificationClient;
+        private TaskClient taskClient;
         private IRateService _rateService;
         private IIntegrationService _integrations;
+        private ModelService _modelService;
         public bool Running { get; set; }
         public ICloudNodeService _cloudNodeService { get; private set; }
         public ApiRateLimit Quota { get; private set; }
@@ -35,7 +42,8 @@ namespace Netlyt.Service.Cloud.Slave
         public SlaveConnector(
             IConfiguration config,
             ICloudNodeService cloudNodeService, 
-            IRateService rateService
+            IRateService rateService,
+            ModelService modelService
             //IIntegrationService integrationService
             )
         {
@@ -43,6 +51,7 @@ namespace Netlyt.Service.Cloud.Slave
             _cloudNodeService = cloudNodeService;
             var mqConfig = MqConfig.GetConfig(config);
             _rateService = rateService;
+            _modelService = modelService;
             //_integrations = integrationService;
             _factory = new ConnectionFactory()
             {
@@ -59,6 +68,7 @@ namespace Netlyt.Service.Cloud.Slave
             connection = _factory.CreateConnection();
             channel = connection.CreateModel();
             authClient = new NodeAuthClient(channel);
+            notificationClient = new NotificationClient(channel);
             try
             {
                 var node = _cloudNodeService.ResolveLocal();
@@ -68,6 +78,8 @@ namespace Netlyt.Service.Cloud.Slave
                     Quota = authResult.Result["quota"].ToObject<ApiRateLimit>();
                     _rateService.ApplyGlobal(Quota);
                     _rateService.SetAvailabilityForUser(authResult.GetUsername().ToString(), Quota);
+                    taskClient = new TaskClient(channel, authClient.AuthenticationToken);
+                    taskClient.OnCommand += (sender, e) => { TaskClient_OnCommand(sender, e); };
                 }
                 else
                 {
@@ -79,10 +91,27 @@ namespace Netlyt.Service.Cloud.Slave
                 Console.WriteLine("You're not authenticated.");
                 Environment.Exit(1);
             }
-            notificationClient = new NotificationClient(channel);
         }
 
+
         #region Handlers
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async Task TaskClient_OnCommand(object sender, Tuple<string,BasicDeliverEventArgs> e)
+        {
+            var exchange = sender as TaskExchange;
+            var command = e.Item1;
+            switch (command)
+            {
+                case "train":
+                    await _modelService.TrainOnCommand(e.Item2);
+                    break;
+            }
+            exchange.Ack(e.Item2);
+        }
 
         #endregion
 

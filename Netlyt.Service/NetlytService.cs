@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Cloud;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
 
@@ -66,6 +67,7 @@ namespace Netlyt.Service
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
+            services.AddTransient<ICloudTaskService, CloudTaskService>();
             //services.AddDomainAutomapper();
             services.AddTransient<TrainingHandler>();
             services.AddSingleton<DonutOrionHandler>();

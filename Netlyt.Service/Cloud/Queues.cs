@@ -36,6 +36,8 @@ namespace Netlyt.Service.Cloud
         public const string ModelCreate = "notification.model.created";
         public const string ModelBuild = "notification.model.build";
         public const string QuotaUpdate = "notification.quota.sync";
-
+        
+        public const string TaskTrainModel = "task.model.train";
+        
     }
 }

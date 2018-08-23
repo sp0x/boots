@@ -9,11 +9,8 @@ namespace Netlyt.Service.Cloud.Slave
 {
     public class NotificationClient : NotificationExchange
     {
-        private IModel channel;
-
         public NotificationClient(IModel channel) : base(channel)
         {
-            this.channel = channel;
             channel.QueueDeclare(queue: Queues.Notification,
                 durable: true,
                 exclusive: false,
@@ -33,14 +30,14 @@ namespace Netlyt.Service.Cloud.Slave
             var body = e.Body;
             var message = Encoding.UTF8.GetString(body);
             Console.WriteLine(" [x] Received {0}", message);
-            channel.BasicAck(e.DeliveryTag, false);
+            Channel.BasicAck(e.DeliveryTag, false);
         }
 
         #endregion
 
         public void Send(string message)
         {
-            var props = channel.CreateBasicProperties();
+            var props = Channel.CreateBasicProperties();
             props.Persistent = true;
             var body = Encoding.UTF8.GetBytes(message);
             Send(Routes.MessageNotification, props, body);
@@ -48,7 +45,7 @@ namespace Netlyt.Service.Cloud.Slave
 
         public void Send(string routingKey, JToken body)
         {
-            var props = channel.CreateBasicProperties();
+            var props = Channel.CreateBasicProperties();
             props.Persistent = true;
             var bodyBytes = Encoding.UTF8.GetBytes(body.ToString());
             Send(routingKey, props, bodyBytes);
@@ -56,7 +53,7 @@ namespace Netlyt.Service.Cloud.Slave
 
         public void Send(string routingKey, IBasicProperties properties, byte[] body)
         {
-            channel.BasicPublish(exchange: Exchanges.Notifications,
+            Channel.BasicPublish(exchange: Exchanges.Notifications,
                 routingKey: routingKey,
                 basicProperties: properties,
                 body: body);
