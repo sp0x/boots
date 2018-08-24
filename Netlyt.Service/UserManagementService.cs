@@ -163,11 +163,11 @@ namespace Netlyt.Service
                 LastName = model.LastName,
                 RateLimit = ApiRateLimit.CreateDefault()
             };
-            var org = _orgService.Get(model.Org);
+            var org = !string.IsNullOrEmpty(model.Org) ? _orgService.Get(model.Org) : null;
             if (org == null)
                 user.Organization = new Organization()
                 {
-                    Name = model.Org
+                    Name =username
                 };
             var apiKey = _apiService.Generate();
             user.ApiKeys.Add(new ApiUser(user, apiKey));

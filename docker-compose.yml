@@ -78,7 +78,7 @@ services:
       - "27019:27017"
     #So that we actually have auth enabled..
     #to setup a user, follow this https://stackoverflow.com/questions/22638258/create-superuser-in-mongo
-    command: mongod --auth
+    command: mongod
 
   postgres:
     image: postgres
@@ -92,38 +92,15 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
 
-
-  registry:
-    image: registry:2
-    container_name: registry
-    restart: always
-    ports:
-      - "10.10.1.7:443:5000"
-    volumes:
-      - ./registry:/var/lib/registry
-      - ./auth:/auth
-      - ./auth:/certs
-    environment:
-      REGISTRY_AUTH: "htpasswd"
-      REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
-      REGISTRY_AUTH_HTPASSWD_PATH: "/auth/registry.netlyt.com"
-      REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/registry_auth.crt"
-      REGISTRY_HTTP_TLS_KEY: "/certs/registry_auth.key"
-
-      #-e VIRTUAL_HOST=registry.netlyt.com 
-#-e LETSENCRYPT_HOST=registry.netlyt.com 
-#-e LETSENCRYPT_EMAIL=vaskovasilev94@yahoo.com 
-#--network=webproxy --name my_app httpd:alpine
-
   orion:
     container_name: orion.netlyt.com
     hostname: orion.netlyt.com
     build:
-      context: ./orion
+      context: ./Orion
       dockerfile: Dockerfile
     volumes:
-      - ./orion/app:/app
-      - ./orion/experiments:/experiments
+      - ./Orion/app:/app
+      - ./Orion/experiments:/experiments
         #      - ./orion/automl:/opt/conda/lib/python3.6/site-packages/autosklearn
     ports:
       - "5556:5556"

@@ -9,7 +9,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Bogus\Source\Bogus\Bogus.csproj" />
     <ProjectReference Include="..\Donut\Donut.csproj" />
-    <ProjectReference Include="..\libnvoid\aspnet-identity-mongo\src\Microsoft.AspNetCore.Identity.MongoDB\Microsoft.AspNetCore.Identity.MongoDB.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid.extensions\nvoid.extensions.csproj" />
     <ProjectReference Include="..\libnvoid\nvoid\nvoid.csproj" />
