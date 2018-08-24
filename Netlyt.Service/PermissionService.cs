@@ -107,5 +107,25 @@ namespace Netlyt.Service
                 ctxSrc.SaveChanges();
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="user"></param>
+        /// <returns></returns>
+        public bool CheckAccess(Model item, User user)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var hasPermission = context.Models
+                    .Any(m => m.Id == item.Id && m.Permissions.Any(x => x.ShareWith.Id == user.Organization.Id));
+                if (!hasPermission)
+                {
+                    throw new Forbidden("You are not authorized to view this model");
+                }
+                return true;
+            }
+        }
     }
 }

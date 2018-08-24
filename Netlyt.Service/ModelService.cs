@@ -15,6 +15,8 @@ using Donut.Source;
 using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
@@ -42,6 +44,7 @@ namespace Netlyt.Service
         private IIntegrationRepository _integrations;
         private IMapper _mapper;
         private IFactory<ManagementDbContext> _dbFactory;
+        private IDonutService _donut;
 
 
         public ModelService(
@@ -56,8 +59,10 @@ namespace Netlyt.Service
             IDonutRepository donutRepository,
             IIntegrationRepository integrations,
             IMapper mapper,
-            IFactory<ManagementDbContext> dbFactory)
+            IFactory<ManagementDbContext> dbFactory,
+            IDonutService donut)
         {
+            _donut = donut;
             _dbFactory = dbFactory;
             _integrations = integrations;
             _integrationService = integrationService;
@@ -108,6 +113,7 @@ namespace Netlyt.Service
                     .Include(x => x.Permissions)
                     .Include(x => x.DonutScript)
                     .Include(x => x.Performance)
+                    .Include(x=>x.TrainingTasks)
                     .FirstOrDefault(t => t.Id == id && t.User == user);
             }
         }
@@ -143,6 +149,12 @@ namespace Netlyt.Service
                 newModel.PublicKey = ApiAuth.Generate();
                 newModel.Targets = new List<ModelTarget>(targets);
                 newModel.CreatedOn = DateTime.UtcNow;
+                newModel.Permissions.Add(new Permission()
+                {
+                    CanModify = true, CanRead = true,
+                    Owner = user.Organization,
+                    ShareWith = user.Organization
+                });
 
                 if (integrations != null)
                 {
@@ -452,8 +464,12 @@ namespace Netlyt.Service
         }
         public bool IsBuilding(Model src)
         {
-            return src.TrainingTasks.Any(x => x.Status == TrainingTaskStatus.InProgress ||
-                                              x.Status == TrainingTaskStatus.Starting);
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                return context.Models.Any(x=>x.Id == src.Id && x.TrainingTasks.Any(y => y.Status == TrainingTaskStatus.InProgress ||
+                                                  y.Status == TrainingTaskStatus.Starting));
+            }
         }
 
         public string GetTrainedEndpoint(TrainingTask srcTargetTask)
@@ -527,6 +543,34 @@ namespace Netlyt.Service
                     output.Add(vm);
                 }
                 return output;
+            }
+        }
+
+        public ApiAuth GetApiKey(Model item)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var fIntegration = context.Models.Where(x=>x.Id==item.Id)
+                    .SelectMany(x=>x.DataIntegrations)
+                    .Select(x=>x.Integration)
+                    .FirstOrDefault();
+                return fIntegration!=null ? context.ApiKeys.FirstOrDefault(x => x.Id == fIntegration.APIKeyId) : null;
+            }
+        }
+
+        public async Task<Dictionary<string, string>> GetSnippets(User user, long buildId)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var trainingTask = GetBuildById(buildId, user);
+                if (trainingTask == null) throw new NotFound();
+                if (trainingTask.Performance is null) throw new NotFound();
+                var snippets = _donut.GetSnippets(user, trainingTask);
+                BsonDocument dataSnippet = await _integrationService.GetTaskDataSample(trainingTask);
+                var jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict, Indent = true };
+                snippets["data"] = dataSnippet.ToJson(jsonWriterSettings);
+                return snippets;
             }
         }
     }

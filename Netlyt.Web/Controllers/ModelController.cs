@@ -42,6 +42,7 @@ namespace Netlyt.Web.Controllers
         private ManagementDbContext _db;
         private UserManager<User> _userManager;
         private INotificationService _notifications;
+        private PermissionService _permissionService;
 
         public ModelController(IMapper mapper,
             IOrionContext behaviourCtx,
@@ -52,8 +53,10 @@ namespace Netlyt.Web.Controllers
             SignInManager<User> signInManager,
             IConfiguration configuration,
             ManagementDbContext db,
-            INotificationService notifications)
+            INotificationService notifications,
+            PermissionService permissionService)
         {
+            _permissionService = permissionService;
             _notifications = notifications;
             _mapper = mapper;
             //_modelContext = typeof(Model).GetDataSource<Model>(); 
@@ -101,9 +104,7 @@ namespace Netlyt.Web.Controllers
             var item = _modelService.GetById(id, user);
             if (item == null) return NotFound();
             var status = _modelService.GetModelStatus(item);
-            if (!item.Permissions.Any(x=>x.ShareWith.Id == user.Organization.Id)){
-                return Forbid("You are not authorized to view this model");
-            }
+            _permissionService.CheckAccess(item, user);
             if (status != Donut.Models.ModelPrepStatus.Done)
             {
                 var resp = Json(new {message = "Try again later.", status = status.ToString().ToLower()});
@@ -117,15 +118,11 @@ namespace Netlyt.Web.Controllers
                 resp.StatusCode = 204;
                 return resp;
             }
-
-            var fmi = item.DataIntegrations.FirstOrDefault();
-            var fIntegration = _db.Integrations
-                .Include(x => x.APIKey)
-                .FirstOrDefault(x => x.Id == fmi.IntegrationId); 
-            var mapped = _mapper.Map<ModelViewModel>(item); 
-            
-            mapped.ApiKey = fIntegration.APIKey.AppId;
-            mapped.ApiSecret = fIntegration.APIKey.AppSecret;
+            var mapped = _mapper.Map<ModelViewModel>(item);
+            mapped.UserIsOwner = user.Id == item.UserId;
+            var modelApiKey = _modelService.GetApiKey(item);
+            mapped.ApiKey = modelApiKey?.AppId;
+            mapped.ApiSecret = modelApiKey?.AppSecret;
             return Json(mapped);
         }
 
