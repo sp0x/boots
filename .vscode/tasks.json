@@ -4,13 +4,5 @@
     "isShellCommand": true,
     "args": [],
     "tasks": [
-        {
-            "taskName": "build",
-            "args": [
-                "${workspaceRoot}/IntegrationDaemon/IntegrationDaemon/IntegrationDaemon.csproj"
-            ],
-            "isBuildCommand": true,
-            "problemMatcher": "$msCompile"
-        }
     ]
 }
