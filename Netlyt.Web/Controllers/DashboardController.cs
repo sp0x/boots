@@ -18,17 +18,20 @@ namespace Netlyt.Web.Controllers
     public class DashboardController : Controller
     {
         private UserManager<User> _userManager;
-        private UserService _userService;
+        private IUserManagementService _userService;
+        private IRateService _rateService;
 
         [TempData]
         public string StatusMessage { get; set; }
 
         public DashboardController(
-            UserService userService,
-            UserManager<User> userManager)
+            IUserManagementService userService,
+            UserManager<User> userManager,
+            IRateService rateService)
         {
             _userService = userService;
             _userManager = userManager;
+            _rateService = rateService;
         }
 
         [HttpGet("/dashboard")]
@@ -46,9 +49,29 @@ namespace Netlyt.Web.Controllers
                 Email = user.Email,
                 IsEmailConfirmed = user.EmailConfirmed,
                 StatusMessage = StatusMessage,
-                Roles = roles
+                Roles = roles,
+                Id = user.Id,
+                Organization = new Data.ViewModels.OrganizationViewModel
+                {
+                    Id = user.Organization.Id,
+                    Name = user.Organization.Name
+                }
             };
             return Json(model);
+        }
+
+        [Authorize]
+        [HttpGet("/dashboard/usage")]
+        public async Task<JsonResult> GetUsage(){
+            var user = await _userService.GetCurrentUser();
+            if (user == null)
+            {
+                throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            }
+            var allowed = _rateService.GetAllowed(user);
+            var usage = _rateService.GetCurrentUsageForUser(user);
+            var quota = new {Used= usage, Total=allowed, Left=allowed-usage};
+            return Json(new {usage, quota});
         }
     }
 }

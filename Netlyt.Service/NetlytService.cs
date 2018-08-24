@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using nvoid.db.DB.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Cloud;
 using Netlyt.Service.Data;
 using Netlyt.Service.Donut;
 
@@ -24,19 +25,15 @@ namespace Netlyt.Service
         public static ServiceProvider SetupBackgroundServices(DbContextOptionsBuilder<ManagementDbContext> dbContextBuilder,
             IConfiguration configuration, IOrionContext orionContext)
         {
-            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(configuration);
             var services = new ServiceCollection();
-            services.AddDbContext<ManagementDbContext>(options =>
-            {
-                options.UseLazyLoadingProxies();
-                options.UseNpgsql(postgresConnectionString);
-            }
-            );
+            services.AddManagementDbContext(configuration);
             services.AddIdentity<User, UserRole>()
                 .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();
+            services.AddApiIdentity();
             services.AddMemoryCache();
             services.AddSession();
+            services.AddDomainAutomapper();
             services.AddDonutDb(DBConfig.GetInstance().GetGeneralDatabase().ToDonutDbConfig());
             services.AddSingleton(configuration);
             services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache 
@@ -65,9 +62,12 @@ namespace Netlyt.Service
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
+            services.AddTransient<PermissionService>();
             //services.AddDomainAutomapper();
             services.AddTransient<TrainingHandler>();
             services.AddSingleton<DonutOrionHandler>();
+            services.AddCloudComs();
+            services.AddRepositories();
 
             var backgroundServiceProvider = services.BuildServiceProvider();
             var orionHandler = backgroundServiceProvider.GetOrionHandler();

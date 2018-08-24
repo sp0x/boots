@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Donut;
 using Donut.Source;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
 using Netlyt.Service.Data;
@@ -14,31 +15,36 @@ namespace Netlyt.Service
     public class TimestampService
     {
         private List<string> _possibleColumns;
-        private ManagementDbContext _db;
+        private IDbContextScopeFactory _dbContextFactory;
         private Type _tmType = typeof(DateTime);
-        public TimestampService(ManagementDbContext db)
+        public TimestampService(
+            IDbContextScopeFactory dbContextFactory)
         {
             _possibleColumns = new List<string>(new string[]{ "timestamp", "on_date", "added_on", "time" });
-            _db = db;
+            _dbContextFactory = dbContextFactory;
         }
 
         public string DiscoverByIntegrationId(long ignId)
         {
-            var fields = _db.Integrations
-                .Include(x => x.Fields)
-                .FirstOrDefault(x => x.Id == ignId)?.Fields;
-            if (fields != null)
+            using (var ctxSrc = _dbContextFactory.Create())
             {
-                foreach (var field in fields)
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var fields = context.Integrations
+                    .Include(x => x.Fields)
+                    .FirstOrDefault(x => x.Id == ignId)?.Fields;
+                if (fields != null)
                 {
-                    bool isTs = _possibleColumns.Any(x => x == field.Name);
-                    if (isTs)
+                    foreach (var field in fields)
                     {
-                        return field.Name;
+                        bool isTs = _possibleColumns.Any(x => x == field.Name);
+                        if (isTs)
+                        {
+                            return field.Name;
+                        }
                     }
                 }
+                return null;
             }
-            return null;
         }
         public string Discover(DataIntegration ign)
         {

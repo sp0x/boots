@@ -8,6 +8,11 @@ namespace Netlyt.Service
         void ApplyGlobal(ApiRateLimit quota);
         ApiRateLimit GetAllowed(User user);
         ApiRateLimit GetCurrentQuotaLeftForUser(User user);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns></returns>
         ApiRateLimit GetCurrentUsageForUser(User user);
         void ApplyDefaultForUser(User user);
     }

@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using nvoid.db;
-using nvoid.db.Extensions;
 using Netlyt.Service;
 using Netlyt.Web.Models;
 using System.Threading.Tasks; 
@@ -15,14 +12,9 @@ using Donut;
 using Donut.Data;
 using Donut.Integration;
 using Donut.Orion;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using static Netlyt.Web.Attributes;
-using Microsoft.EntityFrameworkCore;
 using Netlyt.Data.ViewModels;
-using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud;
-using Netlyt.Service.Data;
 using Netlyt.Service.Helpers;
 using Newtonsoft.Json;
 
@@ -32,56 +24,40 @@ namespace Netlyt.Web.Controllers
     public class IntegrationsController : Controller
     {
         private IIntegrationService _integrationService;
-        private UserService _userService;
+        private IUserManagementService _userManagementService;
         private IMapper _mapper;
 
         private IOrionContext _orionContext;
         private INotificationService _notifications;
+        private ICloudNodeService _nodeService;
 
         // GET: /<controller>/
-        public IntegrationsController(UserService userService,
+        public IntegrationsController(
+            IUserManagementService userManagementService,
             IIntegrationService integrationService,
             IMapper mapper,
             IOrionContext orionContext,
-            INotificationService notificationsService)
+            INotificationService notificationsService,
+            ICloudNodeService nodeService)
         {
-            _userService = userService;
+            _userManagementService = userManagementService;
             _integrationService = integrationService;
             _mapper = mapper;
             _orionContext = orionContext;
             _notifications = notificationsService;
+            _nodeService = nodeService;
         }
 
         [HttpGet("/integrations/me")]
         [Authorize]
         public async Task<IEnumerable<DataIntegrationViewModel>> GetAll([FromQuery] int page)
         {
-            var user = await _userService.GetCurrentUser();
+            var user = await _userManagementService.GetCurrentUser();
             int pageSize = 25;
-            var dataIntegrations = await _userService.GetIntegrations(user, page, pageSize);
+            var dataIntegrations = await _integrationService.GetIntegrations(user, page, pageSize);
             return dataIntegrations.Select(x => _mapper.Map<DataIntegrationViewModel>(x));
         }
-
-        [HttpGet("/integration/{id}", Name = "GetIntegration")]
-        [Authorize]
-        public IActionResult GetById(long id, string target, string attr, string script)
-        {
-            var item = _integrationService.GetById(id);
-            if (item == null)
-            {
-                return NotFound();
-            }
-            if (target != null)
-            {
-                if (script == null || attr == null)
-                {
-                    return BadRequest();
-                }
-                //kick the async
-                return Accepted();
-            }
-            return new ObjectResult(item);
-        }
+         
         [HttpGet("/job/{id}")]
         [Authorize]
         public IActionResult GetJob(long id)
@@ -97,7 +73,10 @@ namespace Netlyt.Web.Controllers
             {
                 return BadRequest("No integration name given.");
             }
-            var newIntegration = await _integrationService.Create(integration.Name, integration.DataFormatType);
+
+            var user = await _userManagementService.GetCurrentUser();
+            var apiKey = await _userManagementService.GetCurrentApi();
+            var newIntegration = await _integrationService.Create(user, apiKey, integration.Name, integration.DataFormatType);
             return CreatedAtRoute("GetIntegration", new { id = newIntegration.Id }, _mapper.Map<DataIntegrationViewModel>(newIntegration));
 
         }
@@ -119,6 +98,8 @@ namespace Netlyt.Web.Controllers
             string targetFilePath = Path.GetTempFileName();
             string fileContentType = null;
             DataImportResult result = null;
+            var user = await _userManagementService.GetCurrentUser();
+            var apiKey = await _userManagementService.GetCurrentApi();
             using (var targetStream = System.IO.File.Create(targetFilePath))
             {
                 var form = await Request.StreamFile(targetStream);
@@ -129,7 +110,7 @@ namespace Netlyt.Web.Controllers
                 targetStream.Position = 0;
                 try
                 {
-                    result = await _integrationService.CreateOrAppendToIntegration(targetStream, fileContentType,
+                    result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, targetStream, fileContentType,
                         integrationParams.Name);
                     newIntegration = result?.Integration;
                 }
@@ -171,7 +152,7 @@ namespace Netlyt.Web.Controllers
         [Authorize] 
         public IActionResult Delete(long id)
         {
-            var item = _integrationService.GetById(id).FirstOrDefault();
+            var item = _integrationService.GetById(id);
             if (item == null)
             {
                 return NotFound();
@@ -179,34 +160,43 @@ namespace Netlyt.Web.Controllers
             _integrationService.Remove(item);
             return new NoContentResult();
         }
-
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetIntegration(long id)
+        {
+            try
+            {
+                var user = await _userManagementService.GetCurrentUser();
+                var integrationView = await _integrationService.GetIntegrationView(user, id);
+                _notifications.SendIntegrationViewed(id, user.Id);
+                return Json(integrationView);
+            }
+            catch (Forbidden f)
+            {
+                return Forbid(f.Message);
+            }
+            catch (NotFound)
+            {
+                return NotFound();
+            }
+        }
         [HttpGet("{id}/schema")]
         public async Task<IActionResult> GetSchema(long id)
         {
-            var ign = _integrationService.GetById(id)
-                .Include(x=>x.Fields)
-                .Include(x=>x.Models)
-                .ThenInclude(x=>x.Model)
-                .ThenInclude(x=>x.Targets)
-                .ThenInclude(x=>x.Column)
-                .FirstOrDefault();
-            if (ign == null)
+            try
             {
-                return new NotFoundResult();
+                var user = await _userManagementService.GetCurrentUser();
+                var schema = await _integrationService.GetSchema(user, id);
+                _notifications.SendIntegrationViewed(id, user.Id);
+                return Json(schema);
             }
-            var fields = ign.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
-            var schema = new IntegrationSchemaViewModel(ign.Id, fields);
-            schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
-                .Select(x => _mapper.Map<ModelTargetViewModel>(x));
-            var targets = schema.Targets
-                .Select(x =>new ModelTarget(ign.GetField(x.Id)))
-                .Where(x=>x.Column!=null);
-            var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign, targets);
-            var description = await _orionContext.Query(descQuery);
-            _integrationService.SetTargetTypes(ign, description);
-            schema.AddDataDescription(description);
-           
-            return Json(schema);
+            catch (Forbidden f)
+            {
+                return Forbid(f.Message);
+            }
+            catch (NotFound)
+            {
+                return NotFound();
+            }
         }
 
         [HttpPost("/integration/schema")]
@@ -218,11 +208,13 @@ namespace Netlyt.Web.Controllers
             }
             try
             {
-                var result = await _integrationService.CreateOrAppendToIntegration(Request);
+                var user = await _userManagementService.GetCurrentUser();
+                var apiKey = await _userManagementService.GetCurrentApi();
+                var result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, Request);
                 if (result != null)
                 {
                     IIntegration newIntegration = result.Integration;
-                    _notifications.SendNewIntegrationSummary(newIntegration);
+                    _notifications.SendNewIntegrationSummary(newIntegration, user);
                     var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                     return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
                 }

@@ -12,6 +12,7 @@ using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Cloud;
+using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Models.Account;
 using Netlyt.Web.Extensions;
 using Netlyt.Web.Models.AccountViewModels;
@@ -26,32 +27,41 @@ namespace Netlyt.Web.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly IEmailSender _emailSender;
         private readonly ILogger _logger;
-        private readonly UserService _userService;
+        private readonly IUserManagementService _userManagementService;
         private ApiService _apiService;
         private IActionDescriptorCollectionProvider _actionDescriptorCollectionProvider;
         private IMapper _mapper;
         private INotificationService _notifications;
+        private ICloudNodeService _nodeInfo;
+        private ISlaveConnector _slaveConnector;
+        private IUserService _userService;
 
         public AccountController(
             IMapper mapper,
-            UserService userService,
+            IUserManagementService userManagementService,
+            IUserService userService,
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             IEmailSender emailSender,
             ILogger<AccountController> logger,
             ApiService apiService,
             IActionDescriptorCollectionProvider actionDescriptorCollectionProvider,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ICloudNodeService nodeResolver,
+            ISlaveConnector slaveConnector)
         {
             _notifications = notificationService;
             _mapper = mapper;
-            _userService = userService;
+            _userManagementService = userManagementService;
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
             _logger = logger;
             _apiService = apiService;
             _actionDescriptorCollectionProvider = actionDescriptorCollectionProvider;
+            _nodeInfo = nodeResolver;
+            _slaveConnector = slaveConnector;
+            _userService = userService;
         }
 
         [TempData]
@@ -60,7 +70,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/user/me")] // /me = host/me, me = host/user/GetProfile/me  
         public async Task<ActionResult> GetProfile()
         {
-            User user = await _userService.GetUser(User);
+            User user = await _userManagementService.GetUser(User);
             if (user != null)
             { 
                 return Ok(_mapper.Map<UserViewModel>(user));
@@ -86,46 +96,71 @@ namespace Netlyt.Web.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var emailuser = _userService.GetUsername(model.Email);
-                if (emailuser == null)
-                {
-                    var resp = Json(new { success = false, message = "Invalid login attempt." });
-                    resp.StatusCode = 400;
-                    return resp;
-                }
-                var result = await _signInManager.PasswordSignInAsync(emailuser.UserName, model.Password, true, lockoutOnFailure: false);
                 
-                if (result.Succeeded)
-                { 
-                    _logger.LogInformation("User logged in."); 
-                    _userService.InitializeUserSession(HttpContext.User);
-                    _notifications.SendLoggedInNotification(HttpContext.User);
-                    return Json(new
+                if (_nodeInfo.ResolveLocal().HasToVerifyLogins())
+                {
+                    var authResult = await _slaveConnector.AuthenticationClient.LoginUser(model.Email, model.Password);
+                    if (!authResult.Item1) return InvalidLogin();
+                    var user = authResult.Item2;
+                    if (_userService.GetUserByEmail(model.Email) == null)
                     {
-                        success = true,
-                        token = emailuser.Id
-                    }); 
-                }
-                if (result.RequiresTwoFactor)
-                {
-                    return RedirectToAction(nameof(LoginWith2fa), new { returnUrl });
-                }
-                if (result.IsLockedOut)
-                {
-                    _logger.LogWarning("User account locked out.");
-                    return RedirectToAction(nameof(Lockout));
+                        _userManagementService.AddUser(user);
+                    }
+                    return await LoginUser(model, returnUrl, user);
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    var resp = Json(new { success = false, message = "Invalid login attempt." });
-                    resp.StatusCode = 400;
-                    return resp;
+                    // This doesn't count login failures towards account lockout
+                    // To enable password failures to trigger account lockout, set lockoutOnFailure: true
+                    var emailuser = _userService.GetUsername(model.Email);
+                    if (emailuser == null) return InvalidLogin();
+                    return await LoginUser(model, returnUrl, emailuser);
                 }
             }
             return BadRequest();
+        }
+
+        private IActionResult InvalidLogin()
+        {
+            var resp = Json(new {success = false, message = "Invalid login attempt."});
+            resp.StatusCode = 400;
+            return resp;
+        }
+
+        private async Task<IActionResult> LoginUser(LoginViewModel model, string returnUrl, User emailuser)
+        {
+            var result =
+                await _signInManager.PasswordSignInAsync(emailuser.UserName, model.Password, true, lockoutOnFailure: false);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("User logged in.");
+                _userManagementService.InitializeUserSession(HttpContext.User);
+                _notifications.SendLoggedInNotification(emailuser);
+                return Json(new
+                {
+                    success = true,
+                    token = emailuser.Id
+                });
+            }
+
+            if (result.RequiresTwoFactor)
+            {
+                return RedirectToAction(nameof(LoginWith2fa), new {returnUrl});
+            }
+
+            if (result.IsLockedOut)
+            {
+                _logger.LogWarning("User account locked out.");
+                return RedirectToAction(nameof(Lockout));
+            }
+            else
+            {
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                var resp = Json(new {success = false, message = "Invalid login attempt."});
+                resp.StatusCode = 400;
+                return resp;
+            }
         }
 
         [HttpGet]
@@ -260,7 +295,7 @@ namespace Netlyt.Web.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                var result = await _userService.CreateUser(model);
+                var result = await _userManagementService.CreateUser(model);
                 var user = result.Item2;
                 if (result.Item1.Succeeded)
                 {
@@ -490,7 +525,7 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/user/keys")]
         public async Task<ActionResult> GetApiKeys()
         {
-            var user = await _userService.GetUser(User);
+            var user = await _userManagementService.GetUser(User);
             if (user == null) return Json(new {success = false, message = "No user matching your keys."});
             return Json(user.ApiKeys
                 .Select(x=>_mapper.Map<ApiAuthViewModel>(x)));

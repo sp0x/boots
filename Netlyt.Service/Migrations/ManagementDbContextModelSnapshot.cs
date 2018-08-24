@@ -106,6 +106,36 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("ModelTargets");
                 });
 
+            modelBuilder.Entity("Donut.Data.Permission", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<bool>("CanModify");
+
+                    b.Property<bool>("CanRead");
+
+                    b.Property<long?>("DataIntegrationId");
+
+                    b.Property<long?>("ModelId");
+
+                    b.Property<long?>("OwnerId");
+
+                    b.Property<long?>("ShareWithId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DataIntegrationId");
+
+                    b.HasIndex("ModelId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("ShareWithId");
+
+                    b.ToTable("Permissions");
+                });
+
             modelBuilder.Entity("Donut.Data.TargetConstraint", b =>
                 {
                     b.Property<long>("Id")
@@ -392,6 +422,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<DateTime>("UpdatedOn");
 
+                    b.Property<string>("UserId");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ModelId");
@@ -399,6 +431,8 @@ namespace Netlyt.Service.Migrations
                     b.HasIndex("PerformanceId");
 
                     b.HasIndex("TargetId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("TrainingTasks");
                 });
@@ -612,6 +646,30 @@ namespace Netlyt.Service.Migrations
                     b.HasIndex("DataIntegrationId");
 
                     b.ToTable("IntegrationExtra");
+                });
+
+            modelBuilder.Entity("Netlyt.Interfaces.Models.ActionLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<DateTime>("Created");
+
+                    b.Property<string>("InstanceToken");
+
+                    b.Property<string>("Name");
+
+                    b.Property<int>("Type");
+
+                    b.Property<string>("UserId");
+
+                    b.Property<string>("Value");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Logs");
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.ApiAuth", b =>
@@ -852,6 +910,25 @@ namespace Netlyt.Service.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
+            modelBuilder.Entity("Donut.Data.Permission", b =>
+                {
+                    b.HasOne("Donut.Data.DataIntegration", "DataIntegration")
+                        .WithMany("Permissions")
+                        .HasForeignKey("DataIntegrationId");
+
+                    b.HasOne("Donut.Models.Model", "Model")
+                        .WithMany("Permissions")
+                        .HasForeignKey("ModelId");
+
+                    b.HasOne("Netlyt.Interfaces.Models.Organization", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId");
+
+                    b.HasOne("Netlyt.Interfaces.Models.Organization", "ShareWith")
+                        .WithMany()
+                        .HasForeignKey("ShareWithId");
+                });
+
             modelBuilder.Entity("Donut.Data.TargetConstraint", b =>
                 {
                     b.HasOne("Donut.Data.TimeConstraint", "After")
@@ -968,6 +1045,10 @@ namespace Netlyt.Service.Migrations
                         .WithMany()
                         .HasForeignKey("TargetId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Netlyt.Interfaces.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
                 });
 
             modelBuilder.Entity("Donut.Source.FieldDefinition", b =>
@@ -1057,6 +1138,13 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Donut.Data.DataIntegration")
                         .WithMany("Extras")
                         .HasForeignKey("DataIntegrationId");
+                });
+
+            modelBuilder.Entity("Netlyt.Interfaces.Models.ActionLog", b =>
+                {
+                    b.HasOne("Netlyt.Interfaces.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.ApiPermission", b =>

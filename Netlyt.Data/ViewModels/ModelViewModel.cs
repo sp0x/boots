@@ -49,7 +49,9 @@ namespace Netlyt.Data.ViewModels
         public string ApiSecret { get; set; }
         public bool IsBuilding { get; set; }
         public string Status { get; set; }
+        public bool UserIsOwner { get; set; }
         public IEnumerable<ModelBuildViewModel> BuiltTargets { get; set; }
+        public IEnumerable<PermissionViewModel> Permissions {get; set; }
 
     }
 }

@@ -1,5 +1,12 @@
 namespace Netlyt.Data.ViewModels
-{ 
+{
+    public class AccessLogViewModel
+    {
+        public string User { get; set; }
+        public string CreatedOn { get; set; }
+        public string Event { get; set; }
+    }
+    //Deprecated..
     public class DataIntegrationViewModel
     {
         public long Id { get; set; }

@@ -4,6 +4,7 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Donut;
 using Donut.Data;
 using Donut.Data.Format;
@@ -11,12 +12,15 @@ using Donut.Encoding;
 using Donut.Integration;
 using Donut.IntegrationSource;
 using Donut.Models;
+using Donut.Orion;
 using EntityFramework.DbContextScope;
 using EntityFramework.DbContextScope.Interfaces;
+using FluentNHibernate.Conventions.Inspections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
@@ -31,30 +35,85 @@ namespace Netlyt.Service
 {
     public class IntegrationService : IIntegrationService
     {
-        //private IFactory<ManagementDbContext> _factory;
-        private ManagementDbContext _dbContext;
-
-        private ApiService _apiService;
-        private UserService _userService;
         private TimestampService _timestampService;
-        private IDatabaseConfiguration _dbConfig;
         private IDbContextScopeFactory _contextFactory;
+        private IOrionContext _orionContext;
+        private IMapper _mapper;
+        private IIntegrationRepository _integrationsRepo;
+        private IUsersRepository _users;
+        private IApiKeyRepository _keysRepository;
+        private PermissionService _permissionService;
 
-        public IntegrationService(ManagementDbContext dbContext,
-            ApiService apiService,
-            UserService userService,
+        public IntegrationService(
             TimestampService tsService,
-            IDatabaseConfiguration dbConfig,
-            IDbContextScopeFactory dbContextFactory)
+            IDbContextScopeFactory dbContextFactory,
+            IOrionContext orionContext,
+            IMapper mapper,
+            IIntegrationRepository integrationsRepo,
+            IUsersRepository users,
+            IApiKeyRepository keys,
+            PermissionService permissionService)
         {
-            _dbContext = dbContext;
-            _apiService = apiService;
-            _userService = userService;
+            _keysRepository = keys;
+            _mapper = mapper;
             _timestampService = tsService;
-            _dbConfig = dbConfig;
             _contextFactory = dbContextFactory;
+            _orionContext = orionContext;
+            _integrationsRepo = integrationsRepo;
+            _users = users;
+            _permissionService = permissionService;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public DataIntegration GetUserIntegration(User user, long id)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+            using (var ctxSrc = _contextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var userApiKeys = context.ApiUsers.Where(x => x.UserId == user.Id);
+                var integration = context.Integrations.FirstOrDefault(x => x.APIKey != null
+                                                                           && (userApiKeys.Any(y => y.ApiId == x.APIKey.Id)
+                                                                               || userApiKeys.Any(y => y.ApiId == x.PublicKeyId))
+                                                                           && x.Id == id);
+                return integration;
+            }
+        }
+        public async Task<IEnumerable<DataIntegration>> GetIntegrations(User user, int page, int pageSize)
+        {
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var integrations = context.Integrations.Where(x => x.Owner == user).Skip(page * pageSize).Take(pageSize)
+                    .ToList();
+                return await Task.FromResult(integrations);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public DataIntegration GetUserIntegration(User user, string name)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var integration = context.Integrations.FirstOrDefault(x => x.APIKey != null
+                                                                            && (user.ApiKeys.Any(y => y.ApiId == x.APIKey.Id)
+                                                                                || user.ApiKeys.Any(y => y.ApiId == x.PublicKeyId))
+                                                                            && x.Name == name);
+                return integration;
+            }
+        }
         public void SaveOrFetchExisting(ref DataIntegration type)
         {
             DataIntegration exitingIntegration;
@@ -62,8 +121,14 @@ namespace Netlyt.Service
             var appId = typeApiKey.AppId;
             if (!IntegrationExists(type, appId, out exitingIntegration))
             {
-                _dbContext.Integrations.Add(type);
-                _dbContext.SaveChanges();
+                using (var context = _contextFactory.Create())
+                {
+                    var ambientDbContextLocator = new AmbientDbContextLocator();
+                    var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
+                    dbContext.Integrations.Add(type);
+                    context.SaveChanges();
+                }
+
             }
             else
             {
@@ -104,13 +169,17 @@ namespace Netlyt.Service
         public bool IntegrationExists(IIntegration type, string appId, out DataIntegration existingDefinition)
         {
             var localFields = type.Fields;
-
-            existingDefinition = (from x in _dbContext.Integrations
-                                  where x.APIKey.AppId == appId
-                                        && x.Name == type.Name
-                                        && x.Fields.All(f => localFields.Any(lf => lf.Name == f.Name))
-                                  select x).FirstOrDefault();
-            return existingDefinition != null;
+            using (var context = _contextFactory.Create())
+            {
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
+                existingDefinition = (from x in dbContext.Integrations
+                    where x.APIKey.AppId == appId
+                          && x.Name == type.Name
+                          && x.Fields.All(f => localFields.Any(lf => lf.Name == f.Name))
+                    select x).FirstOrDefault();
+                return existingDefinition != null;
+            }
         }
 
         //
@@ -131,8 +200,14 @@ namespace Netlyt.Service
         /// <returns></returns>
         public bool IntegrationExists(IIntegration type, long apiId, out DataIntegration existingDefinition)
         {
-            existingDefinition = _dbContext.Integrations.FirstOrDefault(x => x.APIKey.Id == apiId && (x.Fields == type.Fields || x.Name == type.Name));
-            return existingDefinition != null;
+            using (var context = _contextFactory.Create())
+            {
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
+                existingDefinition = dbContext.Integrations.FirstOrDefault(x => x.APIKey.Id == apiId && (x.Fields == type.Fields || x.Name == type.Name));
+                return existingDefinition != null;
+            }
+
         }
         /// <summary>
         /// Removes an integration and associated collections.
@@ -140,15 +215,22 @@ namespace Netlyt.Service
         /// <param name="importTaskIntegration"></param>
         public void Remove(DataIntegration importTaskIntegration)
         {
-            _dbContext.Integrations.Remove(importTaskIntegration);
-            importTaskIntegration.AggregateKeys.Clear();
-            _dbContext.SaveChanges();
-            if (!string.IsNullOrEmpty(importTaskIntegration.Collection))
+            using (var context = _contextFactory.Create())
             {
-                var collection = MongoHelper.GetCollection(importTaskIntegration.Collection);
-                collection.Drop();
-                collection = null;
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
+                dbContext.Integrations.Remove(importTaskIntegration);
+                importTaskIntegration.AggregateKeys.Clear();
+                dbContext.SaveChanges();
+                if (!string.IsNullOrEmpty(importTaskIntegration.Collection))
+                {
+                    var collection = MongoHelper.GetCollection(importTaskIntegration.Collection);
+                    collection.Drop();
+                    collection = null;
+                }
             }
+
+            
         }
 
         public void SetTargetTypes(DataIntegration ign, JToken description)
@@ -192,14 +274,116 @@ namespace Netlyt.Service
             return example;
         }
 
+        public void OnRemoteIntegrationCreated(JToken eBody)
+        {
+            
+        }
+
+        public async Task<IntegrationSchemaViewModel> GetSchema(User user, long id)
+        {
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var ign = _integrationsRepo.GetById(id)
+                    .Include(x => x.Fields)
+                    .Include(x => x.Models)
+                    .ThenInclude(x => x.Model)
+                    .ThenInclude(x => x.Targets)
+                    .ThenInclude(x => x.Column)
+                    .FirstOrDefault();
+                if (ign == null)
+                {
+                    throw new NotFound();
+                }
+
+                user = context.Users.FirstOrDefault(x => x.Id == user.Id);
+                if (!ign.Permissions.Any(x => x.ShareWith.Id == user.Organization.Id))
+                {
+                    throw new Forbidden(string.Format("You are not allowed to view this integration"));
+                }
+                var fields = ign.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
+                var schema = new IntegrationSchemaViewModel(ign.Id, fields);
+                schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
+                    .Select(x => _mapper.Map<ModelTargetViewModel>(x));
+                var targets = schema.Targets
+                    .Select(x => new ModelTarget(ign.GetField(x.Id)))
+                    .Where(x => x.Column != null);
+                var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign, targets);
+                var description = await _orionContext.Query(descQuery);
+                SetTargetTypes(ign, description);
+                schema.AddDataDescription(description);
+                return schema;
+            }
+        }
+
+        public async Task<DataIntegration> GetIntegrationForAutobuild(CreateAutomaticModelViewModel modelData)
+        {
+
+            using (var context = _contextFactory.Create())
+            {
+                var integration = _integrationsRepo.GetById(modelData.IntegrationId)
+                    .Include(x => x.Fields)
+                    .Include(x => x.Models)
+                    .Include(x => x.APIKey)
+                    .FirstOrDefault();
+                if (integration == null)
+                {
+                    throw new NotFound("Integration not found.");
+                }
+                if (modelData.IdColumn != null && !string.IsNullOrEmpty(modelData.IdColumn.Name))
+                {
+                    integration.DataIndexColumn = modelData.IdColumn.Name;
+                    context.SaveChanges();
+                }
+                return integration;
+            }
+        }
+        
+        public void SetIndexColumn(DataIntegration integration, string idColumnName)
+        {
+            using (var ctxSrc = _contextFactory.Create())
+            {
+                integration = _integrationsRepo.GetById(integration.Id).FirstOrDefault();
+                if (integration != null)
+                {
+                    integration.DataIndexColumn = idColumnName;
+                    ctxSrc.SaveChanges();
+                }
+            }
+        }
+
+        public async Task<IntegrationViewModel> GetIntegrationView(User user, long id)
+        {
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var ign = _integrationsRepo.GetById(id).FirstOrDefault();
+                var schema = await GetSchema(user, id);
+                var output = new IntegrationViewModel();
+                output.Schema = schema;
+                output.UserIsOwner = ign.Owner.Id == user.Id;
+                output.AccessLog = new List<AccessLogViewModel>();
+                output.Permissions = ign.Permissions.Select(x => _mapper.Map<PermissionViewModel>(x)).ToList();
+                return output;
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public IQueryable<DataIntegration> GetById(long id)
+        public DataIntegration GetById(long id, bool withPermissions = false)
         {
-            return _dbContext.Integrations.Where(x => x.Id == id);
+            using (var context = _contextFactory.Create())
+            {
+                var qr = _integrationsRepo.GetById(id);
+                if (withPermissions)
+                {
+                    qr = qr.Include(x => x.Permissions);
+                }
+                return qr.FirstOrDefault();
+            }
         }
 
         /// <summary>
@@ -210,13 +394,18 @@ namespace Netlyt.Service
         /// <returns></returns>
         public IIntegration GetByName(IApiAuth contextApiAuth, string name)
         {
-            var integration = _dbContext.Integrations
-                .Include(x => x.APIKey)
-                .FirstOrDefault(x => x.APIKey.Id == contextApiAuth.Id && x.Name == name);
-            return integration;
+            using (var context = _contextFactory.Create())
+            {
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
+                var integration = dbContext.Integrations
+                    .Include(x => x.APIKey)
+                    .FirstOrDefault(x => x.APIKey.Id == contextApiAuth.Id && x.Name == name);
+                return integration;
+            }
         }
 
-        public async Task<DataImportResult> CreateOrAppendToIntegration(HttpRequest request)
+        public async Task<DataImportResult> CreateOrAppendToIntegration(User user, ApiAuth apiKey, HttpRequest request)
         {
             string targetFilePath = Path.GetTempFileName();
             string fileContentType = null;
@@ -230,7 +419,7 @@ namespace Netlyt.Service
                     var filename = form.GetValue("filename")
                         .ToString().Trim('\"').Replace('.', '_').Replace('-', '_');
                     targetStream.Position = 0;
-                    result = await CreateOrAppendToIntegration(targetStream, fileContentType, filename);
+                    result = await CreateOrAppendToIntegration(user, apiKey,targetStream, fileContentType, filename);
                 }
             }
             catch (Exception ex)
@@ -270,12 +459,14 @@ namespace Netlyt.Service
         /// </summary>
         /// <param name="inputData">The stream containing integration data</param>
         /// <returns></returns>
-        public async Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, string mime = null, string name = null)
+        public async Task<DataImportResult> CreateOrAppendToIntegration(User user, ApiAuth apiKey,Stream inputData, string mime = null, string name = null)
         {
-            var options = new DataImportTaskOptions();
-            var apiKey = await _userService.GetCurrentApi();
-            var crUser = await _userService.GetCurrentUser();
-            return await CreateOrAppendToIntegration(inputData, apiKey, crUser, mime, name);
+            using (var context = _contextFactory.Create())
+            {
+                //var apiKey = await _userService.GetCurrentApi();
+                //var crUser = await _userService.GetCurrentUser();
+                return await CreateOrAppendToIntegration(inputData, apiKey, user, mime, name);
+            }
         }
 
         /// <summary>
@@ -355,7 +546,14 @@ namespace Netlyt.Service
             options.Integration = ign;
             var importTask = new DataImportTask<ExpandoObject>(options);
             var result = await importTask.Import();
-            _dbContext.SaveChanges();
+            using (var context = _contextFactory.Create())
+            {
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
+//                _dbContext.SaveChanges();
+            }
+
+            
             return result;
         }
 
@@ -367,23 +565,56 @@ namespace Netlyt.Service
         /// <returns></returns>
         public async Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, ApiAuth apiKey, User owner, string mime = null, string name = null)
         {
-            var integrationInfo = CreateIntegrationImportTask(inputData, apiKey, owner, mime, name, out var isNewIntegration, out var importTask);
-            var result = await importTask.Import();
-            if (isNewIntegration)
+            
+            using (var context = _contextFactory.Create())
             {
-                var collection = MongoHelper.GetCollection(integrationInfo.Collection);
-                await importTask.Encode(collection);
-                _dbContext.Integrations.Add(integrationInfo);
+                owner = _users.GetById(owner.Id).FirstOrDefault();
+                apiKey = _keysRepository.GetById(apiKey.Id);
+
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
+                
+                if (apiKey != null)
+                {
+                    var dbApikey = dbContext.ApiKeys.FirstOrDefault(x => x.Id == apiKey.Id);
+                    if (dbApikey != null) apiKey = dbApikey;
+                }
+
+                var integrationInfo = CreateIntegrationImportTask(inputData, apiKey, owner, mime, name, out var isNewIntegration, out var importTask);
+                var result = await importTask.Import();
+
+                if (isNewIntegration)
+                {
+                    var collection = MongoHelper.GetCollection(integrationInfo.Collection);
+                    await importTask.Encode(collection);
+                    integrationInfo.Permissions.Add(new Permission
+                    {
+                        Owner = owner.Organization,
+                        ShareWith = owner.Organization,
+                        CanRead = true,
+                        CanModify = true
+                    });
+                    dbContext.Integrations.Add(integrationInfo);
+                    
+                }
+
+                try
+                {
+                    dbContext.SaveChanges(); //Save any changes done to the integration.
+                }
+                catch (DbUpdateException dbe)
+                {
+                    if (!string.IsNullOrEmpty(dbe?.InnerException?.Message)) Console.WriteLine(dbe.InnerException.Message);
+                    throw dbe;
+                }
+                catch (Exception e)
+                {
+                    throw e;
+                }
+                return result;
             }
-            try
-            {
-                _dbContext.SaveChanges(); //Save any changes done to the integration.
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
-            return result;
+
+            
         }
 
         /// <summary>
@@ -514,27 +745,32 @@ namespace Netlyt.Service
         /// <param name="integrationName"></param>
         /// <param name="formatType"></param>
         /// <returns></returns>
-        public async Task<DataIntegration> Create(string integrationName, string formatType)
+        public async Task<DataIntegration> Create(User user, ApiAuth apiKey, string integrationName, string formatType)
         {
-            var apiKey = await _userService.GetCurrentApi();
+            //var apiKey = await _userService.GetCurrentApi();
             if (apiKey == null) throw new Exception("Could not resolve an api key for the current user.");
-            var crUser = await _userService.GetCurrentUser();
+            //var crUser = await _userService.GetCurrentUser();
             var newIntegration = new DataIntegration();
             newIntegration.Name = integrationName;
             newIntegration.DataEncoding = System.Text.Encoding.UTF8.CodePage;
             newIntegration.DataFormatType = formatType;
-            newIntegration.Owner = crUser;
+            newIntegration.Owner = user;
             newIntegration.APIKey = apiKey;
 
-            var existingIntegration = _dbContext.Integrations
-                .FirstOrDefault(x => x.Name.ToLower() == integrationName.ToLower()
-                && x.Owner.Id == crUser.Id);
-            if (existingIntegration != null)
+            using (var context = _contextFactory.Create())
             {
-                throw new ObjectAlreadyExists("Integration with the same name already exists!");
+                var ambientDbContextLocator = new AmbientDbContextLocator();
+                var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
+                var existingIntegration = dbContext.Integrations
+                    .FirstOrDefault(x => x.Name.ToLower() == integrationName.ToLower()
+                                         && x.Owner.Id == user.Id);
+                if (existingIntegration != null)
+                {
+                    throw new ObjectAlreadyExists("Integration with the same name already exists!");
+                }
+                dbContext.Integrations.Add(newIntegration);
+                dbContext.SaveChanges();
             }
-            _dbContext.Integrations.Add(newIntegration);
-            _dbContext.SaveChanges();
             return await Task.FromResult(newIntegration);
         }
         /// <summary>

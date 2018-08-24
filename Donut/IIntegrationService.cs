@@ -10,6 +10,7 @@ using Donut.IntegrationSource;
 using Donut.Models;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Newtonsoft.Json.Linq;
@@ -18,15 +19,18 @@ namespace Donut
 {
     public interface IIntegrationService
     {
+        DataIntegration GetUserIntegration(User user, long id);
+        Task<IEnumerable<DataIntegration>> GetIntegrations(User user, int page, int pageSize);
+        DataIntegration GetUserIntegration(User user, string name);
         IIntegration GetByName(IApiAuth contextApiAuth, string integrationSourceIntegrationName);
-        Task<DataImportResult> AppendToIntegration(Data.DataIntegration ign, string filePath, ApiAuth apiKey);
+        Task<DataImportResult> AppendToIntegration(DataIntegration ign, string filePath, ApiAuth apiKey);
 
-        Task<DataImportResult> AppendToIntegration(Data.DataIntegration ign, InputSource source, ApiAuth apiKey,
+        Task<DataImportResult> AppendToIntegration(DataIntegration ign, InputSource source, ApiAuth apiKey,
             string mime = null);
-        Task<DataImportResult> AppendToIntegration(Data.DataIntegration ign, Stream inputData, ApiAuth apiKey,
+        Task<DataImportResult> AppendToIntegration(DataIntegration ign, Stream inputData, ApiAuth apiKey,
             string mime = null);
-        Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, string mime = null, string name = null);
-        Task<DataImportResult> CreateOrAppendToIntegration(HttpRequest request);
+        Task<DataImportResult> CreateOrAppendToIntegration(User user, ApiAuth apikey, Stream inputData, string mime = null, string name = null);
+        Task<DataImportResult> CreateOrAppendToIntegration(User user, ApiAuth apikey, HttpRequest request);
 
         Task<DataImportResult> CreateOrAppendToIntegration(string filePath, ApiAuth apiKey, User user,
             string name = null);
@@ -59,12 +63,17 @@ namespace Donut
             User owner,
             string name);
 
-        Task<Data.DataIntegration> Create(string integrationName, string formatType);
+        Task<DataIntegration> Create(User user, ApiAuth apiKey, string integrationName, string formatType);
         IInputFormatter<T> ResolveFormatter<T>(string mimeType) where T : class;
 
-        IQueryable<Data.DataIntegration> GetById(long id);
-        void Remove(Data.DataIntegration importTaskIntegration);
+        DataIntegration GetById(long id, bool withPermissions=false);
+        void Remove(DataIntegration importTaskIntegration);
         void SetTargetTypes(DataIntegration ign, JToken description);
         Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask);
+        void OnRemoteIntegrationCreated(JToken eBody);
+        Task<IntegrationSchemaViewModel> GetSchema(User user,long id);
+        Task<DataIntegration> GetIntegrationForAutobuild(CreateAutomaticModelViewModel modelData);
+        void SetIndexColumn(DataIntegration integration, string idColumnName);
+        Task<IntegrationViewModel> GetIntegrationView(User user, long id);
     }
 }

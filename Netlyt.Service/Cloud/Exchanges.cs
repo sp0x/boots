@@ -7,5 +7,6 @@ namespace Netlyt.Service.Cloud
     {
         public const string Notifications = "notifications";
         public const string Auth = "auth";
+        public const string Tasks = "tasks";
     }
 }

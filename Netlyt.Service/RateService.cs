@@ -1,21 +1,34 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Donut.Orion;
+using EntityFramework.DbContextScope.Interfaces;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Data;
 
 namespace Netlyt.Service
 {
     public class RateService : IRateService
     {
         private IRedisCacher _cacher;
+        private IDbContextScopeFactory _dbContextFactory;
 
-        public RateService(IRedisCacher cacher)
+        public RateService(
+            IRedisCacher cacher,
+            IDbContextScopeFactory dbContextFactory
+        )
         {
             _cacher = cacher;
+            _dbContextFactory = dbContextFactory;
         }
         public ApiRateLimit GetAllowed(User user)
         {
-            return user.RateLimit;
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var rate = context.Users.Where(x => x.Id == user.Id).Select(x=>x.RateLimit).FirstOrDefault();
+                return rate;
+            }
         }
 
         public void ApplyGlobal(ApiRateLimit quota)

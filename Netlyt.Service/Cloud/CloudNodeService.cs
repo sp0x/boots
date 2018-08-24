@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using Netlyt.Interfaces.Models;
 
-namespace Netlyt.Service.Cloud.Slave
+namespace Netlyt.Service.Cloud
 {
-    public class Helpers
+    public class CloudNodeService : ICloudNodeService
     {
-        public static NetlytNode GetLocalNode()
+        public NetlytNode ResolveLocal()
         {
             var node = new NetlytNode();
             var nodeType = Environment.GetEnvironmentVariable("NODE_TYPE");

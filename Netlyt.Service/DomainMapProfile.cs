@@ -1,24 +1,21 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
 using Donut;
 using Donut.Data;
 using Donut.Models;
 using Donut.Source;
-using MongoDB.Bson;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
-using Netlyt.Service;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using DataIntegration = Donut.Data.DataIntegration;
 
-namespace Netlyt.Web
+namespace Netlyt.Service
 {
     public class DomainMapProfile : Profile
     {
-        public DomainMapProfile(ModelService modelService, UserService userService)
+        public DomainMapProfile(IServiceProvider services)
         {
             CreateMap<ApiAuth, AuthKeyViewModel>()
                 .ForMember(x=>x.Secret, opt=>opt.MapFrom(src=>src.AppSecret))
@@ -37,45 +34,29 @@ namespace Netlyt.Web
             CreateMap<FieldDefinition, FieldDefinitionViewModel>()
                 .ForMember(x=>x.TargetType, opt=>opt.MapFrom(y=>y.TargetType));
             CreateMap<DonutScriptInfo, DonutScriptViewModel>();
+            CreateMap<Permission, PermissionViewModel>();
             CreateMap<ModelTarget, ModelTargetViewModel>()
                 .ForMember(x=>x.Column, opt=> opt.MapFrom(src=>src.Column));
             CreateMap<Model, ModelViewModel>()
+                .ForMember(x=>x.ApiKey, opt=> opt.Ignore())
+                .ForMember(x=>x.Permissions, opt=> opt.Ignore())
                 .ForMember(x => x.BuiltTargets, opt => opt.ResolveUsing(src =>
                 {
-                    var output = new List<ModelBuildViewModel>();
-                    var sourceTargets = src.TrainingTasks
-                        .Where(tt => tt.Status == TrainingTaskStatus.Done)
-                        .GroupBy(tt => tt.Target.Column.Name)
-                        .Select(x=>x.FirstOrDefault());
-                    foreach (TrainingTask srcTargetTask in sourceTargets)
-                    {
-                        var vm = new ModelBuildViewModel();
-                        var srcPerformance = srcTargetTask.Performance;
-                        vm.TaskType = srcPerformance.TaskType;
-                        vm.Id = srcTargetTask.Id;
-                        vm.Endpoint = modelService.GetTrainedEndpoint(srcTargetTask);
-                        vm.Target = srcTargetTask.Target.Column.Name;
-                        vm.CurrentModel = srcTargetTask.TypeInfo;
-                        vm.Performance = new ModelTrainingPerformanceViewModel();
-                        vm.Performance.Accuracy = srcTargetTask.Performance.Accuracy;
-                        vm.Performance.AdvancedReport = srcTargetTask.Performance.AdvancedReport;
-                        vm.Performance.FeatureImportance = srcTargetTask.Performance.FeatureImportance;
-                        vm.Performance.Id = srcTargetTask.Performance.Id;
-                        vm.Performance.IsRegression = srcTargetTask.Target.IsRegression;
-                        vm.Performance.LastRequestIP = srcTargetTask.Performance.LastRequestIP;
-                        vm.Performance.LastRequestTs = srcTargetTask.Performance.LastRequestTs;
-                        vm.Performance.MontlyUsage = srcTargetTask.Performance.MonthlyUsage;
-                        vm.Performance.WeeklyUsage = srcTargetTask.Performance.WeeklyUsage;
-                        vm.Performance.TargetName = srcTargetTask.Target.Column.Name;
-                        vm.Performance.TaskType = vm.TaskType;
-                        vm.Scoring = srcPerformance.Scoring;
-                        output.Add(vm);
-                    }
+                    var modelService = services.GetService(typeof(ModelService)) as ModelService;
+                    var output = modelService.GetBuildViews(src);
                     return output;
                 }))
                 .ForMember(x => x.Status,
-                    opt => opt.ResolveUsing(src => { return modelService.GetModelStatus(src).ToString(); }))
-                .ForMember(x => x.IsBuilding, opt => opt.ResolveUsing(src => modelService.IsBuilding(src)));
+                    opt => opt.ResolveUsing(src =>
+                    {
+                        var modelService = services.GetService(typeof(ModelService)) as ModelService;
+                        return modelService.GetModelStatus(src).ToString();
+                    }))
+                .ForMember(x => x.IsBuilding, opt => opt.ResolveUsing(src =>
+                {
+                    var modelService = services.GetService(typeof(ModelService)) as ModelService;
+                    return modelService.IsBuilding(src);
+                }));
             CreateMap<ApiAuth, ApiAuthViewModel>()
                 .ForMember(x => x.AppId, opt => opt.MapFrom(src => src.AppId));
             CreateMap<ApiUser, ApiAuthViewModel>()
@@ -88,11 +69,14 @@ namespace Netlyt.Web
             CreateMap<User, UsersViewModel>()
                 .ForMember(x=>x.Roles, opt=>opt.ResolveUsing(src =>
                 {
+                    var userService = services.GetService(typeof(IUserManagementService)) as IUserManagementService;
                     return userService.GetRoles(src).Result;
                 }));
             CreateMap<User, UserPreviewViewModel>()
+                .ForMember(x=>x.Username, opt=> opt.ResolveUsing(src=> src.UserName))
                 .ForMember(x => x.Roles, opt => opt.ResolveUsing(src =>
                 {
+                    var userService = services.GetService(typeof(IUserManagementService)) as IUserManagementService;
                     return userService.GetRoles(src).Result;
                 }));
         }

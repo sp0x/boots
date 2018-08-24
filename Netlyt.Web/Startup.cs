@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
-using AutoMapper;
 using Donut;
 using Donut.Orion;
 using EntityFramework.DbContextScope;
@@ -9,22 +7,20 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using nvoid.db.DB.Configuration;
-using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Cloud;
 using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Data;
-using Netlyt.Web.Extensions;
 using Netlyt.Web.Middleware;
 using Netlyt.Web.Middleware.Hmac;
-using Netlyt.Web.Services;
 using Newtonsoft.Json;
 
 namespace Netlyt.Web
@@ -55,14 +51,7 @@ namespace Netlyt.Web
             var databaseConfiguration = DBConfig.GetInstance().GetGeneralDatabase();
             if (databaseConfiguration == null) throw new Exception("No database configuration for `general` db!");
             var dbOptions = Configuration.GetDbOptionsBuilder();
-            var postgresConnectionString = PersistanceSettings.GetPostgresConnectionString(Configuration);
-            Console.WriteLine("Management DB at: " + postgresConnectionString);
-            services.AddDbContext<ManagementDbContext>(options =>
-                {
-                    options.UseNpgsql(postgresConnectionString);
-                    options.UseLazyLoadingProxies();
-                }
-            );
+            services.AddManagementDbContext(Configuration);
             //services.AddScoped<IDataAccessProvider, DataAccessPostgreSqlProvider.DataAccessPostgreSqlProvider>();
             services.AddTransient<IDatabaseConfiguration>((sp) =>
                 {
@@ -81,6 +70,8 @@ namespace Netlyt.Web
             services.AddIdentity<User, UserRole>()
                 .AddEntityFrameworkStores<ManagementDbContext>()
                 .AddDefaultTokenProviders();
+            services.AddApiIdentity();
+//            services.AddTransient<IUserStore<User>, UserStore<User>>();
 
             //            services.AddIdentityWithMongoStoresUsingCustomTypes<ApplicationUser, IdentityRole>(mongoConnectionString)
             //                .AddDefaultTokenProviders();
@@ -102,28 +93,21 @@ namespace Netlyt.Web
 
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
-
+            services.AddTransient<ICloudTaskService, CloudTaskService>();
             services.AddTransient<IDbContextFactory>((sp) => new DbContextFactory(dbOptions));
             services.AddTransient<IDbContextScopeFactory>((sp) => new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
-
-            services.AddTransient<IFactory<ManagementDbContext>, DynamicContextFactory>(s =>
-                new DynamicContextFactory(() =>
-                {
-                    return new ManagementDbContext(dbOptions.Options);
-                })
-            );
+            
             services.AddTransient<ILogger>(x => x.GetService<ILoggerFactory>().CreateLogger("Netlyt.Web.Logs"));
             services.AddTransient<IRateService, RateService>();
-            services.AddTransient<UserService>();
             services.AddTransient<ApiService>();
             services.AddTransient<TimestampService>();
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
+            services.AddTransient<PermissionService>();
             services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
-            services.AddTransient<INotificationService, NotificationService>();
-            services.AddSingleton<NetlytNode>(x => Helpers.GetLocalNode());
-            services.AddSingleton<ISlaveConnector, SlaveConnector>();
+            services.AddCloudComs();
+            services.AddRepositories();
             
 
             SetupAuthentication(services);

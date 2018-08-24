@@ -53,13 +53,7 @@ namespace Netlyt.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-            var trainingTask = _modelService.GetBuildById(buildId, user);
-            if (trainingTask == null) return NotFound();
-            if (trainingTask.Performance is null) return NotFound();
-            var snippets = _donut.GetSnippets(user, trainingTask);
-            BsonDocument dataSnippet = await _integrationService.GetTaskDataSample(trainingTask);
-            var jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict, Indent=true };
-            snippets["data"] = dataSnippet.ToJson(jsonWriterSettings);
+            var snippets = await _modelService.GetSnippets(user, buildId);
             return Json(snippets);
         }
 

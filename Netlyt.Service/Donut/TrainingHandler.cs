@@ -10,6 +10,7 @@ using Donut.Orion;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
+using Netlyt.Service.Cloud;
 using Netlyt.Service.Data;
 using Newtonsoft.Json.Linq;
 
@@ -21,6 +22,7 @@ namespace Netlyt.Service.Donut
         private ManagementDbContext _db;
         private IEmailSender _emailService;
         private ModelService _modelService;
+        private INotificationService _notifications;
 
         #region Events
         
@@ -29,9 +31,11 @@ namespace Netlyt.Service.Donut
         public TrainingHandler(IFactory<ManagementDbContext> contextFactory,
             IOrionContext orion,
             IEmailSender emailSender,
-            ModelService modelService)
+            ModelService modelService,
+            INotificationService notifications)
         {
             _db = contextFactory.Create();
+            _notifications = notifications;
             _orion = orion;
 #pragma warning disable 4014
 #pragma warning restore 4014
@@ -74,6 +78,7 @@ namespace Netlyt.Service.Donut
                 var mailMessage = $"Model training for {model.ModelName} is now complete." +
                                   $"Get your results here: {endpoint}";
                 await _emailService.SendEmailAsync(model.User.Email, "Training complete.", mailMessage);
+                _notifications.SendModelTrained(model, completedTasks.FirstOrDefault()?.User , targetPerformances);
             }
             catch (Exception ex)
             {

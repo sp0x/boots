@@ -1,9 +1,14 @@
 using System;
+using System.Collections.Generic;
 using EntityFramework.DbContextScope.Interfaces;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Netlyt.Interfaces.Models;
 
 namespace Netlyt.Service.Data
-{
+{ 
     public class DynamicContextFactory : IFactory<ManagementDbContext>
     {
         private Func<ManagementDbContext> _generator;

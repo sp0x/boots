@@ -27,6 +27,7 @@ namespace Donut.Models
         public virtual ICollection<ModelRule> Rules { get; set; }
         public virtual ICollection<FeatureGenerationTask> FeatureGenerationTasks { get; set; }
         public virtual ICollection<TrainingTask> TrainingTasks { get; set; }
+        
         public string Grouping { get; set; }
         public DateTime CreatedOn { get; set; }
         public virtual ICollection<ModelTarget> Targets { get; set; }
@@ -44,6 +45,8 @@ namespace Donut.Models
         public string Callback { get; set; }
         public string TrainingParams { get; set; }
         public string HyperParams { get; set; }
+        public virtual ICollection<Permission> Permissions{ get; set; }
+
 
         public Model()
         {
@@ -52,6 +55,8 @@ namespace Donut.Models
             FeatureGenerationTasks = new List<FeatureGenerationTask>();
             TrainingTasks = new List<TrainingTask>();
             Targets = new List<ModelTarget>();
+            Permissions = new HashSet<Permission>();
+
         }
 
         /// <summary>

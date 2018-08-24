@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using EntityFramework.DbContextScope.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud;
 using Netlyt.Service.Cloud.Auth;
@@ -12,11 +11,11 @@ namespace Netlyt.Master
 {
     public class CloudAuthenticationService : ICloudAuthenticationService
     {
-        private ManagementDbContext _dbContext;
+        private IDbContextScopeFactory _dbContextFactory;
 
-        public CloudAuthenticationService(ManagementDbContext dbContext)
+        public CloudAuthenticationService(IDbContextScopeFactory dbFactory)
         {
-            _dbContext = dbContext;
+            _dbContextFactory = dbFactory;
         }
 
         public NodeAuthenticationResult Authenticate(AuthenticationRequest authRequest)
@@ -31,14 +30,18 @@ namespace Netlyt.Master
             }
             else
             {
-                var authMatch = _dbContext.ApiKeys.FirstOrDefault(x => x.AppId == authRequest.ApiKey
-                                                                       && x.AppSecret == authRequest.ApiSecret);
-                if (authMatch != null)
+                using (var ctxSrc = _dbContextFactory.Create())
                 {
-                    var token = GenerateAuthenticationToken(authMatch);
-                    var apiUser = authMatch.Users.FirstOrDefault();
+                    var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                    var authMatch = context.ApiKeys.FirstOrDefault(x => x.AppId == authRequest.ApiKey
+                                                                           && x.AppSecret == authRequest.ApiSecret);
+                    if (authMatch != null)
+                    {
+                        var token = GenerateAuthenticationToken(authMatch);
+                        var apiUser = authMatch.Users.FirstOrDefault();
 
-                    output = new NodeAuthenticationResult(token, apiUser?.User);
+                        output = new NodeAuthenticationResult(token, apiUser?.User);
+                    }
                 }
             }
             return output;
@@ -47,29 +50,39 @@ namespace Netlyt.Master
         private string GenerateCloudToken(string name)
         {
             var output = Guid.NewGuid().ToString();
-            var newAuthorization = new CloudAuthorizationEvent()
+            using (var ctxSrc = _dbContextFactory.Create())
             {
-                Role = NodeRole.Cloud,
-                Name = name,
-                CreatedOn = DateTime.UtcNow,
-                Token = output
-            };
-            _dbContext.CloudAuthorizations.Add(newAuthorization);
-            return output;
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var newAuthorization = new CloudAuthorizationEvent()
+                {
+                    Role = NodeRole.Cloud,
+                    Name = name,
+                    CreatedOn = DateTime.UtcNow,
+                    Token = output
+                };
+                context.CloudAuthorizations.Add(newAuthorization);
+                ctxSrc.SaveChanges();
+                return output;
+            }
         }
 
         private string GenerateAuthenticationToken(ApiAuth auth)
         {
-            var output = Guid.NewGuid().ToString();
-            var newAuthorization = new CloudAuthorizationEvent()
+            using (var ctxSrc = _dbContextFactory.Create())
             {
-                Role = NodeRole.Slave,
-                ApiKey = auth,
-                CreatedOn = DateTime.UtcNow,
-                Token = output
-            };
-            _dbContext.CloudAuthorizations.Add(newAuthorization);
-            return output;
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var output = Guid.NewGuid().ToString();
+                var newAuthorization = new CloudAuthorizationEvent()
+                {
+                    Role = NodeRole.Slave,
+                    ApiKey = auth,
+                    CreatedOn = DateTime.UtcNow,
+                    Token = output
+                };
+                context.CloudAuthorizations.Add(newAuthorization);
+                ctxSrc.SaveChanges();
+                return output;
+            }
         }
     }
 }

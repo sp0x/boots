@@ -47,20 +47,20 @@ namespace Netlyt.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-            var item = _modelService.GetById(id, user);
-            if (item == null) return NotFound();
-            var donut = (DonutScriptInfo)item.DonutScript;
-            if (donut == null)
+            try
             {
-                return NotFound();
+                var result = await _donutService.GeneratePythonModule(id, user);
+                return Json(new
+                {
+                    code = result.Item1,
+                    donutScript = result.Item2.ToString(),
+                    donut = _mapper.Map<DonutScriptViewModel>(result.Item2)
+                });
             }
-            var pythonCode = await _donutService.ToPythonModule(donut);
-            return Json(new
+            catch (NotFound ex)
             {
-                code= pythonCode,
-                donutScript = donut.ToString(),
-                donut= _mapper.Map<DonutScriptViewModel>(donut)
-            });
+                return NotFound(ex.Message);
+            }
         }
     }
 }
