@@ -81,6 +81,7 @@ namespace Netlyt.Service.Cloud.Slave
             try
             {
                 var node = _cloudNodeService.ResolveLocal();
+                Console.WriteLine("NODE: " + node);
                 if (!node.Equals(NetlytNode.Cloud))
                 {
                     var authResult = await authClient.AuthorizeNode(node);
