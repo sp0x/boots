@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Donut;
 using EntityFramework.DbContextScope.Interfaces;
@@ -13,7 +14,8 @@ using RabbitMQ.Client.Events;
 namespace Netlyt.Service.Cloud.Slave
 {
     /// <summary>
-    /// Connects to the master cloud
+    /// Connects to the master cloud.
+    /// TODO: Fix thread context switching..
     /// </summary>
     public class SlaveConnector : IDisposable, ISlaveConnector
     {
@@ -33,6 +35,8 @@ namespace Netlyt.Service.Cloud.Slave
         public ApiRateLimit Quota { get; private set; }
         public string Id { get; private set; }
         public User User { get; private set; }
+        private CancellationToken _startCancellation;
+        private MqConfig _mqConfig;
 
         public NotificationClient NotificationClient
         {
@@ -58,22 +62,35 @@ namespace Netlyt.Service.Cloud.Slave
             _users = users;
             this.Id = Guid.NewGuid().ToString();
             _cloudNodeService = cloudNodeService;
-            var mqConfig = MqConfig.GetConfig(config);
+            _mqConfig = MqConfig.GetConfig(config);
             _rateService = rateService;
             _modelService = modelService;
             _integrations = integrationService;
             _factory = new ConnectionFactory()
             {
-                HostName = mqConfig.Host,
-                UserName = mqConfig.User,
-                Password = mqConfig.Password,
-                Port = mqConfig.Port
+                HostName = _mqConfig.Host,
+                UserName = _mqConfig.User,
+                Password = _mqConfig.Password,
+                Port = _mqConfig.Port
             };
+        }
+
+        
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            _startCancellation = cancellationToken;
+            return Run();
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
         }
 
         public async Task Run()
         {
             Running = true;
+            Console.WriteLine($"Connecting to netlyt cloud @ {_mqConfig}");
             connection = _factory.CreateConnection();
             channel = connection.CreateModel();
             authClient = new NodeAuthClient(channel);
@@ -142,5 +159,7 @@ namespace Netlyt.Service.Cloud.Slave
             connection?.Dispose();
             channel?.Dispose();
         }
+
+
     }
 }

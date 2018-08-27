@@ -29,8 +29,8 @@ namespace Netlyt.Web
                 .CaptureStartupErrors(true)
                 .UseStartup<Startup>()
                 .Build();
-            SlaveConnector = host.Services.GetService(typeof(ISlaveConnector)) as ISlaveConnector;
-            SlaveConnector.Run();
+            //SlaveConnector = host.Services.GetService(typeof(SlaveConnector)) as SlaveConnector;
+            //SlaveConnector.Run();
             return host;
         }
             

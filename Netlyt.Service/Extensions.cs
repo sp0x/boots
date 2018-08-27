@@ -16,6 +16,7 @@ using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud;
 using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Data;
+using Netlyt.Service.Helpers;
 using Netlyt.Service.Repisitories;
 
 namespace Netlyt.Service
@@ -66,6 +67,7 @@ namespace Netlyt.Service
             services.AddSingleton<ICloudNodeService, CloudNodeService>();
             services.AddTransient<ICloudTaskService, CloudTaskService>();
             services.AddSingleton<ISlaveConnector, SlaveConnector>();
+            services.AddHostedService<BackgroundServiceStarter<ISlaveConnector>>();
         }
         public static void AddRepositories(this IServiceCollection services)
         {
