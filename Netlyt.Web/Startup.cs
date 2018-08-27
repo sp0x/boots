@@ -167,7 +167,8 @@ namespace Netlyt.Web
 
         private void InitializeDatabase(IApplicationBuilder app)
         {
-            using (var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+            var serviceScopeFactory = app.ApplicationServices.GetService<IServiceScopeFactory>();
+            using (var scope = serviceScopeFactory.CreateScope())
             {
                 var managementDbContext = scope.ServiceProvider.GetRequiredService<ManagementDbContext>();
                 try
