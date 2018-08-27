@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Netlyt.Service;
 using Netlyt.Web.Models;
@@ -22,6 +23,7 @@ namespace Netlyt.Web.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
+        [AllowAnonymous]
         [HttpPost("/sendmail")]
         public async Task<IActionResult> Sendmail(string from, string body, string name)
         {
