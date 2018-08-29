@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Netlyt.Service.Cloud.Slave;
+using Netlyt.Service.Data;
 
 namespace Netlyt.Web
 {
@@ -29,8 +31,8 @@ namespace Netlyt.Web
                 .CaptureStartupErrors(true)
                 .UseStartup<Startup>()
                 .Build();
-            SlaveConnector = host.Services.GetService(typeof(ISlaveConnector)) as ISlaveConnector;
-            SlaveConnector.Run();
+            //SlaveConnector = host.Services.GetService(typeof(SlaveConnector)) as SlaveConnector;
+            //SlaveConnector.Run();
             return host;
         }
             

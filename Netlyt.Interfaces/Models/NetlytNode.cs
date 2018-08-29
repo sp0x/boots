@@ -7,9 +7,9 @@
         public string Address { get; set; }
         public virtual ApiAuth ApiKey { get; set; }
         public virtual Organization Organization { get; set; }
-        public NodeRole Role { get; set; }
+        public NodeRole Role { get; set; } = NodeRole.Slave;
         public bool Active { get; set; } = true;
-        public static NetlytNode Cloud { get; private set; } = new NetlytNode("Cloud");
+        public static NetlytNode Cloud { get; private set; } = new NetlytNode("Cloud") { Role = NodeRole.Cloud };
 
         public const string NODE_TYPE_CLOUD = "cloud";
         public const string NODE_TYPE_ON_PREM = "prem";
@@ -17,6 +17,12 @@
         public NetlytNode()
         {
 
+        }
+
+        public override string ToString()
+        {
+            var orgName = Organization == null ? "NoOrg" : Organization.Name;
+            return $"{Name} - {orgName}@{Address} [{Role.ToString()}]";
         }
 
         public bool IsCloud()

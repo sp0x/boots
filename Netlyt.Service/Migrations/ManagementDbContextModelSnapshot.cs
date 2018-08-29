@@ -659,6 +659,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Name");
 
+                    b.Property<long>("ObjectId");
+
                     b.Property<int>("Type");
 
                     b.Property<string>("UserId");
@@ -746,7 +748,7 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<long?>("ApiKeyId");
+                    b.Property<long>("ApiKeyId");
 
                     b.Property<string>("Name");
 
@@ -786,7 +788,7 @@ namespace Netlyt.Service.Migrations
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256);
 
-                    b.Property<long?>("OrganizationId");
+                    b.Property<long>("OrganizationId");
 
                     b.Property<string>("PasswordHash");
 
@@ -1165,14 +1167,16 @@ namespace Netlyt.Service.Migrations
                 {
                     b.HasOne("Netlyt.Interfaces.Models.ApiAuth", "ApiKey")
                         .WithMany()
-                        .HasForeignKey("ApiKeyId");
+                        .HasForeignKey("ApiKeyId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.User", b =>
                 {
                     b.HasOne("Netlyt.Interfaces.Models.Organization", "Organization")
                         .WithMany("Members")
-                        .HasForeignKey("OrganizationId");
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Netlyt.Interfaces.Models.ApiRateLimit", "RateLimit")
                         .WithMany()

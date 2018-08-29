@@ -43,6 +43,7 @@ namespace Netlyt.Web.Controllers
                 throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             }
             var roles = await _userService.GetRoles(user);
+            var org = _userService.GetOrganization(user);
             var model = new IndexViewModel
             {
                 Username = user.UserName,
@@ -53,8 +54,8 @@ namespace Netlyt.Web.Controllers
                 Id = user.Id,
                 Organization = new Data.ViewModels.OrganizationViewModel
                 {
-                    Id = user.Organization.Id,
-                    Name = user.Organization.Name
+                    Id = org.Id,
+                    Name = org?.Name
                 }
             };
             return Json(model);

@@ -91,7 +91,7 @@ namespace Netlyt.Service.Migrations
                         column: x => x.ApiAuthId,
                         principalTable: "ApiKeys",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -111,7 +111,7 @@ namespace Netlyt.Service.Migrations
                         column: x => x.ApiKeyId,
                         principalTable: "ApiKeys",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -187,13 +187,13 @@ namespace Netlyt.Service.Migrations
                         column: x => x.OrganizationId,
                         principalTable: "Organizations",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_AspNetUsers_AspNetRoles_RoleId",
                         column: x => x.RoleId,
                         principalTable: "AspNetRoles",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -388,7 +388,7 @@ namespace Netlyt.Service.Migrations
                         column: x => x.DataIntegrationId,
                         principalTable: "Integrations",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_AggregateKeys_DonutFunction_OperationId",
                         column: x => x.OperationId,
@@ -500,7 +500,7 @@ namespace Netlyt.Service.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -806,7 +806,7 @@ namespace Netlyt.Service.Migrations
                 column: "DonutScriptId",
                 principalTable: "DonutScripts",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Cascade);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

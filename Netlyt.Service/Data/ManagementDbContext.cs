@@ -53,6 +53,8 @@ namespace Netlyt.Service.Data
             Console.WriteLine("Initialized context with options: " + options.ToString());
         }
 
+
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseLoggerFactory(Logger);

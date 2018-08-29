@@ -68,6 +68,15 @@ namespace Netlyt.Service
             }
         }
 
+        public Organization GetOrganization(User user)
+        {
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                var result = _userRepository.GetById(user.Id).FirstOrDefault();
+                return result?.Organization;
+            }
+        }
+
         public IEnumerable<User> GetUsers()
         {
             return _context.Users.Include(x => x.Role);
@@ -153,32 +162,71 @@ namespace Netlyt.Service
 
         public async Task<Tuple<IdentityResult, User>> CreateUser(RegisterViewModel model)
         {
-            var isFirstUser = _context.Users.Count() == 0;
-            var username = model.Email.Substring(0, model.Email.IndexOf("@"));
-            var user = new User
+            using (var contextSrc = _dbContextFactory.Create())
             {
-                UserName = username,
-                Email = model.Email,
-                FirstName = model.FirstName,
-                LastName = model.LastName,
-                RateLimit = ApiRateLimit.CreateDefault()
-            };
-            var org = !string.IsNullOrEmpty(model.Org) ? _orgService.Get(model.Org) : null;
-            if (org == null)
-                user.Organization = new Organization()
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var isFirstUser = _context.Users.Count() == 0;
+                var username = model.Email.Substring(0, model.Email.IndexOf("@"));
+                var user = new User
                 {
-                    Name =username
+                    UserName = username,
+                    Email = model.Email,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    RateLimit = ApiRateLimit.CreateDefault()
                 };
-            var apiKey = _apiService.Generate();
-            user.ApiKeys.Add(new ApiUser(user, apiKey));
-            var result = _userManager.CreateAsync(user, model.Password).Result;
-            if (result.Succeeded && isFirstUser)
-            {
-                await AddRolesToUser(user, new string[] { "Admin" });
+                var org = !string.IsNullOrEmpty(model.Org) ? _orgService.Get(model.Org) : null;
+                if (org != null) user.Organization = org;
+                var apiKey = _apiService.Generate();
+                user.ApiKeys.Add(new ApiUser(user, apiKey));
+                try
+                {
+                    if (isFirstUser)
+                    {
+                        var netlytOrg = this.GetOrganization("Netlyt");
+                        user.OrganizationId = netlytOrg.Id;
+                        org = netlytOrg;
+                    }
+                    var result = _userManager.CreateAsync(user, model.Password).Result;
+                    if (result.Succeeded && isFirstUser)
+                    {
+                        await AddRolesToUser(user, new string[] {"Admin"});
+                    }
+                    user.Organization = org;
+                    var output = new Tuple<IdentityResult, User>(result, user);
+                    return output;
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
             }
-            var output = new Tuple<IdentityResult, User>(result, user);
-            return output;
         }
+
+        private Organization GetOrganization(string orgName)
+        {
+
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                return context.Organizations.FirstOrDefault(x => x.Name == orgName);
+            }
+        }
+
+        private void SetUserOrganization(User user, string netlyt)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var org = _orgService.Get(netlyt);
+                //user = context.Users.FirstOrDefault(x => x.Id == user.Id);
+                //user.Organization = org;
+                user.OrganizationId = org.Id;
+                ctxSrc.SaveChanges();
+            }
+
+        }
+
         public async Task<bool> AddRolesToUser(User user, IEnumerable<string> newRoles)
         {
             foreach (var newRole in newRoles)

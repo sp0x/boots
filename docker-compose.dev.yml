@@ -1,0 +1,113 @@
+version: '3'
+
+volumes:
+  mongodb: 
+  experiments:
+  redis:
+  pgdata:
+
+services:
+  balancer:
+    container_name: balancer
+    build:
+      context: ./haproxy
+    ports:
+      - "10.10.1.5:80:80"
+
+  netlyt:
+    image: netlyt
+    hostname: api.netlyt.com
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+      - mongo.netlyt.com 
+      - postgres
+      - orion
+      - balancer
+    ports:
+      - "5000:5000"
+      - "81:80"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: "loc.mq.netlyt.com"
+    container_name: rabbitmq
+    env_file:
+      - rabbitmq.env
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  
+  jenkins:
+    privileged: true
+    build:
+      context: ./docker/jenkins
+      dockerfile: Dockerfile
+      args:
+        JENKINS_VERSION: 2.131
+    container_name: jenkins
+    restart: always  
+    ports:
+      - 8080:8080
+    volumes:
+      - ./jenkins:/var/jenkins_home
+
+  redis:
+    image: redis
+    build:
+      context: ./docker/redis
+      dockerfile: Dockerfile
+    container_name: redis.netlyt.com
+    hostname: redis.netlyt.com
+    restart: always
+    ports:
+      - 6399:6399
+    volumes:
+      - redis:/data
+
+  mongo.netlyt.com :
+    image: library/mongo:3.4
+    hostname: mongo.netlyt.com 
+    container_name: mongo.netlyt.com 
+    volumes:
+      - mongodb:/data/db
+    ports:
+      - "27019:27017"
+    #So that we actually have auth enabled..
+    #to setup a user, follow this https://stackoverflow.com/questions/22638258/create-superuser-in-mongo
+    command: mongod
+
+  postgres:
+    image: postgres
+    container_name: postgres.netlyt.com
+    hostname: postgres.netlyt.com 
+    restart: always
+    env_file:
+      - postgre_auth.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  orion:
+    container_name: orion.netlyt.com
+    hostname: orion.netlyt.com
+    build:
+      context: ./Orion
+      dockerfile: Dockerfile
+    volumes:
+      - ./Orion/app:/app
+      - ./Orion/experiments:/experiments
+        #      - ./orion/automl:/opt/conda/lib/python3.6/site-packages/autosklearn
+    ports:
+      - "5556:5556"
+      - "5557:5557"
+      - "5560:5560"
+      - "82:80"
+    env_file:
+      - orion.env
+    
+ 

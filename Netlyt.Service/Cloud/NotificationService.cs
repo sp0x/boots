@@ -17,17 +17,28 @@ namespace Netlyt.Service.Cloud
         private IIntegrationRepository _integrations;
         private IDbContextScopeFactory _dbContextFactory;
         private IModelRepository _models;
+        private ICloudNodeService _nodeResolver;
 
         public NotificationService(
             ISlaveConnector connector,
             IIntegrationRepository integrations,
             IDbContextScopeFactory dbContextFactory,
-            IModelRepository models)
+            IModelRepository models,
+            ICloudNodeService nodeResolver)
         {
+            _nodeResolver = nodeResolver;
             _connector = connector;
             _integrations = integrations;
             _dbContextFactory = dbContextFactory;
             _models = models;
+        }
+
+        private void CheckAuthClient()
+        {
+            if (_connector.AuthenticationClient == null || string.IsNullOrEmpty(_connector.AuthenticationClient.AuthenticationToken))
+            {
+                throw new Exception("Node not authorized");
+            }
         }
 
         public void SendNotification(JToken body)
@@ -38,6 +49,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendRegisteredNotification(User user)
         {
+            CheckAuthClient();
             var body = JObject.FromObject(new
             {
                 username = user.UserName,
@@ -51,6 +63,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendLoggedInNotification(User user)
         {
+            CheckAuthClient();
             var body = JObject.FromObject(new
             {
                 username = user.UserName,
@@ -68,6 +81,7 @@ namespace Netlyt.Service.Cloud
         /// <param name="newIntegration"></param>
         public void SendNewIntegrationSummary(IIntegration newIntegration, User user)
         {
+            CheckAuthClient();
             var body = JObject.FromObject(new
             {
                 username = user.UserName,
@@ -92,6 +106,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendIntegrationViewed(long viewedIntegrationId, string userId)
         {
+            CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
                 var integration = _integrations.GetById(viewedIntegrationId).FirstOrDefault();
@@ -105,12 +120,11 @@ namespace Netlyt.Service.Cloud
                 });
                 _connector.NotificationClient.Send(Routes.IntegrationViewed, body);
             }
-
-            
         }
 
         public void SendModelCreated(Model newModel, User user)
         {
+            CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
                 newModel = _models.GetById(newModel.Id).FirstOrDefault();
@@ -128,6 +142,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendModelBuilding(Model model, User user, JToken trainingTask)
         {
+            CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
                 model = _models.GetById(model.Id).FirstOrDefault();
@@ -145,6 +160,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendModelTrained(Model model, User user, List<ModelTrainingPerformance> targetPerformances)
         {
+            CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
                 model = _models.GetById(model.Id).FirstOrDefault();

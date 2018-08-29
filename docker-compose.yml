@@ -14,6 +14,7 @@ services:
     ports:
       - "10.10.1.5:80:80"
 
+#$ is escaped with $$
   netlyt:
     image: netlyt
     hostname: api.netlyt.com
@@ -29,6 +30,13 @@ services:
     ports:
       - "5000:5000"
       - "81:80"
+    environment:
+      - MQ_HOST=mq.netlyt.com
+      - MQ_PASS=rgwsoertkgpowrk$$
+      - MQ_PORT=5672
+      - MQ_USER=netlyt
+      - NODE_TYPE=cloud
+
 
   rabbitmq:
     image: rabbitmq:3-management

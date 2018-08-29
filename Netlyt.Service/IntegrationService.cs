@@ -22,6 +22,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Cloud;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
@@ -43,6 +44,7 @@ namespace Netlyt.Service
         private IUsersRepository _users;
         private IApiKeyRepository _keysRepository;
         private PermissionService _permissionService;
+        private ILoggingService _loggingService;
 
         public IntegrationService(
             TimestampService tsService,
@@ -52,8 +54,10 @@ namespace Netlyt.Service
             IIntegrationRepository integrationsRepo,
             IUsersRepository users,
             IApiKeyRepository keys,
-            PermissionService permissionService)
+            PermissionService permissionService,
+            ILoggingService loggingService)
         {
+            _loggingService = loggingService;
             _keysRepository = keys;
             _mapper = mapper;
             _timestampService = tsService;
@@ -274,7 +278,7 @@ namespace Netlyt.Service
             return example;
         }
 
-        public void OnRemoteIntegrationCreated(JToken eBody)
+        public void OnRemoteIntegrationCreated(ICloudNodeNotification notification, JToken eBody)
         {
             
         }
@@ -362,7 +366,8 @@ namespace Netlyt.Service
                 var output = new IntegrationViewModel();
                 output.Schema = schema;
                 output.UserIsOwner = ign.Owner.Id == user.Id;
-                output.AccessLog = new List<AccessLogViewModel>();
+                output.AccessLog = _loggingService.GetIntegrationLogs(ign)
+                    .Select(x => _mapper.Map<AccessLogViewModel>(x));
                 output.Permissions = ign.Permissions.Select(x => _mapper.Map<PermissionViewModel>(x)).ToList();
                 return output;
             }

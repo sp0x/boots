@@ -23,7 +23,7 @@ namespace Netlyt.Service.Migrations
                 column: "TaskId",
                 principalTable: "TrainingTasks",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Cascade);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

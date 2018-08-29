@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using AutoMapper;
+using Donut;
 using Donut.Data;
 using EntityFramework.DbContextScope;
 using EntityFramework.DbContextScope.Interfaces;
@@ -16,6 +17,7 @@ using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud;
 using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Data;
+using Netlyt.Service.Helpers;
 using Netlyt.Service.Repisitories;
 
 namespace Netlyt.Service
@@ -66,6 +68,7 @@ namespace Netlyt.Service
             services.AddSingleton<ICloudNodeService, CloudNodeService>();
             services.AddTransient<ICloudTaskService, CloudTaskService>();
             services.AddSingleton<ISlaveConnector, SlaveConnector>();
+            services.AddHostedService<BackgroundServiceStarter<ISlaveConnector>>();
         }
         public static void AddRepositories(this IServiceCollection services)
         {
@@ -88,6 +91,10 @@ namespace Netlyt.Service
             services.AddTransient<IDonutRepository, DonutRepository>(sp =>
             {
                 return new DonutRepository(new AmbientDbContextLocator());
+            });
+            services.AddTransient<IPermissionRepository, PermissionRepository>(sp =>
+            {
+                return new PermissionRepository(new AmbientDbContextLocator());
             });
         }
         public static void AddCache(this IServiceCollection services)
@@ -118,6 +125,17 @@ namespace Netlyt.Service
         {
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IUserManagementService, UserManagementService>();
+        }
+
+        public static void AddPermissions(this IServiceCollection services)
+        {
+            services.AddTransient<PermissionService>();
+        }
+
+
+        public static void AddActionLogging(this IServiceCollection services)
+        {
+            services.AddTransient<ILoggingService, LoggingService>();
         }
     }
 }

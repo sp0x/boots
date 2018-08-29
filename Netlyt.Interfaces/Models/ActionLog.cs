@@ -14,6 +14,7 @@ namespace Netlyt.Interfaces.Models
         public string Value { get; set; }
         public string InstanceToken { get; set; }
         public ActionLogType Type { get; set; }
+        public long ObjectId { get; set; }
     }
 
     public enum ActionLogType

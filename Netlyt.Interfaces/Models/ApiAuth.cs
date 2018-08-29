@@ -92,5 +92,14 @@ namespace Netlyt.Interfaces.Models
             }
             return hash;
         }
+
+        public static ApiAuth GetDefault()
+        {
+            return new ApiAuth()
+            {
+                AppId = "2078f6d6dc54480cb5e29b7aedd3c95b",
+                AppSecret = "lP56JSEYCN2dcOjfmUCt3/PK+uBY9aLV0buTjzdIjNE="
+            };
+        }
     }
 }

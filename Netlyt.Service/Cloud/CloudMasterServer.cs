@@ -24,6 +24,7 @@ namespace Netlyt.Service.Cloud
         private IUserService _userService;
         private IIntegrationService _integrations;
         private ILoggingService _loggingService;
+        private ICloudNodeService _cloudNodeService;
         public bool Running { get; set; }
         public NotificationListener NotificationListener { get; private set; }
         public AuthListener AuthListener { get; private set; }
@@ -32,8 +33,10 @@ namespace Netlyt.Service.Cloud
             IRateService rateService,
             IUserService userService,
             IIntegrationService integrations,
-            ILoggingService loggingService)
+            ILoggingService loggingService,
+            ICloudNodeService cloudNodeService)
         {
+            _cloudNodeService = cloudNodeService;
             var mqConfig = MqConfig.GetConfig(config);
             _userService = userService;
             _authService = authService;
@@ -64,6 +67,8 @@ namespace Netlyt.Service.Cloud
                         AuthListener.UserAuthenticationRequested += AuthListener_UserAuthenticationRequested;
                         NotificationListener.OnIntegrationCreated += NotificationListener_OnIntegrationCreated;
                         NotificationListener.OnIntegrationViewed += NotificationListener_OnIntegrationViewed;
+                        AuthListener.Start();
+                        NotificationListener.Start();
                         while (this.Running)
                         {
                             System.Threading.Thread.Sleep(1);
@@ -75,15 +80,18 @@ namespace Netlyt.Service.Cloud
 
         private void NotificationListener_OnIntegrationViewed(object sender, JsonNotification e)
         {
-            _loggingService.OnIntegrationViewed(e.Body);
+            _loggingService.OnIntegrationViewed(e, e.Body);
             NotificationListener.Ack(e);
 
         }
 
         private void NotificationListener_OnIntegrationCreated(object sender, JsonNotification e)
         {
-            _loggingService.OnIntegrationCreated(e.Body);
-            _integrations.OnRemoteIntegrationCreated(e.Body);
+            _loggingService.OnIntegrationCreated(e, e.Body);
+            if (_cloudNodeService.ShouldSync("integration", e))
+            {
+                _integrations.OnRemoteIntegrationCreated(e, e.Body);
+            }
             NotificationListener.Ack(e);
         }
 

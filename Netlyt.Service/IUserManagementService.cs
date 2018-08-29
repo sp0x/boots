@@ -24,5 +24,6 @@ namespace Netlyt.Service
         void InitializeUserSession(ClaimsPrincipal httpContextUser);
         void AddUser(User user);
         Task<User> GetUser(string id);
+        Organization GetOrganization(User user);
     }
 }

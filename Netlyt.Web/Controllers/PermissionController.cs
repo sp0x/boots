@@ -60,7 +60,7 @@ namespace Netlyt.Web.Controllers
             if (org == null){
                 return NotFound(string.Format("Organization {0} was not found", perm.Org));
             }
-            var newPerm = await _permissionService.Create(user.Organization, org, perm.CanRead, perm.CanModify);
+            var newPerm = await _permissionService.Create(user, perm.Org, perm.CanRead, perm.CanModify);
             if (perm.ObjectType == "integration")
             {
                 _permissionService.AddForIntegration(obj as DataIntegration, newPerm);
@@ -68,8 +68,18 @@ namespace Netlyt.Web.Controllers
             {
                 _permissionService.AddForModel(obj as Model, newPerm);
             }
-            
-            return Ok();
+
+            return Json(new
+            {
+                id = newPerm.Id,
+                canModify = newPerm.CanModify,
+                canRead = newPerm.CanRead,
+                perm.Org,
+                shareWith = new
+                {
+                    name = perm.Org
+                }
+            });
         }
 
         [Authorize]
@@ -88,14 +98,22 @@ namespace Netlyt.Web.Controllers
         }
 
         [Authorize]
-        [HttpDelete("permission/{id}")]
-        public async Task<IActionResult> Revoke(long id){
-            var perm = _permissionService.Get(id);
+        [HttpDelete("/permission/{id}")]
+        public async Task<IActionResult> Revoke(long id)
+        {
             var user = await _userManagementService.GetCurrentUser();
-             if(user.Organization != perm.Owner){
-                return Forbid(string.Format("You are not the owner of this permission and cannot modify it"));
+            try
+            {
+                _permissionService.DeletePermission(user, id);
             }
-            _permissionService.DeletePermission(perm);
+            catch (NotFound nf)
+            {
+                return NotFound(nf.Message);
+            }
+            catch (Forbidden f)
+            {
+                return Forbid(f.Message);
+            }
             return new NoContentResult();
         }
     }

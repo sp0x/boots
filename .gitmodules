@@ -2,10 +2,6 @@
 	path = Bogus
 	url = git@bitbucket.org:peeralytics/bogus.git
 	branch = master 
-[submodule "IntegrationDaemon"]
-	path = IntegrationDaemon
-	url = git@bitbucket.org:peeralytics/integrationdaemon.git
-	branch = master
 [submodule "Orion"]
 	path = Orion
 	url = git@bitbucket.org:peeralytics/orion.git

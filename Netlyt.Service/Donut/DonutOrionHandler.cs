@@ -24,7 +24,6 @@ namespace Netlyt.Service.Donut
         private IServiceProvider _serviceProvider;
         private IDatabaseConfiguration _dbConfig;
         private IRedisCacher _cacher;
-        private IEmailSender _emailService;
         private ModelService _modelService;
         private IDonutService _donutService;
 
@@ -57,7 +56,6 @@ namespace Netlyt.Service.Donut
             _integrationService = integrationService;
             _cacher = redisCacher;
             _dbConfig = dbc;
-            _emailService = emailSender;
             Console.WriteLine("Initialized orion handler..");
         }
 

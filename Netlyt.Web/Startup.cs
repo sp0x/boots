@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Donut;
 using Donut.Orion;
 using EntityFramework.DbContextScope;
@@ -103,12 +104,12 @@ namespace Netlyt.Web
             services.AddTransient<TimestampService>();
             services.AddTransient<ModelService>();
             services.AddTransient<OrganizationService>();
-            services.AddTransient<PermissionService>();
+            services.AddPermissions();
             services.AddTransient<IDonutService, DonutService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
             services.AddCloudComs();
             services.AddRepositories();
-            
+            services.AddActionLogging();
 
             SetupAuthentication(services);
             //services.AddAutoMapper(mc => { mc.AddProfiles(GetType().Assembly); });
@@ -167,18 +168,41 @@ namespace Netlyt.Web
 
         private void InitializeDatabase(IApplicationBuilder app)
         {
-            using (var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+            var serviceScopeFactory = app.ApplicationServices.GetService<IServiceScopeFactory>();
+            using (var scope = serviceScopeFactory.CreateScope())
             {
-                var managementDbContext = scope.ServiceProvider.GetRequiredService<ManagementDbContext>();
+                var ctx = scope.ServiceProvider.GetRequiredService<ManagementDbContext>();
                 try
                 {
-                    managementDbContext.Database.Migrate();
+                    ctx.Database.Migrate();
+                    SeedDatabase(ctx);
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine("Migration failed: " + ex.Message);
                 }
             }
+        }
+
+        private void SeedDatabase(ManagementDbContext ctx)
+        {
+            var netlytApiKey = ApiAuth.GetDefault();
+            var apiKeyExists = ctx.ApiKeys.Any(x => x.AppId == netlytApiKey.AppId);
+            if (!apiKeyExists)
+            {
+                ctx.ApiKeys.Add(netlytApiKey);
+            }
+            var netlytOrg = new Organization
+            {
+                Name = "Netlyt",
+                ApiKeyId = netlytApiKey.Id
+            };
+            if (!ctx.Organizations.Any(x => x.Name == "Netlyt"))
+            {
+                ctx.Organizations.Add(netlytOrg);
+            }
+
+            ctx.SaveChanges();
         }
 
         /// <summary>

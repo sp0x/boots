@@ -57,7 +57,7 @@ namespace Netlyt.Service.Migrations
                 column: "ColumnId",
                 principalTable: "Fields",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Cascade);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_TargetConstraint_ModelTargets_ModelTargetId",
@@ -65,7 +65,7 @@ namespace Netlyt.Service.Migrations
                 column: "ModelTargetId",
                 principalTable: "ModelTargets",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Cascade);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
@@ -122,7 +122,7 @@ namespace Netlyt.Service.Migrations
                 column: "ModelTargetsId",
                 principalTable: "ModelTargets",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Cascade);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_TargetConstraint_ModelTargets_ModelTargetsId",
@@ -130,7 +130,7 @@ namespace Netlyt.Service.Migrations
                 column: "ModelTargetsId",
                 principalTable: "ModelTargets",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Cascade);
         }
     }
 }

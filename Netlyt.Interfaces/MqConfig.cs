@@ -28,5 +28,9 @@ namespace Netlyt.Interfaces
             return output;
         }
 
+        public override string ToString()
+        {
+            return $"{Host}:{Port}";
+        }
     }
 }
