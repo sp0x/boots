@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Netlyt.Service.Migrations
 {
     [DbContext(typeof(ManagementDbContext))]
-    [Migration("20180828155844_OrgSeedNetlyt3")]
-    partial class OrgSeedNetlyt3
+    [Migration("20180829164549_ActionLogObjectId")]
+    partial class ActionLogObjectId
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -661,6 +661,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Name");
 
+                    b.Property<long>("ObjectId");
+
                     b.Property<int>("Type");
 
                     b.Property<string>("UserId");
@@ -691,10 +693,6 @@ namespace Netlyt.Service.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ApiKeys");
-
-                    b.HasData(
-                        new { Id = 1L, AppId = "1c19117c9c624eb8802882bf3555c734", AppSecret = "cUYp9gagutZBPO3IJebnCh/XXJu9OWFZx3Jc590IrzA=" }
-                    );
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.ApiPermission", b =>
@@ -761,10 +759,6 @@ namespace Netlyt.Service.Migrations
                     b.HasIndex("ApiKeyId");
 
                     b.ToTable("Organizations");
-
-                    b.HasData(
-                        new { Id = 1L, ApiKeyId = 1L, Name = "Netlyt" }
-                    );
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.User", b =>

@@ -2,7 +2,7 @@
 
 namespace Netlyt.Service.Migrations
 {
-    public partial class Refresh3 : Migration
+    public partial class ActionLogObjectId1 : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

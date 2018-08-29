@@ -22,7 +22,7 @@ namespace Netlyt.Service.Migrations
                 column: "OperationId",
                 principalTable: "DonutFunction",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Cascade);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

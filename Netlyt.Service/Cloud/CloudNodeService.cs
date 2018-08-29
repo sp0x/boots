@@ -1,12 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using EntityFramework.DbContextScope.Interfaces;
+using Netlyt.Interfaces.Cloud;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Cloud.Auth;
+using Netlyt.Service.Data;
 
 namespace Netlyt.Service.Cloud
 {
     public class CloudNodeService : ICloudNodeService
     {
+        private IDbContextScopeFactory _dbContextFactory;
+
+        public CloudNodeService(
+            IDbContextScopeFactory dbContextFactory)
+        {
+            _dbContextFactory = dbContextFactory;
+        }
+
         public NetlytNode ResolveLocal()
         {
             var node = new NetlytNode();
@@ -30,6 +43,36 @@ namespace Netlyt.Service.Cloud
                 };
                 node.Name = nodeName;
                 return node;
+            }
+        }
+
+        public bool ShouldSync(string dataType, ICloudNodeNotification jsonNotification)
+        {
+            NodeRole loginRole = GetNodeLoginRole(jsonNotification.Token);
+            switch (dataType)
+            {
+                case "integration":
+                    return loginRole == NodeRole.Slave;
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+            
+        }
+
+        /// <summary>
+        /// Gets the login role of a node.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        private NodeRole GetNodeLoginRole(string token)
+        {
+            using (var ctxScope = _dbContextFactory.Create())
+            {
+                var context = ctxScope.DbContexts.Get<ManagementDbContext>();
+                var authentication = context.CloudAuthorizations.FirstOrDefault(x => x.Token == token);
+                if(authentication==null) throw new CloudNotAuthenticated();
+                return authentication.Role;
             }
         }
     }

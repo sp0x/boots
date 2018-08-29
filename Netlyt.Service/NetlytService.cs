@@ -68,6 +68,7 @@ namespace Netlyt.Service
             services.AddSingleton<DonutOrionHandler>();
             services.AddCloudComs();
             services.AddRepositories();
+            services.AddActionLogging();
 
             var backgroundServiceProvider = services.BuildServiceProvider();
             var orionHandler = backgroundServiceProvider.GetOrionHandler();

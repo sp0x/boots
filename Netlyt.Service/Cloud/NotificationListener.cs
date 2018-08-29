@@ -16,6 +16,10 @@ namespace Netlyt.Service.Cloud
         public NotificationListener(IModel channel) : base(channel)
         {
             this.channel = channel;
+        }
+
+        public void Start()
+        {
             ConsumeQuotaNotifications();
             ConsumeIntegrationNotifications();
             ConsumeUserAuthNotifications();
@@ -60,18 +64,34 @@ namespace Netlyt.Service.Cloud
 
         private void Login_Received(object sender, BasicDeliverEventArgs e)
         {
-            var jsbody = e.GetJson();
+            var notification = JsonNotification.FromRequest(e);
         }
 
 
         private void IntegrationViewedConsumer_Received(object sender, BasicDeliverEventArgs e)
         {
-            OnIntegrationViewed?.Invoke(this, JsonNotification.FromRequest(e));
+            var notification = JsonNotification.FromRequest(e);
+            try
+            {
+                OnIntegrationViewed?.Invoke(this, notification);
+            }
+            catch (Exception)
+            {
+                this.Ack(e);
+            }
         }
 
         private void NewIntegrationConsumer_Received(object sender, BasicDeliverEventArgs e)
         {
-            OnIntegrationCreated?.Invoke(this, JsonNotification.FromRequest(e));
+            var notification = JsonNotification.FromRequest(e);
+            try
+            {
+                OnIntegrationCreated?.Invoke(this, notification);
+            }
+            catch (Exception)
+            {
+                this.Ack(e);
+            }
         }
 
         private void OnQuotaNotification(object sender, BasicDeliverEventArgs e)

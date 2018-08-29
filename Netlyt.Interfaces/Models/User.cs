@@ -9,6 +9,8 @@ namespace Netlyt.Interfaces.Models
         public string FirstName { get; set; }
 
         public string LastName { get; set; }
+        [ForeignKey("Organization")]
+        public long OrganizationId { get; set; }
         public virtual Organization Organization { get; set; }
         public virtual ICollection<ApiUser> ApiKeys { get; set; }
         [ForeignKey("RateLimit")]

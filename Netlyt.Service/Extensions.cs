@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using AutoMapper;
+using Donut;
 using Donut.Data;
 using EntityFramework.DbContextScope;
 using EntityFramework.DbContextScope.Interfaces;
@@ -124,6 +125,17 @@ namespace Netlyt.Service
         {
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IUserManagementService, UserManagementService>();
+        }
+
+        public static void AddPermissions(this IServiceCollection services)
+        {
+            services.AddTransient<PermissionService>();
+        }
+
+
+        public static void AddActionLogging(this IServiceCollection services)
+        {
+            services.AddTransient<ILoggingService, LoggingService>();
         }
     }
 }

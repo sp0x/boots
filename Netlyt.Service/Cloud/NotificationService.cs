@@ -17,13 +17,16 @@ namespace Netlyt.Service.Cloud
         private IIntegrationRepository _integrations;
         private IDbContextScopeFactory _dbContextFactory;
         private IModelRepository _models;
+        private ICloudNodeService _nodeResolver;
 
         public NotificationService(
             ISlaveConnector connector,
             IIntegrationRepository integrations,
             IDbContextScopeFactory dbContextFactory,
-            IModelRepository models)
+            IModelRepository models,
+            ICloudNodeService nodeResolver)
         {
+            _nodeResolver = nodeResolver;
             _connector = connector;
             _integrations = integrations;
             _dbContextFactory = dbContextFactory;
@@ -32,7 +35,7 @@ namespace Netlyt.Service.Cloud
 
         private void CheckAuthClient()
         {
-            if (_connector.AuthenticationClient == null)
+            if (_connector.AuthenticationClient == null || string.IsNullOrEmpty(_connector.AuthenticationClient.AuthenticationToken))
             {
                 throw new Exception("Node not authorized");
             }

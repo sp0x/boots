@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Auth;
 using Netlyt.Service.Data;
 using Netlyt.Service.Repisitories;
 using DataIntegration = Donut.Data.DataIntegration;
@@ -35,14 +36,14 @@ namespace Netlyt.Service
             //ManagementDbContext context,
             IUsersRepository usersRepository,
             IDbContextScopeFactory contextScope,
-            IFactory<ManagementDbContext> contextFactory,
-            IPasswordHasher<User> hasher)
+            IFactory<ManagementDbContext> contextFactory)
         {
             if (lfactory != null) _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
             _contextScope = contextScope;
             _apiService = apiService;
             _orgService = orgService;
-            _hasher = hasher;
+            //_hasher = hasher;
+            _hasher = Hashing.GetDefaultHasher();
             //_modelService = modelService;
             _context = contextFactory.Create();
             _userRepository = usersRepository;
@@ -98,6 +99,16 @@ namespace Netlyt.Service
         {
             var user = _context.Users.FirstOrDefault(x => x.UserName == username);
             return user;
+        }
+
+        public string VerifyUser(string userId)
+        {
+            using (var ctxSrc = _contextScope.Create())
+            {
+                var user = _userRepository.GetById(userId).FirstOrDefault();
+                return user?.Id;
+            }
+
         }
     }
 }

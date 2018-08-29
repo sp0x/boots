@@ -79,6 +79,10 @@ namespace Netlyt.Service
                     var userService = services.GetService(typeof(IUserManagementService)) as IUserManagementService;
                     return userService.GetRoles(src).Result;
                 }));
+            CreateMap<ActionLog, AccessLogViewModel>()
+                .ForMember(x=>x.User, opt=> opt.ResolveUsing(src=> src.User?.UserName))
+                .ForMember(x=>x.Event, opt=> opt.ResolveUsing(src=> src.Type.ToString()))
+                .ForMember(x=>x.CreatedOn, opt=> opt.ResolveUsing(src=> src.Created));
         }
     }
 }

@@ -17,6 +17,10 @@ namespace Netlyt.Service.Cloud
         {
             this.channel = channel;
             this.authMode = authMode;
+        }
+
+        public void Start()
+        {
             if (authMode == AuthMode.Master)
             {
                 ConsumeAuthRequests();

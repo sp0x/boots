@@ -659,6 +659,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Name");
 
+                    b.Property<long>("ObjectId");
+
                     b.Property<int>("Type");
 
                     b.Property<string>("UserId");
@@ -689,10 +691,6 @@ namespace Netlyt.Service.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ApiKeys");
-
-                    b.HasData(
-                        new { Id = 1L, AppId = "1c19117c9c624eb8802882bf3555c734", AppSecret = "cUYp9gagutZBPO3IJebnCh/XXJu9OWFZx3Jc590IrzA=" }
-                    );
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.ApiPermission", b =>
@@ -759,10 +757,6 @@ namespace Netlyt.Service.Migrations
                     b.HasIndex("ApiKeyId");
 
                     b.ToTable("Organizations");
-
-                    b.HasData(
-                        new { Id = 1L, ApiKeyId = 1L, Name = "Netlyt" }
-                    );
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.User", b =>
@@ -794,7 +788,7 @@ namespace Netlyt.Service.Migrations
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256);
 
-                    b.Property<long?>("OrganizationId");
+                    b.Property<long>("OrganizationId");
 
                     b.Property<string>("PasswordHash");
 
@@ -1181,7 +1175,8 @@ namespace Netlyt.Service.Migrations
                 {
                     b.HasOne("Netlyt.Interfaces.Models.Organization", "Organization")
                         .WithMany("Members")
-                        .HasForeignKey("OrganizationId");
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Netlyt.Interfaces.Models.ApiRateLimit", "RateLimit")
                         .WithMany()

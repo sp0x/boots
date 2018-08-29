@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Netlyt.Service.Migrations
 {
     [DbContext(typeof(ManagementDbContext))]
-    [Migration("20180828155815_OrgSeedNetlyt2")]
-    partial class OrgSeedNetlyt2
+    [Migration("20180829194519_UserOrgId")]
+    partial class UserOrgId
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -661,6 +661,8 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Name");
 
+                    b.Property<long>("ObjectId");
+
                     b.Property<int>("Type");
 
                     b.Property<string>("UserId");
@@ -691,10 +693,6 @@ namespace Netlyt.Service.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ApiKeys");
-
-                    b.HasData(
-                        new { Id = 1L, AppId = "2a5c672cb6004ca296efee95ce94b46e", AppSecret = "D4uRBIvGFuXmhF/QwMUK6YpcUMiyzo5lFZ7WP46573c=" }
-                    );
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.ApiPermission", b =>
@@ -761,10 +759,6 @@ namespace Netlyt.Service.Migrations
                     b.HasIndex("ApiKeyId");
 
                     b.ToTable("Organizations");
-
-                    b.HasData(
-                        new { Id = 1L, ApiKeyId = 1L, Name = "Netlyt" }
-                    );
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.User", b =>
@@ -796,7 +790,7 @@ namespace Netlyt.Service.Migrations
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256);
 
-                    b.Property<long?>("OrganizationId");
+                    b.Property<long>("OrganizationId");
 
                     b.Property<string>("PasswordHash");
 
@@ -1183,7 +1177,8 @@ namespace Netlyt.Service.Migrations
                 {
                     b.HasOne("Netlyt.Interfaces.Models.Organization", "Organization")
                         .WithMany("Members")
-                        .HasForeignKey("OrganizationId");
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Netlyt.Interfaces.Models.ApiRateLimit", "RateLimit")
                         .WithMany()

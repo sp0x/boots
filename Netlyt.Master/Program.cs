@@ -55,11 +55,13 @@ namespace Netlyt.Master
             services.AddTransient<ModelService>();
             services.AddTransient<TimestampService>();
             services.AddTransient<IIntegrationService, IntegrationService>();
-            services.AddTransient<ILoggingService, LoggingService>();
             services.AddSingleton<ICloudNodeService, CloudNodeService>();
             services.AddTransient<ICloudTaskService, CloudTaskService>();
             services.AddDomainAutomapper();
             services.AddRepositories();
+            services.AddApiIdentity();
+            services.AddPermissions();
+            services.AddActionLogging();
             services.AddTransient<IDbContextFactory>((sp) => new DbContextFactory(dbOptions));
             services.AddTransient<IDbContextScopeFactory>((sp) => new DbContextScopeFactory(sp.GetService<IDbContextFactory>()));
             OrionContext = services.RegisterOrionContext(Configuration.GetSection("behaviour"), x => { }, false);

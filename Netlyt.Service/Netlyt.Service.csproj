@@ -16,7 +16,6 @@
     <ProjectReference Include="..\Netlyt.Interfaces\Netlyt.Interfaces.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Auth\" />
     <Folder Include="Integration\Import\" />
     <Folder Include="Lex\" />
     <Folder Include="Models\CacheMaps\" />

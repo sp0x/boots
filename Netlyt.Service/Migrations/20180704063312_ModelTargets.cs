@@ -70,19 +70,19 @@ namespace Netlyt.Service.Migrations
                         column: x => x.AfterId,
                         principalTable: "TimeConstraint",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_TargetConstraint_TimeConstraint_BeforeId",
                         column: x => x.BeforeId,
                         principalTable: "TimeConstraint",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_TargetConstraint_ModelTargets_ModelTargetsId",
                         column: x => x.ModelTargetsId,
                         principalTable: "ModelTargets",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(

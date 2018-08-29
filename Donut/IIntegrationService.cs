@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Cloud;
 using Netlyt.Interfaces.Models;
 using Newtonsoft.Json.Linq;
 
@@ -70,7 +71,7 @@ namespace Donut
         void Remove(DataIntegration importTaskIntegration);
         void SetTargetTypes(DataIntegration ign, JToken description);
         Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask);
-        void OnRemoteIntegrationCreated(JToken eBody);
+        void OnRemoteIntegrationCreated(ICloudNodeNotification notification, JToken eBody);
         Task<IntegrationSchemaViewModel> GetSchema(User user,long id);
         Task<DataIntegration> GetIntegrationForAutobuild(CreateAutomaticModelViewModel modelData);
         void SetIndexColumn(DataIntegration integration, string idColumnName);
