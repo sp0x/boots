@@ -91,6 +91,10 @@ namespace Netlyt.Service
             {
                 return new DonutRepository(new AmbientDbContextLocator());
             });
+            services.AddTransient<IPermissionRepository, PermissionRepository>(sp =>
+            {
+                return new PermissionRepository(new AmbientDbContextLocator());
+            });
         }
         public static void AddCache(this IServiceCollection services)
         {

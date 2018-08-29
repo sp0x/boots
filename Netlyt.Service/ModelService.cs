@@ -38,6 +38,7 @@ namespace Netlyt.Service
         private IRedisCacher _cacher;
         private IRateService _rateService;
         private IIntegrationService _integrationService;
+        private PermissionService _permissionService;
         private IDbContextScopeFactory _dbContextFactory;
         private IModelRepository _modelRepository;
         private IDonutRepository _donutRepository;
@@ -60,8 +61,10 @@ namespace Netlyt.Service
             IIntegrationRepository integrations,
             IMapper mapper,
             IFactory<ManagementDbContext> dbFactory,
-            IDonutService donut)
+            IDonutService donut,
+            PermissionService permissionService)
         {
+            _permissionService = permissionService;
             _donut = donut;
             _dbFactory = dbFactory;
             _integrations = integrations;
@@ -540,10 +543,24 @@ namespace Netlyt.Service
                     vm.Performance.TargetName = srcTargetTask.Target.Column.Name;
                     vm.Performance.TaskType = vm.TaskType;
                     vm.Scoring = srcPerformance.Scoring;
+                    vm.Permissions = GetTrainingTaskPermissions(srcTargetTask).Select(x=>_mapper.Map<PermissionViewModel>(x)).ToList();
                     output.Add(vm);
                 }
                 return output;
             }
+        }
+
+        private IEnumerable<Permission> GetTrainingTaskPermissions(TrainingTask srcTargetTask)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                return GetPermissions(srcTargetTask.Model);
+            }
+        }
+
+        private IEnumerable<Permission> GetPermissions(Model model)
+        {
+            return _permissionService.GetForModel(model);
         }
 
         public ApiAuth GetApiKey(Model item)

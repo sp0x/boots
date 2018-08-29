@@ -53,6 +53,8 @@ namespace Netlyt.Service.Data
             Console.WriteLine("Initialized context with options: " + options.ToString());
         }
 
+
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseLoggerFactory(Logger);
@@ -74,6 +76,15 @@ namespace Netlyt.Service.Data
                 .HasOne(x => x.Operation);
             builder.Entity<DonutFunction>()
                 .Property(x => x._Parameters).HasColumnName("Parameters");
+//            var netlytApiKey = ApiAuth.Generate();
+//            netlytApiKey.Id = 1;
+//            builder.Entity<ApiAuth>().HasData(netlytApiKey);
+//            builder.Entity<Organization>().HasData(new 
+//            {
+//                Id=(long)1,
+//                Name = "Netlyt",
+//                ApiKeyId = netlytApiKey.Id
+//            });
             base.OnModelCreating(builder);
         }
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Netlyt.Interfaces.Models
 {
@@ -6,12 +7,15 @@ namespace Netlyt.Interfaces.Models
     {
         public long Id { get; set; }
         public virtual ICollection<User> Members { get; set; }
+        [ForeignKey("ApiKey")]
+        public long ApiKeyId { get; set; }
         public virtual ApiAuth ApiKey { get; set; }
         public string Name { get; set; }
 
         public Organization()
         {
             Members = new HashSet<User>();
+            ApiKey = ApiAuth.Generate();
         }
     }
 }

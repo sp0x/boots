@@ -164,21 +164,33 @@ namespace Netlyt.Service
                 RateLimit = ApiRateLimit.CreateDefault()
             };
             var org = !string.IsNullOrEmpty(model.Org) ? _orgService.Get(model.Org) : null;
-            if (org == null)
-                user.Organization = new Organization()
-                {
-                    Name =username
-                };
+            if (org != null) user.Organization = org;
             var apiKey = _apiService.Generate();
             user.ApiKeys.Add(new ApiUser(user, apiKey));
             var result = _userManager.CreateAsync(user, model.Password).Result;
             if (result.Succeeded && isFirstUser)
             {
+                SetUserOrganization(user, "Netlyt");
                 await AddRolesToUser(user, new string[] { "Admin" });
+
             }
             var output = new Tuple<IdentityResult, User>(result, user);
             return output;
         }
+
+        private void SetUserOrganization(User user, string netlyt)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var org = _orgService.Get("Netlyt");
+                user = context.Users.FirstOrDefault(x => x.Id == user.Id);
+                user.Organization = org;
+                ctxSrc.SaveChanges();
+            }
+
+        }
+
         public async Task<bool> AddRolesToUser(User user, IEnumerable<string> newRoles)
         {
             foreach (var newRole in newRoles)
