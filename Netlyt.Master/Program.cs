@@ -35,10 +35,17 @@ namespace Netlyt.Master
                 {
                     Console.WriteLine("ERROR: " + x.Exception.Message);
                 }
+                else
+                {
+                    Console.WriteLine("Master server task disposed..");
+                }
                 Environment.Exit(1);
             });
-            //Console.WriteLine(" Press [enter] to exit.");
-            Console.ReadLine();
+            while (true)
+            {
+                //Console.WriteLine(" Press [enter] to exit.");
+                Console.ReadLine();
+            }
         }
 
         private static ServiceProvider SetupServices()
