@@ -70,10 +70,16 @@ namespace Netlyt.Web.Controllers
         [HttpGet("/user/me")] // /me = host/me, me = host/user/GetProfile/me  
         public async Task<ActionResult> GetProfile()
         {
-            User user = await _userManagementService.GetUser(User);
+            User user = await _userManager.GetUserAsync(User);
+            var apiKeys = user.ApiKeys.Select(x => _mapper.Map<AuthKeyViewModel>(x.Api));
             if (user != null)
             { 
-                return Ok(_mapper.Map<UserViewModel>(user));
+                return Json(new
+                {
+                    user = _mapper.Map<UserViewModel>(user),
+                    keys = apiKeys,
+                    org = user.Organization?.Name
+                });
             }
             return BadRequest();
         }
