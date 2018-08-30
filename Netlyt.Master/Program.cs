@@ -37,7 +37,7 @@ namespace Netlyt.Master
                 }
                 Environment.Exit(1);
             });
-            Console.WriteLine(" Press [enter] to exit.");
+            //Console.WriteLine(" Press [enter] to exit.");
             Console.ReadLine();
         }
 

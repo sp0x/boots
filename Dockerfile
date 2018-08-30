@@ -29,5 +29,9 @@ ENV PGSQL_HOST=postgres.netlyt.com
 ENV PGSQL_DB=netlyt
 ENV PGSQL_PASS=gpiowuert0g9
 
+ENV MQ_PORT=5672
+ENV	MQ_HOST=mq.netlyt.com
+ENV MQ_USER=netlyt
+
 CMD ["Netlyt.Web.dll"]
 ENTRYPOINT [ "dotnet" ]
