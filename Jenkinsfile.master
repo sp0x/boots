@@ -8,7 +8,7 @@ node {
     stage('Build image') {
        /* This builds the docker image*/ 
         try { 
-            newImage = docker.build("netlyt_master", " --file Dockerfile.master")                
+            newImage = docker.build("netlyt_master", " --file Dockerfile.master .")                
             sh ' echo "Tests PASSED"' /* Volkswagen style for now*/
             //Our default docker registry
             //docker.withRegistry("https://registry.netlyt.com", 'offsite-docker-registry'){
