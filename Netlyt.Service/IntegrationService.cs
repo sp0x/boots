@@ -367,7 +367,7 @@ namespace Netlyt.Service
                 output.Schema = schema;
                 output.UserIsOwner = ign.Owner.Id == user.Id;
                 output.AccessLog = _loggingService.GetIntegrationLogs(ign)
-                    .Select(x => _mapper.Map<AccessLogViewModel>(x));
+                    .Select(x => _mapper.Map<AccessLogViewModel>(x)).ToList();
                 output.Permissions = ign.Permissions.Select(x => _mapper.Map<PermissionViewModel>(x)).ToList();
                 return output;
             }
