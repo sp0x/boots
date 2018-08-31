@@ -11,7 +11,7 @@
         "PGSQL_PASS": "gpiowuert0g9",
         "PGSQL_DB": "netlyt",
         "REDIS_PORT": "6399",
-        "MQ_HOST": "mq.netlyt.com"
+        "MQ_HOST": "loc.mq.netlyt.com"
       }
     }
   }

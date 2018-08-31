@@ -30,10 +30,10 @@
         "EXP_DIR": "..\\orion",
         "PGSQL_PASS": "gpiowuert0g9",
         "PGSQL_DB": "netlyt",
-        "MQ_HOST": "mq.netlyt.com",
+        "MQ_HOST": "loc.mq.netlyt.com",
         "MONGO_USER": "netlyt",
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "NODE_TYPE": "slave",
+        "NODE_TYPE": "cloud",
         "NAPI_NAME": "Home",
         "NAPI_KEY": "c66b5c7e735647c6b66cd6487c5cd330"
       },

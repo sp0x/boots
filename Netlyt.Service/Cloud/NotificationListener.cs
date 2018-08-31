@@ -64,7 +64,14 @@ namespace Netlyt.Service.Cloud
 
         private void Login_Received(object sender, BasicDeliverEventArgs e)
         {
-            var notification = JsonNotification.FromRequest(e);
+            try
+            {
+                var notification = JsonNotification.FromRequest(e);
+            }
+            catch (Exception ex)
+            {
+                this.Ack(e);
+            }
         }
 
 

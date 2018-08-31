@@ -157,13 +157,14 @@ namespace Netlyt.Service.Cloud
         {
             var result = _authService.Authenticate(e);
             var nodeRole = result.Role.ToString();
+            var userData = result.Role == NodeRole.Slave ? GetUserData(result.User) : null;
             var reply = JObject.FromObject(new
             {
                 token = result.Token,
                 success = result.Authenticated,
                 quota = _rateService.GetCurrentQuotaLeftForUser(result.User),
                 role = nodeRole,
-                user = GetUserData(result.User)
+                user = userData
             });
             AuthListener.Reply(e, reply);
         }

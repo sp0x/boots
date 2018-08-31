@@ -48,21 +48,6 @@ services:
       - "5672:5672"
       - "15672:15672"
 
-  
-  jenkins:
-    privileged: true
-    build:
-      context: ./docker/jenkins
-      dockerfile: Dockerfile
-      args:
-        JENKINS_VERSION: 2.131
-    container_name: jenkins
-    restart: always  
-    ports:
-      - 8080:8080
-    volumes:
-      - ./jenkins:/var/jenkins_home
-
   redis:
     image: redis
     build:
