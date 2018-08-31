@@ -7,5 +7,6 @@ namespace Netlyt.Service.Repisitories
     {
         IQueryable<User> GetById(string id);
         User GetByUsername(string toString);
+        void CreateIfMissing(User user);
     }
 }

@@ -11,7 +11,7 @@ namespace Netlyt.Service.Cloud
 
         public TaskExchange(IModel channel)
         {
-            this.Channel = Channel;
+            this.Channel = channel;
             this.Name = Exchanges.Tasks;
             channel.ExchangeDeclare(exchange: Name, type: ExchangeType.Headers, durable: true, autoDelete: false);
         }

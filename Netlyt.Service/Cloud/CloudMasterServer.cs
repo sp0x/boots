@@ -104,34 +104,39 @@ namespace Netlyt.Service.Cloud
             }
             else
             {
-                var userData = new
-                {
-                    user.Id,
-                    user.FirstName,
-                    user.Email,
-                    user.EmailConfirmed,
-                    user.LastName,
-                    user.LockoutEnabled,
-                    user.LockoutEnd,
-                    user.PasswordHash,
-                    user.PhoneNumber,
-                    user.NormalizedUserName,
-                    user.UserName,
-                    user.NormalizedEmail,
-                    ApiKeys = AnonimyzeKeys(user.ApiKeys),
-//                    Organization = new
-//                    {
-//                        user.Organization.Id,
-//                        user.Organization.Name,
-//                        user.Organization.ApiKey
-//                    }
-                };
+                var userData = GetUserData(user);
                 var reply = JObject.FromObject(new{
                     user = userData,
                     success = true
                 });
                 AuthListener.Reply(e, reply);
             }
+        }
+
+        private object GetUserData(User user)
+        {
+            return new
+            {
+                user.Id,
+                user.FirstName,
+                user.Email,
+                user.EmailConfirmed,
+                user.LastName,
+                user.LockoutEnabled,
+                user.LockoutEnd,
+                user.PasswordHash,
+                user.PhoneNumber,
+                user.NormalizedUserName,
+                user.UserName,
+                user.NormalizedEmail,
+                ApiKeys = AnonimyzeKeys(user.ApiKeys),
+//                    Organization = new
+//                    {
+//                        user.Organization.Id,
+//                        user.Organization.Name,
+//                        user.Organization.ApiKey
+//                    }
+            };
         }
 
         private IEnumerable<object> AnonimyzeKeys(ICollection<ApiUser> userApiKeys)
@@ -158,7 +163,7 @@ namespace Netlyt.Service.Cloud
                 success = result.Authenticated,
                 quota = _rateService.GetCurrentQuotaLeftForUser(result.User),
                 role = nodeRole,
-                user = result.User?.UserName
+                user = GetUserData(result.User)
             });
             AuthListener.Reply(e, reply);
         }

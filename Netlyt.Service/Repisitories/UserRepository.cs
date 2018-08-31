@@ -37,5 +37,14 @@ namespace Netlyt.Service.Repisitories
         {
             return DbContext.Users.FirstOrDefault(x => x.UserName == username);
         }
+
+        public void CreateIfMissing(User user)
+        {
+            if (!DbContext.Users.Any(x => x.UserName == user.UserName))
+            {
+                DbContext.Users.Add(user);
+                DbContext.SaveChanges();
+            }
+        }
     }
 }

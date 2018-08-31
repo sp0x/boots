@@ -27,6 +27,7 @@ namespace Netlyt.Service
         private IUsersRepository _userRepository;
         private IDbContextScopeFactory _contextScope;
         private IPasswordHasher<User> _hasher;
+        private IRateService _rateService;
 
         public UserService(
             ApiService apiService,
@@ -36,7 +37,8 @@ namespace Netlyt.Service
             //ManagementDbContext context,
             IUsersRepository usersRepository,
             IDbContextScopeFactory contextScope,
-            IFactory<ManagementDbContext> contextFactory)
+            IFactory<ManagementDbContext> contextFactory,
+            IRateService rateService)
         {
             if (lfactory != null) _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
             _contextScope = contextScope;
@@ -47,6 +49,7 @@ namespace Netlyt.Service
             //_modelService = modelService;
             _context = contextFactory.Create();
             _userRepository = usersRepository;
+            _rateService = rateService;
         }
         
         
@@ -109,6 +112,16 @@ namespace Netlyt.Service
                 return user?.Id;
             }
 
+        }
+
+        public User CreateUser(User user, ApiRateLimit quota)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                _userRepository.CreateIfMissing(user);
+                _rateService.SetAvailabilityForUser(user?.UserName, quota);
+                return user;
+            }
         }
     }
 }

@@ -19,5 +19,6 @@ namespace Netlyt.Service
         User GetUserByLogin(string email, string password);
         User GetUserByUsername(string username);
         string VerifyUser(string toString);
+        User CreateUser(User user, ApiRateLimit quota);
     }
 }

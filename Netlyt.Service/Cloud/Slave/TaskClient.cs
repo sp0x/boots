@@ -17,10 +17,14 @@ namespace Netlyt.Service.Cloud.Slave
             var specs = new Dictionary<string, object>();
             specs["x-match"] = "all";
             specs["token"] = token;
-            channel.ExchangeBind(source: Name, destination: TaskQueue.QueueName, routingKey: "", arguments: specs);
+            channel.QueueBind(exchange: Name, queue: TaskQueue.QueueName, routingKey: "", arguments: specs);
             _consumer = new EventingBasicConsumer(channel);
             _consumer.Received += _consumer_Received;
-            channel.BasicConsume(TaskQueue.QueueName, false, _consumer);
+        }
+
+        public void Start()
+        {
+            Channel.BasicConsume(TaskQueue.QueueName, false, _consumer);
         }
 
         private void _consumer_Received(object sender, BasicDeliverEventArgs e)
