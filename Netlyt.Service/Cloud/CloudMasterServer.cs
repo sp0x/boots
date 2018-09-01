@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Orion;
+using EntityFramework.DbContextScope.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
@@ -25,6 +26,7 @@ namespace Netlyt.Service.Cloud
         private IIntegrationService _integrations;
         private ILoggingService _loggingService;
         private ICloudNodeService _cloudNodeService;
+        private IDbContextScopeFactory _contxtScopeFactory;
         public bool Running { get; set; }
         public NotificationListener NotificationListener { get; private set; }
         public AuthListener AuthListener { get; private set; }
@@ -34,8 +36,10 @@ namespace Netlyt.Service.Cloud
             IUserService userService,
             IIntegrationService integrations,
             ILoggingService loggingService,
-            ICloudNodeService cloudNodeService)
+            ICloudNodeService cloudNodeService,
+            IDbContextScopeFactory contextScopeFactory)
         {
+            _contxtScopeFactory = contextScopeFactory;
             _cloudNodeService = cloudNodeService;
             var mqConfig = MqConfig.GetConfig(config);
             _userService = userService;
@@ -97,27 +101,35 @@ namespace Netlyt.Service.Cloud
 
         private void AuthListener_UserAuthenticationRequested(object sender, UserLoginRequest e)
         {
-            User user = _userService.GetUserByLogin(e.Email, e.Password);
-            if (user == null)
+            using (var contextSrc = _contxtScopeFactory.Create())
             {
-                throw new Exception("Invalid login.");
+                User user = _userService.GetUserByLogin(e.Email, e.Password);
+                if (user == null)
+                {
+                    throw new Exception("Invalid login.");
+                }
+                else
+                {
+                    var userData = GetUserData(user);
+                    var reply = JObject.FromObject(new
+                    {
+                        user = userData,
+                        success = true
+                    });
+                    AuthListener.Reply(e, reply);
+                }
             }
-            else
-            {
-                var userData = GetUserData(user);
-                var reply = JObject.FromObject(new{
-                    user = userData,
-                    success = true
-                });
-                AuthListener.Reply(e, reply);
-            }
+
         }
 
         private object GetUserData(User user)
         {
+            var userKeys = _userService.GetApiKeys(user);
             return new
             {
                 user.Id,
+                user.SecurityStamp,
+                user.ConcurrencyStamp,
                 user.FirstName,
                 user.Email,
                 user.EmailConfirmed,
@@ -129,44 +141,45 @@ namespace Netlyt.Service.Cloud
                 user.NormalizedUserName,
                 user.UserName,
                 user.NormalizedEmail,
-                ApiKeys = AnonimyzeKeys(user.ApiKeys),
-//                    Organization = new
-//                    {
-//                        user.Organization.Id,
-//                        user.Organization.Name,
-//                        user.Organization.ApiKey
-//                    }
-            };
-        }
-
-        private IEnumerable<object> AnonimyzeKeys(ICollection<ApiUser> userApiKeys)
-        {
-            return userApiKeys.Select(key => new
-            {
-                Api=new
+                user.AccessFailedCount,
+                ApiKeys = user.ApiKeys.Select(x=> new
+                    {
+                        Api = new
+                        {
+                            x.Api.AppId,
+                            x.Api.AppSecret,
+                            x.Api.Endpoint,
+                            x.Api.Type
+                        },
+                        x.UserId,
+                        x.ApiId
+                    }),
+                Organization = new
                 {
-                    key.Api.AppId,
-                    key.Api.AppSecret
-                },
-                ApiId = key.ApiId,
-                key.UserId
-            });
+                    user.Organization.Id,
+                    user.Organization.Name,
+                    user.Organization.ApiKey
+                }
+            };
         }
 
         private void AuthListener_AuthenticationRequested(object sender, AuthenticationRequest e)
         {
-            var result = _authService.Authenticate(e);
-            var nodeRole = result.Role.ToString();
-            var userData = result.Role == NodeRole.Slave ? GetUserData(result.User) : null;
-            var reply = JObject.FromObject(new
+            using (var contextSrc = _contxtScopeFactory.Create())
             {
-                token = result.Token,
-                success = result.Authenticated,
-                quota = _rateService.GetCurrentQuotaLeftForUser(result.User),
-                role = nodeRole,
-                user = userData
-            });
-            AuthListener.Reply(e, reply);
+                var result = _authService.Authenticate(e);
+                var nodeRole = result.Role.ToString();
+                var userData = result.Role == NodeRole.Slave ? GetUserData(result.User) : null;
+                var reply = JObject.FromObject(new
+                {
+                    token = result.Token,
+                    success = result.Authenticated,
+                    quota = _rateService.GetCurrentQuotaLeftForUser(result.User),
+                    role = nodeRole,
+                    user = userData
+                });
+                AuthListener.Reply(e, reply);
+            }
         }
     }
     

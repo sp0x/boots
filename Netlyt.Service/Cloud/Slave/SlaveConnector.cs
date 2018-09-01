@@ -106,7 +106,7 @@ namespace Netlyt.Service.Cloud.Slave
                 {
                     var authResult = await authClient.AuthorizeNode(node);
                     Quota = authResult.Result["quota"].ToObject<ApiRateLimit>();
-                    authResult.User.ApiKeys.Add(new ApiUser(authResult.User, node.ApiKey));
+                    //authResult.User.ApiKeys.Add(new ApiUser(authResult.User, node.ApiKey));
                     var cloudUser = _userService.CreateUser(authResult.User, Quota);
                     User = cloudUser;
                     _rateService.ApplyGlobal(Quota);

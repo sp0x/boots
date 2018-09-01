@@ -110,7 +110,7 @@ namespace Netlyt.Web.Controllers
                     var user = authResult.Item2;
                     if (_userService.GetUserByEmail(model.Email) == null)
                     {
-                        _userManagementService.AddUser(user);
+                        _userService.CreateIfMissing(user);
                     }
                     return await LoginUser(model, returnUrl, user);
                 }

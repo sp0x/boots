@@ -41,6 +41,7 @@ namespace Netlyt.Master
                         var apiUser = authMatch.Users.FirstOrDefault();
 
                         output = new NodeAuthenticationResult(token, apiUser?.User);
+                        output.Role = authRequest.AsRole;
                     }
                 }
             }

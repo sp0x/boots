@@ -118,10 +118,74 @@ namespace Netlyt.Service
         {
             using (var contextSrc = _contextScope.Create())
             {
-                _userRepository.CreateIfMissing(user);
+                CreateIfMissing(user);
                 _rateService.SetAvailabilityForUser(user?.UserName, quota);
                 return user;
             }
+        }
+
+        public void CreateIfMissing(User user)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                if (!context.Users.Any(x => x.UserName == user.UserName))
+                {
+                    if (user.RateLimit != null) context.Rates.Add(user.RateLimit);
+                    else throw new Exception("Rate limit is required for users.");
+                    if (user.Organization != null)
+                    {
+                        if (!OrganizationService.IsNetlyt(user.Organization))
+                        {
+                            context.ApiKeys.Add(user.Organization.ApiKey);
+                            context.Organizations.Add(user.Organization);
+                        }
+                        else
+                        {
+                            user.Organization = context.Organizations.FirstOrDefault(x => x.Id == user.Organization.Id);
+                            user.OrganizationId = user.Organization.Id;
+                        }
+                    }
+                    else throw new Exception("Organization is required for users.");
+
+                    context.Users.Add(user);
+                    context.SaveChanges();
+                }
+            }
+        }
+        public ICollection<object> GetApiKeysAnonimized(User user)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                return _userRepository.GetById(user.Id)?.FirstOrDefault()?.ApiKeys
+                    .Select(k => { return AnonimyzeKey(k); })
+                    .ToList();
+            }
+        }
+
+        public ICollection<ApiAuth> GetApiKeys(User user)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                return _userRepository.GetById(user.Id)?.FirstOrDefault()?.ApiKeys
+                    .Select(k => k.Api)
+                    .ToList();
+            }
+        }
+
+
+        private object AnonimyzeKey(ApiUser key)
+        {
+            return new
+            {
+                Api = new
+                {
+                    key.Api.AppId,
+                    key.Api.AppSecret
+                },
+                ApiId = key.ApiId,
+                key.UserId
+            };
         }
     }
 }

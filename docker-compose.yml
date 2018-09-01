@@ -5,6 +5,7 @@ volumes:
   experiments:
   redis:
   pgdata:
+  pgdata_dev:
 
 services:
   balancer:
@@ -72,6 +73,18 @@ services:
     #So that we actually have auth enabled..
     #to setup a user, follow this https://stackoverflow.com/questions/22638258/create-superuser-in-mongo
     command: mongod
+
+  postgres_dev:
+    image: postgres
+    container_name: postgres_dev.netlyt.com
+    hostname: postgres_dev.netlyt.com 
+    restart: always
+    env_file:
+      - postgre_auth.env
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"
 
   postgres:
     image: postgres
