@@ -187,6 +187,11 @@ namespace Netlyt.Service
                         user.OrganizationId = netlytOrg.Id;
                         org = netlytOrg;
                     }
+                    else
+                    {
+                        if (org == null) org = new Organization() {Name = user.UserName, ApiKey = ApiAuth.Generate()};
+                        user.Organization = org;
+                    }
                     var result = _userManager.CreateAsync(user, model.Password).Result;
                     if (result.Succeeded && isFirstUser)
                     {
