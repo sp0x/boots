@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using Donut.Integration;
 using Donut.Models;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces.Models;
 using Newtonsoft.Json.Linq;
 

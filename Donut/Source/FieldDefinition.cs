@@ -21,6 +21,8 @@ namespace Donut.Source
         [ForeignKey("Extras")]
         public long? ExtrasId { get; set; }
         public virtual FieldExtras Extras { get; set; }
+        public string DescriptionJson { get; set; }
+        public string DataType { get; set; }
 
         public FieldDataEncoding DataEncoding { get; set; }
         [ForeignKey("Integration")]

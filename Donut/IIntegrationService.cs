@@ -73,6 +73,7 @@ namespace Donut
         Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask);
         void OnRemoteIntegrationCreated(ICloudNodeNotification notification, JToken eBody);
         Task<IntegrationSchemaViewModel> GetSchema(User user,long id);
+        Task<DataIntegration> GetSchema(User user, DataIntegration integration);
         Task<DataIntegration> GetIntegrationForAutobuild(CreateAutomaticModelViewModel modelData);
         void SetIndexColumn(DataIntegration integration, string idColumnName);
         Task<IntegrationViewModel> GetIntegrationView(User user, long id);

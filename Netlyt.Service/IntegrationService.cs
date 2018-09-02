@@ -13,6 +13,7 @@ using Donut.Integration;
 using Donut.IntegrationSource;
 using Donut.Models;
 using Donut.Orion;
+using Donut.Source;
 using EntityFramework.DbContextScope;
 using EntityFramework.DbContextScope.Interfaces;
 using FluentNHibernate.Conventions.Inspections;
@@ -280,9 +281,67 @@ namespace Netlyt.Service
 
         public void OnRemoteIntegrationCreated(ICloudNodeNotification notification, JToken eBody)
         {
-            
+            var token = eBody["token"].ToString();
+            var newIntegration = new DataIntegration();
+            newIntegration.CreatedOnNodeToken = token;
+            newIntegration.Name = eBody["name"].ToString();
+            newIntegration.FeatureScript = eBody["FeatureScript"]?.ToString();
+            newIntegration.DataFormatType = eBody["DataFormatType"]?.ToString();
+            newIntegration.CreatedOn = eBody["on"].ToObject<DateTime>();
+            foreach (var field in eBody["fields"])
+            {
+                FieldDefinition newField = DeserializeField(field);
+                newIntegration.Fields.Add(newField);
+            }
+
+            newIntegration.DataIndexColumn = eBody["ix_column"]?.ToString();
+            newIntegration.DataTimestampColumn = eBody["ts_column"]?.ToString();
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                newIntegration.Owner = _users.GetById(eBody["user_id"].ToString()).FirstOrDefault();
+                if (newIntegration.Owner != null)
+                {
+                    var apiKey = newIntegration.Owner.ApiKeys.FirstOrDefault();
+                    newIntegration.APIKeyId = apiKey.ApiId;
+                    newIntegration.APIKey = apiKey.Api;
+                }
+                context.Integrations.Add(newIntegration);
+                context.SaveChanges();
+            }
         }
 
+        private FieldDefinition DeserializeField(JToken jsField)
+        {
+            var field = jsField.ToObject<FieldDefinition>();
+            return field;
+        }
+
+        public async Task<DataIntegration> GetSchema(User user, DataIntegration integration)
+        {
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                if (integration == null) throw new NotFound();
+                user = context.Users.FirstOrDefault(x => x.Id == user.Id);
+                if (!integration.Permissions.Any(x => x.ShareWith.Id == user.Organization.Id))
+                {
+                    throw new Forbidden(string.Format("You are not allowed to view this integration"));
+                }
+                var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(integration, new ModelTarget[]{} );
+                var description = await _orionContext.Query(descQuery);
+                SetTargetTypes(integration, description);
+                integration.AddDataDescription(description);
+                return integration;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public async Task<IntegrationSchemaViewModel> GetSchema(User user, long id)
         {
             using (var contextSrc = _contextFactory.Create())

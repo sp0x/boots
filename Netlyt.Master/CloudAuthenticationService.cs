@@ -81,7 +81,7 @@ namespace Netlyt.Master
                     Token = output
                 };
                 context.CloudAuthorizations.Add(newAuthorization);
-                ctxSrc.SaveChanges();
+                context.SaveChanges();
                 return output;
             }
         }

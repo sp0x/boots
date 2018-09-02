@@ -4,6 +4,7 @@ using System.Linq;
 using Donut.Integration;
 using Donut.Models;
 using EntityFramework.DbContextScope.Interfaces;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Repisitories;
@@ -88,13 +89,17 @@ namespace Netlyt.Service.Cloud
                 user_id = user.Id,
                 name = newIntegration.Name,
                 id = newIntegration.Id,
+                newIntegration.DataFormatType,
+                newIntegration.FeatureScript,
                 fields = newIntegration.Fields.Select(x => new
                 {
                     x.Name,
                     x.Id,
-                    x.TargetType,
                     x.Type,
-                    x.DataEncoding
+                    x.DataEncoding,
+                    x.TargetType,
+                    x.DataType,
+                    x.DescriptionJson
                 }),
                 ts_column = newIntegration.DataTimestampColumn,
                 ix_column = newIntegration.DataIndexColumn,

@@ -16,7 +16,7 @@ namespace Netlyt.Service.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
-                .HasAnnotation("ProductVersion", "2.1.1-rtm-30846")
+                .HasAnnotation("ProductVersion", "2.1.2-rtm-30932")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("Donut.AggregateKey", b =>
@@ -50,6 +50,10 @@ namespace Netlyt.Service.Migrations
                     b.Property<long>("APIKeyId");
 
                     b.Property<string>("Collection");
+
+                    b.Property<DateTime>("CreatedOn");
+
+                    b.Property<string>("CreatedOnNodeToken");
 
                     b.Property<int>("DataEncoding");
 
@@ -443,6 +447,10 @@ namespace Netlyt.Service.Migrations
                         .ValueGeneratedOnAdd();
 
                     b.Property<int>("DataEncoding");
+
+                    b.Property<string>("DataType");
+
+                    b.Property<string>("DescriptionJson");
 
                     b.Property<long?>("ExtrasId");
 

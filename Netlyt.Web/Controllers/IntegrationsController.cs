@@ -179,6 +179,12 @@ namespace Netlyt.Web.Controllers
                 return NotFound();
             }
         }
+
+        /// <summary>
+        /// Gets just the schema of an integration.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("{id}/schema")]
         public async Task<IActionResult> GetSchema(long id)
         {
@@ -213,7 +219,8 @@ namespace Netlyt.Web.Controllers
                 var result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, Request);
                 if (result != null)
                 {
-                    IIntegration newIntegration = result.Integration;
+                    DataIntegration newIntegration = result.Integration as DataIntegration;
+                    await _integrationService.GetSchema(user, newIntegration);
                     _notifications.SendNewIntegrationSummary(newIntegration, user);
                     var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                     return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
