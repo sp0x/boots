@@ -104,11 +104,11 @@ namespace Netlyt.Service.Cloud
 
         private void NotificationListener_OnIntegrationCreated(object sender, JsonNotification e)
         {
-            _loggingService.OnIntegrationCreated(e, e.Body);
             if (_cloudNodeService.ShouldSync("integration", e))
             {
                 _integrations.OnRemoteIntegrationCreated(e, e.Body);
             }
+            _loggingService.OnIntegrationCreated(e, e.Body);
             NotificationListener.Ack(e);
         }
 

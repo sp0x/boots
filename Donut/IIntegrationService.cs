@@ -21,6 +21,7 @@ namespace Donut
     public interface IIntegrationService
     {
         DataIntegration GetUserIntegration(User user, long id);
+        //DataIntegration GetUserIntegration(User user, DataIntegration integration);
         Task<IEnumerable<DataIntegration>> GetIntegrations(User user, int page, int pageSize);
         Task<IEnumerable<DataIntegration>> GetIntegrations(User currentUser, string targetUserId, int page, int pageSize);
         DataIntegration GetUserIntegration(User user, string name);

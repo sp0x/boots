@@ -84,30 +84,34 @@ namespace Netlyt.Service.Cloud
         public void SendNewIntegrationSummary(IIntegration newIntegration, User user)
         {
             CheckAuthClient();
-            var body = JObject.FromObject(new
+            using (var contextSrc = _dbContextFactory.Create())
             {
-                username = user.UserName,
-                user_id = user.Id,
-                name = newIntegration.Name,
-                id = newIntegration.Id,
-                newIntegration.DataFormatType,
-                newIntegration.FeatureScript,
-                fields = newIntegration.Fields.Select(x => new
+                var integration = _integrations.GetById(newIntegration.Id).FirstOrDefault();
+                var body = JObject.FromObject(new
                 {
-                    x.Name,
-                    x.Id,
-                    x.Type,
-                    x.DataEncoding,
-                    x.TargetType,
-                    x.DataType,
-                    x.DescriptionJson
-                }),
-                ts_column = newIntegration.DataTimestampColumn,
-                ix_column = newIntegration.DataIndexColumn,
-                on = DateTime.UtcNow,
-                token = _connector.AuthenticationClient.AuthenticationToken
-            });
-            _connector.NotificationClient.Send(Routes.IntegrationCreated, body);
+                    username = user.UserName,
+                    user_id = user.Id,
+                    name = integration.Name,
+                    id = integration.Id,
+                    integration.DataFormatType,
+                    integration.FeatureScript,
+                    fields = integration.Fields.Select(x => new
+                    {
+                        x.Name,
+                        x.Id,
+                        x.Type,
+                        x.DataEncoding,
+                        x.TargetType,
+                        x.DataType,
+                        x.DescriptionJson
+                    }).ToList(),
+                    ts_column = integration.DataTimestampColumn,
+                    ix_column = integration.DataIndexColumn,
+                    on = DateTime.UtcNow,
+                    token = _connector.AuthenticationClient.AuthenticationToken
+                });
+                _connector.NotificationClient.Send(Routes.IntegrationCreated, body);
+            }
         }
 
         public void SendIntegrationViewed(long viewedIntegrationId, string userId)

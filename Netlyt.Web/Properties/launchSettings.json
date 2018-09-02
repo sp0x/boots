@@ -33,8 +33,8 @@
         "MONGO_USER": "netlyt",
         "ASPNETCORE_ENVIRONMENT": "Development",
         "NAPI_NAME": "Home",
-        "PGSQL_PORT": "5433",
-        "NODE_TYPE": "slave",
+        "PGSQL_PORT": "5432",
+        "NODE_TYPE": "cloud",
         "NAPI_KEY": "7d86064e7f3c457bb69e1a5e84735b8c",
         "NAPI_SECRET": "6/ydC8SMxs/Kwb2V4r2Sq5D+1Ejrc3N2pqvDGDFloCU="
       },

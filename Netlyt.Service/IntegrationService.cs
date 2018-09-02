@@ -82,9 +82,8 @@ namespace Netlyt.Service
             {
                 var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
                 var userApiKeys = context.ApiUsers.Where(x => x.UserId == user.Id);
-                var integration = context.Integrations.FirstOrDefault(x => x.APIKey != null
-                                                                           && (userApiKeys.Any(y => y.ApiId == x.APIKey.Id)
-                                                                               || userApiKeys.Any(y => y.ApiId == x.PublicKeyId))
+                var userOrgId = context.Users.FirstOrDefault(x => x.Id == user.Id).Organization.Id;
+                var integration = context.Integrations.FirstOrDefault(x => x.Permissions.Any(p=>p.ShareWith.Id == userOrgId) 
                                                                            && x.Id == id);
                 return integration;
             }
@@ -107,10 +106,12 @@ namespace Netlyt.Service
                 var context = contextSrc.DbContexts.Get<ManagementDbContext>();
                 var currentUserEntity = _users.GetById(currentUser.Id).FirstOrDefault();
                 var crOrgId = currentUserEntity.Organization.Id;
-                var integrations = context.Integrations.Where(x => x.Owner.Id == targetUserId 
-                                                                   && x.Permissions.Any(p=>p.Owner.Id==crOrgId))
+                var integrations = context.Integrations.Where(x => x.Owner.Id == targetUserId
+                                                                 && x.Permissions.Any(p => p.ShareWith.Id == crOrgId)
+                                                                   )
                     .Skip(page * pageSize).Take(pageSize)
                     .ToList();
+                //&& x.Permissions.Any(p=>p.Owner.Id==crOrgId)
                 return await Task.FromResult(integrations);
             }
         }

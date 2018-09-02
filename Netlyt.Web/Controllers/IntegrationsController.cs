@@ -230,8 +230,8 @@ namespace Netlyt.Web.Controllers
                 if (result != null)
                 {
                     DataIntegration newIntegration = result.Integration as DataIntegration;
-                    await _integrationService.ResolveDescription(user, newIntegration);
-                    _notifications.SendNewIntegrationSummary(newIntegration, user);
+                    DataIntegration integrationWithDescription = await _integrationService.ResolveDescription(user, newIntegration);
+                    _notifications.SendNewIntegrationSummary(integrationWithDescription, user);
                     var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                     return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
                 }
