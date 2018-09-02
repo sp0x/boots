@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Security.Claims;
+using Donut.Data;
 using Donut.Integration;
 using Donut.Models;
 using Netlyt.Data.ViewModels;
@@ -17,5 +18,7 @@ namespace Netlyt.Service.Cloud
         void SendModelCreated(Model newModel, User user);
         void SendModelBuilding(Model model, User user, JToken trainingTask);
         void SendModelTrained(Model model, User user, List<ModelTrainingPerformance> targetPerformances);
+        void SendPermissionCreated(User createdBy, Permission newPerm);
+        void SendPermissionRemoved(User createdBy, Permission permission);
     }
 }

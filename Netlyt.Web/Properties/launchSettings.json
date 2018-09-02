@@ -19,7 +19,6 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "NAPI_SECRET": "IqalgI9eUhL0ykcbQL48/TsTdNlOdUqU6yAomnQNdbg=",
         "MQ_USER": "netlyt",
         "MONGO_PASS": "gsoeghjoijasg43o0jw90e8bjsdfog",
         "MONGO_HOST": "loc.mongo.netlyt.com",
@@ -33,10 +32,11 @@
         "MQ_HOST": "loc.mq.netlyt.com",
         "MONGO_USER": "netlyt",
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "NODE_TYPE": "slave",
         "NAPI_NAME": "Home",
         "PGSQL_PORT": "5433",
-        "NAPI_KEY": "fb9d4f23d9784434962d917db53e9632"
+        "NODE_TYPE": "slave",
+        "NAPI_KEY": "7d86064e7f3c457bb69e1a5e84735b8c",
+        "NAPI_SECRET": "6/ydC8SMxs/Kwb2V4r2Sq5D+1Ejrc3N2pqvDGDFloCU="
       },
       "applicationUrl": "http://localhost:33838/"
     }

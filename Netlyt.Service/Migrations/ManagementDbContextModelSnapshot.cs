@@ -67,11 +67,15 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("FeaturesCollection");
 
+                    b.Property<bool>("IsRemote");
+
                     b.Property<string>("Name");
 
                     b.Property<string>("OwnerId");
 
                     b.Property<long?>("PublicKeyId");
+
+                    b.Property<long?>("RemoteId");
 
                     b.Property<string>("Source");
 
@@ -121,9 +125,13 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<long?>("DataIntegrationId");
 
+                    b.Property<bool>("IsRemote");
+
                     b.Property<long?>("ModelId");
 
                     b.Property<long?>("OwnerId");
+
+                    b.Property<long?>("RemoteId");
 
                     b.Property<long?>("ShareWithId");
 
@@ -264,9 +272,13 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("HyperParams");
 
+                    b.Property<bool>("IsRemote");
+
                     b.Property<string>("ModelName");
 
                     b.Property<long?>("PublicKeyId");
+
+                    b.Property<long?>("RemoteId");
 
                     b.Property<string>("TrainingParams");
 
@@ -864,9 +876,13 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Token");
 
+                    b.Property<string>("UserId");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ApiKeyId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("CloudAuthorizations");
                 });
@@ -1208,6 +1224,10 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Interfaces.Models.ApiAuth", "ApiKey")
                         .WithMany()
                         .HasForeignKey("ApiKeyId");
+
+                    b.HasOne("Netlyt.Interfaces.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
                 });
 #pragma warning restore 612, 618
         }

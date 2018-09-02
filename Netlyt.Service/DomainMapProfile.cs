@@ -9,6 +9,8 @@ using Donut.Source;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Cloud;
+using Newtonsoft.Json.Linq;
 using DataIntegration = Donut.Data.DataIntegration;
 
 namespace Netlyt.Service
@@ -32,7 +34,9 @@ namespace Netlyt.Service
                     return src.AdvancedReport;
                 }));
             CreateMap<FieldDefinition, FieldDefinitionViewModel>()
-                .ForMember(x=>x.TargetType, opt=>opt.MapFrom(y=>y.TargetType));
+                .ForMember(x=>x.TargetType, opt=>opt.MapFrom(y=>y.TargetType))
+                .ForMember(x=>x.DType, opt=>opt.MapFrom(src=> src.DataType))
+                .ForMember(x=>x.Description, opt=> opt.MapFrom(src=> JObject.Parse(src.DescriptionJson)));
             CreateMap<DonutScriptInfo, DonutScriptViewModel>();
             CreateMap<Permission, PermissionViewModel>();
             CreateMap<ModelTarget, ModelTargetViewModel>()
@@ -71,6 +75,11 @@ namespace Netlyt.Service
                 {
                     var userService = services.GetService(typeof(IUserManagementService)) as IUserManagementService;
                     return userService.GetRoles(src).Result;
+                }))
+                .ForMember(x=>x.HasRemoteInstance, opt=>opt.ResolveUsing(src =>
+                {
+                    var userService = services.GetService(typeof(ICloudNodeService)) as ICloudNodeService;
+                    return userService.UserHasOnPremInstance(src);
                 }));
             CreateMap<User, UserPreviewViewModel>()
                 .ForMember(x=>x.Username, opt=> opt.ResolveUsing(src=> src.UserName))

@@ -102,8 +102,8 @@ namespace Netlyt.Web.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                
-                if (_nodeInfo.ResolveLocal().HasToVerifyLogins())
+                var hasToVerifyLogins = _nodeInfo.ResolveLocal().HasToVerifyLogins();
+                if (hasToVerifyLogins)
                 {
                     var authResult = await _slaveConnector.AuthenticationClient.LoginUser(model.Email, model.Password);
                     if (!authResult.Item1) return InvalidLogin();

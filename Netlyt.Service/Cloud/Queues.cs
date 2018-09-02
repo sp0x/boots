@@ -17,6 +17,8 @@ namespace Netlyt.Service.Cloud
         /// Whenever perissions are set
         /// </summary>
         public const string PermissionsSet = "notification.set.permissions";
+
+        public const string PermissionsUpdate = "notifications.permissions.update";
         /// <summary>
         /// Whenever an integration is created
         /// </summary>

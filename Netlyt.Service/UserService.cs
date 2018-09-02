@@ -173,6 +173,19 @@ namespace Netlyt.Service
             }
         }
 
+        public User GetByCloudNodeToken(string authToken)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                return context.CloudAuthorizations
+                    .Where(x => x.Token == authToken)
+                    .Select(x => x.User)
+                    .FirstOrDefault();
+
+            }
+        }
+
 
         private object AnonimyzeKey(ApiUser key)
         {

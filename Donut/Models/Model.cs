@@ -46,6 +46,8 @@ namespace Donut.Models
         public string TrainingParams { get; set; }
         public string HyperParams { get; set; }
         public virtual ICollection<Permission> Permissions{ get; set; }
+        public bool IsRemote { get; set; }
+        public long? RemoteId { get; set; }
 
 
         public Model()

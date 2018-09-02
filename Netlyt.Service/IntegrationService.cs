@@ -100,6 +100,21 @@ namespace Netlyt.Service
             }
         }
 
+        public async Task<IEnumerable<DataIntegration>> GetIntegrations(User currentUser, string targetUserId, int page, int pageSize)
+        {
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var currentUserEntity = _users.GetById(currentUser.Id).FirstOrDefault();
+                var crOrgId = currentUserEntity.Organization.Id;
+                var integrations = context.Integrations.Where(x => x.Owner.Id == targetUserId 
+                                                                   && x.Permissions.Any(p=>p.Owner.Id==crOrgId))
+                    .Skip(page * pageSize).Take(pageSize)
+                    .ToList();
+                return await Task.FromResult(integrations);
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -224,8 +239,10 @@ namespace Netlyt.Service
             {
                 var ambientDbContextLocator = new AmbientDbContextLocator();
                 var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
-                dbContext.Integrations.Remove(importTaskIntegration);
+                importTaskIntegration.Permissions.Clear();
                 importTaskIntegration.AggregateKeys.Clear();
+                dbContext.Integrations.Remove(importTaskIntegration);
+
                 dbContext.SaveChanges();
                 if (!string.IsNullOrEmpty(importTaskIntegration.Collection))
                 {
@@ -288,6 +305,8 @@ namespace Netlyt.Service
             newIntegration.FeatureScript = eBody["FeatureScript"]?.ToString();
             newIntegration.DataFormatType = eBody["DataFormatType"]?.ToString();
             newIntegration.CreatedOn = eBody["on"].ToObject<DateTime>();
+            newIntegration.IsRemote = true;
+            newIntegration.RemoteId = long.Parse(eBody["id"].ToString());
             foreach (var field in eBody["fields"])
             {
                 FieldDefinition newField = DeserializeField(field);
@@ -317,11 +336,12 @@ namespace Netlyt.Service
             return field;
         }
 
-        public async Task<DataIntegration> GetSchema(User user, DataIntegration integration)
+        public async Task<DataIntegration> ResolveDescription(User user, DataIntegration integration)
         {
             using (var contextSrc = _contextFactory.Create())
             {
                 var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                integration = context.Integrations.FirstOrDefault(x => x.Id == integration.Id);
                 if (integration == null) throw new NotFound();
                 user = context.Users.FirstOrDefault(x => x.Id == user.Id);
                 if (!integration.Permissions.Any(x => x.ShareWith.Id == user.Organization.Id))
@@ -332,6 +352,7 @@ namespace Netlyt.Service
                 var description = await _orionContext.Query(descQuery);
                 SetTargetTypes(integration, description);
                 integration.AddDataDescription(description);
+                context.SaveChanges();
                 return integration;
             }
         }
@@ -368,13 +389,13 @@ namespace Netlyt.Service
                 var schema = new IntegrationSchemaViewModel(ign.Id, fields);
                 schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
                     .Select(x => _mapper.Map<ModelTargetViewModel>(x));
-                var targets = schema.Targets
-                    .Select(x => new ModelTarget(ign.GetField(x.Id)))
-                    .Where(x => x.Column != null);
-                var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign, targets);
-                var description = await _orionContext.Query(descQuery);
-                SetTargetTypes(ign, description);
-                schema.AddDataDescription(description);
+//                var targets = schema.Targets
+//                    .Select(x => new ModelTarget(ign.GetField(x.Id)))
+//                    .Where(x => x.Column != null);
+//                var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign, targets);
+//                var description = await _orionContext.Query(descQuery);
+//                SetTargetTypes(ign, description);
+//                schema.AddDataDescription(description);
                 return schema;
             }
         }

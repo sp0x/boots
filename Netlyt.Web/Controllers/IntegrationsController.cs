@@ -57,7 +57,17 @@ namespace Netlyt.Web.Controllers
             var dataIntegrations = await _integrationService.GetIntegrations(user, page, pageSize);
             return dataIntegrations.Select(x => _mapper.Map<DataIntegrationViewModel>(x));
         }
-         
+
+        [HttpGet("/integrations/{userId}")]
+        [Authorize]
+        public async Task<IEnumerable<DataIntegrationViewModel>> GetAll(string userId, [FromQuery] int page)
+        {
+            int pageSize = 25;
+            var user = await _userManagementService.GetCurrentUser();
+            var dataIntegrations = await _integrationService.GetIntegrations(user, userId, page, pageSize);
+            return dataIntegrations.Select(x => _mapper.Map<DataIntegrationViewModel>(x));
+        }
+
         [HttpGet("/job/{id}")]
         [Authorize]
         public IActionResult GetJob(long id)
@@ -220,7 +230,7 @@ namespace Netlyt.Web.Controllers
                 if (result != null)
                 {
                     DataIntegration newIntegration = result.Integration as DataIntegration;
-                    await _integrationService.GetSchema(user, newIntegration);
+                    await _integrationService.ResolveDescription(user, newIntegration);
                     _notifications.SendNewIntegrationSummary(newIntegration, user);
                     var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                     return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));

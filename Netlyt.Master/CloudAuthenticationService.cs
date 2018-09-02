@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using EntityFramework.DbContextScope.Interfaces;
+using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud;
 using Netlyt.Service.Cloud.Auth;
@@ -37,8 +38,8 @@ namespace Netlyt.Master
                                                                            && x.AppSecret == authRequest.ApiSecret);
                     if (authMatch != null)
                     {
-                        var token = GenerateAuthenticationToken(authMatch);
                         var apiUser = authMatch.Users.FirstOrDefault();
+                        var token = GenerateAuthenticationToken(authMatch, apiUser);
 
                         output = new NodeAuthenticationResult(token, apiUser?.User);
                         output.Role = authRequest.AsRole;
@@ -67,7 +68,7 @@ namespace Netlyt.Master
             }
         }
 
-        private string GenerateAuthenticationToken(ApiAuth auth)
+        private string GenerateAuthenticationToken(ApiAuth auth, ApiUser apiUser)
         {
             using (var ctxSrc = _dbContextFactory.Create())
             {
@@ -78,7 +79,8 @@ namespace Netlyt.Master
                     Role = NodeRole.Slave,
                     ApiKey = auth,
                     CreatedOn = DateTime.UtcNow,
-                    Token = output
+                    Token = output,
+                    User = apiUser.User
                 };
                 context.CloudAuthorizations.Add(newAuthorization);
                 context.SaveChanges();

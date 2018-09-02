@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Donut.Data;
 using Donut.Integration;
 using Donut.Models;
 using EntityFramework.DbContextScope.Interfaces;
@@ -178,6 +179,49 @@ namespace Netlyt.Service.Cloud
                     token = _connector.AuthenticationClient.AuthenticationToken
                 });
                 _connector.NotificationClient.Send(Routes.IntegrationViewed, body);
+            }
+        }
+
+        public void SendPermissionRemoved(User createdBy, Permission permission)
+        {
+            CheckAuthClient();
+            var body = JObject.FromObject(new
+            {
+                on = DateTime.UtcNow,
+                user_id = createdBy.Id,
+                token = _connector.AuthenticationClient.AuthenticationToken,
+                id = permission.Id
+            });
+            var headers = new Dictionary<string, string>();
+            headers["type"] = "remove";
+            _connector.NotificationClient.Send(Routes.PermissionsUpdate, body, headers);
+        }
+
+        public void SendPermissionCreated(User createdBy, Permission newPerm)
+        {
+            CheckAuthClient();
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                var body = JObject.FromObject(new
+                {
+                    newPerm.CanModify,
+                    newPerm.CanRead,
+                    ShareWith = new
+                    {
+                        newPerm.ShareWith.Id
+                    },
+                    OwnerId = newPerm.Owner.Id,
+                    newPerm.DataIntegrationId,
+                    newPerm.ModelId,
+                    on = DateTime.UtcNow,
+                    user_id = createdBy.Id,
+                    token = _connector.AuthenticationClient.AuthenticationToken,
+                    id = newPerm.Id,
+                    value = (newPerm.CanRead ? "r" :"") + (newPerm.CanModify ? "w" : "") + " " + (newPerm.ShareWith.Name)
+                });
+                var headers = new Dictionary<string, string>();
+                headers["type"] = "create";
+                _connector.NotificationClient.Send(Routes.PermissionsUpdate, body, headers);
             }
         }
     }

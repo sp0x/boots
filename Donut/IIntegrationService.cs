@@ -22,6 +22,7 @@ namespace Donut
     {
         DataIntegration GetUserIntegration(User user, long id);
         Task<IEnumerable<DataIntegration>> GetIntegrations(User user, int page, int pageSize);
+        Task<IEnumerable<DataIntegration>> GetIntegrations(User currentUser, string targetUserId, int page, int pageSize);
         DataIntegration GetUserIntegration(User user, string name);
         IIntegration GetByName(IApiAuth contextApiAuth, string integrationSourceIntegrationName);
         Task<DataImportResult> AppendToIntegration(DataIntegration ign, string filePath, ApiAuth apiKey);
@@ -73,7 +74,7 @@ namespace Donut
         Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask);
         void OnRemoteIntegrationCreated(ICloudNodeNotification notification, JToken eBody);
         Task<IntegrationSchemaViewModel> GetSchema(User user,long id);
-        Task<DataIntegration> GetSchema(User user, DataIntegration integration);
+        Task<DataIntegration> ResolveDescription(User user, DataIntegration integration);
         Task<DataIntegration> GetIntegrationForAutobuild(CreateAutomaticModelViewModel modelData);
         void SetIndexColumn(DataIntegration integration, string idColumnName);
         Task<IntegrationViewModel> GetIntegrationView(User user, long id);

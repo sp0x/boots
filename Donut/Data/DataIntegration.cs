@@ -65,6 +65,8 @@ namespace Donut.Data
 
         public static DataIntegration Empty { get; set; } = new DataIntegration("Empty");
         public virtual ICollection<Permission> Permissions{ get; set; }
+        public bool IsRemote { get; set; }
+        public long? RemoteId { get; set; }
 
 
         public DataIntegration()

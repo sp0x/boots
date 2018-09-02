@@ -51,19 +51,33 @@ namespace Netlyt.Service
             using (var contextSrc = _contextScope.Create())
             {
                 var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var type = notification.Headers["type"];
                 String userId = _userService.VerifyUser(body["user_id"].ToString());
                 var item = new ActionLog()
                 {
-                    Created = body["on"].Value<DateTime>(),
-                    Name = body["name"].ToString(),
+                    Created = body["on"].ToObject< DateTime>(),
+                    Name = body["name"]?.ToString(),
                     UserId = userId,
-                    Value = body["value"].ToString(),
+                    Value = body["value"]?.ToString(),
                     InstanceToken = body["token"]?.ToString(),
-                    Type = ActionLogType.PermissionsSet,
+                    Type = ResolvePermissionLogType(type),
                     ObjectId = long.Parse(body["id"].ToString())
                 };
                 context.Logs.Add(item);
                 contextSrc.SaveChanges();
+            }
+        }
+
+        private ActionLogType ResolvePermissionLogType(string type)
+        {
+            switch (type)
+            {
+                case "create":
+                    return ActionLogType.PermissionsCreate;
+                case "remove":
+                    return ActionLogType.PermissionRemoved;
+                default:
+                    throw new NotImplementedException();
             }
         }
 

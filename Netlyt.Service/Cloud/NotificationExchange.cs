@@ -19,6 +19,7 @@ namespace Netlyt.Service.Cloud
             channel.QueueDeclare(queue: Queues.UserLogin, durable: true, exclusive: false, autoDelete: false);
             channel.QueueDeclare(queue: Queues.UserRegister, durable: true, exclusive: false, autoDelete: false);
             channel.QueueDeclare(queue: Queues.PermissionsSet, durable: true, exclusive: false, autoDelete: false);
+            channel.QueueDeclare(queue: Queues.PermissionsUpdate, durable: true, exclusive: false, autoDelete: false);
             channel.QueueDeclare(queue: Queues.IntegrationCreated, durable: true, exclusive: false, autoDelete: false);
             channel.QueueDeclare(queue: Queues.IntegrationViewed, durable: true, exclusive: false, autoDelete: false);
             channel.QueueDeclare(queue: Queues.ModelStageUpdate, durable: true, exclusive: false, autoDelete: false);
@@ -36,6 +37,7 @@ namespace Netlyt.Service.Cloud
                 queue: Queues.UserLogin, routingKey: Routes.UserLoginNotification);
             channel.QueueBind(exchange: exchange, queue: Queues.UserRegister, routingKey: Routes.UserRegisterNotification);
             channel.QueueBind(exchange: exchange, queue: Queues.PermissionsSet, routingKey: Routes.PermissionsSet);
+            channel.QueueBind(exchange: exchange, queue: Queues.PermissionsUpdate, routingKey: Routes.PermissionsUpdate);
             channel.QueueBind(exchange: exchange, queue: Queues.IntegrationCreated, routingKey: Routes.IntegrationCreated);
             channel.QueueBind(exchange: exchange, queue: Queues.IntegrationViewed, routingKey: Routes.IntegrationViewed);
             channel.QueueBind(exchange: exchange, queue: Queues.ModelStageUpdate, routingKey: Routes.ModelStageUpdate);

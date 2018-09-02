@@ -12,6 +12,7 @@ namespace Netlyt.Service.Cloud
         private IModel channel;
         public event EventHandler<JsonNotification> OnIntegrationCreated;
         public event EventHandler<JsonNotification> OnIntegrationViewed;
+        public event EventHandler<JsonNotification> OnPermissionsUpdated;
 
         public NotificationListener(IModel channel) : base(channel)
         {
@@ -23,6 +24,7 @@ namespace Netlyt.Service.Cloud
             ConsumeQuotaNotifications();
             ConsumeIntegrationNotifications();
             ConsumeUserAuthNotifications();
+            ConsumePermissionNotifications();
         }
 
         #region Consume setup methods
@@ -39,11 +41,19 @@ namespace Netlyt.Service.Cloud
         {
             var login = new EventingBasicConsumer(channel);
             var register = new EventingBasicConsumer(channel);
-            login.Received += Login_Received; ;
-            register.Received += Register_Received; ;
+            login.Received += Login_Received;
+            register.Received += Register_Received;
             channel.BasicConsume(Queues.UserLogin, false, login);
             channel.BasicConsume(Queues.UserRegister, false, register);
         }
+
+        private void ConsumePermissionNotifications()
+        {
+            var permCreate = new EventingBasicConsumer(channel);
+            permCreate.Received += Permissions_Updated;
+            channel.BasicConsume(Queues.PermissionsUpdate, false, permCreate);
+        }
+
 
         public void ConsumeIntegrationNotifications()
         {
@@ -62,6 +72,19 @@ namespace Netlyt.Service.Cloud
             channel.BasicAck(e.DeliveryTag, false);
         }
 
+        private void Permissions_Updated(object sender, BasicDeliverEventArgs e)
+        {
+            try
+            {
+                var notification = JsonNotification.FromRequest(e);
+                OnPermissionsUpdated?.Invoke(this, notification);
+            }
+            catch (Exception ex)
+            {
+                this.Ack(e);
+            }
+        }
+
         private void Login_Received(object sender, BasicDeliverEventArgs e)
         {
             try
@@ -77,9 +100,9 @@ namespace Netlyt.Service.Cloud
 
         private void IntegrationViewedConsumer_Received(object sender, BasicDeliverEventArgs e)
         {
-            var notification = JsonNotification.FromRequest(e);
             try
             {
+                var notification = JsonNotification.FromRequest(e);
                 OnIntegrationViewed?.Invoke(this, notification);
             }
             catch (Exception)
@@ -90,9 +113,9 @@ namespace Netlyt.Service.Cloud
 
         private void NewIntegrationConsumer_Received(object sender, BasicDeliverEventArgs e)
         {
-            var notification = JsonNotification.FromRequest(e);
             try
             {
+                var notification = JsonNotification.FromRequest(e);
                 OnIntegrationCreated?.Invoke(this, notification);
             }
             catch (Exception)

@@ -27,6 +27,7 @@ namespace Netlyt.Service.Cloud
         private ILoggingService _loggingService;
         private ICloudNodeService _cloudNodeService;
         private IDbContextScopeFactory _contxtScopeFactory;
+        private PermissionService _permissions;
         public bool Running { get; set; }
         public NotificationListener NotificationListener { get; private set; }
         public AuthListener AuthListener { get; private set; }
@@ -37,8 +38,10 @@ namespace Netlyt.Service.Cloud
             IIntegrationService integrations,
             ILoggingService loggingService,
             ICloudNodeService cloudNodeService,
-            IDbContextScopeFactory contextScopeFactory)
+            IDbContextScopeFactory contextScopeFactory,
+            PermissionService permissionService)
         {
+            _permissions = permissionService;
             _contxtScopeFactory = contextScopeFactory;
             _cloudNodeService = cloudNodeService;
             var mqConfig = MqConfig.GetConfig(config);
@@ -71,6 +74,7 @@ namespace Netlyt.Service.Cloud
                         AuthListener.UserAuthenticationRequested += AuthListener_UserAuthenticationRequested;
                         NotificationListener.OnIntegrationCreated += NotificationListener_OnIntegrationCreated;
                         NotificationListener.OnIntegrationViewed += NotificationListener_OnIntegrationViewed;
+                        NotificationListener.OnPermissionsUpdated += NotificationListener_OnPermissionsUpdated;
                         AuthListener.Start();
                         NotificationListener.Start();
                         while (this.Running)
@@ -82,11 +86,20 @@ namespace Netlyt.Service.Cloud
             });
         }
 
+        private void NotificationListener_OnPermissionsUpdated(object sender, JsonNotification e)
+        {
+            _loggingService.OnPermissionsChanged(e, e.Body);
+            if (_cloudNodeService.ShouldSync("permission", e))
+            {
+                _permissions.OnRemotePermissionUpdated(e, e.Body);
+            }
+            NotificationListener.Ack(e);
+        }
+
         private void NotificationListener_OnIntegrationViewed(object sender, JsonNotification e)
         {
             _loggingService.OnIntegrationViewed(e, e.Body);
             NotificationListener.Ack(e);
-
         }
 
         private void NotificationListener_OnIntegrationCreated(object sender, JsonNotification e)

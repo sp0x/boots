@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using Netlyt.Service.Cloud.Auth;
 using Newtonsoft.Json.Linq;
@@ -43,16 +44,24 @@ namespace Netlyt.Service.Cloud.Slave
             Send(Routes.MessageNotification, props, body);
         }
 
-        public void Send(string routingKey, JToken body)
+        public void Send(string routingKey, JToken body, Dictionary<string, string> headers=null)
         {
             var props = Channel.CreateBasicProperties();
             props.Persistent = true;
             var bodyBytes = Encoding.UTF8.GetBytes(body.ToString());
-            Send(routingKey, props, bodyBytes);
+            Send(routingKey, props, bodyBytes, headers);
         }
 
-        public void Send(string routingKey, IBasicProperties properties, byte[] body)
+        public void Send(string routingKey, IBasicProperties properties, byte[] body, Dictionary<string, string> headers=null)
         {
+            if (headers != null)
+            {
+                if (properties.Headers == null) properties.Headers = new Dictionary<string, object>();
+                foreach (var pair in headers)
+                {
+                    properties.Headers.Add(new KeyValuePair<string,object>(pair.Key, pair.Value));
+                }
+            }
             Channel.BasicPublish(exchange: Exchanges.Notifications,
                 routingKey: routingKey,
                 basicProperties: properties,

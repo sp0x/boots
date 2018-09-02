@@ -24,5 +24,6 @@ namespace Netlyt.Service
         void CreateIfMissing(User user);
         ICollection<object> GetApiKeysAnonimized(User user);
         ICollection<ApiAuth> GetApiKeys(User user);
+        User GetByCloudNodeToken(string authToken);
     }
 }

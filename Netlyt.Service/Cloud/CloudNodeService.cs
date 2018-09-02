@@ -53,11 +53,23 @@ namespace Netlyt.Service.Cloud
             {
                 case "integration":
                     return loginRole == NodeRole.Slave;
-                    break;
+                case "permission":
+                    return loginRole == NodeRole.Slave;
                 default:
                     throw new NotImplementedException();
             }
             
+        }
+
+        public bool UserHasOnPremInstance(User src)
+        {
+            using (var ctxScope = _dbContextFactory.Create())
+            {
+                var context = ctxScope.DbContexts.Get<ManagementDbContext>();
+                return context.CloudAuthorizations
+                    .Any(x => x.ApiKey.Users
+                        .Any(user => user.UserId == src.Id));
+            }
         }
 
         /// <summary>
