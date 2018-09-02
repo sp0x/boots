@@ -178,7 +178,7 @@ namespace Netlyt.Web.Controllers
         [HttpPatch("/manage/userEdit/{id}")]
         public async Task<IActionResult> UserEdit(string id, [FromBody]UserEditViewModel modification)
         {
-            var user = await _userService.GetUser(id);
+            var user = _userManager.Users.FirstOrDefault(x => x.Id == id);
             var modified = await _userService.AddRolesToUser(user, modification.Roles);
             return Json(new { success = modified });
         }

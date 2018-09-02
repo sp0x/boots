@@ -195,7 +195,7 @@ namespace Netlyt.Service
                     var result = _userManager.CreateAsync(user, model.Password).Result;
                     if (result.Succeeded && isFirstUser)
                     {
-                        await AddRolesToUser(user, new string[] {"Admin"});
+                        await AddRolesToUser(user , new string[] {"Admin"});
                     }
                     user.Organization = org;
                     var output = new Tuple<IdentityResult, User>(result, user);
@@ -234,28 +234,32 @@ namespace Netlyt.Service
 
         public async Task<bool> AddRolesToUser(User user, IEnumerable<string> newRoles)
         {
-            foreach (var newRole in newRoles)
+            using (var ctxSrc = _dbContextFactory.Create())
             {
-                var existingRole = _context.Roles.FirstOrDefault(x => x.Name == newRole);
-                if (existingRole == null)
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                foreach (var newRole in newRoles)
                 {
-                    var newRoleObj = new UserRole()
+                    var existingRole = _context.Roles.FirstOrDefault(x => x.Name == newRole);
+                    if (existingRole == null)
                     {
-                        Name = newRole,
-                        NormalizedName = newRole.ToUpper()
-                    };
-                    _context.Roles.Add(newRoleObj);
-                    await _context.SaveChangesAsync();
+                        var newRoleObj = new UserRole()
+                        {
+                            Name = newRole,
+                            NormalizedName = newRole.ToUpper()
+                        };
+                        _context.Roles.Add(newRoleObj);
+                        await _context.SaveChangesAsync();
+                    }
+                    var isCurrentlyInRole = await _userManager.IsInRoleAsync(user, newRole);
+                    if (isCurrentlyInRole) continue;
+                    var idResult = await _userManager.AddToRoleAsync(user, newRole);
+                    if (!idResult.Succeeded)
+                    {
+                        return false;
+                    }
                 }
-                var isCurrentlyInRole = await _userManager.IsInRoleAsync(user, newRole);
-                if (isCurrentlyInRole) continue;
-                var idResult = await _userManager.AddToRoleAsync(user, newRole);
-                if (!idResult.Succeeded)
-                {
-                    return false;
-                }
+                return true;
             }
-            return true;
         }
 
         public async Task<IEnumerable<string>> GetRoles(User src)
