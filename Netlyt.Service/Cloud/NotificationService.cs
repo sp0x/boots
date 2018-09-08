@@ -45,12 +45,14 @@ namespace Netlyt.Service.Cloud
 
         public void SendNotification(JToken body)
         {
+            if (!_nodeResolver.ShouldNotify("logged in")) return;
             var notificationClient = _connector.NotificationClient;
             notificationClient.Send(Routes.MessageNotification, body);
         }
 
         public void SendRegisteredNotification(User user)
         {
+            if (!_nodeResolver.ShouldNotify("register")) return;
             CheckAuthClient();
             var body = JObject.FromObject(new
             {
@@ -65,6 +67,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendLoggedInNotification(User user)
         {
+            if (!_nodeResolver.ShouldNotify("login")) return;
             CheckAuthClient();
             var body = JObject.FromObject(new
             {
@@ -83,6 +86,7 @@ namespace Netlyt.Service.Cloud
         /// <param name="newIntegration"></param>
         public void SendNewIntegrationSummary(IIntegration newIntegration, User user)
         {
+            if (!_nodeResolver.ShouldNotify("integration")) return; 
             CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
@@ -116,6 +120,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendIntegrationViewed(long viewedIntegrationId, string userId)
         {
+            if (!_nodeResolver.ShouldNotify("integration")) return;
             CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
@@ -134,6 +139,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendModelCreated(Model newModel, User user)
         {
+            if (!_nodeResolver.ShouldNotify("model")) return;
             CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
@@ -152,6 +158,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendModelBuilding(Model model, User user, JToken trainingTask)
         {
+            if (!_nodeResolver.ShouldNotify("model")) return;
             CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
@@ -170,6 +177,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendModelTrained(Model model, User user, List<ModelTrainingPerformance> targetPerformances)
         {
+            if (!_nodeResolver.ShouldNotify("model")) return;
             CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
@@ -188,6 +196,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendPermissionRemoved(User createdBy, Permission permission)
         {
+            if (!_nodeResolver.ShouldNotify("permission")) return;
             CheckAuthClient();
             var body = JObject.FromObject(new
             {
@@ -203,6 +212,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendPermissionCreated(User createdBy, Permission newPerm)
         {
+            if (!_nodeResolver.ShouldNotify("permission")) return;
             CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {

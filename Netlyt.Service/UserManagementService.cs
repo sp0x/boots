@@ -165,8 +165,16 @@ namespace Netlyt.Service
             using (var contextSrc = _dbContextFactory.Create())
             {
                 var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var tokenIsValid = context.Tokens.FirstOrDefault(x => x.Value == model.Token && !x.IsUsed);
                 var isFirstUser = _context.Users.Count() == 0;
                 var username = model.Email.Substring(0, model.Email.IndexOf("@"));
+                if (!isFirstUser && tokenIsValid==null)
+                {
+                    return new Tuple<IdentityResult, User>(IdentityResult.Failed(new IdentityError()
+                    {
+                        Description = "Invalid token"
+                    }), null);
+                }
                 var user = new User
                 {
                     UserName = username,
@@ -191,13 +199,18 @@ namespace Netlyt.Service
                     {
                         if (org == null) org = new Organization() {Name = user.UserName, ApiKey = ApiAuth.Generate()};
                         user.Organization = org;
+                        tokenIsValid.IsUsed = true;
                     }
                     var result = _userManager.CreateAsync(user, model.Password).Result;
                     if (result.Succeeded && isFirstUser)
                     {
                         await AddRolesToUser(user , new string[] {"Admin"});
+                    }else if (result.Succeeded && !isFirstUser)
+                    {
+                        await AddRolesToUser(user, new string[] { "TestUser" });
                     }
                     user.Organization = org;
+                    context.SaveChanges();
                     var output = new Tuple<IdentityResult, User>(result, user);
                     return output;
                 }

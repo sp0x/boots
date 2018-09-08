@@ -11,5 +11,6 @@ namespace Netlyt.Service.Cloud
         NetlytNode ResolveLocal();
         bool ShouldSync(string dataType, ICloudNodeNotification jsonNotification);
         bool UserHasOnPremInstance(User src);
+        bool ShouldNotify(string dataType);
     }
 }

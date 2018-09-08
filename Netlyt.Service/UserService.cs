@@ -186,6 +186,18 @@ namespace Netlyt.Service
             }
         }
 
+        public Token IssueNewToken()
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var token = new Token() {IsUsed = false, Value = Guid.NewGuid().ToString()};
+                context.Tokens.Add(token);
+                context.SaveChanges();
+                return token;
+            }
+        }
+
 
         private object AnonimyzeKey(ApiUser key)
         {

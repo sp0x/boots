@@ -389,7 +389,8 @@ namespace Netlyt.Service
                 var fields = ign.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                 var schema = new IntegrationSchemaViewModel(ign.Id, fields);
                 schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
-                    .Select(x => _mapper.Map<ModelTargetViewModel>(x));
+                    .Select(x => _mapper.Map<ModelTargetViewModel>(x))
+                    .ToList();
 //                var targets = schema.Targets
 //                    .Select(x => new ModelTarget(ign.GetField(x.Id)))
 //                    .Where(x => x.Column != null);

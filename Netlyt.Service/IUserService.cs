@@ -25,5 +25,6 @@ namespace Netlyt.Service
         ICollection<object> GetApiKeysAnonimized(User user);
         ICollection<ApiAuth> GetApiKeys(User user);
         User GetByCloudNodeToken(string authToken);
+        Token IssueNewToken();
     }
 }

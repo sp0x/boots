@@ -779,6 +779,20 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("Organizations");
                 });
 
+            modelBuilder.Entity("Netlyt.Interfaces.Models.Token", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<bool>("IsUsed");
+
+                    b.Property<string>("Value");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tokens");
+                });
+
             modelBuilder.Entity("Netlyt.Interfaces.Models.User", b =>
                 {
                     b.Property<string>("Id")

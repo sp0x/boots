@@ -72,6 +72,21 @@ namespace Netlyt.Service.Cloud
             }
         }
 
+        public bool ShouldNotify(string dataType)
+        {
+            var crNode = ResolveLocal();
+            if (crNode == NetlytNode.Cloud)
+            {
+                if(dataType=="integration") return false;
+                else if(dataType=="permission") return false;
+                else if(dataType=="model") return false;
+                else if(dataType=="login") return false;
+                else if(dataType=="register") return false;
+            }
+            return true;
+
+        }
+
         /// <summary>
         /// Gets the login role of a node.
         /// </summary>
