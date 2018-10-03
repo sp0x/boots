@@ -49,7 +49,7 @@ services:
       args:
         JENKINS_VERSION: 2.131
     container_name: jenkins
-    restart: always  
+    restart: always
     ports:
       - 8080:8080
     volumes:
