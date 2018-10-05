@@ -19,6 +19,7 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
+        "NAPI_SECRET": "6/ydC8SMxs/Kwb2V4r2Sq5D+1Ejrc3N2pqvDGDFloCU=",
         "MQ_USER": "netlyt",
         "MONGO_PASS": "gsoeghjoijasg43o0jw90e8bjsdfog",
         "MONGO_HOST": "loc.mongo.netlyt.com",
@@ -29,14 +30,13 @@
         "EXP_DIR": "..\\orion",
         "PGSQL_PASS": "gpiowuert0g9",
         "PGSQL_DB": "netlyt",
-        "MQ_HOST": "loc.mq.netlyt.com",
+        "MQ_HOST": "mq.netlyt.com",
         "MONGO_USER": "netlyt",
         "ASPNETCORE_ENVIRONMENT": "Development",
+        "NODE_TYPE": "cloud",
         "NAPI_NAME": "Home",
         "PGSQL_PORT": "5432",
-        "NODE_TYPE": "cloud",
-        "NAPI_KEY": "7d86064e7f3c457bb69e1a5e84735b8c",
-        "NAPI_SECRET": "6/ydC8SMxs/Kwb2V4r2Sq5D+1Ejrc3N2pqvDGDFloCU="
+        "NAPI_KEY": "7d86064e7f3c457bb69e1a5e84735b8c"
       },
       "applicationUrl": "http://localhost:33838/"
     }

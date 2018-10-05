@@ -91,6 +91,7 @@ namespace Netlyt.Web
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();
             services.AddTransient<CompilerService>();
+            services.AddTransient<ISubscriptionService, SubscriptionService>();
 
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
