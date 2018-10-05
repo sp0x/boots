@@ -37,6 +37,7 @@ namespace Netlyt.Service.Data
         public DbSet<ActionLog> Logs { get; set; }
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<Token> Tokens { get; set; }
+        public DbSet<Subscription> Subscriptions { get; set; }
 
         public static readonly LoggerFactory Logger
             = new LoggerFactory(new[]

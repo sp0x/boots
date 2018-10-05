@@ -779,6 +779,26 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("Organizations");
                 });
 
+            modelBuilder.Entity("Netlyt.Interfaces.Models.Subscription", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<long?>("AccessTokenId");
+
+                    b.Property<DateTime>("Created");
+
+                    b.Property<string>("Email");
+
+                    b.Property<string>("ForService");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccessTokenId");
+
+                    b.ToTable("Subscriptions");
+                });
+
             modelBuilder.Entity("Netlyt.Interfaces.Models.Token", b =>
                 {
                     b.Property<long>("Id")
@@ -1207,6 +1227,13 @@ namespace Netlyt.Service.Migrations
                         .WithMany()
                         .HasForeignKey("ApiKeyId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Netlyt.Interfaces.Models.Subscription", b =>
+                {
+                    b.HasOne("Netlyt.Interfaces.Models.Token", "AccessToken")
+                        .WithMany()
+                        .HasForeignKey("AccessTokenId");
                 });
 
             modelBuilder.Entity("Netlyt.Interfaces.Models.User", b =>
