@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using EntityFramework.DbContextScope.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Data;
@@ -20,7 +21,7 @@ namespace Netlyt.Service
             _emailer = emailer;
         }
 
-        public Token SubscribeForAccess(string email, string forService = "Netlyt", bool sendNotification = true)
+        public async Task<Token> SubscribeForAccess(string email, string forService = "Netlyt", bool sendNotification = true)
         {
             var tok = new Token();
             using (var dbFactory = _dbContextFactory.Create())
@@ -47,7 +48,7 @@ namespace Netlyt.Service
                 sb.AppendLine("https://service.netlyt.com/register?token=" + tok.Value);
                 sb.AppendLine("");
                 sb.AppendLine("Netlyt");
-                _emailer.SendEmailAsync(email, subject, sb.ToString());
+                await _emailer.SendEmailAsync(email, subject, sb.ToString());
             }
             return tok;
         }
