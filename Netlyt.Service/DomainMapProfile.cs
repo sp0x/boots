@@ -44,6 +44,7 @@ namespace Netlyt.Service
             CreateMap<Model, ModelViewModel>()
                 .ForMember(x=>x.ApiKey, opt=> opt.Ignore())
                 .ForMember(x=>x.Permissions, opt=> opt.Ignore())
+                //.ForMember(x=>x.Fields, opt=> opt.MapFrom(src=>src.GetRootIntegration().Fields))
                 .ForMember(x => x.BuiltTargets, opt => opt.ResolveUsing(src =>
                 {
                     var modelService = services.GetService(typeof(ModelService)) as ModelService;

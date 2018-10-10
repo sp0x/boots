@@ -10,6 +10,7 @@ using Donut.Data;
 using Donut.Integration;
 using Donut.Models;
 using Donut.Orion;
+using Donut.Source;
 using Newtonsoft.Json.Linq;
 using Netlyt.Service;
 using Microsoft.AspNetCore.Identity;
@@ -94,6 +95,7 @@ namespace Netlyt.Web.Controllers
             var param = await _orionContext.Query(query);
             return Json(param);
         }
+        
 
         [HttpGet("/model/{id}/performance", Name = "GetModelPerformance")]
         [AllowAnonymous]
@@ -101,10 +103,11 @@ namespace Netlyt.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-            var item = _modelService.GetById(id, user);
-            if (item == null) return NotFound();
-            var status = _modelService.GetModelStatus(item);
-            _permissionService.CheckAccess(item, user);
+            var modelItem = _modelService.GetById(id, user);
+            if (modelItem == null) return NotFound();
+            var status = _modelService.GetModelStatus(modelItem);
+            List<FieldDefinition> fields = _modelService.GetFields(modelItem);
+            _permissionService.CheckAccess(modelItem, user);
             if (status != Donut.Models.ModelPrepStatus.Done)
             {
                 var resp = Json(new {message = "Try again later.", status = status.ToString().ToLower()});
@@ -118,9 +121,10 @@ namespace Netlyt.Web.Controllers
                 resp.StatusCode = 204;
                 return resp;
             }
-            var mapped = _mapper.Map<ModelViewModel>(item);
-            mapped.UserIsOwner = user.Id == item.UserId;
-            var modelApiKey = _modelService.GetApiKey(item);
+            var mapped = _mapper.Map<ModelViewModel>(modelItem);
+            mapped.Fields = fields.Select(f => _mapper.Map<FieldDefinitionViewModel>(f));
+            mapped.UserIsOwner = user.Id == modelItem.UserId;
+            var modelApiKey = _modelService.GetApiKey(modelItem);
             mapped.ApiKey = modelApiKey?.AppId;
             mapped.ApiSecret = modelApiKey?.AppSecret;
             return Json(mapped);

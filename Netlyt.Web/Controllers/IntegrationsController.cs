@@ -11,6 +11,7 @@ using AutoMapper;
 using Donut;
 using Donut.Data;
 using Donut.Integration;
+using Donut.Models;
 using Donut.Orion;
 using static Netlyt.Web.Attributes;
 using Netlyt.Data.ViewModels;
@@ -26,6 +27,7 @@ namespace Netlyt.Web.Controllers
         private IIntegrationService _integrationService;
         private IUserManagementService _userManagementService;
         private IMapper _mapper;
+        private ModelService _modelService;
 
         private IOrionContext _orionContext;
         private INotificationService _notifications;
@@ -38,7 +40,8 @@ namespace Netlyt.Web.Controllers
             IMapper mapper,
             IOrionContext orionContext,
             INotificationService notificationsService,
-            ICloudNodeService nodeService)
+            ICloudNodeService nodeService,
+            ModelService modelService)
         {
             _userManagementService = userManagementService;
             _integrationService = integrationService;
@@ -46,6 +49,7 @@ namespace Netlyt.Web.Controllers
             _orionContext = orionContext;
             _notifications = notificationsService;
             _nodeService = nodeService;
+            _modelService = modelService;
         }
 
         [HttpGet("/integrations/me")]
@@ -83,12 +87,10 @@ namespace Netlyt.Web.Controllers
             {
                 return BadRequest("No integration name given.");
             }
-
             var user = await _userManagementService.GetCurrentUser();
             var apiKey = await _userManagementService.GetCurrentApi();
             var newIntegration = await _integrationService.Create(user, apiKey, integration.Name, integration.DataFormatType);
             return CreatedAtRoute("GetIntegration", new { id = newIntegration.Id }, _mapper.Map<DataIntegrationViewModel>(newIntegration));
-
         }
 
 
@@ -215,6 +217,37 @@ namespace Netlyt.Web.Controllers
             }
         }
 
+        [HttpPost("/model/refit")]
+        public async Task<IActionResult> Refit(long modelID)
+        {
+            if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
+            {
+                return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
+            }
+            try
+            {
+                var user = await _userManagementService.GetCurrentUser();
+                var apiKey = await _userManagementService.GetCurrentApi();
+                var result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, Request);
+                if (result != null)
+                {
+                    DataIntegration newIntegration = result.Integration as DataIntegration;
+                    DataIntegration integrationWithDescription = await _integrationService.ResolveDescription(user, newIntegration);
+                    _notifications.SendNewIntegrationSummary(integrationWithDescription, user);
+                    //Do the actual refitting
+                    Model refittedModel = await _modelService.CreateFromRefit(user, apiKey, newIntegration, modelID);
+                }
+            }
+            catch (Exception ex)
+            {
+                var resp = Json(new { success = false, message = ex.Message });
+                resp.StatusCode = 500;
+                return resp;
+            }
+            return null;
+        }
+
+
         [HttpPost("/integration/schema")]
         public async Task<IActionResult> UploadAndGetSchema()
         {
@@ -242,7 +275,6 @@ namespace Netlyt.Web.Controllers
                 resp.StatusCode = 500;
                 return resp;
             }
-            
             return null;
         }
     }
