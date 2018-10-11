@@ -37,6 +37,7 @@ namespace Netlyt.Service
                 sub.AccessToken = tok;
                 sub.ForService = forService;
                 context.Subscriptions.Add(sub);
+                context.SaveChanges();
             }
 
             if (sendNotification)
