@@ -165,16 +165,26 @@ namespace Netlyt.Service
             using (var contextSrc = _dbContextFactory.Create())
             {
                 var context = contextSrc.DbContexts.Get<ManagementDbContext>();
-                var tokenIsValid = context.Tokens.FirstOrDefault(x => x.Value == model.Token && !x.IsUsed);
+                var userToken = context.Tokens.FirstOrDefault(x => x.Value == model.Token && !x.IsUsed);
+                var tokenIsForSameUser = userToken!=null && CheckTokenSubscription(model);
                 var isFirstUser = _context.Users.Count() == 0;
                 var username = model.Email.Substring(0, model.Email.IndexOf("@"));
-                if (!isFirstUser && tokenIsValid==null)
+                if (!isFirstUser && userToken==null)
                 {
                     return new Tuple<IdentityResult, User>(IdentityResult.Failed(new IdentityError()
                     {
                         Description = "Invalid token"
                     }), null);
                 }
+                else if (!isFirstUser && !tokenIsForSameUser)
+                {
+                    return new Tuple<IdentityResult, User>(IdentityResult.Failed(new IdentityError()
+                    {
+                        Description = "Token is subscribed for a different email."
+                    }), null);
+
+                }
+
                 var user = new User
                 {
                     UserName = username,
@@ -199,7 +209,7 @@ namespace Netlyt.Service
                     {
                         if (org == null) org = new Organization() {Name = user.UserName, ApiKey = ApiAuth.Generate()};
                         user.Organization = org;
-                        tokenIsValid.IsUsed = true;
+                        userToken.IsUsed = true;
                     }
                     var result = _userManager.CreateAsync(user, model.Password).Result;
                     if (result.Succeeded && isFirstUser)
@@ -217,6 +227,28 @@ namespace Netlyt.Service
                 catch (Exception ex)
                 {
                     throw ex;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns>Whether the token is valid for the given email, or not.</returns>
+        private bool CheckTokenSubscription(RegisterViewModel model)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var tokenSubscription = context.Subscriptions.FirstOrDefault(x=>x.AccessToken.Value == model.Token);
+                if (tokenSubscription != null)
+                {
+                    return tokenSubscription.Email.ToLower() == model.Email.ToLower();
+                }
+                else
+                {
+                    return true;
                 }
             }
         }
