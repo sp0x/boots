@@ -182,7 +182,6 @@ namespace Netlyt.Service
                     {
                         Description = "Token is subscribed for a different email."
                     }), null);
-
                 }
 
                 var user = new User
