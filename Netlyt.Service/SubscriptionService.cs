@@ -33,7 +33,7 @@ namespace Netlyt.Service
                 }
                 var sub = new Subscription() {Email = email, Created = DateTime.Now};
                 tok.Value = Guid.NewGuid().ToString();
-                tok.IsUsed = true;
+                tok.IsUsed = false;
                 sub.AccessToken = tok;
                 sub.ForService = forService;
                 context.Subscriptions.Add(sub);
