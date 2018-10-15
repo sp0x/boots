@@ -65,10 +65,11 @@ namespace Donut.Models
         /// Set the model's script from a donut script and an optional assembly for the compiled script.
         /// </summary>
         /// <param name="script"></param>
-        public void SetScript(IDonutScript script)
+        public DonutScriptInfo SetScript(IDonutScript script)
         {
             DonutScript = new DonutScriptInfo(script);
             DonutScript.Model = this;
+            return DonutScript;
         }
 
         public Data.DataIntegration GetRootIntegration()

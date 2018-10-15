@@ -76,7 +76,7 @@ namespace Donut.Data
             Extras = new HashSet<IntegrationExtra>();
             AggregateKeys = new HashSet<AggregateKey>();
             Permissions = new HashSet<Permission>();
-            this.PublicKey = ApiAuth.Generate();
+            
         }
 
 
@@ -217,7 +217,11 @@ namespace Donut.Data
 //            _aggregateKeys = keys.ToList();
 //        }
 
-
+        /// <summary>
+        /// DEPRECATED
+        /// </summary>
+        /// <param name="ign"></param>
+        /// <returns></returns>
         public static DataIntegration Wrap(IIntegration ign)
         {
             return ign as DataIntegration;

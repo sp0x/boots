@@ -506,7 +506,7 @@ namespace Netlyt.Service
                     var filename = form.GetValue("filename")
                         .ToString().Trim('\"').Replace('.', '_').Replace('-', '_');
                     targetStream.Position = 0;
-                    result = await CreateOrAppendToIntegration(user, apiKey,targetStream, fileContentType, filename);
+                    result = await CreateOrAppendToIntegration(targetStream, apiKey, user, fileContentType, filename);
                 }
             }
             catch (Exception ex)
@@ -540,21 +540,7 @@ namespace Netlyt.Service
                 return await CreateOrAppendToIntegration(fsStream, apiKey, user, mime, name);
             }
         }
-
-        /// <summary>
-        /// Creates a new integration from the stream, or adds the stream to an existing integration.
-        /// </summary>
-        /// <param name="inputData">The stream containing integration data</param>
-        /// <returns></returns>
-        public async Task<DataImportResult> CreateOrAppendToIntegration(User user, ApiAuth apiKey,Stream inputData, string mime = null, string name = null)
-        {
-            using (var context = _contextFactory.Create())
-            {
-                //var apiKey = await _userService.GetCurrentApi();
-                //var crUser = await _userService.GetCurrentUser();
-                return await CreateOrAppendToIntegration(inputData, apiKey, user, mime, name);
-            }
-        }
+ 
 
         /// <summary>
         /// Appends the data to an existing integration
@@ -700,8 +686,6 @@ namespace Netlyt.Service
                 }
                 return result;
             }
-
-            
         }
 
         /// <summary>

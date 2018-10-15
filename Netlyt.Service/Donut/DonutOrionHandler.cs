@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Donut;
 using Donut.Lex.Data;
+using Donut.Models;
 using Donut.Orion;
 using Microsoft.EntityFrameworkCore;
 using Netlyt.Interfaces;
@@ -126,7 +128,7 @@ namespace Netlyt.Service.Donut
             }
         }
 
-        private async Task<JToken> ExtractAndTrainFeatures(
+        private async Task<Tuple<List<TrainingTask>, JToken>> ExtractAndTrainFeatures(
             Model model,
             DonutScript script)
         {

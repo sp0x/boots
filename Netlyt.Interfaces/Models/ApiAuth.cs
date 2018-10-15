@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Security.Cryptography;
 
 namespace Netlyt.Interfaces.Models
@@ -11,6 +12,8 @@ namespace Netlyt.Interfaces.Models
     /// </summary>
     public class ApiAuth : IApiAuth
     {
+        //[Key]
+        //[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long Id { get; set; }
         public string Endpoint { get; set; }
         /// <summary>

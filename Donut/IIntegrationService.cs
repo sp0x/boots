@@ -32,7 +32,9 @@ namespace Donut
             string mime = null);
         Task<DataImportResult> AppendToIntegration(DataIntegration ign, Stream inputData, ApiAuth apiKey,
             string mime = null);
-        Task<DataImportResult> CreateOrAppendToIntegration(User user, ApiAuth apikey, Stream inputData, string mime = null, string name = null);
+
+        Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, ApiAuth apiKey, User owner,
+            string mime = null, string name = null);
         Task<DataImportResult> CreateOrAppendToIntegration(User user, ApiAuth apikey, HttpRequest request);
 
         Task<DataImportResult> CreateOrAppendToIntegration(string filePath, ApiAuth apiKey, User user,

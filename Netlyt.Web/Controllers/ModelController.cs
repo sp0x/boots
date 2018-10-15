@@ -297,7 +297,7 @@ namespace Netlyt.Web.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-            JToken trainingTask = null;
+            Tuple<List<TrainingTask>, JToken> trainingTask = null;
             if (data?.Data!=null && data.Data.UseScript)
             {
                 var script = new TrainingScript(data.Data.Script, data.Data.Code);
@@ -307,7 +307,46 @@ namespace Netlyt.Web.Controllers
             {
                 trainingTask = await _modelService.TrainModel(id, user);
             }
-            return Json(new { models_tasks = trainingTask, success= true });
+            return Json(new { models_tasks = trainingTask.Item2, success= true });
+        }
+
+        [HttpPost("/model/refit")]
+        public async Task<IActionResult> Refit(long buildId)
+        {
+            if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
+            {
+                return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
+            }
+            try
+            {
+                var user = await _userManagementService.GetCurrentUser();
+                var apiKey = await _userManagementService.GetCurrentApi();
+                var result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, Request);
+                if (result != null)
+                {
+                    DataIntegration newIntegration = result.Integration as DataIntegration;
+                    DataIntegration integrationWithDescription = await _integrationService.ResolveDescription(user, newIntegration);
+                    _notifications.SendNewIntegrationSummary(integrationWithDescription, user);
+                    //Do the actual refitting
+                    var refitResult = await _modelService.CreateFromRefit(user, apiKey, newIntegration, buildId);
+                    var trainingTasks = refitResult.Item1;
+                    var model = trainingTasks.FirstOrDefault().Model;
+                    return Json(new
+                    {
+                        targets = refitResult.Item2,
+                        model = new { id = model.Id },
+                        task = new { id = trainingTasks.FirstOrDefault().Id  }
+                        
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                var resp = Json(new { success = false, message = ex.Message });
+                resp.StatusCode = 500;
+                return resp;
+            }
+            return null;
         }
 
         [HttpPost("/model/{id}/build")]
@@ -317,10 +356,10 @@ namespace Netlyt.Web.Controllers
             if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             var model = _modelService.GetById(id, user);
             if (model == null) return NotFound();
-            
-            var trainingTask = await _modelService.TrainModel(model.Id, user);
-            _notifications.SendModelBuilding(model, user, trainingTask);
-            return Json(new {taskId = trainingTask});
+
+            Tuple<List<TrainingTask>, JToken> trainingTask = await _modelService.TrainModel(model.Id, user);
+            _notifications.SendModelBuilding(model, user, trainingTask.Item2);
+            return Json(new {taskId = trainingTask.Item2});
         }
 
         /// <summary>
@@ -361,7 +400,7 @@ namespace Netlyt.Web.Controllers
                     {
                         return BadRequest();
                     }
-                    result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, sourceStream, fileContentType,
+                    result = await _integrationService.CreateOrAppendToIntegration(sourceStream, apiKey, user, fileContentType,
                         modelParams.Name);
                     newIntegration = result?.Integration;
                 }

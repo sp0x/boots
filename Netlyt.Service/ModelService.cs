@@ -130,7 +130,7 @@ namespace Netlyt.Service
         /// <param name="newIntegration"></param>
         /// <param name="modelBuildId"></param>
         /// <returns></returns>
-        public async Task<Model> CreateFromRefit(User user, ApiAuth apiKey, DataIntegration newIntegration, long modelBuildId)
+        public async Task<Tuple<List<TrainingTask>, JToken>> CreateFromRefit(User user, ApiAuth apiKey, DataIntegration newIntegration, long modelBuildId)
         {
             using (var ctxSrc = _dbContextFactory.Create())
             {
@@ -140,16 +140,16 @@ namespace Netlyt.Service
                 var srcScript = sourceBuild.Model.DonutScript;
                 var newModel = await this.CreateModel(user, sourceBuild.Model.ModelName,
                     new IIntegration[] {newIntegration}, null, false, null, srcScript);
-                await Refit(newModel, user, modelBuildId);
-                return newModel;
+                var trainingStartedResult = await TrainModel(newModel, user, newModel.GetRootIntegration());
+                return trainingStartedResult; //new TrainingTask(newModel, trainingToken);
             }
         }
 
-        private async Task<JToken> Refit(Model newModel, User user, long previousBuild)
-        {
-            var output = await this.TrainModel(newModel, user, newModel.GetRootIntegration());
-            return output;
-        }
+//        private async Task<JToken> Refit(Model newModel, User user, long previousBuild)
+//        {
+//            var output = await this.TrainModel(newModel, user, newModel.GetRootIntegration());
+//            return output;
+//        }
 
         /// <summary>
         /// Creates a model with a premade donut script.
@@ -177,26 +177,52 @@ namespace Netlyt.Service
             using (var ctxSource = _dbContextFactory.Create())
             {
                 var context = ctxSource.DbContexts.Get<ManagementDbContext>();
-                var newModel = new Model() { UseFeatures = isUsingGeneratedFeatures, ModelName = name, Callback = callbackUrl };
+                var newModel = context.Add(new Model() { UseFeatures = isUsingGeneratedFeatures, ModelName = name, Callback = callbackUrl }).Entity;
+                var dbUser = context.Users.Where(x => x.Id == user.Id).FirstOrDefault();
                 newModel.UserId = user.Id;
-                newModel.APIKey = user.ApiKeys.Select(x => x.Api).FirstOrDefault();
-                newModel.PublicKey = ApiAuth.Generate();
+                newModel.APIKey = dbUser.ApiKeys.FirstOrDefault().Api;
+                //newModel.PublicKey = ApiAuth.Generate();
                 newModel.Targets = new List<ModelTarget>(targets);
                 newModel.CreatedOn = DateTime.UtcNow;
                 newModel.Permissions.Add(new Permission()
                 {
                     CanModify = true,
                     CanRead = true,
-                    Owner = user.Organization,
-                    ShareWith = user.Organization
+                    Owner = dbUser.Organization,
+                    ShareWith = dbUser.Organization
                 });
-                if (integrations != null)
-                    newModel.DataIntegrations = integrations.Select(ign => new ModelIntegration(newModel, DataIntegration.Wrap(ign))).ToList();
-                newModel.SetScript(script);
-                _donutRepository.Add(newModel.DonutScript);
-                _modelRepository.Add(newModel);
+                context.Models.Add(newModel);
+                context.SaveChanges();
+                AddModelIntegrations(newModel, integrations);
+                //_modelRepository.Add(newModel);
+                context.SaveChanges();
+                var scriptInfoCopy = newModel.SetScript(script);
+                context.DonutScripts.Add(scriptInfoCopy);
+                context.SaveChanges();
+                //_donutRepository.Add(newModel.DonutScript);
                 return await Task.FromResult<Model>(newModel);
             }
+        }
+
+        private void AddModelIntegrations(Model newModel, IEnumerable<IIntegration> integrations)
+        {
+            using (var ctxSource = _dbContextFactory.Create())
+            {
+                var context = ctxSource.DbContexts.Get<ManagementDbContext>();
+                if (integrations != null)
+                {
+                    var ignIds = integrations.Select(i => i.Id);
+                    newModel.DataIntegrations = context.Integrations
+                        .Where(x => ignIds.Any(z => z == x.Id))
+                        .Select(x => new ModelIntegration(newModel, x))
+                        .ToList();
+                    foreach (var newModelIgn in newModel.DataIntegrations)
+                    {
+                        context.Integrations.Attach(newModelIgn.Integration);
+                    }
+                }
+            }
+
         }
 
 
@@ -279,11 +305,14 @@ namespace Netlyt.Service
                 if (isUsingGeneratedFeatures)
                 {
                     await GenerateFeatures(newModel, relations, selectedFields, targets);
+                    _modelRepository.Add(newModel);
                 }
                 else
                 {
                     var script = GenerateDonutScriptForModel(newModel, selectedFields);
+                    _modelRepository.Add(newModel);
                     newModel.SetScript(script);
+                    
                     _donutRepository.Add(newModel.DonutScript);
                 }
                 var targetParsingQuery = OrionQuery.Factory.CreateTargetParsingQuery(newModel);
@@ -298,7 +327,7 @@ namespace Netlyt.Service
                     Trace.WriteLine(ex.Message);
                     throw new Exception("Could not create a new model!");
                 }
-                _modelRepository.Add(newModel);
+                //_modelRepository.Add(newModel);
                 return newModel;
             }
         }
@@ -476,7 +505,7 @@ namespace Netlyt.Service
             }
         }
 
-        public async Task<JToken> TrainModel(long modelId, User user, TrainingScript trainingScript = null)
+        public async Task<Tuple<List<TrainingTask>, JToken>> TrainModel(long modelId, User user, TrainingScript trainingScript = null)
         {
             using (var ctxSrc = _dbContextFactory.Create())
             {
@@ -486,7 +515,7 @@ namespace Netlyt.Service
                 return await TrainModel(model, user, model.GetRootIntegration(), trainingScript);
             }
         }
-        public async Task<JToken> TrainModel(Model model, User user, DataIntegration sourceIntegration, TrainingScript trainingScript = null)
+        public async Task<Tuple<List<TrainingTask>, JToken>> TrainModel(Model model, User user, DataIntegration sourceIntegration, TrainingScript trainingScript = null)
         {
             using (var ctxSrc = _dbContextFactory.Create())
             {
@@ -495,9 +524,10 @@ namespace Netlyt.Service
                 var modelStatus = GetModelStatus(model);
                 if (modelStatus == ModelPrepStatus.Building)
                 {
-                    return new JArray(model.TrainingTasks.Where(x => x.Status == TrainingTaskStatus.InProgress ||
-                                                                     x.Status == TrainingTaskStatus.Starting)
-                        .Select(x => x.Id).ToArray());
+                    var existingTasks = model.TrainingTasks.Where(x => x.Status == TrainingTaskStatus.InProgress ||
+                                                                       x.Status == TrainingTaskStatus.Starting);
+                    var existingOutput = new Tuple<List<TrainingTask>, JToken>(existingTasks.ToList(), new JArray(existingTasks.Select(x => x.Id).ToArray()));
+                    return existingOutput;
                 }
 
                 var newTrainingTasks = new List<TrainingTask>();
@@ -520,10 +550,9 @@ namespace Netlyt.Service
                     }
                 }
                 context.SaveChanges();
-                return trainingResponse["ids"];
+                var output = new Tuple<List<TrainingTask>, JToken>(newTrainingTasks, trainingResponse["ids"]);
+                return output;
             }
-
-            
         }
 
         /// <summary>

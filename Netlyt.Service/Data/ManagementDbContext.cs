@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
 using Donut;
 using Donut.Data;
 using Donut.Models;
@@ -25,6 +26,8 @@ namespace Netlyt.Service.Data
         public DbSet<FieldDefinition> Fields { get; set; }
         public DbSet<FieldExtras> FieldExtras { get; set; }
         public DbSet<FieldExtra> FieldExtra { get; set; }
+        
+        public DbSet<ModelIntegration> ModelIntegrations { get; set; }
         public DbSet<ApiAuth> ApiKeys { get; set; }
         public DbSet<ApiRateLimit> Rates { get; set; }
         public DbSet<ApiUser> ApiUsers { get; set; }
@@ -72,7 +75,9 @@ namespace Netlyt.Service.Data
             //            builder.Entity<DataEventRecord>().Property<DateTime>("UpdatedTimestamp");
             //            builder.Entity<SourceInfo>().Property<DateTime>("UpdatedTimestamp");
             builder.Entity<ModelRule>().HasKey(t => new {t.ModelId, t.RuleId});
-            builder.Entity<ModelIntegration>().HasKey(t => new {t.ModelId, t.IntegrationId});
+            builder.Entity<ModelIntegration>()
+                .ToTable("ModelIntegration")
+                .HasKey(t => new {t.ModelId, t.IntegrationId});
             builder.Entity<ApiUser>().HasKey(t => new {t.ApiId, t.UserId});
             builder.Entity<AggregateKey>()
                 .HasOne(x => x.Operation);

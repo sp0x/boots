@@ -122,7 +122,7 @@ namespace Netlyt.Web.Controllers
                 targetStream.Position = 0;
                 try
                 {
-                    result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, targetStream, fileContentType,
+                    result = await _integrationService.CreateOrAppendToIntegration(targetStream, apiKey, user, fileContentType,
                         integrationParams.Name);
                     newIntegration = result?.Integration;
                 }
@@ -217,35 +217,7 @@ namespace Netlyt.Web.Controllers
             }
         }
 
-        [HttpPost("/model/refit")]
-        public async Task<IActionResult> Refit(long modelID)
-        {
-            if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
-            {
-                return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
-            }
-            try
-            {
-                var user = await _userManagementService.GetCurrentUser();
-                var apiKey = await _userManagementService.GetCurrentApi();
-                var result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, Request);
-                if (result != null)
-                {
-                    DataIntegration newIntegration = result.Integration as DataIntegration;
-                    DataIntegration integrationWithDescription = await _integrationService.ResolveDescription(user, newIntegration);
-                    _notifications.SendNewIntegrationSummary(integrationWithDescription, user);
-                    //Do the actual refitting
-                    Model refittedModel = await _modelService.CreateFromRefit(user, apiKey, newIntegration, modelID);
-                }
-            }
-            catch (Exception ex)
-            {
-                var resp = Json(new { success = false, message = ex.Message });
-                resp.StatusCode = 500;
-                return resp;
-            }
-            return null;
-        }
+        
 
 
         [HttpPost("/integration/schema")]
