@@ -336,7 +336,6 @@ namespace Netlyt.Web.Controllers
                         targets = refitResult.Item2,
                         model = new { id = model.Id },
                         task = new { id = trainingTasks.FirstOrDefault().Id  }
-                        
                     });
                 }
             }

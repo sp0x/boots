@@ -44,11 +44,19 @@ namespace Netlyt.Service
             {
                 string subject = "Thank you for subscribing.";
                 var sb = new StringBuilder();
-                sb.AppendLine("Thank you for subscribing.");
-                sb.AppendLine("Your access link:");
-                sb.AppendLine("https://service.netlyt.com/register?token=" + tok.Value);
-                sb.AppendLine("");
-                sb.AppendLine("Netlyt");
+                var link = "https://service.netlyt.com/register?token=" + tok.Value;
+                sb.AppendLine(@"
+This is Tony, co-founder at Netlyt. I'm glad that you decided to give OneClick a try.
+You can use OneClick to easily create ML models and bring ML to your organisation in a matter of days.
+Here is your link: " + link + @"
+Just as an example, with OneClick you can:
+- Churn
+- Conversion
+
+If you have any questions, don't hesitate to write me.
+
+Tony
+");
                 await _emailer.SendEmailAsync(email, subject, sb.ToString());
             }
             return tok;
