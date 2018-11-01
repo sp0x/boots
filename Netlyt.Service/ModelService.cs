@@ -617,7 +617,7 @@ namespace Netlyt.Service
 
         public string GetTrainedEndpoint(TrainingTask srcTargetTask)
         {
-            return $"http://predict.netlyt.com/";
+            return $"http://predict.netlyt.io/";
         }
 
 

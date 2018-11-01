@@ -44,7 +44,7 @@ namespace Netlyt.Service
             {
                 string subject = "Thank you for subscribing.";
                 var sb = new StringBuilder();
-                var link = "https://service.netlyt.com/register?token=" + tok.Value;
+                var link = "https://service.netlyt.io/register?token=" + tok.Value;
                 sb.AppendLine(@"
 This is Tony, co-founder at Netlyt. I'm glad that you decided to give OneClick a try.
 You can use OneClick to easily create ML models and bring ML to your organisation in a matter of days.

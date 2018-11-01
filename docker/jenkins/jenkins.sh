@@ -4,14 +4,14 @@
 # otherwise, spawn a shell as well
 if [ "$PORT" ]
 then
-	sudo exec dockerd --insecure-registry registry.netlyt.com -H 0.0.0.0:$PORT -H unix:///var/run/docker.sock \
+	sudo exec dockerd --insecure-registry registry.netlyt.io -H 0.0.0.0:$PORT -H unix:///var/run/docker.sock \
 		$DOCKER_DAEMON_ARGS &
 else
 	if [ "$LOG" == "file" ]
 	then
-		sudo dockerd --insecure-registry registry.netlyt.com $DOCKER_DAEMON_ARGS &>/tmp/docker.log &
+		sudo dockerd --insecure-registry registry.netlyt.io $DOCKER_DAEMON_ARGS &>/tmp/docker.log &
 	else
-		sudo dockerd --insecure-registry registry.netlyt.com $DOCKER_DAEMON_ARGS &>/tmp/docker.log &
+		sudo dockerd --insecure-registry registry.netlyt.io $DOCKER_DAEMON_ARGS &>/tmp/docker.log &
 	fi
 	(( timeout = 60 + SECONDS ))
 	until docker info >/dev/null 2>&1

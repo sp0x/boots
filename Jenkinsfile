@@ -11,7 +11,7 @@ node {
             newImage = docker.build("netlyt")                
             sh ' echo "Tests PASSED"' /* Volkswagen style for now*/
             //Our default docker registry
-            //docker.withRegistry("https://registry.netlyt.com", 'offsite-docker-registry'){
+            //docker.withRegistry("https://registry.netlyt.io", 'offsite-docker-registry'){
             //     newImage.push("latest")
             //}
             docker.withRegistry("https://344965022394.dkr.ecr.us-east-2.amazonaws.com", "ecr:us-east-2:aws_ecr") {
@@ -26,7 +26,7 @@ node {
       
     } 
     stage('Deploy') {
-        sh 'curl "http://deploy.netlyt.com/?token=b5a2425f52ee61b50f21ee921e4bfa25&hook=netlyt" > /dev/null 2>&1 &'
+        sh 'curl "http://deploy.netlyt.io/?token=b5a2425f52ee61b50f21ee921e4bfa25&hook=netlyt" > /dev/null 2>&1 &'
     }
     stage('Notify') {
         slackSend baseUrl: 'https://netlyt.slack.com/services/hooks/jenkins-ci/', channel: 'dev', color: 'good',

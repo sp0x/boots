@@ -38,7 +38,7 @@ namespace Netlyt.Service
 
         public string GetInferenceUrl()
         {
-            return "http://inference.netlyt.com";
+            return "http://inference.netlyt.io";
         }
 
         public string GetSnippet(User user, TrainingTask trainingTask, string language)
