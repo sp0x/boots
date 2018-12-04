@@ -29,6 +29,7 @@ namespace Donut.Source
         public long IntegrationId { get; set; }
         public Data.DataIntegration Integration { get; set; }
         public string TargetType { get; set; }
+        public string Language { get; set; }
 
         public FieldDefinition()
         {

@@ -157,7 +157,7 @@ namespace Donut.Orion
                 //Todo update..
                 parameters["targets"] = CreateTargetsDef(model.Targets.ToArray());
                 parameters["tasks"] = new JArray(trainingTasks.Select(x => x.Id).ToArray());
-                parameters["script"] = CreateTrainingScriptFromTasks(trainingTasks);
+                parameters["script"] = GetTrainingScript(trainingTasks);
                 models["auto"] = autoModel; // GridSearchCV - param_grid
                 var sourceCol = ign.GetModelSourceCollection(model);
                 dataOptions["db"] = sourceCol;
@@ -236,7 +236,7 @@ namespace Donut.Orion
                 return output;
             }
 
-            private static JToken CreateTrainingScriptFromTasks(IEnumerable<TrainingTask> trainingTasks)
+            private static JToken GetTrainingScript(IEnumerable<TrainingTask> trainingTasks)
             {
                 var output = new JObject();
                 output["code"] = trainingTasks.Select(x => x.Script).FirstOrDefault()?.PythonScript.ToString();
@@ -296,26 +296,17 @@ namespace Donut.Orion
             /// <param name="url"></param>
             /// <param name="formatting"></param>
             /// <returns></returns>
-            public static OrionQuery CreateProjectGenerationRequest(string url, JObject formatting)
+            public static OrionQuery CreateProjectGenerationRequest(TrainingTask task)
             {
                 var qr = new OrionQuery(OrionOp.GenerateProject);
                 var fileParams = new JObject();
                 var groupBy = new JObject();
-                groupBy["hour"] = 0.5;
-                groupBy["day_unix"] = true;
-
-                fileParams["target"] = new JObject();
-                fileParams["cleanup"] = new JObject();
-                fileParams["feature_settings"] = new JObject();
-                fileParams["aggregation"] = new JObject();
-                fileParams["target"]["constraints"] = null;
-                fileParams["target"]["columns"] = null;
-                fileParams["cleanup"]["pre_features"] = null;
-                fileParams["cleanup"]["train"] = null;
-                fileParams["field_formatting"] = null;
-                fileParams["features_source_file"] = url;
-                fileParams["feature_settings"]["use_features"] = false;
-                fileParams["aggregation"]["group_by"] = groupBy;
+                var script = task.Script;
+                //groupBy["hour"] = 0.5;
+                //groupBy["day_unix"] = true;
+                fileParams["script"] = GetTrainingScript(new []{ task });
+                fileParams["client"] = task.User.UserName;
+                fileParams["name"] = task.Model.ModelName;
                 qr["msg"] = fileParams;
                 return qr;
             }

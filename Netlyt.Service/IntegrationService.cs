@@ -263,13 +263,22 @@ namespace Netlyt.Service
             var fields = ign.Fields.ToList();
             foreach (JProperty descPair in descs)
             {
-                var fname = descPair.Name;;
+                var fname = descPair.Name;
                 var fld = fields.FirstOrDefault(x => x.Name == fname);
                 if (fld == null) continue;
                 var target_type = descPair.Value["target_type"];
                 fld.TargetType = target_type.ToString();
+                fld.Language = GetLanguageFromDescription(descPair);
             }
             ign.Fields = fields;
+        }
+
+        private string GetLanguageFromDescription(JProperty descPair)
+        {
+            JObject languages = descPair.Value["languages"] as JObject;
+            if(languages is null) return "n";
+            var topLanguage = languages.Properties().OrderBy(x => x.Value.ToObject<int>()).FirstOrDefault();
+            return topLanguage.Name;
         }
 
         public async Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask)
@@ -659,7 +668,10 @@ namespace Netlyt.Service
                 if (isNewIntegration)
                 {
                     var collection = MongoHelper.GetCollection(integrationInfo.Collection);
-                    await importTask.Encode(collection);
+                    if (importTask.EncodeOnImport)
+                    {
+                        await importTask.Encode(collection);
+                    }
                     integrationInfo.Permissions.Add(new Permission
                     {
                         Owner = owner.Organization,
@@ -734,6 +746,7 @@ namespace Netlyt.Service
             options.ApiKey = apiKey;
             options.IntegrationName = integrationInfo.Name;
             options.Integration = integrationInfo;
+            //
             importTask = new DataImportTask<ExpandoObject>(options);
             return integrationInfo;
         }

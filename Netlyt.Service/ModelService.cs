@@ -487,9 +487,9 @@ namespace Netlyt.Service
                     dscript.AddIntegrations(ign);
                 }
             }
-
-
         }
+
+        
 
         public async Task TrainOnCommand(BasicDeliverEventArgs basicRequest, User user)
         {
@@ -712,6 +712,28 @@ namespace Netlyt.Service
                 return fields.ToList();
             }
         }
-         
+
+        public TrainingTask GetTask(long taskId)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var ctx = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                return ctx.TrainingTasks.FirstOrDefault(x => x.Id == taskId);
+            }
+        }
+        public async Task<JToken> ExportPy(long buildId)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var sourceBuild = this.GetTask(buildId); //context.ModelTrainingPerformance.FirstOrDefault(x => x.Id == buildId);
+                if (sourceBuild == null) throw new NotFound();
+                var model = sourceBuild.Model;
+                if (model == null) throw new NotFound();
+                var targetParsingQuery = OrionQuery.Factory.CreateProjectGenerationRequest(sourceBuild);
+                var projectPack = await _orion.Query(targetParsingQuery);
+                return projectPack;
+            }
+        }
     }
 }

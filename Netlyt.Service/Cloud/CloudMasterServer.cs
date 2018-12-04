@@ -60,7 +60,7 @@ namespace Netlyt.Service.Cloud
         }
 
         public Task Run()
-        {
+        { 
             Running = true;
             return Task.Run(() =>
             {
