@@ -148,6 +148,7 @@ namespace Donut.Orion
 
         public async Task<JToken> Query(JToken query)
         {
+            if (query is null) return null;
             return await _client.Query(query);
         }
         /// <summary>
@@ -165,6 +166,7 @@ namespace Donut.Orion
         /// <returns></returns>
         public async Task<JToken> Query(OrionQuery orionQuery)
         {
+            if (orionQuery is null) return null;
             var token = orionQuery.Serialize();
             return await Query(token);
         }

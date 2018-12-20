@@ -225,6 +225,10 @@ namespace Netlyt.Service
 
         }
 
+        public static string CleanupModelName(string str)
+        {
+            return str.Replace(".", "_");
+        }
 
         /// <summary>
         /// 
@@ -234,7 +238,6 @@ namespace Netlyt.Service
         /// <returns></returns>
         public async Task<Model> CreateEmptyModel(User user, CreateEmptyModelViewModel props)
         {
-            var modelName = props.ModelName.Replace(".", "_");
             using (var ctxSource = _dbContextFactory.Create())
             {
                 var context = ctxSource.DbContexts.Get<ManagementDbContext>();
@@ -244,20 +247,20 @@ namespace Netlyt.Service
                 {
                     throw new Forbidden("You are not authorized to use this integration for model building");
                 }
-
+                var modelName = CleanupModelName(integration.Name) + "Model";
                 if (props.IdColumn != null && !string.IsNullOrEmpty(props.IdColumn.Name))
                 {
                     _integrationService.SetIndexColumn(integration, props.IdColumn.Name);
                 }
-                var targets = props.Targets.ToModelTargets(integration);//new ModelTarget(integration.GetField(modelData.Target.Name));
+                //var targets = props.Targets.ToModelTargets(integration);//new ModelTarget(integration.GetField(modelData.Target.Name));
                 var newModel = await CreateModel(user,
                     modelName,
                     new List<DataIntegration>(new[] { integration }),
                     props.CallbackUrl,
                     props.GenerateFeatures,
                     null,
-                    integration.GetFields(props.FeatureCols),
-                    targets.ToArray());
+                    integration.GetFields(props.FeatureCols)
+                    );
                 return newModel;
             }
         }
@@ -285,6 +288,10 @@ namespace Netlyt.Service
             params ModelTarget[] targets
             )
         {
+            if (isUsingGeneratedFeatures && targets.Length == 0)
+            {
+                throw new Exception("Automatic feature generation requires targets to be present");
+            }
             using (var contextSrc = _dbContextFactory.Create())
             {
                 var newModel = new Model() { UseFeatures = isUsingGeneratedFeatures, ModelName = name, Callback = callbackUrl };
@@ -334,6 +341,7 @@ namespace Netlyt.Service
 
         private void ParseTargetTasksTypes(Model newModel, JToken targetsInfo)
         {
+            if (targetsInfo == null) return;
             var targets = newModel.Targets;
             foreach (JProperty targetNfo in targetsInfo)
             {
@@ -351,10 +359,12 @@ namespace Netlyt.Service
         {
             var donutName = $"{model.ModelName}Donut";
             var rootIntegration = model.GetRootIntegration();
+            var fieldsList = selectedFields.ToList();
             var script = DonutScript.Factory.Create(donutName, model.Targets, rootIntegration);
-            if (selectedFields != null)
+            
+            if (fieldsList != null && fieldsList.Count>0)
             {
-                foreach (var fld in selectedFields)
+                foreach (var fld in fieldsList)
                 {
                     var isTargetFeature = model.Targets.Any(t => fld.Name == t.Column.Name);
                     //We don`t use columns that are marked as targets for features

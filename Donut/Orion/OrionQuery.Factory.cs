@@ -341,6 +341,7 @@ namespace Donut.Orion
 
             public static OrionQuery CreateTargetParsingQuery(Model newModel)
             {
+                if (newModel.Targets == null || newModel.Targets.Count==0) return null;
                 var qr = new OrionQuery(OrionOp.ParseTargets);
                 var fileParams = new JObject();
                 var collections = new JArray();

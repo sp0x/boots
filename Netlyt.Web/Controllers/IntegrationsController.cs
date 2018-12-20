@@ -236,9 +236,15 @@ namespace Netlyt.Web.Controllers
                 {
                     DataIntegration newIntegration = result.Integration as DataIntegration;
                     DataIntegration integrationWithDescription = await _integrationService.ResolveDescription(user, newIntegration);
+                    CreateEmptyModelViewModel modelProps = new CreateEmptyModelViewModel();
+                    modelProps.IntegrationId = newIntegration.Id;
+                    //modelProps.FeatureCols = newIntegration.Fields; 
+                    var newModel = await _modelService.CreateEmptyModel(user, modelProps);
                     _notifications.SendNewIntegrationSummary(integrationWithDescription, user);
                     var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
-                    return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
+                    var integrationViewModel = new IntegrationSchemaViewModel(newIntegration.Id, schema);
+                    var modelViewModel = _mapper.Map<Model, ModelViewModel>(newModel);
+                    return Json(new NewModelViewModel(modelViewModel, integrationViewModel));
                 }
             }
             catch (Exception ex)
