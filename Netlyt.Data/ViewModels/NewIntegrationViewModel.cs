@@ -9,6 +9,25 @@ namespace Netlyt.Data.ViewModels
 
     }
 
+    public class NewModelViewModel
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public ModelViewModel Model { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public IntegrationSchemaViewModel Schema { get; set; }
+
+        public NewModelViewModel(ModelViewModel modelViewModel, IntegrationSchemaViewModel ignViewModel)
+        {
+            this.Model = modelViewModel;
+            this.Schema = ignViewModel;
+        }
+
+    }
+
     public class NewIntegrationViewModel
     {
         public string Name { get; set; }

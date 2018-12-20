@@ -256,7 +256,7 @@ namespace Donut.Data
 
         public IEnumerable<FieldDefinition> GetFields(IEnumerable<string> names)
         {
-            return this.Fields.Where(x => names.Contains(x.Name));
+            return names==null ? this.Fields : this.Fields.Where(x => names.Contains(x.Name));
         }
 
         public void AddDataDescription(JToken description)
