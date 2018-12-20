@@ -16,13 +16,13 @@ services:
 
   netlyt:
     image: netlyt
-    hostname: api.netlyt.com
+    hostname: api.netlyt.io
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
       - redis
-      - mongo.netlyt.com 
+      - mongo.netlyt.io 
       - postgres
       - orion
       - balancer
@@ -32,7 +32,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    hostname: "loc.mq.netlyt.com"
+    hostname: "loc.mq.netlyt.io"
     container_name: rabbitmq
     env_file:
       - rabbitmq.env
@@ -49,7 +49,7 @@ services:
       args:
         JENKINS_VERSION: 2.131
     container_name: jenkins
-    restart: always  
+    restart: always
     ports:
       - 8080:8080
     volumes:
@@ -60,18 +60,18 @@ services:
     build:
       context: ./docker/redis
       dockerfile: Dockerfile
-    container_name: redis.netlyt.com
-    hostname: redis.netlyt.com
+    container_name: redis.netlyt.io
+    hostname: redis.netlyt.io
     restart: always
     ports:
       - 6399:6399
     volumes:
       - redis:/data
 
-  mongo.netlyt.com :
+  mongo.netlyt.io :
     image: library/mongo:3.4
-    hostname: mongo.netlyt.com 
-    container_name: mongo.netlyt.com 
+    hostname: mongo.netlyt.io 
+    container_name: mongo.netlyt.io 
     volumes:
       - mongodb:/data/db
     ports:
@@ -82,8 +82,8 @@ services:
 
   postgres:
     image: postgres
-    container_name: postgres.netlyt.com
-    hostname: postgres.netlyt.com 
+    container_name: postgres.netlyt.io
+    hostname: postgres.netlyt.io 
     restart: always
     env_file:
       - postgre_auth.env
@@ -93,8 +93,8 @@ services:
       - "127.0.0.1:5432:5432"
 
   orion:
-    container_name: orion.netlyt.com
-    hostname: orion.netlyt.com
+    container_name: orion.netlyt.io
+    hostname: orion.netlyt.io
     build:
       context: ./Orion
       dockerfile: Dockerfile

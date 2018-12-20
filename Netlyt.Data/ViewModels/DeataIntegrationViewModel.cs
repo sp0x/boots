@@ -1,3 +1,5 @@
+using System;
+
 namespace Netlyt.Data.ViewModels
 {
     public class AccessLogViewModel
@@ -13,6 +15,7 @@ namespace Netlyt.Data.ViewModels
         public string FeatureScript { get; set; }
         public string Name { get; set; }
         public int DataEncoding { get; set; }
+        public DateTime CreatedOn { get; set; }
         public long? PublicKeyId { get; set; }
         /// <summary>
         /// the type of the data e.g stream or file

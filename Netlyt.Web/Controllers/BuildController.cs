@@ -16,6 +16,7 @@ using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Web.Models.ManageViewModels;
+using Newtonsoft.Json.Linq;
 
 namespace Netlyt.Web.Controllers
 {
@@ -55,6 +56,35 @@ namespace Netlyt.Web.Controllers
             if (user == null) throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             var snippets = await _modelService.GetSnippets(user, buildId);
             return Json(snippets);
+        }
+
+        [HttpGet("/build/{buildId}/exportProject")]
+        public async Task<IActionResult> ExportPythonProject(long buildId)
+        {
+            try
+            {
+                JToken projectRes = await _modelService.ExportPy(buildId);
+                string projectZip = projectRes["project"].ToString();
+                var assetFile = _orion.GetExperimentAsset(projectZip);
+                if (assetFile == null)
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    var assetName = Path.GetFileName(assetFile);
+                    var bytes = System.IO.File.Open(assetFile, FileMode.Open);
+                    return File(bytes, "application/force-download", assetName);
+                }
+            }
+            catch (NotFound nf)
+            {
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
+            }
         }
 
         [HttpGet("/build/{buildId}/getSample")]

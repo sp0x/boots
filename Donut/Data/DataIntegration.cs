@@ -16,6 +16,7 @@ using Netlyt.Interfaces;
 using Netlyt.Interfaces.Data;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Integration;
+using Newtonsoft.Json.Linq;
 
 //using Netlyt.Service.Ml; 
 
@@ -25,9 +26,11 @@ namespace Donut.Data
     {
         //private List<AggregateKey> _aggregateKeys;
         public long Id { get; set; }
+        public DateTime CreatedOn { get; set; }
         public virtual ICollection<ModelIntegration> Models { get; set; }
         public virtual User Owner { get; set; }
         public string FeatureScript { get; set; }
+        public string CreatedOnNodeToken { get; set; }
         public string Name { get; set; }
         public int DataEncoding { get; set; }
         [ForeignKey("APIKey")]
@@ -36,6 +39,7 @@ namespace Donut.Data
         public long? PublicKeyId { get; set; }
         public virtual ApiAuth PublicKey { get; set; }
         public virtual ICollection<AggregateKey> AggregateKeys { get; set; }
+        
         /// <summary>
         /// the type of the data e.g stream or file
         /// </summary>
@@ -61,6 +65,8 @@ namespace Donut.Data
 
         public static DataIntegration Empty { get; set; } = new DataIntegration("Empty");
         public virtual ICollection<Permission> Permissions{ get; set; }
+        public bool IsRemote { get; set; }
+        public long? RemoteId { get; set; }
 
 
         public DataIntegration()
@@ -70,7 +76,7 @@ namespace Donut.Data
             Extras = new HashSet<IntegrationExtra>();
             AggregateKeys = new HashSet<AggregateKey>();
             Permissions = new HashSet<Permission>();
-            this.PublicKey = ApiAuth.Generate();
+            
         }
 
 
@@ -211,7 +217,11 @@ namespace Donut.Data
 //            _aggregateKeys = keys.ToList();
 //        }
 
-
+        /// <summary>
+        /// DEPRECATED
+        /// </summary>
+        /// <param name="ign"></param>
+        /// <returns></returns>
         public static DataIntegration Wrap(IIntegration ign)
         {
             return ign as DataIntegration;
@@ -247,6 +257,29 @@ namespace Donut.Data
         public IEnumerable<FieldDefinition> GetFields(IEnumerable<string> names)
         {
             return this.Fields.Where(x => names.Contains(x.Name));
+        }
+
+        public void AddDataDescription(JToken description)
+        {
+            var summary = description["file_summary"];
+            var scheme = summary["scheme"];
+            var descs = summary["desc"];
+            var fields = Fields.ToList();
+            foreach (JProperty fieldPair in scheme)
+            {
+                var fname = fieldPair.Name;
+                var fld = fields.FirstOrDefault(x => x.Name == fname);
+                if (fld == null) continue;
+                fld.DataType = fieldPair.Value.ToString();
+            }
+            foreach (JProperty descPair in descs)
+            {
+                var fname = descPair.Name;
+                var fld = fields.FirstOrDefault(x => x.Name == fname);
+                if (fld == null) continue;
+                fld.DescriptionJson = descPair.Value.ToString();
+            }
+            this.Fields = fields;
         }
     }
 

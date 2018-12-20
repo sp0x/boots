@@ -1,4 +1,6 @@
-﻿using Netlyt.Interfaces.Cloud;
+﻿using System.Collections.Generic;
+using Netlyt.Interfaces;
+using Netlyt.Interfaces.Cloud;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud.Auth;
 
@@ -8,5 +10,7 @@ namespace Netlyt.Service.Cloud
     {
         NetlytNode ResolveLocal();
         bool ShouldSync(string dataType, ICloudNodeNotification jsonNotification);
+        bool UserHasOnPremInstance(User src);
+        bool ShouldNotify(string dataType);
     }
 }

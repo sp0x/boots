@@ -74,7 +74,7 @@ namespace Netlyt.Service.Donut
                 _db.SaveChanges();
                 await _modelService.PublishModel(model, targetPerformances);
                 //Notify user that training is complete
-                var endpoint = "http://dev.netlyt.com/oneclick/" + model.Id;
+                var endpoint = "http://dev.netlyt.io/oneclick/" + model.Id;
                 var mailMessage = $"Model training for {model.ModelName} is now complete." +
                                   $"Get your results here: {endpoint}";
                 await _emailService.SendEmailAsync(model.User.Email, "Training complete.", mailMessage);

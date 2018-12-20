@@ -19,7 +19,10 @@ namespace Netlyt.Interfaces.Models
 
     public enum ActionLogType
     {
-        IntegrationCreated, IntegrationViewed, PermissionsSet, ModelCreated, ModelEdited, ModelTrained, ModelStageUpdate, UserLoggedIn, UserRegistered,
-        QuotaSynced
+        IntegrationCreated, IntegrationViewed, ModelCreated, ModelEdited, ModelTrained, ModelStageUpdate, UserLoggedIn, UserRegistered,
+        QuotaSynced,
+        PermissionsSet,
+        PermissionsCreate,
+        PermissionRemoved
     }
 }

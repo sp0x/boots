@@ -26,5 +26,10 @@ namespace Netlyt.Service
                 return org;
             }
         }
+
+        public static bool IsNetlyt(Organization userOrganization)
+        {
+            return userOrganization.Id == 1 && userOrganization.Name == "Netlyt";
+        }
     }
 }

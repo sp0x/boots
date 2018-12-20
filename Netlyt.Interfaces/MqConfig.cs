@@ -18,7 +18,7 @@ namespace Netlyt.Interfaces
             var mhost = Environment.GetEnvironmentVariable("MQ_HOST");
             if (string.IsNullOrEmpty(mhost)) mhost = "localhost";
             var mport = Environment.GetEnvironmentVariable("MQ_PORT");
-            if (string.IsNullOrEmpty(mport)) mport = "5673";
+            if (string.IsNullOrEmpty(mport)) mport = "5672";
             var muser = Environment.GetEnvironmentVariable("MQ_USER");
             var mpass = Environment.GetEnvironmentVariable("MQ_PASS");
             output.Host = mhost;

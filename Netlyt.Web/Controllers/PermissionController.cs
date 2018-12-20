@@ -14,6 +14,7 @@ using Netlyt.Data.ViewModels;
 using Donut;
 using Donut.Data;
 using Donut.Models;
+using Netlyt.Service.Cloud;
 
 namespace Netlyt.Web.Controllers
 {
@@ -27,6 +28,7 @@ namespace Netlyt.Web.Controllers
         private IIntegrationService _integrationService;
         private ModelService _modelService;
         private OrganizationService _orgService;
+        private INotificationService _notifications;
 
         public PermissionController(
             IUserManagementService userManagementService,
@@ -34,7 +36,10 @@ namespace Netlyt.Web.Controllers
             PermissionService permService,
             ModelService modelService,
             IIntegrationService integrationService,
-            OrganizationService orgService){
+            OrganizationService orgService,
+            INotificationService notificationService)
+        {
+            _notifications = notificationService;
             _userManagementService = userManagementService;
             _userManager = userManager;
             _permissionService = permService;
@@ -64,11 +69,16 @@ namespace Netlyt.Web.Controllers
             if (perm.ObjectType == "integration")
             {
                 _permissionService.AddForIntegration(obj as DataIntegration, newPerm);
-            }else if (perm.ObjectType == "model")
+                newPerm.DataIntegration = obj as DataIntegration;
+                newPerm.DataIntegrationId = newPerm.DataIntegration.Id;
+            }
+            else if (perm.ObjectType == "model")
             {
                 _permissionService.AddForModel(obj as Model, newPerm);
+                newPerm.Model = obj as Model;
+                newPerm.ModelId = newPerm.Model.Id;
             }
-
+            _notifications.SendPermissionCreated(user,newPerm);
             return Json(new
             {
                 id = newPerm.Id,
@@ -104,7 +114,8 @@ namespace Netlyt.Web.Controllers
             var user = await _userManagementService.GetCurrentUser();
             try
             {
-                _permissionService.DeletePermission(user, id);
+                var deletedPermission = _permissionService.DeletePermission(user, id);
+                _notifications.SendPermissionRemoved(user, deletedPermission);
             }
             catch (NotFound nf)
             {

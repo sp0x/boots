@@ -17,6 +17,10 @@
         /// </summary>
         public const string PermissionsSet = "notification.set.permissions";
         /// <summary>
+        /// Whenever perissions are created
+        /// </summary>
+        public const string PermissionsUpdate = "notification.permissions.update";
+        /// <summary>
         /// Whenever an integration is created
         /// </summary>
         public const string IntegrationCreated = "notification.integration.created";

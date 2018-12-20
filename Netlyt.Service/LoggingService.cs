@@ -25,20 +25,21 @@ namespace Netlyt.Service
             _userService = userService;
         }
 
-        public void OnIntegrationViewed(ICloudNodeNotification notification, JToken body)
+        public void OnPermissionsChanged(ICloudNodeNotification notification, JToken body)
         {
             using (var contextSrc = _contextScope.Create())
             {
                 var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var type = notification.Headers["type"];
                 String userId = _userService.VerifyUser(body["user_id"].ToString());
                 var item = new ActionLog()
                 {
-                    Created = body["on"].Value<DateTime>(),
-                    Name = body["name"].ToString(),
+                    Created = body["on"].ToObject< DateTime>(),
+                    Name = body["name"]?.ToString(),
                     UserId = userId,
-                    Value = "",
+                    Value = body["value"]?.ToString(),
                     InstanceToken = body["token"]?.ToString(),
-                    Type = ActionLogType.IntegrationViewed,
+                    Type = ResolvePermissionLogType(type),
                     ObjectId = long.Parse(body["id"].ToString())
                 };
                 context.Logs.Add(item);
@@ -46,24 +47,16 @@ namespace Netlyt.Service
             }
         }
 
-        public void OnPermissionsChanged(ICloudNodeNotification notification, JToken body)
+        private ActionLogType ResolvePermissionLogType(string type)
         {
-            using (var contextSrc = _contextScope.Create())
+            switch (type)
             {
-                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
-                String userId = _userService.VerifyUser(body["user_id"].ToString());
-                var item = new ActionLog()
-                {
-                    Created = body["on"].Value<DateTime>(),
-                    Name = body["name"].ToString(),
-                    UserId = userId,
-                    Value = body["value"].ToString(),
-                    InstanceToken = body["token"]?.ToString(),
-                    Type = ActionLogType.PermissionsSet,
-                    ObjectId = long.Parse(body["id"].ToString())
-                };
-                context.Logs.Add(item);
-                contextSrc.SaveChanges();
+                case "create":
+                    return ActionLogType.PermissionsCreate;
+                case "remove":
+                    return ActionLogType.PermissionRemoved;
+                default:
+                    throw new NotImplementedException();
             }
         }
 
@@ -158,6 +151,8 @@ namespace Netlyt.Service
             {
                 var context = contextSrc.DbContexts.Get<ManagementDbContext>();
                 String userId = _userService.VerifyUser(body["user_id"].ToString());
+                long remoteIntegrationId = long.Parse(body["id"].ToString());
+                var localIntegration = context.Integrations.FirstOrDefault(x => x.RemoteId == remoteIntegrationId);
                 var item = new ActionLog()
                 {
                     Created = body["on"].Value<DateTime>(),
@@ -166,14 +161,35 @@ namespace Netlyt.Service
                     Value = "",
                     InstanceToken = body["token"]?.ToString(),
                     Type = ActionLogType.IntegrationCreated,
-                    ObjectId = long.Parse(body["id"].ToString())
+                    ObjectId = localIntegration.Id
                 };
                 context.Logs.Add(item);
 
                 contextSrc.SaveChanges();
             }
         }
-
+        public void OnIntegrationViewed(ICloudNodeNotification notification, JToken body)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                long remoteIntegrationId = long.Parse(body["id"].ToString());
+                var localIntegration = context.Integrations.FirstOrDefault(x => x.RemoteId == remoteIntegrationId);
+                String userId = _userService.VerifyUser(body["user_id"].ToString());
+                var item = new ActionLog()
+                {
+                    Created = body["on"].Value<DateTime>(),
+                    Name = body["name"].ToString(),
+                    UserId = userId,
+                    Value = "",
+                    InstanceToken = body["token"]?.ToString(),
+                    Type = ActionLogType.IntegrationViewed,
+                    ObjectId = localIntegration.Id
+                };
+                context.Logs.Add(item);
+                contextSrc.SaveChanges();
+            }
+        }
         public IEnumerable<ActionLog> GetIntegrationLogs(DataIntegration ign)
         {
             using (var contextSrc = _contextScope.Create())

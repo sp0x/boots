@@ -165,8 +165,25 @@ namespace Netlyt.Service
             using (var contextSrc = _dbContextFactory.Create())
             {
                 var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var userToken = context.Tokens.FirstOrDefault(x => x.Value == model.Token && !x.IsUsed);
+                var tokenIsForSameUser = userToken!=null && CheckTokenSubscription(model);
                 var isFirstUser = _context.Users.Count() == 0;
                 var username = model.Email.Substring(0, model.Email.IndexOf("@"));
+                if (!isFirstUser && userToken==null)
+                {
+                    return new Tuple<IdentityResult, User>(IdentityResult.Failed(new IdentityError()
+                    {
+                        Description = "Invalid token"
+                    }), null);
+                }
+                else if (!isFirstUser && !tokenIsForSameUser)
+                {
+                    return new Tuple<IdentityResult, User>(IdentityResult.Failed(new IdentityError()
+                    {
+                        Description = "Token is subscribed for a different email."
+                    }), null);
+                }
+
                 var user = new User
                 {
                     UserName = username,
@@ -187,18 +204,50 @@ namespace Netlyt.Service
                         user.OrganizationId = netlytOrg.Id;
                         org = netlytOrg;
                     }
+                    else
+                    {
+                        if (org == null) org = new Organization() {Name = user.UserName, ApiKey = ApiAuth.Generate()};
+                        user.Organization = org;
+                        userToken.IsUsed = true;
+                    }
                     var result = _userManager.CreateAsync(user, model.Password).Result;
                     if (result.Succeeded && isFirstUser)
                     {
-                        await AddRolesToUser(user, new string[] {"Admin"});
+                        await AddRolesToUser(user , new string[] {"Admin"});
+                    }else if (result.Succeeded && !isFirstUser)
+                    {
+                        await AddRolesToUser(user, new string[] { "TestUser" });
                     }
                     user.Organization = org;
+                    context.SaveChanges();
                     var output = new Tuple<IdentityResult, User>(result, user);
                     return output;
                 }
                 catch (Exception ex)
                 {
                     throw ex;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns>Whether the token is valid for the given email, or not.</returns>
+        private bool CheckTokenSubscription(RegisterViewModel model)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var tokenSubscription = context.Subscriptions.FirstOrDefault(x=>x.AccessToken.Value == model.Token);
+                if (tokenSubscription != null)
+                {
+                    return tokenSubscription.Email.ToLower() == model.Email.ToLower();
+                }
+                else
+                {
+                    return true;
                 }
             }
         }
@@ -229,28 +278,32 @@ namespace Netlyt.Service
 
         public async Task<bool> AddRolesToUser(User user, IEnumerable<string> newRoles)
         {
-            foreach (var newRole in newRoles)
+            using (var ctxSrc = _dbContextFactory.Create())
             {
-                var existingRole = _context.Roles.FirstOrDefault(x => x.Name == newRole);
-                if (existingRole == null)
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                foreach (var newRole in newRoles)
                 {
-                    var newRoleObj = new UserRole()
+                    var existingRole = _context.Roles.FirstOrDefault(x => x.Name == newRole);
+                    if (existingRole == null)
                     {
-                        Name = newRole,
-                        NormalizedName = newRole.ToUpper()
-                    };
-                    _context.Roles.Add(newRoleObj);
-                    await _context.SaveChangesAsync();
+                        var newRoleObj = new UserRole()
+                        {
+                            Name = newRole,
+                            NormalizedName = newRole.ToUpper()
+                        };
+                        _context.Roles.Add(newRoleObj);
+                        await _context.SaveChangesAsync();
+                    }
+                    var isCurrentlyInRole = await _userManager.IsInRoleAsync(user, newRole);
+                    if (isCurrentlyInRole) continue;
+                    var idResult = await _userManager.AddToRoleAsync(user, newRole);
+                    if (!idResult.Succeeded)
+                    {
+                        return false;
+                    }
                 }
-                var isCurrentlyInRole = await _userManager.IsInRoleAsync(user, newRole);
-                if (isCurrentlyInRole) continue;
-                var idResult = await _userManager.AddToRoleAsync(user, newRole);
-                if (!idResult.Succeeded)
-                {
-                    return false;
-                }
+                return true;
             }
-            return true;
         }
 
         public async Task<IEnumerable<string>> GetRoles(User src)

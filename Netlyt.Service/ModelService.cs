@@ -121,6 +121,147 @@ namespace Netlyt.Service
             }
         }
 
+
+        /// <summary>
+        /// Creates a new model & fits it, from an old build
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="apiKey"></param>
+        /// <param name="newIntegration"></param>
+        /// <param name="modelBuildId"></param>
+        /// <returns></returns>
+        public async Task<Tuple<List<TrainingTask>, JToken>> CreateFromRefit(User user, ApiAuth apiKey, DataIntegration newIntegration, long modelBuildId)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var sourceBuild = context.ModelTrainingPerformance.FirstOrDefault(x => x.Id == modelBuildId);
+                if (sourceBuild == null) throw new NotFound("Model build was not found.");
+                var srcScript = sourceBuild.Model.DonutScript;
+                var newModel = await this.CreateModel(user, sourceBuild.Model.ModelName,
+                    new IIntegration[] {newIntegration}, null, false, null, srcScript);
+                var trainingStartedResult = await TrainModel(newModel, user, newModel.GetRootIntegration());
+                return trainingStartedResult; //new TrainingTask(newModel, trainingToken);
+            }
+        }
+
+//        private async Task<JToken> Refit(Model newModel, User user, long previousBuild)
+//        {
+//            var output = await this.TrainModel(newModel, user, newModel.GetRootIntegration());
+//            return output;
+//        }
+
+        /// <summary>
+        /// Creates a model with a premade donut script.
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="name"></param> 
+        /// <param name="integrations"></param>
+        /// <param name="callbackUrl"></param>
+        /// <param name="isUsingGeneratedFeatures">If feature generation should be ran. This is only done if there are any existing integrations for this model.</param>
+        /// <param name="relations"></param>
+        /// <param name="scriptInfo"></param>
+        /// <returns></returns>
+        public async Task<Model> CreateModel(
+            User user,
+            string name,
+            IEnumerable<IIntegration> integrations,
+            string callbackUrl,
+            bool isUsingGeneratedFeatures,
+            IEnumerable<FeatureGenerationRelation> relations,
+            DonutScriptInfo scriptInfo
+        )
+        {
+            var script = scriptInfo.GetScript();
+            var targets = script.Targets;
+            using (var ctxSource = _dbContextFactory.Create())
+            {
+                var context = ctxSource.DbContexts.Get<ManagementDbContext>();
+                var newModel = context.Add(new Model() { UseFeatures = isUsingGeneratedFeatures, ModelName = name, Callback = callbackUrl }).Entity;
+                var dbUser = context.Users.Where(x => x.Id == user.Id).FirstOrDefault();
+                newModel.UserId = user.Id;
+                newModel.APIKey = dbUser.ApiKeys.FirstOrDefault().Api;
+                //newModel.PublicKey = ApiAuth.Generate();
+                newModel.Targets = new List<ModelTarget>(targets);
+                newModel.CreatedOn = DateTime.UtcNow;
+                newModel.Permissions.Add(new Permission()
+                {
+                    CanModify = true,
+                    CanRead = true,
+                    Owner = dbUser.Organization,
+                    ShareWith = dbUser.Organization
+                });
+                context.Models.Add(newModel);
+                context.SaveChanges();
+                AddModelIntegrations(newModel, integrations);
+                //_modelRepository.Add(newModel);
+                context.SaveChanges();
+                var scriptInfoCopy = newModel.SetScript(script);
+                context.DonutScripts.Add(scriptInfoCopy);
+                context.SaveChanges();
+                //_donutRepository.Add(newModel.DonutScript);
+                return await Task.FromResult<Model>(newModel);
+            }
+        }
+
+        private void AddModelIntegrations(Model newModel, IEnumerable<IIntegration> integrations)
+        {
+            using (var ctxSource = _dbContextFactory.Create())
+            {
+                var context = ctxSource.DbContexts.Get<ManagementDbContext>();
+                if (integrations != null)
+                {
+                    var ignIds = integrations.Select(i => i.Id);
+                    newModel.DataIntegrations = context.Integrations
+                        .Where(x => ignIds.Any(z => z == x.Id))
+                        .Select(x => new ModelIntegration(newModel, x))
+                        .ToList();
+                    foreach (var newModelIgn in newModel.DataIntegrations)
+                    {
+                        context.Integrations.Attach(newModelIgn.Integration);
+                    }
+                }
+            }
+
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="props"></param>
+        /// <returns></returns>
+        public async Task<Model> CreateEmptyModel(User user, CreateEmptyModelViewModel props)
+        {
+            var modelName = props.ModelName.Replace(".", "_");
+            using (var ctxSource = _dbContextFactory.Create())
+            {
+                var context = ctxSource.DbContexts.Get<ManagementDbContext>();
+                user = context.Users.FirstOrDefault(x => x.Id == user.Id);
+                var integration = _integrationService.GetUserIntegration(user, props.IntegrationId);
+                if (!integration.Permissions.Any(x => x.ShareWith.Id == user.Organization.Id))
+                {
+                    throw new Forbidden("You are not authorized to use this integration for model building");
+                }
+
+                if (props.IdColumn != null && !string.IsNullOrEmpty(props.IdColumn.Name))
+                {
+                    _integrationService.SetIndexColumn(integration, props.IdColumn.Name);
+                }
+                var targets = props.Targets.ToModelTargets(integration);//new ModelTarget(integration.GetField(modelData.Target.Name));
+                var newModel = await CreateModel(user,
+                    modelName,
+                    new List<DataIntegration>(new[] { integration }),
+                    props.CallbackUrl,
+                    props.GenerateFeatures,
+                    null,
+                    integration.GetFields(props.FeatureCols),
+                    targets.ToArray());
+                return newModel;
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -128,7 +269,7 @@ namespace Netlyt.Service
         /// <param name="name"></param> 
         /// <param name="integrations"></param>
         /// <param name="callbackUrl"></param>
-        /// <param name="generateFeatures">If feature generation should be ran. This is only done if there are any existing integrations for this model.</param>
+        /// <param name="isUsingGeneratedFeatures">If feature generation should be ran. This is only done if there are any existing integrations for this model.</param>
         /// <param name="relations"></param>
         /// <param name="selectedFields"></param>
         /// <param name="targets"></param>
@@ -138,7 +279,7 @@ namespace Netlyt.Service
             string name,
             IEnumerable<IIntegration> integrations, 
             string callbackUrl,
-            bool generateFeatures,
+            bool isUsingGeneratedFeatures,
             IEnumerable<FeatureGenerationRelation> relations,
             IEnumerable<FieldDefinition> selectedFields,
             params ModelTarget[] targets
@@ -146,7 +287,7 @@ namespace Netlyt.Service
         {
             using (var contextSrc = _dbContextFactory.Create())
             {
-                var newModel = new Model() { UseFeatures = generateFeatures, ModelName = name, Callback = callbackUrl };
+                var newModel = new Model() { UseFeatures = isUsingGeneratedFeatures, ModelName = name, Callback = callbackUrl };
                 newModel.UserId = user.Id;
                 newModel.APIKey = user.ApiKeys.Select(x => x.Api).FirstOrDefault();
                 newModel.PublicKey = ApiAuth.Generate();
@@ -158,23 +299,22 @@ namespace Netlyt.Service
                     Owner = user.Organization,
                     ShareWith = user.Organization
                 });
-
                 if (integrations != null)
-                {
                     newModel.DataIntegrations = integrations.Select(ign => new ModelIntegration(newModel, DataIntegration.Wrap(ign))).ToList();
-                }
-                _modelRepository.Add(newModel);
-                if (generateFeatures)
+
+                if (isUsingGeneratedFeatures)
                 {
                     await GenerateFeatures(newModel, relations, selectedFields, targets);
+                    _modelRepository.Add(newModel);
                 }
                 else
                 {
                     var script = GenerateDonutScriptForModel(newModel, selectedFields);
+                    _modelRepository.Add(newModel);
                     newModel.SetScript(script);
+                    
                     _donutRepository.Add(newModel.DonutScript);
                 }
-
                 var targetParsingQuery = OrionQuery.Factory.CreateTargetParsingQuery(newModel);
                 var targetsInfo = await _orion.Query(targetParsingQuery);
                 ParseTargetTasksTypes(newModel, targetsInfo);
@@ -187,7 +327,7 @@ namespace Netlyt.Service
                     Trace.WriteLine(ex.Message);
                     throw new Exception("Could not create a new model!");
                 }
-
+                //_modelRepository.Add(newModel);
                 return newModel;
             }
         }
@@ -347,9 +487,9 @@ namespace Netlyt.Service
                     dscript.AddIntegrations(ign);
                 }
             }
-
-
         }
+
+        
 
         public async Task TrainOnCommand(BasicDeliverEventArgs basicRequest, User user)
         {
@@ -365,7 +505,7 @@ namespace Netlyt.Service
             }
         }
 
-        public async Task<JToken> TrainModel(long modelId, User user, TrainingScript trainingScript = null)
+        public async Task<Tuple<List<TrainingTask>, JToken>> TrainModel(long modelId, User user, TrainingScript trainingScript = null)
         {
             using (var ctxSrc = _dbContextFactory.Create())
             {
@@ -375,7 +515,7 @@ namespace Netlyt.Service
                 return await TrainModel(model, user, model.GetRootIntegration(), trainingScript);
             }
         }
-        public async Task<JToken> TrainModel(Model model, User user, DataIntegration sourceIntegration, TrainingScript trainingScript = null)
+        public async Task<Tuple<List<TrainingTask>, JToken>> TrainModel(Model model, User user, DataIntegration sourceIntegration, TrainingScript trainingScript = null)
         {
             using (var ctxSrc = _dbContextFactory.Create())
             {
@@ -384,9 +524,10 @@ namespace Netlyt.Service
                 var modelStatus = GetModelStatus(model);
                 if (modelStatus == ModelPrepStatus.Building)
                 {
-                    return new JArray(model.TrainingTasks.Where(x => x.Status == TrainingTaskStatus.InProgress ||
-                                                                     x.Status == TrainingTaskStatus.Starting)
-                        .Select(x => x.Id).ToArray());
+                    var existingTasks = model.TrainingTasks.Where(x => x.Status == TrainingTaskStatus.InProgress ||
+                                                                       x.Status == TrainingTaskStatus.Starting);
+                    var existingOutput = new Tuple<List<TrainingTask>, JToken>(existingTasks.ToList(), new JArray(existingTasks.Select(x => x.Id).ToArray()));
+                    return existingOutput;
                 }
 
                 var newTrainingTasks = new List<TrainingTask>();
@@ -409,10 +550,9 @@ namespace Netlyt.Service
                     }
                 }
                 context.SaveChanges();
-                return trainingResponse["ids"];
+                var output = new Tuple<List<TrainingTask>, JToken>(newTrainingTasks, trainingResponse["ids"]);
+                return output;
             }
-
-            
         }
 
         /// <summary>
@@ -477,39 +617,9 @@ namespace Netlyt.Service
 
         public string GetTrainedEndpoint(TrainingTask srcTargetTask)
         {
-            return $"http://predict.netlyt.com/";
+            return $"http://predict.netlyt.io/";
         }
 
-
-        public async Task<Model> CreateEmptyModel(User user, CreateEmptyModelViewModel props)
-        {
-            var modelName = props.ModelName.Replace(".", "_");
-            using (var ctxSource = _dbContextFactory.Create())
-            {
-                var context = ctxSource.DbContexts.Get<ManagementDbContext>();
-                user = context.Users.FirstOrDefault(x=>x.Id==user.Id);
-                var integration = _integrationService.GetUserIntegration(user, props.IntegrationId);
-                if (!integration.Permissions.Any(x => x.ShareWith.Id == user.Organization.Id))
-                {
-                    throw new Forbidden("You are not authorized to use this integration for model building");
-                }
-
-                if (props.IdColumn != null && !string.IsNullOrEmpty(props.IdColumn.Name))
-                {
-                    _integrationService.SetIndexColumn(integration, props.IdColumn.Name);
-                }
-                var targets = props.Targets.ToModelTargets(integration);//new ModelTarget(integration.GetField(modelData.Target.Name));
-                var newModel = await CreateModel(user,
-                    modelName,
-                    new List<DataIntegration>(new[] { integration }),
-                    props.CallbackUrl,
-                    props.GenerateFeatures,
-                    null,
-                    integration.GetFields(props.FeatureCols),
-                    targets.ToArray());
-                return newModel;
-            }
-        }
 
         public List<ModelBuildViewModel> GetBuildViews(Model src)
         {
@@ -588,6 +698,41 @@ namespace Netlyt.Service
                 var jsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict, Indent = true };
                 snippets["data"] = dataSnippet.ToJson(jsonWriterSettings);
                 return snippets;
+            }
+        }
+
+        public List<FieldDefinition> GetFields(Model modelItem)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var rootIntegration = context.Models.Where(x => x.Id == modelItem.Id).SelectMany(x => x.DataIntegrations)
+                    .FirstOrDefault();
+                var fields = context.Fields.Where(x => x.IntegrationId == rootIntegration.IntegrationId);
+                return fields.ToList();
+            }
+        }
+
+        public TrainingTask GetTask(long taskId)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var ctx = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                return ctx.TrainingTasks.FirstOrDefault(x => x.Id == taskId);
+            }
+        }
+        public async Task<JToken> ExportPy(long buildId)
+        {
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                var sourceBuild = this.GetTask(buildId); //context.ModelTrainingPerformance.FirstOrDefault(x => x.Id == buildId);
+                if (sourceBuild == null) throw new NotFound();
+                var model = sourceBuild.Model;
+                if (model == null) throw new NotFound();
+                var targetParsingQuery = OrionQuery.Factory.CreateProjectGenerationRequest(sourceBuild);
+                var projectPack = await _orion.Query(targetParsingQuery);
+                return projectPack;
             }
         }
     }

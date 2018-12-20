@@ -6,6 +6,7 @@ namespace Netlyt.Data.ViewModels
     {
         public string Id { get; set; }
         public string Username { get; set; }
+        public bool HasRemoteInstance { get; set; }
         public IEnumerable<string> Roles { get; set; }
     }
 }

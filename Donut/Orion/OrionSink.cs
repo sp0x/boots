@@ -12,6 +12,9 @@ namespace Donut.Orion
     /// </summary>
     public class OrionSink
     {
+        private string _destination;
+        private int _port;
+
         /// <summary>
         /// The push socket
         /// </summary>
@@ -40,7 +43,14 @@ namespace Donut.Orion
         /// <param name="port"></param>
         public void Connect(string destination, int port)
         {
-            Connect($"tcp://{destination}:{port}");
+            _destination = destination;
+            _port = port;
+            Connect($"tcp://{_destination}:{_port}");
+        }
+
+        public override string ToString()
+        {
+            return $"tcp://{_destination}:{_port}";
         }
 
         /// <summary>   Send a raw byte array. </summary>
@@ -79,9 +89,13 @@ namespace Donut.Orion
 
         public static string GetExperimentsPath(IConfiguration configuration, out bool isAbs, ref string assetPath)
         {
+//            if (assetPath.StartsWith("/experiments/"))
+//            {
+//                assetPath = assetPath.Substring(13);
+//            }
             isAbs = false;
             var cfg = configuration["experiments_path"];
-            if (cfg.Contains("experiments_path_abs"))
+            if (cfg!=null && cfg.Contains("experiments_path_abs"))
             {
                 isAbs = configuration["experiments_path_abs"].ToString().ToLower() == "true";
             }

@@ -21,7 +21,9 @@ namespace Donut
     public interface IIntegrationService
     {
         DataIntegration GetUserIntegration(User user, long id);
+        //DataIntegration GetUserIntegration(User user, DataIntegration integration);
         Task<IEnumerable<DataIntegration>> GetIntegrations(User user, int page, int pageSize);
+        Task<IEnumerable<DataIntegration>> GetIntegrations(User currentUser, string targetUserId, int page, int pageSize);
         DataIntegration GetUserIntegration(User user, string name);
         IIntegration GetByName(IApiAuth contextApiAuth, string integrationSourceIntegrationName);
         Task<DataImportResult> AppendToIntegration(DataIntegration ign, string filePath, ApiAuth apiKey);
@@ -30,7 +32,9 @@ namespace Donut
             string mime = null);
         Task<DataImportResult> AppendToIntegration(DataIntegration ign, Stream inputData, ApiAuth apiKey,
             string mime = null);
-        Task<DataImportResult> CreateOrAppendToIntegration(User user, ApiAuth apikey, Stream inputData, string mime = null, string name = null);
+
+        Task<DataImportResult> CreateOrAppendToIntegration(Stream inputData, ApiAuth apiKey, User owner,
+            string mime = null, string name = null);
         Task<DataImportResult> CreateOrAppendToIntegration(User user, ApiAuth apikey, HttpRequest request);
 
         Task<DataImportResult> CreateOrAppendToIntegration(string filePath, ApiAuth apiKey, User user,
@@ -73,6 +77,7 @@ namespace Donut
         Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask);
         void OnRemoteIntegrationCreated(ICloudNodeNotification notification, JToken eBody);
         Task<IntegrationSchemaViewModel> GetSchema(User user,long id);
+        Task<DataIntegration> ResolveDescription(User user, DataIntegration integration);
         Task<DataIntegration> GetIntegrationForAutobuild(CreateAutomaticModelViewModel modelData);
         void SetIndexColumn(DataIntegration integration, string idColumnName);
         Task<IntegrationViewModel> GetIntegrationView(User user, long id);

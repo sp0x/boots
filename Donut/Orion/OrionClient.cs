@@ -114,6 +114,11 @@ namespace Donut.Orion
             _writer.Send(message);
         }
 
+        public override string ToString()
+        {
+            return _writer.ToString();
+        }
+
         /// <summary>
         /// 
         /// </summary>

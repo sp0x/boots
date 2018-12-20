@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Donut.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
+using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Models.Account;
 
@@ -19,5 +20,11 @@ namespace Netlyt.Service
         User GetUserByLogin(string email, string password);
         User GetUserByUsername(string username);
         string VerifyUser(string toString);
+        User CreateUser(User user, ApiRateLimit quota);
+        void CreateIfMissing(User user);
+        ICollection<object> GetApiKeysAnonimized(User user);
+        ICollection<ApiAuth> GetApiKeys(User user);
+        User GetByCloudNodeToken(string authToken);
+        Token IssueNewToken();
     }
 }

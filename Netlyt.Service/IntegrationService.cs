@@ -13,6 +13,7 @@ using Donut.Integration;
 using Donut.IntegrationSource;
 using Donut.Models;
 using Donut.Orion;
+using Donut.Source;
 using EntityFramework.DbContextScope;
 using EntityFramework.DbContextScope.Interfaces;
 using FluentNHibernate.Conventions.Inspections;
@@ -81,9 +82,8 @@ namespace Netlyt.Service
             {
                 var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
                 var userApiKeys = context.ApiUsers.Where(x => x.UserId == user.Id);
-                var integration = context.Integrations.FirstOrDefault(x => x.APIKey != null
-                                                                           && (userApiKeys.Any(y => y.ApiId == x.APIKey.Id)
-                                                                               || userApiKeys.Any(y => y.ApiId == x.PublicKeyId))
+                var userOrgId = context.Users.FirstOrDefault(x => x.Id == user.Id).Organization.Id;
+                var integration = context.Integrations.FirstOrDefault(x => x.Permissions.Any(p=>p.ShareWith.Id == userOrgId) 
                                                                            && x.Id == id);
                 return integration;
             }
@@ -95,6 +95,23 @@ namespace Netlyt.Service
                 var context = contextSrc.DbContexts.Get<ManagementDbContext>();
                 var integrations = context.Integrations.Where(x => x.Owner == user).Skip(page * pageSize).Take(pageSize)
                     .ToList();
+                return await Task.FromResult(integrations);
+            }
+        }
+
+        public async Task<IEnumerable<DataIntegration>> GetIntegrations(User currentUser, string targetUserId, int page, int pageSize)
+        {
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var currentUserEntity = _users.GetById(currentUser.Id).FirstOrDefault();
+                var crOrgId = currentUserEntity.Organization.Id;
+                var integrations = context.Integrations.Where(x => x.Owner.Id == targetUserId
+                                                                 && x.Permissions.Any(p => p.ShareWith.Id == crOrgId)
+                                                                   )
+                    .Skip(page * pageSize).Take(pageSize)
+                    .ToList();
+                //&& x.Permissions.Any(p=>p.Owner.Id==crOrgId)
                 return await Task.FromResult(integrations);
             }
         }
@@ -223,8 +240,10 @@ namespace Netlyt.Service
             {
                 var ambientDbContextLocator = new AmbientDbContextLocator();
                 var dbContext = ambientDbContextLocator.Get<ManagementDbContext>();
-                dbContext.Integrations.Remove(importTaskIntegration);
+                importTaskIntegration.Permissions.Clear();
                 importTaskIntegration.AggregateKeys.Clear();
+                dbContext.Integrations.Remove(importTaskIntegration);
+
                 dbContext.SaveChanges();
                 if (!string.IsNullOrEmpty(importTaskIntegration.Collection))
                 {
@@ -244,13 +263,22 @@ namespace Netlyt.Service
             var fields = ign.Fields.ToList();
             foreach (JProperty descPair in descs)
             {
-                var fname = descPair.Name;;
+                var fname = descPair.Name;
                 var fld = fields.FirstOrDefault(x => x.Name == fname);
                 if (fld == null) continue;
                 var target_type = descPair.Value["target_type"];
                 fld.TargetType = target_type.ToString();
+                fld.Language = GetLanguageFromDescription(descPair);
             }
             ign.Fields = fields;
+        }
+
+        private string GetLanguageFromDescription(JProperty descPair)
+        {
+            JObject languages = descPair.Value["languages"] as JObject;
+            if(languages is null) return "n";
+            var topLanguage = languages.Properties().OrderBy(x => x.Value.ToObject<int>()).FirstOrDefault();
+            return topLanguage.Name;
         }
 
         public async Task<BsonDocument> GetTaskDataSample(TrainingTask trainingTask)
@@ -280,9 +308,71 @@ namespace Netlyt.Service
 
         public void OnRemoteIntegrationCreated(ICloudNodeNotification notification, JToken eBody)
         {
-            
+            var token = eBody["token"].ToString();
+            var newIntegration = new DataIntegration();
+            newIntegration.CreatedOnNodeToken = token;
+            newIntegration.Name = eBody["name"].ToString();
+            newIntegration.FeatureScript = eBody["FeatureScript"]?.ToString();
+            newIntegration.DataFormatType = eBody["DataFormatType"]?.ToString();
+            newIntegration.CreatedOn = eBody["on"].ToObject<DateTime>();
+            newIntegration.IsRemote = true;
+            newIntegration.RemoteId = long.Parse(eBody["id"].ToString());
+            foreach (var field in eBody["fields"])
+            {
+                FieldDefinition newField = DeserializeField(field);
+                newIntegration.Fields.Add(newField);
+            }
+
+            newIntegration.DataIndexColumn = eBody["ix_column"]?.ToString();
+            newIntegration.DataTimestampColumn = eBody["ts_column"]?.ToString();
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                newIntegration.Owner = _users.GetById(eBody["user_id"].ToString()).FirstOrDefault();
+                if (newIntegration.Owner != null)
+                {
+                    var apiKey = newIntegration.Owner.ApiKeys.FirstOrDefault();
+                    newIntegration.APIKeyId = apiKey.ApiId;
+                    newIntegration.APIKey = apiKey.Api;
+                }
+                context.Integrations.Add(newIntegration);
+                context.SaveChanges();
+            }
         }
 
+        private FieldDefinition DeserializeField(JToken jsField)
+        {
+            var field = jsField.ToObject<FieldDefinition>();
+            return field;
+        }
+
+        public async Task<DataIntegration> ResolveDescription(User user, DataIntegration integration)
+        {
+            using (var contextSrc = _contextFactory.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                integration = context.Integrations.FirstOrDefault(x => x.Id == integration.Id);
+                if (integration == null) throw new NotFound();
+                user = context.Users.FirstOrDefault(x => x.Id == user.Id);
+                if (!integration.Permissions.Any(x => x.ShareWith.Id == user.Organization.Id))
+                {
+                    throw new Forbidden(string.Format("You are not allowed to view this integration"));
+                }
+                var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(integration, new ModelTarget[]{} );
+                var description = await _orionContext.Query(descQuery);
+                SetTargetTypes(integration, description);
+                integration.AddDataDescription(description);
+                context.SaveChanges();
+                return integration;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public async Task<IntegrationSchemaViewModel> GetSchema(User user, long id)
         {
             using (var contextSrc = _contextFactory.Create())
@@ -308,14 +398,15 @@ namespace Netlyt.Service
                 var fields = ign.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                 var schema = new IntegrationSchemaViewModel(ign.Id, fields);
                 schema.Targets = ign.Models.SelectMany(x => x.Model.Targets)
-                    .Select(x => _mapper.Map<ModelTargetViewModel>(x));
-                var targets = schema.Targets
-                    .Select(x => new ModelTarget(ign.GetField(x.Id)))
-                    .Where(x => x.Column != null);
-                var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign, targets);
-                var description = await _orionContext.Query(descQuery);
-                SetTargetTypes(ign, description);
-                schema.AddDataDescription(description);
+                    .Select(x => _mapper.Map<ModelTargetViewModel>(x))
+                    .ToList();
+//                var targets = schema.Targets
+//                    .Select(x => new ModelTarget(ign.GetField(x.Id)))
+//                    .Where(x => x.Column != null);
+//                var descQuery = OrionQuery.Factory.CreateDataDescriptionQuery(ign, targets);
+//                var description = await _orionContext.Query(descQuery);
+//                SetTargetTypes(ign, description);
+//                schema.AddDataDescription(description);
                 return schema;
             }
         }
@@ -424,7 +515,7 @@ namespace Netlyt.Service
                     var filename = form.GetValue("filename")
                         .ToString().Trim('\"').Replace('.', '_').Replace('-', '_');
                     targetStream.Position = 0;
-                    result = await CreateOrAppendToIntegration(user, apiKey,targetStream, fileContentType, filename);
+                    result = await CreateOrAppendToIntegration(targetStream, apiKey, user, fileContentType, filename);
                 }
             }
             catch (Exception ex)
@@ -458,21 +549,7 @@ namespace Netlyt.Service
                 return await CreateOrAppendToIntegration(fsStream, apiKey, user, mime, name);
             }
         }
-
-        /// <summary>
-        /// Creates a new integration from the stream, or adds the stream to an existing integration.
-        /// </summary>
-        /// <param name="inputData">The stream containing integration data</param>
-        /// <returns></returns>
-        public async Task<DataImportResult> CreateOrAppendToIntegration(User user, ApiAuth apiKey,Stream inputData, string mime = null, string name = null)
-        {
-            using (var context = _contextFactory.Create())
-            {
-                //var apiKey = await _userService.GetCurrentApi();
-                //var crUser = await _userService.GetCurrentUser();
-                return await CreateOrAppendToIntegration(inputData, apiKey, user, mime, name);
-            }
-        }
+ 
 
         /// <summary>
         /// Appends the data to an existing integration
@@ -591,7 +668,10 @@ namespace Netlyt.Service
                 if (isNewIntegration)
                 {
                     var collection = MongoHelper.GetCollection(integrationInfo.Collection);
-                    await importTask.Encode(collection);
+                    if (importTask.EncodeOnImport)
+                    {
+                        await importTask.Encode(collection);
+                    }
                     integrationInfo.Permissions.Add(new Permission
                     {
                         Owner = owner.Organization,
@@ -618,8 +698,6 @@ namespace Netlyt.Service
                 }
                 return result;
             }
-
-            
         }
 
         /// <summary>
@@ -668,6 +746,7 @@ namespace Netlyt.Service
             options.ApiKey = apiKey;
             options.IntegrationName = integrationInfo.Name;
             options.Integration = integrationInfo;
+            //
             importTask = new DataImportTask<ExpandoObject>(options);
             return integrationInfo;
         }

@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces;
 using Netlyt.Interfaces.Models;
+using Netlyt.Service.Cloud.Auth;
 using Netlyt.Service.Data;
 using Netlyt.Service.Models;
 using Netlyt.Service.Repisitories;
@@ -25,13 +26,16 @@ namespace Netlyt.Service
         private IIntegrationRepository _integrations;
         private IPermissionRepository _permissions;
         private IModelRepository _models;
+        private IUserService _userService;
 
         public PermissionService(
             IDbContextScopeFactory dbContextFactory,
             IIntegrationRepository integrations,
             IModelRepository models,
-            IPermissionRepository permissions)
+            IPermissionRepository permissions,
+            IUserService userService)
         {
+            _userService = userService;
             _permissions = permissions;
             _dbContextFactory = dbContextFactory;
             _integrations = integrations;
@@ -90,7 +94,7 @@ namespace Netlyt.Service
             }
         }
 
-        public void DeletePermission(User user, long permId)
+        public Permission DeletePermission(User user, long permId)
         {
             using (var ctxSrc = _dbContextFactory.Create())
             {
@@ -107,6 +111,7 @@ namespace Netlyt.Service
                 }
                 context.Permissions.Remove(perm);
                 context.SaveChanges();
+                return perm;
             }
         }
 
@@ -116,6 +121,7 @@ namespace Netlyt.Service
             {
                 dataIntegration = _integrations.GetById(dataIntegration.Id).FirstOrDefault();
                 newPerm = _permissions.GetById(newPerm.Id);
+                newPerm.DataIntegration = dataIntegration;
                 dataIntegration?.Permissions.Add(newPerm);
                 ctxSrc.SaveChanges();
             }
@@ -125,6 +131,7 @@ namespace Netlyt.Service
             using (var ctxSrc = _dbContextFactory.Create())
             {
                 model = _models.GetById(model.Id).FirstOrDefault();
+                newPerm.Model = model;
                 model?.Permissions.Add(newPerm);
                 ctxSrc.SaveChanges();
             }
@@ -152,11 +159,83 @@ namespace Netlyt.Service
 
         public IEnumerable<Permission> GetForModel(Model model)
         {
-
             using (var ctxSrc = _dbContextFactory.Create())
             {
                 var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
                 return context.Models.FirstOrDefault(x => x.Id == model.Id)?.Permissions.ToList();
+            }
+        }
+
+        public void OnRemotePermissionUpdated(JsonNotification notification, JToken eBody)
+        {
+            var type = notification.GetHeader("type");
+            switch (type)
+            {
+                case "create":
+                    CreateRemotePermission(notification, eBody);
+                    break;
+                case "remove":
+                    RemoveRemotePermission(notification, eBody);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        private void RemoveRemotePermission(JsonNotification notification, JToken eBody)
+        {
+            var remoteId = eBody["id"].Value<long?>();
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                User user = _userService.GetByCloudNodeToken(notification.Token);
+                if (user == null || user.Organization == null)
+                {
+                    throw new NotFound("User or organization not found.");
+                }
+                long ownerId = user.Organization.Id;
+                var localPermission = context.Permissions.FirstOrDefault(x => x.RemoteId == remoteId.Value && x.Owner.Id == ownerId);
+                if (localPermission != null)
+                {
+                    context.Permissions.Remove(localPermission);
+                    context.SaveChanges();
+                }
+            }
+        }
+
+        private void CreateRemotePermission(JsonNotification notification, JToken eBody)
+        {
+            var ownerId = long.Parse(eBody["OwnerId"].ToString());
+            var shareWithId = long.Parse(eBody["ShareWith"]["Id"].ToString());
+            var remoteIntegrationId = eBody["DataIntegrationId"].Value<long?>();
+            var remoteModelId = eBody["ModelId"].Value<long?>();
+            long? localIntegrationId = null;
+            long? localModelId = null;
+            var permission = new Permission();
+
+            using (var ctxSrc = _dbContextFactory.Create())
+            {
+                var context = ctxSrc.DbContexts.Get<ManagementDbContext>();
+                if (remoteIntegrationId != null)
+                {
+                    localIntegrationId =
+                        context.Integrations.FirstOrDefault(x => x.RemoteId == remoteIntegrationId.Value)?.Id;
+                }
+                else if (remoteModelId != null)
+                {
+                    localModelId =
+                        context.Models.FirstOrDefault(x => x.RemoteId == remoteModelId.Value)?.Id;
+                }
+                permission.IsRemote = true;
+                permission.RemoteId = long.Parse(eBody["id"].ToString());
+                permission.Owner = context.Organizations.FirstOrDefault(x => x.Id == ownerId);
+                permission.CanModify = eBody["CanModify"].Value<Boolean>();
+                permission.CanRead = eBody["CanRead"].Value<Boolean>();
+                permission.DataIntegrationId = localIntegrationId;
+                permission.ModelId = localModelId;
+                permission.ShareWith = context.Organizations.FirstOrDefault(x => x.Id == shareWithId);
+                context.Permissions.Add(permission);
+                context.SaveChanges();
             }
         }
     }

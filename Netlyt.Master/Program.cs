@@ -28,9 +28,24 @@ namespace Netlyt.Master
             Configure();
             var serviceProvider = SetupServices();
             var server = serviceProvider.GetService<ICloudMasterServer>();//new CloudMasterServer(Configuration);
-            var runTask = server.Run();
-            Console.WriteLine(" Press [enter] to exit.");
-            Console.ReadLine();
+            var runTask = server.Run().ContinueWith(x =>
+            {
+                x = x;
+                if (x.IsFaulted)
+                {
+                    Console.WriteLine("ERROR: " + x.Exception.Message);
+                }
+                else
+                {
+                    Console.WriteLine("Master server task disposed..");
+                }
+                Environment.Exit(1);
+            });
+            while (true)
+            {
+                //Console.WriteLine(" Press [enter] to exit.");
+                Console.ReadLine();
+            }
         }
 
         private static ServiceProvider SetupServices()

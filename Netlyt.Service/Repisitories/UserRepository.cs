@@ -37,5 +37,6 @@ namespace Netlyt.Service.Repisitories
         {
             return DbContext.Users.FirstOrDefault(x => x.UserName == username);
         }
+
     }
 }

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Donut.Data;
 using Donut.Integration;
 using Donut.Models;
 using EntityFramework.DbContextScope.Interfaces;
+using Netlyt.Data.ViewModels;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service.Cloud.Slave;
 using Netlyt.Service.Repisitories;
@@ -43,12 +45,14 @@ namespace Netlyt.Service.Cloud
 
         public void SendNotification(JToken body)
         {
+            if (!_nodeResolver.ShouldNotify("logged in")) return;
             var notificationClient = _connector.NotificationClient;
             notificationClient.Send(Routes.MessageNotification, body);
         }
 
         public void SendRegisteredNotification(User user)
         {
+            if (!_nodeResolver.ShouldNotify("register")) return;
             CheckAuthClient();
             var body = JObject.FromObject(new
             {
@@ -63,6 +67,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendLoggedInNotification(User user)
         {
+            if (!_nodeResolver.ShouldNotify("login")) return;
             CheckAuthClient();
             var body = JObject.FromObject(new
             {
@@ -81,31 +86,41 @@ namespace Netlyt.Service.Cloud
         /// <param name="newIntegration"></param>
         public void SendNewIntegrationSummary(IIntegration newIntegration, User user)
         {
+            if (!_nodeResolver.ShouldNotify("integration")) return; 
             CheckAuthClient();
-            var body = JObject.FromObject(new
+            using (var contextSrc = _dbContextFactory.Create())
             {
-                username = user.UserName,
-                user_id = user.Id,
-                name = newIntegration.Name,
-                id = newIntegration.Id,
-                fields = newIntegration.Fields.Select(x => new
+                var integration = _integrations.GetById(newIntegration.Id).FirstOrDefault();
+                var body = JObject.FromObject(new
                 {
-                    x.Name,
-                    x.Id,
-                    x.TargetType,
-                    x.Type,
-                    x.DataEncoding
-                }),
-                ts_column = newIntegration.DataTimestampColumn,
-                ix_column = newIntegration.DataIndexColumn,
-                on = DateTime.UtcNow,
-                token = _connector.AuthenticationClient.AuthenticationToken
-            });
-            _connector.NotificationClient.Send(Routes.IntegrationCreated, body);
+                    username = user.UserName,
+                    user_id = user.Id,
+                    name = integration.Name,
+                    id = integration.Id,
+                    integration.DataFormatType,
+                    integration.FeatureScript,
+                    fields = integration.Fields.Select(x => new
+                    {
+                        x.Name,
+                        x.Id,
+                        x.Type,
+                        x.DataEncoding,
+                        x.TargetType,
+                        x.DataType,
+                        x.DescriptionJson
+                    }).ToList(),
+                    ts_column = integration.DataTimestampColumn,
+                    ix_column = integration.DataIndexColumn,
+                    on = DateTime.UtcNow,
+                    token = _connector.AuthenticationClient.AuthenticationToken
+                });
+                _connector.NotificationClient.Send(Routes.IntegrationCreated, body);
+            }
         }
 
         public void SendIntegrationViewed(long viewedIntegrationId, string userId)
         {
+            if (!_nodeResolver.ShouldNotify("integration")) return;
             CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
@@ -124,6 +139,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendModelCreated(Model newModel, User user)
         {
+            if (!_nodeResolver.ShouldNotify("model")) return;
             CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
@@ -142,6 +158,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendModelBuilding(Model model, User user, JToken trainingTask)
         {
+            if (!_nodeResolver.ShouldNotify("model")) return;
             CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
@@ -160,6 +177,7 @@ namespace Netlyt.Service.Cloud
 
         public void SendModelTrained(Model model, User user, List<ModelTrainingPerformance> targetPerformances)
         {
+            if (!_nodeResolver.ShouldNotify("model")) return;
             CheckAuthClient();
             using (var contextSrc = _dbContextFactory.Create())
             {
@@ -173,6 +191,51 @@ namespace Netlyt.Service.Cloud
                     token = _connector.AuthenticationClient.AuthenticationToken
                 });
                 _connector.NotificationClient.Send(Routes.IntegrationViewed, body);
+            }
+        }
+
+        public void SendPermissionRemoved(User createdBy, Permission permission)
+        {
+            if (!_nodeResolver.ShouldNotify("permission")) return;
+            CheckAuthClient();
+            var body = JObject.FromObject(new
+            {
+                on = DateTime.UtcNow,
+                user_id = createdBy.Id,
+                token = _connector.AuthenticationClient.AuthenticationToken,
+                id = permission.Id
+            });
+            var headers = new Dictionary<string, string>();
+            headers["type"] = "remove";
+            _connector.NotificationClient.Send(Routes.PermissionsUpdate, body, headers);
+        }
+
+        public void SendPermissionCreated(User createdBy, Permission newPerm)
+        {
+            if (!_nodeResolver.ShouldNotify("permission")) return;
+            CheckAuthClient();
+            using (var contextSrc = _dbContextFactory.Create())
+            {
+                var body = JObject.FromObject(new
+                {
+                    newPerm.CanModify,
+                    newPerm.CanRead,
+                    ShareWith = new
+                    {
+                        newPerm.ShareWith.Id
+                    },
+                    OwnerId = newPerm.Owner.Id,
+                    newPerm.DataIntegrationId,
+                    newPerm.ModelId,
+                    on = DateTime.UtcNow,
+                    user_id = createdBy.Id,
+                    token = _connector.AuthenticationClient.AuthenticationToken,
+                    id = newPerm.Id,
+                    value = (newPerm.CanRead ? "r" :"") + (newPerm.CanModify ? "w" : "") + " " + (newPerm.ShareWith.Name)
+                });
+                var headers = new Dictionary<string, string>();
+                headers["type"] = "create";
+                _connector.NotificationClient.Send(Routes.PermissionsUpdate, body, headers);
             }
         }
     }

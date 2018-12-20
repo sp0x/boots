@@ -16,7 +16,7 @@ namespace Netlyt.Service.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
-                .HasAnnotation("ProductVersion", "2.1.1-rtm-30846")
+                .HasAnnotation("ProductVersion", "2.2.0-preview2-35157")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("Donut.AggregateKey", b =>
@@ -51,6 +51,10 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Collection");
 
+                    b.Property<DateTime>("CreatedOn");
+
+                    b.Property<string>("CreatedOnNodeToken");
+
                     b.Property<int>("DataEncoding");
 
                     b.Property<string>("DataFormatType");
@@ -63,11 +67,15 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("FeaturesCollection");
 
+                    b.Property<bool>("IsRemote");
+
                     b.Property<string>("Name");
 
                     b.Property<string>("OwnerId");
 
                     b.Property<long?>("PublicKeyId");
+
+                    b.Property<long?>("RemoteId");
 
                     b.Property<string>("Source");
 
@@ -117,9 +125,13 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<long?>("DataIntegrationId");
 
+                    b.Property<bool>("IsRemote");
+
                     b.Property<long?>("ModelId");
 
                     b.Property<long?>("OwnerId");
+
+                    b.Property<long?>("RemoteId");
 
                     b.Property<long?>("ShareWithId");
 
@@ -260,9 +272,13 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("HyperParams");
 
+                    b.Property<bool>("IsRemote");
+
                     b.Property<string>("ModelName");
 
                     b.Property<long?>("PublicKeyId");
+
+                    b.Property<long?>("RemoteId");
 
                     b.Property<string>("TrainingParams");
 
@@ -444,9 +460,15 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<int>("DataEncoding");
 
+                    b.Property<string>("DataType");
+
+                    b.Property<string>("DescriptionJson");
+
                     b.Property<long?>("ExtrasId");
 
                     b.Property<long>("IntegrationId");
+
+                    b.Property<string>("Language");
 
                     b.Property<string>("Name");
 
@@ -759,6 +781,40 @@ namespace Netlyt.Service.Migrations
                     b.ToTable("Organizations");
                 });
 
+            modelBuilder.Entity("Netlyt.Interfaces.Models.Subscription", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<long?>("AccessTokenId");
+
+                    b.Property<DateTime>("Created");
+
+                    b.Property<string>("Email");
+
+                    b.Property<string>("ForService");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccessTokenId");
+
+                    b.ToTable("Subscriptions");
+                });
+
+            modelBuilder.Entity("Netlyt.Interfaces.Models.Token", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<bool>("IsUsed");
+
+                    b.Property<string>("Value");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tokens");
+                });
+
             modelBuilder.Entity("Netlyt.Interfaces.Models.User", b =>
                 {
                     b.Property<string>("Id")
@@ -856,9 +912,13 @@ namespace Netlyt.Service.Migrations
 
                     b.Property<string>("Token");
 
+                    b.Property<string>("UserId");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ApiKeyId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("CloudAuthorizations");
                 });
@@ -866,9 +926,6 @@ namespace Netlyt.Service.Migrations
             modelBuilder.Entity("Netlyt.Interfaces.Models.UserRole", b =>
                 {
                     b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityRole");
-
-
-                    b.ToTable("UserRole");
 
                     b.HasDiscriminator().HasValue("UserRole");
                 });
@@ -1171,6 +1228,13 @@ namespace Netlyt.Service.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
+            modelBuilder.Entity("Netlyt.Interfaces.Models.Subscription", b =>
+                {
+                    b.HasOne("Netlyt.Interfaces.Models.Token", "AccessToken")
+                        .WithMany()
+                        .HasForeignKey("AccessTokenId");
+                });
+
             modelBuilder.Entity("Netlyt.Interfaces.Models.User", b =>
                 {
                     b.HasOne("Netlyt.Interfaces.Models.Organization", "Organization")
@@ -1200,6 +1264,10 @@ namespace Netlyt.Service.Migrations
                     b.HasOne("Netlyt.Interfaces.Models.ApiAuth", "ApiKey")
                         .WithMany()
                         .HasForeignKey("ApiKeyId");
+
+                    b.HasOne("Netlyt.Interfaces.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
                 });
 #pragma warning restore 612, 618
         }

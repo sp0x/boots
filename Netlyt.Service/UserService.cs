@@ -27,6 +27,7 @@ namespace Netlyt.Service
         private IUsersRepository _userRepository;
         private IDbContextScopeFactory _contextScope;
         private IPasswordHasher<User> _hasher;
+        private IRateService _rateService;
 
         public UserService(
             ApiService apiService,
@@ -36,7 +37,8 @@ namespace Netlyt.Service
             //ManagementDbContext context,
             IUsersRepository usersRepository,
             IDbContextScopeFactory contextScope,
-            IFactory<ManagementDbContext> contextFactory)
+            IFactory<ManagementDbContext> contextFactory,
+            IRateService rateService)
         {
             if (lfactory != null) _logger = lfactory.CreateLogger("Netlyt.Service.UserService");
             _contextScope = contextScope;
@@ -47,6 +49,7 @@ namespace Netlyt.Service
             //_modelService = modelService;
             _context = contextFactory.Create();
             _userRepository = usersRepository;
+            _rateService = rateService;
         }
         
         
@@ -109,6 +112,105 @@ namespace Netlyt.Service
                 return user?.Id;
             }
 
+        }
+
+        public User CreateUser(User user, ApiRateLimit quota)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                CreateIfMissing(user);
+                _rateService.SetAvailabilityForUser(user?.UserName, quota);
+                return user;
+            }
+        }
+
+        public void CreateIfMissing(User user)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                if (!context.Users.Any(x => x.UserName == user.UserName))
+                {
+                    if (user.RateLimit != null) context.Rates.Add(user.RateLimit);
+                    else throw new Exception("Rate limit is required for users.");
+                    if (user.Organization != null)
+                    {
+                        if (!OrganizationService.IsNetlyt(user.Organization))
+                        {
+                            context.ApiKeys.Add(user.Organization.ApiKey);
+                            context.Organizations.Add(user.Organization);
+                        }
+                        else
+                        {
+                            user.Organization = context.Organizations.FirstOrDefault(x => x.Id == user.Organization.Id);
+                            user.OrganizationId = user.Organization.Id;
+                        }
+                    }
+                    else throw new Exception("Organization is required for users.");
+
+                    context.Users.Add(user);
+                    context.SaveChanges();
+                }
+            }
+        }
+        public ICollection<object> GetApiKeysAnonimized(User user)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                return _userRepository.GetById(user.Id)?.FirstOrDefault()?.ApiKeys
+                    .Select(k => { return AnonimyzeKey(k); })
+                    .ToList();
+            }
+        }
+
+        public ICollection<ApiAuth> GetApiKeys(User user)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                return _userRepository.GetById(user.Id)?.FirstOrDefault()?.ApiKeys
+                    .Select(k => k.Api)
+                    .ToList();
+            }
+        }
+
+        public User GetByCloudNodeToken(string authToken)
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                return context.CloudAuthorizations
+                    .Where(x => x.Token == authToken)
+                    .Select(x => x.User)
+                    .FirstOrDefault();
+
+            }
+        }
+
+        public Token IssueNewToken()
+        {
+            using (var contextSrc = _contextScope.Create())
+            {
+                var context = contextSrc.DbContexts.Get<ManagementDbContext>();
+                var token = new Token() {IsUsed = false, Value = Guid.NewGuid().ToString()};
+                context.Tokens.Add(token);
+                context.SaveChanges();
+                return token;
+            }
+        }
+
+
+        private object AnonimyzeKey(ApiUser key)
+        {
+            return new
+            {
+                Api = new
+                {
+                    key.Api.AppId,
+                    key.Api.AppSecret
+                },
+                ApiId = key.ApiId,
+                key.UserId
+            };
         }
     }
 }

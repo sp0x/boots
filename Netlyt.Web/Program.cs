@@ -27,12 +27,10 @@ namespace Netlyt.Web
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseSetting("detailedErrors", "true")
-                .UseUrls("http://0.0.0.0:81/") //was 0.0.0.0
+                .UseUrls("http://0.0.0.0:81/")
                 .CaptureStartupErrors(true)
                 .UseStartup<Startup>()
                 .Build();
-            //SlaveConnector = host.Services.GetService(typeof(SlaveConnector)) as SlaveConnector;
-            //SlaveConnector.Run();
             return host;
         }
             

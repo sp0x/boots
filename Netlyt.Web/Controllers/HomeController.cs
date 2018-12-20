@@ -25,8 +25,17 @@ namespace Netlyt.Web.Controllers
 
         [AllowAnonymous]
         [HttpPost("/sendmail")]
-        public async Task<IActionResult> Sendmail(string from, string body, string name)
+        public async Task<IActionResult> Sendmail(string from, string body, string name, string forProduct = "none")
         {
+            await _emailService.SendEmailAsync(from, name, body + "\nProduct: " + forProduct);
+            return Redirect(HttpContext.Request.Headers["Referer"]);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("/sendmail")]
+        public async Task<IActionResult> SendmailGet(string from, string body, string name)
+        {
+            throw new NotImplementedException();
             await _emailService.SendEmailAsync(from, name, body);
             return Redirect(HttpContext.Request.Headers["Referer"]);
         }

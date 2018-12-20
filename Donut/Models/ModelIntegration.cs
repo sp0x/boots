@@ -17,8 +17,8 @@ namespace Donut.Models
         {
             this.Model = model;
             this.Integration = integration;
-            this.ModelId = model.Id;
-            this.IntegrationId = integration.Id;
+            //this.ModelId = model.Id;
+            //this.IntegrationId = integration.Id;
         }
     }
 }

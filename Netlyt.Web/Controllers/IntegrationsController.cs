@@ -11,6 +11,7 @@ using AutoMapper;
 using Donut;
 using Donut.Data;
 using Donut.Integration;
+using Donut.Models;
 using Donut.Orion;
 using static Netlyt.Web.Attributes;
 using Netlyt.Data.ViewModels;
@@ -26,6 +27,7 @@ namespace Netlyt.Web.Controllers
         private IIntegrationService _integrationService;
         private IUserManagementService _userManagementService;
         private IMapper _mapper;
+        private ModelService _modelService;
 
         private IOrionContext _orionContext;
         private INotificationService _notifications;
@@ -38,7 +40,8 @@ namespace Netlyt.Web.Controllers
             IMapper mapper,
             IOrionContext orionContext,
             INotificationService notificationsService,
-            ICloudNodeService nodeService)
+            ICloudNodeService nodeService,
+            ModelService modelService)
         {
             _userManagementService = userManagementService;
             _integrationService = integrationService;
@@ -46,6 +49,7 @@ namespace Netlyt.Web.Controllers
             _orionContext = orionContext;
             _notifications = notificationsService;
             _nodeService = nodeService;
+            _modelService = modelService;
         }
 
         [HttpGet("/integrations/me")]
@@ -57,7 +61,17 @@ namespace Netlyt.Web.Controllers
             var dataIntegrations = await _integrationService.GetIntegrations(user, page, pageSize);
             return dataIntegrations.Select(x => _mapper.Map<DataIntegrationViewModel>(x));
         }
-         
+
+        [HttpGet("/integrations/{userId}")]
+        [Authorize]
+        public async Task<IEnumerable<DataIntegrationViewModel>> GetAll(string userId, [FromQuery] int page)
+        {
+            int pageSize = 25;
+            var user = await _userManagementService.GetCurrentUser();
+            var dataIntegrations = await _integrationService.GetIntegrations(user, userId, page, pageSize);
+            return dataIntegrations.Select(x => _mapper.Map<DataIntegrationViewModel>(x));
+        }
+
         [HttpGet("/job/{id}")]
         [Authorize]
         public IActionResult GetJob(long id)
@@ -73,12 +87,10 @@ namespace Netlyt.Web.Controllers
             {
                 return BadRequest("No integration name given.");
             }
-
             var user = await _userManagementService.GetCurrentUser();
             var apiKey = await _userManagementService.GetCurrentApi();
             var newIntegration = await _integrationService.Create(user, apiKey, integration.Name, integration.DataFormatType);
             return CreatedAtRoute("GetIntegration", new { id = newIntegration.Id }, _mapper.Map<DataIntegrationViewModel>(newIntegration));
-
         }
 
 
@@ -110,7 +122,7 @@ namespace Netlyt.Web.Controllers
                 targetStream.Position = 0;
                 try
                 {
-                    result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, targetStream, fileContentType,
+                    result = await _integrationService.CreateOrAppendToIntegration(targetStream, apiKey, user, fileContentType,
                         integrationParams.Name);
                     newIntegration = result?.Integration;
                 }
@@ -179,6 +191,12 @@ namespace Netlyt.Web.Controllers
                 return NotFound();
             }
         }
+
+        /// <summary>
+        /// Gets just the schema of an integration.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("{id}/schema")]
         public async Task<IActionResult> GetSchema(long id)
         {
@@ -199,6 +217,9 @@ namespace Netlyt.Web.Controllers
             }
         }
 
+        
+
+
         [HttpPost("/integration/schema")]
         public async Task<IActionResult> UploadAndGetSchema()
         {
@@ -213,8 +234,9 @@ namespace Netlyt.Web.Controllers
                 var result = await _integrationService.CreateOrAppendToIntegration(user, apiKey, Request);
                 if (result != null)
                 {
-                    IIntegration newIntegration = result.Integration;
-                    _notifications.SendNewIntegrationSummary(newIntegration, user);
+                    DataIntegration newIntegration = result.Integration as DataIntegration;
+                    DataIntegration integrationWithDescription = await _integrationService.ResolveDescription(user, newIntegration);
+                    _notifications.SendNewIntegrationSummary(integrationWithDescription, user);
                     var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                     return Json(new IntegrationSchemaViewModel(newIntegration.Id, schema));
                 }
@@ -225,7 +247,6 @@ namespace Netlyt.Web.Controllers
                 resp.StatusCode = 500;
                 return resp;
             }
-            
             return null;
         }
     }

@@ -91,6 +91,7 @@ namespace Netlyt.Web
             services.AddTransient<UserManager<User>>();
             services.AddTransient<SignInManager<User>>();
             services.AddTransient<CompilerService>();
+            services.AddTransient<ISubscriptionService, SubscriptionService>();
 
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
@@ -128,7 +129,7 @@ namespace Netlyt.Web
                 // Cookie settings
                 options.Cookie.HttpOnly = true;
                 options.Cookie.Expiration = TimeSpan.FromDays(500);
-                //options.Cookie.Domain = ".netlyt.com";
+                //options.Cookie.Domain = ".netlyt.io";
                 options.LoginPath = "/user/Login"; // If the LoginPath is not set here, ASP.NET Core will default to /Account/Login
                 options.LogoutPath = "/user/Logout"; // If the LogoutPath is not set here, ASP.NET Core will default to /Account/Logout
                 options.AccessDeniedPath = "/user/AccessDenied"; // If the AccessDeniedPath is not set here, ASP.NET Core will default to /Account/AccessDenied

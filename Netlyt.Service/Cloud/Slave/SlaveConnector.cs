@@ -30,6 +30,7 @@ namespace Netlyt.Service.Cloud.Slave
         private ModelService _modelService;
         private IDbContextScopeFactory _dbContextFactory;
         private IUsersRepository _users;
+        private IUserService _userService;
         public bool Running { get; set; }
         public ICloudNodeService _cloudNodeService { get; private set; }
         public ApiRateLimit Quota { get; private set; }
@@ -55,9 +56,11 @@ namespace Netlyt.Service.Cloud.Slave
             ModelService modelService,
             IIntegrationService integrationService,
             IUsersRepository users,
-            IDbContextScopeFactory dbContextFactory
+            IDbContextScopeFactory dbContextFactory,
+            IUserService userService
             )
         {
+            _userService = userService;
             _dbContextFactory = dbContextFactory;
             _users = users;
             this.Id = Guid.NewGuid().ToString();
@@ -103,15 +106,13 @@ namespace Netlyt.Service.Cloud.Slave
                 {
                     var authResult = await authClient.AuthorizeNode(node);
                     Quota = authResult.Result["quota"].ToObject<ApiRateLimit>();
-                    using (var ctxSrc = _dbContextFactory.Create())
-                    {
-                        User = _users.GetByUsername(authResult.Result["username"].ToString());
-                    }
+                    //authResult.User.ApiKeys.Add(new ApiUser(authResult.User, node.ApiKey));
+                    var cloudUser = _userService.CreateUser(authResult.User, Quota);
+                    User = cloudUser;
                     _rateService.ApplyGlobal(Quota);
-                    _rateService.SetAvailabilityForUser(authResult.GetUsername().ToString(), Quota);
                     taskClient = new TaskClient(channel, authClient.AuthenticationToken);
                     taskClient.OnCommand += (sender, e) => { TaskClient_OnCommand(sender, e); };
-
+                    taskClient.Start();
                 }
                 else
                 {

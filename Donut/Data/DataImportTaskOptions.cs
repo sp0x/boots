@@ -16,6 +16,7 @@ namespace Donut.Data
         public List<String> IndexesToCreate { get; set; }
         public uint ShardLimit { get; set; }
         public uint TotalEntryLimit { get; set; }
+        public bool EncodeInput { get; set; }
         public DataImportTaskOptions()
         {
             IndexesToCreate = new List<string>();

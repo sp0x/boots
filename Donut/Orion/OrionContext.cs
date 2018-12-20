@@ -109,16 +109,23 @@ namespace Donut.Orion
             {
                 throw new System.Exception("Invalid or no MQ configuration supplied!");
             }
-            Debug.WriteLine($"Mq input: {mqConfig.InputPort}");
-            Console.WriteLine($"Mq input: {mqConfig.InputPort}");
 
-            Debug.WriteLine($"Mq output: {mqConfig.OutputPort}");
-            Console.WriteLine($"Mq output: {mqConfig.OutputPort}");
+            int inputPort = mqConfig.InputPort;
+            int outputPort = mqConfig.OutputPort;
+            int eventsPort = mqConfig.EventsPort;
+            var hostname = mqConfig.Destination;
+            var envHostname = Environment.GetEnvironmentVariable("ORION_HOST");
+            if (!string.IsNullOrEmpty(envHostname)) hostname = envHostname;
+            Debug.WriteLine($"Mq input: {hostname}:{inputPort}");
+            Console.WriteLine($"Mq input: {hostname}:{inputPort}");
 
-            _inputPort = mqConfig.InputPort; 
-            _outputPort = mqConfig.OutputPort;
-            _eventsPort = mqConfig.EventsPort;
-            _destinationIp = mqConfig.Destination;
+            Debug.WriteLine($"Mq output: {hostname}:{outputPort}");
+            Console.WriteLine($"Mq output: {hostname}:{outputPort}");
+
+            _inputPort = inputPort; 
+            _outputPort = outputPort;
+            _eventsPort = eventsPort;
+            _destinationIp = hostname;
             
         }
 

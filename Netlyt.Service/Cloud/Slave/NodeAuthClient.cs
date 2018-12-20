@@ -40,6 +40,8 @@ namespace Netlyt.Service.Cloud.Slave
             _callbackConsumer = new EventingBasicConsumer(_channel);
             _channel.BasicConsume(CallbackQueue.QueueName, true, _callbackConsumer);
             _callbackConsumer.Received += OnCallback;
+            /*
+            */
         }
 
         private void OnCallback(object sender, BasicDeliverEventArgs e)

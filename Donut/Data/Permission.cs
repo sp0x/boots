@@ -17,5 +17,7 @@ namespace Donut.Data
         [ForeignKey("Model")]
         public long? ModelId { get; set; }
         public virtual Model Model { get; set; }
+        public bool IsRemote { get; set; }
+        public long? RemoteId { get; set; }
     }
 }

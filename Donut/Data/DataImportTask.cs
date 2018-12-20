@@ -43,7 +43,7 @@ namespace Donut.Data
         }
         public DestinationCollection OutputDestinationCollection { get; private set; }
         private FieldEncoder _encoder;
-        public bool EncodeOnImport { get; set; } = true;
+        public bool EncodeOnImport { get; set; } = false;
         public DataImportTaskOptions Options => _options;
 
         /// <summary>
@@ -83,7 +83,11 @@ namespace Donut.Data
             OutputDestinationCollection = outCollection;
             if (options.TotalEntryLimit > 0) _harvester.LimitEntries(options.TotalEntryLimit);
             if (options.ShardLimit > 0) _harvester.LimitShards(options.ShardLimit);
-            _encoder = FieldEncoder.Factory.Create(_integration);
+            this.EncodeOnImport = options.EncodeInput;
+            if (this.EncodeOnImport)
+            {
+                _encoder = FieldEncoder.Factory.Create(_integration);
+            }
             // new OneHotEncoding(new FieldEncodingOptions { Integration = _integration });
         }
 

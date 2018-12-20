@@ -80,6 +80,12 @@ namespace Donut.Encoding
             }
         }
 
+        /// <summary>
+        /// Applies all encoders to all fields in a collection
+        /// </summary>
+        /// <param name="collection"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         public async Task ApplyToAllFields(IMongoCollection<BsonDocument> collection, CancellationToken? ct)
         {
             foreach (var encoding in _encoders)

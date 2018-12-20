@@ -18,6 +18,7 @@ namespace Netlyt.Data.ViewModels
         public bool UserIsOwner { get; set; }
         public IEnumerable<ModelBuildViewModel> BuiltTargets { get; set; }
         public IEnumerable<PermissionViewModel> Permissions {get; set; }
+        public IEnumerable<FieldDefinitionViewModel> Fields { get; set; }
 
     }
 }

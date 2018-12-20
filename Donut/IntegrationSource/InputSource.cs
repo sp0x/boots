@@ -9,6 +9,7 @@ using Donut.Encoding;
 using Donut.Integration;
 using Donut.Source;
 using Netlyt.Interfaces;
+using Netlyt.Interfaces.Models;
 
 namespace Donut.IntegrationSource
 {
@@ -179,6 +180,7 @@ namespace Donut.IntegrationSource
             if (firstInstance != null)
             {
                 typeDef = new Data.DataIntegration();
+                typeDef.PublicKey = ApiAuth.Generate();
                 typeDef.DataEncoding = Encoding.CodePage;
                 typeDef.DataFormatType = Formatter.Name;
                 typeDef.SetFieldsFromType(firstInstance);

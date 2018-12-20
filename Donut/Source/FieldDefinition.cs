@@ -21,12 +21,15 @@ namespace Donut.Source
         [ForeignKey("Extras")]
         public long? ExtrasId { get; set; }
         public virtual FieldExtras Extras { get; set; }
+        public string DescriptionJson { get; set; }
+        public string DataType { get; set; }
 
         public FieldDataEncoding DataEncoding { get; set; }
         [ForeignKey("Integration")]
         public long IntegrationId { get; set; }
         public Data.DataIntegration Integration { get; set; }
         public string TargetType { get; set; }
+        public string Language { get; set; }
 
         public FieldDefinition()
         {

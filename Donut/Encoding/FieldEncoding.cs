@@ -55,6 +55,13 @@ namespace Donut.Encoding
         }
 
         public abstract void Apply(BsonDocument doc);
+
+        /// <summary>
+        /// Applies the encoding to all target fields.
+        /// </summary>
+        /// <param name="collection"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task ApplyToAllFields(IMongoCollection<BsonDocument> collection, 
             CancellationToken? cancellationToken = null)
         {

@@ -66,6 +66,17 @@ namespace Netlyt.Web.Controllers
 
         [TempData]
         public string ErrorMessage { get; set; }
+
+        [HttpPost("/token/issue")]
+        [Authorize]
+        public async Task<ActionResult> IssueToken()
+        {
+            var newToken = _userService.IssueNewToken();
+            return Json(new
+            {
+                token = newToken.Value
+            });
+        }
          
         [HttpGet("/user/me")] // /me = host/me, me = host/user/GetProfile/me  
         public async Task<ActionResult> GetProfile()
@@ -102,15 +113,15 @@ namespace Netlyt.Web.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                
-                if (_nodeInfo.ResolveLocal().HasToVerifyLogins())
+                var hasToVerifyLogins = _nodeInfo.ResolveLocal().HasToVerifyLogins();
+                if (hasToVerifyLogins)
                 {
                     var authResult = await _slaveConnector.AuthenticationClient.LoginUser(model.Email, model.Password);
                     if (!authResult.Item1) return InvalidLogin();
                     var user = authResult.Item2;
                     if (_userService.GetUserByEmail(model.Email) == null)
                     {
-                        _userManagementService.AddUser(user);
+                        _userService.CreateIfMissing(user);
                     }
                     return await LoginUser(model, returnUrl, user);
                 }
@@ -321,7 +332,11 @@ namespace Netlyt.Web.Controllers
                 }
                 else
                 {
-                    var response = Json(result);
+                    var response = Json(new
+                    {
+                        success = false,
+                        errors = result.Item1.Errors
+                    });
                     response.StatusCode = 400;
                     return response;
                 } 
