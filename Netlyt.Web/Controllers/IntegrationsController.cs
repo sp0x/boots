@@ -239,12 +239,12 @@ namespace Netlyt.Web.Controllers
                     CreateEmptyModelViewModel modelProps = new CreateEmptyModelViewModel();
                     modelProps.IntegrationId = newIntegration.Id;
                     //modelProps.FeatureCols = newIntegration.Fields; 
-                    var newModel = await _modelService.CreateEmptyModel(user, modelProps);
+                    //var newModel = await _modelService.CreateEmptyModel(user, modelProps);
                     _notifications.SendNewIntegrationSummary(integrationWithDescription, user);
                     var schema = newIntegration.Fields.Select(x => _mapper.Map<FieldDefinitionViewModel>(x));
                     var integrationViewModel = new IntegrationSchemaViewModel(newIntegration.Id, schema);
-                    var modelViewModel = _mapper.Map<Model, ModelViewModel>(newModel);
-                    return Json(new NewModelViewModel(modelViewModel, integrationViewModel));
+                    //var modelViewModel = _mapper.Map<Model, ModelViewModel>(newModel);
+                    return Json(new NewModelViewModel(null, integrationViewModel));
                 }
             }
             catch (Exception ex)

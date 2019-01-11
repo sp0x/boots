@@ -24,22 +24,14 @@ namespace Donut
             this.DonutScriptContent = dscript.ToString();
             this.AssemblyPath = dscript.AssemblyPath;
         }
-        
+
         public IDonutScript GetScript()
         {
-            try
-            {
-                var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
-                var parser = new DonutSyntaxReader(tokenizer.Tokenize(DonutScriptContent));
-                IDonutScript dscript = parser.ParseDonutScript(Model.GetRootIntegration());
-                return dscript;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                return null;
-            }
-            
+            var tokenizer = new PrecedenceTokenizer(new DonutTokenDefinitions());
+            var parser = new DonutSyntaxReader(tokenizer.Tokenize(DonutScriptContent));
+            IDonutScript dscript = parser.ParseDonutScript(Model.GetRootIntegration());
+            return dscript;
+
         }
 
         public override string ToString()

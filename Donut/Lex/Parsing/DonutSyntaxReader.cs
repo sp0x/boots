@@ -142,6 +142,10 @@ namespace Donut.Lex.Parsing
                             var func = ReadFunctionCall();
                             lvlExpressions.Add(func);
                         }
+                        else if (IsBadTargetDefinition(Reader.Current, Reader.NextToken))
+                        {
+                            throw new BadTarget("Target was unspecified or invalid.");
+                        }
                         else if (IsVariableExpression(Reader.Current, Reader.NextToken))
                         {
                             var variable = ReadVariable();
@@ -739,6 +743,19 @@ namespace Donut.Lex.Parsing
         {
             return tkA.TokenType == TokenType.Symbol
                    && (tkB.TokenType != TokenType.OpenParenthesis);
+        }
+
+        /// <summary>
+        /// Checks if the 2 tokens are a bad target definition
+        /// </summary>
+        /// <param name="tkA"></param>
+        /// <param name="tkB"></param>
+        /// <returns></returns>
+        public bool IsBadTargetDefinition(DslToken tkA, DslToken tkB)
+        {
+            return tkA.TokenType == TokenType.Symbol && tkA.Value == "target"
+                                                     && (tkB.TokenType == TokenType.EOF);
+
         }
 
 

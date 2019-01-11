@@ -247,19 +247,20 @@ namespace Netlyt.Service
                 {
                     throw new Forbidden("You are not authorized to use this integration for model building");
                 }
-                var modelName = CleanupModelName(integration.Name) + "Model";
+                var modelName = CleanupModelName(props.ModelName) + "Model";
                 if (props.IdColumn != null && !string.IsNullOrEmpty(props.IdColumn.Name))
                 {
                     _integrationService.SetIndexColumn(integration, props.IdColumn.Name);
                 }
-                //var targets = props.Targets.ToModelTargets(integration);//new ModelTarget(integration.GetField(modelData.Target.Name));
+                var targets = props.Targets.ToModelTargets(integration);//new ModelTarget(integration.GetField(modelData.Target.Name));
                 var newModel = await CreateModel(user,
                     modelName,
                     new List<DataIntegration>(new[] { integration }),
                     props.CallbackUrl,
                     props.GenerateFeatures,
                     null,
-                    integration.GetFields(props.FeatureCols)
+                    integration.GetFields(props.FeatureCols),
+                    targets.ToArray()
                     );
                 return newModel;
             }

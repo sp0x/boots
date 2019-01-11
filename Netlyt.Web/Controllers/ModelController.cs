@@ -231,8 +231,8 @@ namespace Netlyt.Web.Controllers
         public async Task<IActionResult> CreateEmpty([FromBody] CreateEmptyModelViewModel props)
         {
             if (props == null) return BadRequest();
-            //if (string.IsNullOrEmpty(props.ModelName)) return BadRequest("Model name is required.");
-            //if (props.Targets == null) return BadRequest("Model targets are required.");
+            if (string.IsNullOrEmpty(props.ModelName)) return BadRequest("Model name is required.");
+            if (props.Targets == null) return BadRequest("Model targets are required.");
             try
             {
                 var user = await _userManagementService.GetCurrentUser();

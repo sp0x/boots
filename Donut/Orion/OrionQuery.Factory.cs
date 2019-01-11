@@ -386,7 +386,11 @@ namespace Donut.Orion
             }
 
 
-
+            /// <summary>
+            /// Converts a feature to { title:.., type: direct|.., key:..}
+            /// </summary>
+            /// <param name="feature"></param>
+            /// <returns></returns>
             private static JToken FeatureToJson(AssignmentExpression feature)
             {
                 var output = new JObject();
@@ -397,8 +401,8 @@ namespace Donut.Orion
                 {
                     throw new NotImplementedException();
                 }
-                output["title"] = ftrName;
                 output["type"] = featureType;
+                output["title"] = ftrName;
                 //Function name
                 if (featureType == "direct")
                 {
