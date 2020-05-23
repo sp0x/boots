@@ -9,8 +9,6 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
-using nvoid.db;
-using nvoid.db.Extensions;
 using Netlyt.Interfaces.Models;
 using Netlyt.Service;
 using Netlyt.Service.Data;

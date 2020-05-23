@@ -55,6 +55,9 @@ COPY init.groovy /usr/share/jenkins/ref/init.groovy.d/tcp-slave-agent-port.groov
 ARG JENKINS_VERSION
 ENV JENKINS_VERSION ${JENKINS_VERSION:-2.131}
 
+ARG NPM_VERSION
+ENV NPM_VERSION ${NPM_VERSION:-10}
+
 # jenkins.war checksum, download will be validated using it
 ARG JENKINS_SHA=3d5b26d1f0e1fe4058b6c01e552c74cdbca3301e4e6fb7f79f8a1f138b7e326a
 
@@ -71,7 +74,7 @@ ENV JENKINS_UC_EXPERIMENTAL=https://updates.jenkins.io/experimental
 RUN chown -R ${user} "$JENKINS_HOME" /usr/share/jenkins/ref
 
 #Setup nodejs and npm
-RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - \
+RUN curl -sL https://deb.nodesource.com/setup_${NPM_VERSION}.x | bash - \
     && apt-get install -y --no-install-recommends \
         nodejs \
         build-essential \
@@ -96,12 +99,12 @@ RUN LIBUV_VERSION=1.11.0 \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libc6 \
-        libcurl3 \
+        libcurl* \
         libgcc1 \
         libgssapi-krb5-2 \
-        libicu57 \
+        libicu* \
         liblttng-ust0 \
-        libssl1.0.2 \
+        libssl* \
         libstdc++6 \
         libunwind8 \
         libuuid1 \

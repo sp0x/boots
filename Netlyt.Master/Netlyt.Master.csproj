@@ -24,7 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
     <ProjectReference Include="..\Netlyt.Interfaces\Netlyt.Interfaces.csproj" />
     <ProjectReference Include="..\Netlyt.Service\Netlyt.Service.csproj" />
   </ItemGroup>

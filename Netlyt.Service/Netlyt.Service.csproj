@@ -9,9 +9,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Bogus\Source\Bogus\Bogus.csproj" />
     <ProjectReference Include="..\Donut\Donut.csproj" />
-    <ProjectReference Include="..\libnvoid\nvoid.db\nvoid.db.csproj" />
-    <ProjectReference Include="..\libnvoid\nvoid.extensions\nvoid.extensions.csproj" />
-    <ProjectReference Include="..\libnvoid\nvoid\nvoid.csproj" />
     <ProjectReference Include="..\Netlyt.Data\Netlyt.Data.csproj" />
     <ProjectReference Include="..\Netlyt.Interfaces\Netlyt.Interfaces.csproj" />
   </ItemGroup>
@@ -24,7 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="7.0.1" />
-    <PackageReference Include="Dynamitey" Version="2.0.9.136" />
+    <PackageReference Include="Dynamitey" Version="2.0.10.189" />
     <PackageReference Include="EntityFramework.DbContextScope" Version="1.0.0" />
     <PackageReference Include="LumenWorks.Framework.IO.Core" Version="1.0.1" />
     <PackageReference Include="Mailjet.Api" Version="1.0.1" />

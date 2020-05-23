@@ -2,7 +2,7 @@
 
 namespace Netlyt.Interfaces.Cloud
 {
-    public interface ICloudNodeNotification
+    public interface xICloudNodeNotification
     {
         string Token { get; }
         Dictionary<string, string> Headers { get; }

@@ -1,6 +1,8 @@
 # Official Jenkins Docker image
 
-The Jenkins Continuous Integration and Delivery server.
+The Jenkins Continuous Integration and Delivery server.  
+With the .Net Core SDK included.    
+So you can build .Net Core projects as containerized services.
 
 This is a fully functional Jenkins server.
 [http://jenkins.io/](http://jenkins.io/).
