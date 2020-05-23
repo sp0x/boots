@@ -1,14 +1,12 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using Donut.Interfaces.Models;
 using Donut.Models;
-using nvoid.db.Extensions; 
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
-using nvoid.db;
-using Netlyt.Interfaces;
-using Netlyt.Interfaces.Models;
-using Netlyt.Service;
+using nvoid.db.Extensions;
 
 namespace Netlyt.Web.Controllers
 {
