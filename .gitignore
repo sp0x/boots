@@ -59,6 +59,4 @@ storage.ide
 **/cert.pem
 cert.pem
 *.pem
-/SiteProxy/certs/registry.vaskovasilev.eu/cert.pem
-/SiteProxy/certs/registry.vaskovasilev.eu/chain.pem
-/SiteProxy/certs/registry.vaskovasilev.eu/key.pem
+**/certs

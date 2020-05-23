@@ -91,7 +91,7 @@ namespace Netlyt.Data
                 mauthsource = "admin";
             } 
             if (!string.IsNullOrEmpty(mauthsource)) mongoUrlBuilder.AuthenticationSource = mauthsource;
-            //mongo.Value = "mongodb://netlyt:gsoeghjoijasg43o0jw90e8bjsdfog@mongo.netlyt.io:27017/netvoid?authSource=admin";
+            
             mongo.Value = mongoUrlBuilder.ToMongoUrl().ToString();
             mongo.Role = "general";
             mongo.Type = DatabaseType.MongoDb;
